@@ -1,10 +1,14 @@
-// In Cloudflare: set Build command to "npm run build:cloudflare" (not "npm run build").
+// Wrangler runs build.command before deploy so .open-next/ exists (OpenNext).
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "main": ".open-next/worker.js",
   "name": "projectai",
+  "main": ".open-next/worker.js",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "build": {
+    "command": "npm run build:cloudflare",
+    "cwd": "."
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -14,8 +18,5 @@
       "binding": "WORKER_SELF_REFERENCE",
       "service": "projectai"
     }
-  ],
-  "images": {
-    "binding": "IMAGES"
-  }
+  ]
 }
