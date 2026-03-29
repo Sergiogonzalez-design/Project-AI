@@ -1,6 +1,5 @@
-// Deploy expects .open-next/ from the CI "Build" step. In Cloudflare:
-// Settings → Builds → Build command = npm run build:cloudflare
-// (Do not use plain "npm run build" — that skips OpenNext.)
+// CI must run `npm run build` (OpenNext). package.json "build" = opennextjs-cloudflare build;
+// open-next.config.ts sets buildCommand to `npx next build` so there is no script recursion.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "projectai",
