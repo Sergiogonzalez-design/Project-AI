@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,27 +21,14 @@ export function SignupForm() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const origin =
-        typeof window !== "undefined" ? window.location.origin : "";
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       const { data, error: signError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${origin}/auth/callback`,
-        },
+        email, password,
+        options: { emailRedirectTo: `${origin}/auth/callback` },
       });
-      if (signError) {
-        setError(signError.message);
-        return;
-      }
-      if (data.session) {
-        router.replace("/");
-        router.refresh();
-        return;
-      }
-      setInfo(
-        "Revisa tu correo para confirmar la cuenta (si la confirmación está activada en el proyecto)."
-      );
+      if (signError) { setError(signError.message); return; }
+      if (data.session) { router.replace("/"); router.refresh(); return; }
+      setInfo("Revisa tu correo para confirmar la cuenta.");
     } finally {
       setLoading(false);
     }
@@ -49,59 +37,53 @@ export function SignupForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full max-w-sm flex-col gap-5 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm"
+      className="w-full max-w-sm rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8"
     >
-      <div>
-        <h1 className="text-xl font-semibold text-neutral-900">Crear cuenta</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Regístrate para acceder a PhysioGuide AI.
-        </p>
+      <div className="mb-6 flex flex-col items-center gap-3 text-center">
+        <Image src="/logo.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">Crear cuenta</h1>
+          <p className="mt-1 text-sm text-slate-500">Regístrate para usar PhysioGuide AI</p>
+        </div>
       </div>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-neutral-800">Correo</span>
+
+      <div className="mb-4 flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-slate-700">Correo electrónico</label>
         <input
-          type="email"
-          name="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-lg border border-neutral-300 px-3 py-2 text-neutral-900 outline-none ring-neutral-900 focus:ring-2"
+          type="email" name="email" autoComplete="email" required
+          value={email} onChange={(e) => setEmail(e.target.value)}
+          className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          placeholder="tu@correo.com"
         />
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-neutral-800">Contraseña</span>
+      </div>
+
+      <div className="mb-5 flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-slate-700">Contraseña</label>
         <input
-          type="password"
-          name="password"
-          autoComplete="new-password"
-          required
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-lg border border-neutral-300 px-3 py-2 text-neutral-900 outline-none ring-neutral-900 focus:ring-2"
+          type="password" name="password" autoComplete="new-password" required minLength={6}
+          value={password} onChange={(e) => setPassword(e.target.value)}
+          className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          placeholder="Mínimo 6 caracteres"
         />
-      </label>
-      {error ? (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {info ? (
-        <p className="text-sm text-neutral-700" role="status">
+      </div>
+
+      {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
+      {info && (
+        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700" role="status">
           {info}
-        </p>
-      ) : null}
+        </div>
+      )}
+
       <button
-        type="submit"
-        disabled={loading}
-        className="rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-60"
+        type="submit" disabled={loading}
+        className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
       >
-        {loading ? "Creando…" : "Registrarse"}
+        {loading ? "Creando cuenta…" : "Crear cuenta"}
       </button>
-      <p className="text-center text-sm text-neutral-600">
+
+      <p className="mt-5 text-center text-sm text-slate-500">
         ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="font-medium text-neutral-900 underline">
+        <Link href="/login" className="font-semibold text-blue-600 hover:underline">
           Iniciar sesión
         </Link>
       </p>

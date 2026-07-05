@@ -49,19 +49,19 @@ export default async function ConocimientosPage() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <section className="bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-16 text-white">
+      <section className="bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-12 text-white sm:px-6 sm:py-16">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="mb-3 text-3xl font-bold">Conocimientos</h1>
-          <p className="text-blue-100">
+          <h1 className="mb-3 text-2xl font-bold sm:text-3xl">Conocimientos</h1>
+          <p className="text-sm text-blue-100 sm:text-base">
             Artículos y protocolos de fisioterapia y medicina deportiva
             para que entiendas mejor tu salud.
           </p>
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-5xl px-6 py-12">
+      <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-12">
         {/* Categories */}
-        <div className="mb-12 grid gap-4 sm:grid-cols-4">
+        <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {CATEGORIES.map((c) => (
             <div
               key={c.label}

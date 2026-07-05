@@ -28,10 +28,10 @@ export default function SobreNosotrosPage() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <section className="bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-20 text-center text-white">
+      <section className="bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-14 text-center text-white sm:px-6 sm:py-20">
         <div className="mx-auto max-w-2xl">
-          <h1 className="mb-4 text-4xl font-bold">Sobre Nosotros</h1>
-          <p className="text-lg text-blue-100 leading-relaxed">
+          <h1 className="mb-3 text-3xl font-bold sm:mb-4 sm:text-4xl">Sobre Nosotros</h1>
+          <p className="text-base text-blue-100 leading-relaxed sm:text-lg">
             Somos un equipo de profesionales de la salud y la tecnología
             comprometidos con hacer la fisioterapia más accesible.
           </p>
@@ -39,10 +39,10 @@ export default function SobreNosotrosPage() {
       </section>
 
       {/* Mission */}
-      <section className="bg-white px-6 py-14">
+      <section className="bg-white px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="mb-4 text-2xl font-bold text-slate-800">Nuestra misión</h2>
-          <p className="text-slate-500 leading-relaxed text-lg">
+          <h2 className="mb-4 text-xl font-bold text-slate-800 sm:text-2xl">Nuestra misión</h2>
+          <p className="text-slate-500 leading-relaxed text-base sm:text-lg">
             PhysioGuide AI nació con la idea de que cualquier persona debería poder
             recibir una primera orientación de calidad sobre sus síntomas musculoesqueléticos,
             sin importar dónde se encuentre o qué hora es. Combinamos la experiencia clínica
@@ -53,12 +53,12 @@ export default function SobreNosotrosPage() {
       </section>
 
       {/* Team */}
-      <section className="bg-slate-50 px-6 py-16">
+      <section className="bg-slate-50 px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-4xl">
-          <h2 className="mb-10 text-center text-2xl font-bold text-slate-800">
+          <h2 className="mb-8 text-center text-xl font-bold text-slate-800 sm:mb-10 sm:text-2xl">
             El equipo
           </h2>
-          <div className="grid gap-8 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2 sm:gap-8">
             {TEAM.map((member) => (
               <div
                 key={member.name}
@@ -88,12 +88,12 @@ export default function SobreNosotrosPage() {
       </section>
 
       {/* Values */}
-      <section className="bg-white px-6 py-16">
+      <section className="bg-white px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-4xl">
-          <h2 className="mb-10 text-center text-2xl font-bold text-slate-800">
+          <h2 className="mb-8 text-center text-xl font-bold text-slate-800 sm:mb-10 sm:text-2xl">
             Nuestros valores
           </h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
             {VALUES.map((v) => (
               <div
                 key={v.title}
@@ -109,7 +109,7 @@ export default function SobreNosotrosPage() {
       </section>
 
       {/* Contact */}
-      <section className="bg-gradient-to-br from-blue-700 to-blue-500 px-6 py-14 text-white text-center">
+      <section className="bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-12 text-white text-center sm:px-6 sm:py-14">
         <div className="mx-auto max-w-xl">
           <h2 className="mb-3 text-2xl font-bold">¿Quieres contactarnos?</h2>
           <p className="mb-6 text-blue-100">

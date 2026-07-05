@@ -29,26 +29,26 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-700 to-blue-500 px-6 py-24 text-center text-white">
+      <section className="bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-14 text-center text-white sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl">
-          <div className="mb-6 inline-flex items-center justify-center">
+          <div className="mb-5 inline-flex items-center justify-center">
             <Image
               src="/logo.png"
               alt="PhysioGuide AI"
-              width={120}
-              height={120}
-              className="object-contain drop-shadow-lg mix-blend-multiply"
+              width={90}
+              height={90}
+              className="object-contain drop-shadow-lg mix-blend-multiply sm:w-[120px] sm:h-[120px]"
               priority
             />
           </div>
-          <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="mb-3 text-3xl font-bold tracking-tight sm:mb-4 sm:text-5xl">
             PhysioGuide AI
           </h1>
-          <p className="mb-8 text-lg text-blue-100 leading-relaxed sm:text-xl">
+          <p className="mb-7 text-base text-blue-100 leading-relaxed sm:mb-8 sm:text-xl">
             Orientación inteligente en fisioterapia y medicina deportiva.
             Entiende tu lesión antes de visitar a tu entrenador atlético.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
             <Link
               href="/consulta"
               className="rounded-xl bg-white px-6 py-3 text-base font-semibold text-blue-700 shadow transition hover:bg-blue-50"
@@ -66,12 +66,12 @@ export default async function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="px-6 py-16">
+      <section className="px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-10 text-center text-2xl font-bold text-slate-800">
+          <h2 className="mb-8 text-center text-xl font-bold text-slate-800 sm:mb-10 sm:text-2xl">
             ¿Cómo funciona?
           </h2>
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 sm:grid-cols-3">
             {[
               {
                 icon: "📝",
@@ -112,9 +112,9 @@ export default async function HomePage() {
       </section>
 
       {/* News */}
-      <section className="px-6 py-16">
+      <section className="px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-8 text-2xl font-bold text-slate-800">
+          <h2 className="mb-6 text-xl font-bold text-slate-800 sm:mb-8 sm:text-2xl">
             Últimas noticias
           </h2>
           {news.length === 0 ? (

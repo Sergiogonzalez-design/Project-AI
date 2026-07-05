@@ -24,7 +24,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center bg-neutral-50 px-6 py-16">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
       <SignupForm />
     </main>
   );
