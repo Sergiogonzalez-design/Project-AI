@@ -38,7 +38,36 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
+
+  const isPublic =
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname.startsWith("/auth/") ||
+    pathname === "/api/supabase-health";
+
+  if (!user && !isPublic) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", `${pathname}${search}`);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (user && (pathname === "/login" || pathname === "/signup")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Admin route: only the owner's email can access
+  if (pathname.startsWith("/admin")) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!user || user.email !== adminEmail) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
 
   return supabaseResponse;
 }

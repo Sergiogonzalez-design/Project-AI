@@ -1,14 +1,12 @@
-import { SiteSidebar } from "@/components/site-sidebar";
+import { SiteNavbar } from "@/components/site-navbar";
 
 export default function SiteLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="flex min-h-screen flex-1 bg-white">
-      <SiteSidebar />
-      <div className="min-w-0 flex-1">{children}</div>
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      <SiteNavbar />
+      <main className="flex flex-1 flex-col">{children}</main>
     </div>
   );
 }

@@ -18,6 +18,7 @@ export function ConsultaForm() {
     "idle" | "saving" | "success" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -138,6 +139,27 @@ export function ConsultaForm() {
       setStatus("error");
       setErrorMessage(error.message);
       return;
+    }
+
+    // Call the RAG AI endpoint
+    try {
+      const res = await fetch("/api/ai/consult", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bodyArea: zona,
+          onsetType: detalle,
+          painLevel: form.pain,
+          hadTrauma,
+          description: form.description.trim() || "",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { answer: string };
+        setAiAnswer(data.answer);
+      }
+    } catch {
+      // AI response is optional — form save already succeeded
     }
 
     setStatus("success");
@@ -272,10 +294,23 @@ export function ConsultaForm() {
           {errorMessage}
         </p>
       )}
-      {status === "success" && (
+      {status === "success" && !aiAnswer && (
         <p className="mb-4 text-sm text-green-700" role="status">
-          Consulta guardada. Gracias.
+          Consulta guardada. Analizando con IA…
         </p>
+      )}
+      {status === "success" && aiAnswer && (
+        <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Orientación IA
+          </p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
+            {aiAnswer}
+          </p>
+          <p className="mt-3 text-xs text-neutral-500">
+            ⚠️ Esta orientación no sustituye la valoración de un profesional.
+          </p>
+        </div>
       )}
 
       <button

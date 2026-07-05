@@ -31,3 +31,4 @@ create policy "consultas_insert_authenticated"
   with check (true);
 
 grant insert on table public.consultas to anon, authenticated;
+
