@@ -1,10 +1,10 @@
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StyleSheet, Text, View } from "react-native";
+import React from "react";
 import { Colors } from "../lib/colors";
-import { HomeScreen } from "../screens/HomeScreen";
 import { AIInquiriesScreen } from "../screens/AIInquiriesScreen";
 import { ContactScreen } from "../screens/ContactScreen";
+import { HomeScreen } from "../screens/HomeScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 
 export type TabParamList = {
@@ -16,37 +16,21 @@ export type TabParamList = {
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TabIcon({
-  emoji,
-  label,
-  focused,
-}: {
-  emoji: string;
-  label: string;
-  focused: boolean;
-}) {
+type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+
+function tabIcon(
+  outlineName: IoniconsName,
+  filledName: IoniconsName,
+  focused: boolean
+) {
   return (
-    <View style={tabIconStyles.wrapper}>
-      <Text style={tabIconStyles.emoji}>{emoji}</Text>
-      <Text
-        style={[
-          tabIconStyles.label,
-          focused ? tabIconStyles.labelActive : tabIconStyles.labelInactive,
-        ]}
-      >
-        {label}
-      </Text>
-    </View>
+    <Ionicons
+      name={focused ? filledName : outlineName}
+      size={24}
+      color={focused ? Colors.tabIconActive : Colors.tabIconInactive}
+    />
   );
 }
-
-const tabIconStyles = StyleSheet.create({
-  wrapper: { alignItems: "center", paddingTop: 4 },
-  emoji: { fontSize: 22 },
-  label: { fontSize: 10, marginTop: 2, fontWeight: "600" },
-  labelActive: { color: Colors.tabIconActive },
-  labelInactive: { color: Colors.tabIconInactive },
-});
 
 export function AppTabs() {
   return (
@@ -61,14 +45,20 @@ export function AppTabs() {
           borderTopWidth: 1,
           height: 82,
           paddingBottom: 16,
-          paddingTop: 4,
+          paddingTop: 6,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
           shadowRadius: 8,
           elevation: 8,
         },
-        tabBarShowLabel: false,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+          marginTop: 2,
+        },
+        tabBarActiveTintColor: Colors.tabIconActive,
+        tabBarInactiveTintColor: Colors.tabIconInactive,
       }}
     >
       <Tab.Screen
@@ -76,19 +66,19 @@ export function AppTabs() {
         component={HomeScreen}
         options={{
           title: "PhysioGuide AI",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🏠" label="Inicio" focused={focused} />
-          ),
+          tabBarLabel: "Inicio",
+          tabBarIcon: ({ focused }) =>
+            tabIcon("home-outline", "home", focused),
         }}
       />
       <Tab.Screen
         name="AIInquiries"
         component={AIInquiriesScreen}
         options={{
-          title: "Consulta IA",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🤖" label="IA" focused={focused} />
-          ),
+          title: "Consulta",
+          tabBarLabel: "Consulta",
+          tabBarIcon: ({ focused }) =>
+            tabIcon("chatbubble-ellipses-outline", "chatbubble-ellipses", focused),
         }}
       />
       <Tab.Screen
@@ -96,9 +86,9 @@ export function AppTabs() {
         component={ContactScreen}
         options={{
           title: "Contacto",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="💬" label="Contacto" focused={focused} />
-          ),
+          tabBarLabel: "Contacto",
+          tabBarIcon: ({ focused }) =>
+            tabIcon("call-outline", "call", focused),
         }}
       />
       <Tab.Screen
@@ -106,9 +96,9 @@ export function AppTabs() {
         component={ProfileScreen}
         options={{
           title: "Perfil",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="👤" label="Perfil" focused={focused} />
-          ),
+          tabBarLabel: "Perfil",
+          tabBarIcon: ({ focused }) =>
+            tabIcon("person-outline", "person", focused),
         }}
       />
     </Tab.Navigator>

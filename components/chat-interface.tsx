@@ -424,7 +424,21 @@ export function ChatInterface() {
                         : "bg-white border border-blue-100 text-slate-800 rounded-bl-sm shadow-sm"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === "user" ? (
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    ) : (
+                      <div className="whitespace-pre-wrap">
+                        {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+                          part.startsWith("**") && part.endsWith("**") ? (
+                            <strong key={i} className="font-bold text-blue-700">
+                              {part.slice(2, -2)}
+                            </strong>
+                          ) : (
+                            <span key={i}>{part}</span>
+                          )
+                        )}
+                      </div>
+                    )}
                     {msg.role === "assistant" && (
                       <p className="mt-2 text-xs text-slate-400">⚠️ Orientación informativa, no diagnóstico médico.</p>
                     )}

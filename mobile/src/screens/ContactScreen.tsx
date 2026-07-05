@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -13,9 +14,16 @@ import {
 } from "react-native";
 import { Colors } from "../lib/colors";
 
-const contactMethods = [
-  { id: "email", icon: "✉️", label: "Correo electrónico", value: "at@physioguidea.com" },
-  { id: "phone", icon: "📞", label: "Teléfono / WhatsApp", value: "+34 600 000 000" },
+type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+
+const contactMethods: {
+  id: string;
+  icon: IoniconsName;
+  label: string;
+  value: string;
+}[] = [
+  { id: "email", icon: "mail-outline", label: "Correo electrónico", value: "at@physioguidea.com" },
+  { id: "phone", icon: "call-outline", label: "Teléfono / WhatsApp", value: "+34 600 000 000" },
 ];
 
 export function ContactScreen() {
@@ -35,7 +43,9 @@ export function ContactScreen() {
   if (sent) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.sentIcon}>📨</Text>
+        <View style={styles.sentIconCircle}>
+          <Ionicons name="checkmark" size={36} color={Colors.white} />
+        </View>
         <Text style={styles.sentTitle}>Mensaje enviado</Text>
         <Text style={styles.sentBody}>
           Tu entrenador atlético recibirá tu mensaje y te responderá lo antes posible.
@@ -63,7 +73,7 @@ export function ContactScreen() {
           Contacta directamente con tu entrenador atlético.
         </Text>
 
-        <Text style={styles.sectionLabel}>Métodos de contacto directo</Text>
+        <Text style={styles.sectionLabel}>Contacto directo</Text>
         {contactMethods.map((m) => (
           <Pressable
             key={m.id}
@@ -76,12 +86,14 @@ export function ContactScreen() {
               else Linking.openURL(`tel:${m.value.replace(/\s/g, "")}`);
             }}
           >
-            <Text style={styles.contactIcon}>{m.icon}</Text>
+            <View style={styles.contactIconCircle}>
+              <Ionicons name={m.icon} size={20} color={Colors.primary} />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.contactLabel}>{m.label}</Text>
               <Text style={styles.contactValue}>{m.value}</Text>
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
           </Pressable>
         ))}
 
@@ -122,7 +134,10 @@ export function ContactScreen() {
           {sending ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.sendBtnText}>Enviar mensaje</Text>
+            <View style={styles.sendBtnInner}>
+              <Ionicons name="send" size={16} color={Colors.white} />
+              <Text style={styles.sendBtnText}>Enviar mensaje</Text>
+            </View>
           )}
         </Pressable>
       </ScrollView>
@@ -145,8 +160,7 @@ const styles = StyleSheet.create({
     fontSize: 14, color: Colors.textSecondary, marginBottom: 24, lineHeight: 20,
   },
   sectionLabel: {
-    fontSize: 14, fontWeight: "700", color: Colors.text,
-    marginBottom: 10,
+    fontSize: 14, fontWeight: "700", color: Colors.text, marginBottom: 10,
   },
   contactCard: {
     flexDirection: "row", alignItems: "center", gap: 12,
@@ -155,17 +169,15 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
   },
   contactCardPressed: { backgroundColor: Colors.primaryLight },
-  contactIcon: { fontSize: 24 },
-  contactLabel: { fontSize: 13, color: Colors.textSecondary, marginBottom: 2 },
+  contactIconCircle: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: Colors.primaryLight,
+    alignItems: "center", justifyContent: "center",
+  },
+  contactLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
   contactValue: { fontSize: 15, fontWeight: "600", color: Colors.text },
-  chevron: { fontSize: 22, color: Colors.textLight, fontWeight: "300" },
-  divider: {
-    height: 1, backgroundColor: Colors.border,
-    marginVertical: 24,
-  },
-  fieldLabel: {
-    fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 6,
-  },
+  divider: { height: 1, backgroundColor: Colors.border, marginVertical: 24 },
+  fieldLabel: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 6 },
   input: {
     borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12,
@@ -181,8 +193,14 @@ const styles = StyleSheet.create({
   },
   sendBtnPressed: { backgroundColor: Colors.primaryDark },
   sendBtnDisabled: { backgroundColor: Colors.textLight, shadowOpacity: 0 },
+  sendBtnInner: { flexDirection: "row", alignItems: "center", gap: 8 },
   sendBtnText: { color: Colors.white, fontSize: 16, fontWeight: "700" },
-  sentIcon: { fontSize: 56, marginBottom: 16 },
+  sentIconCircle: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: Colors.primary,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 20,
+  },
   sentTitle: { fontSize: 22, fontWeight: "700", color: Colors.text, marginBottom: 8 },
   sentBody: {
     fontSize: 15, color: Colors.textSecondary,

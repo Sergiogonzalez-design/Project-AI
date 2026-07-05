@@ -1,24 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../lib/colors";
-
-const features = [
-  {
-    icon: "🤖",
-    title: "Consulta con IA",
-    desc: "Responde preguntas sobre tu lesión y obtén orientación inmediata.",
-  },
-  {
-    icon: "👤",
-    title: "Contacta con tu AT",
-    desc: "Comunícate directamente con tu entrenador atlético de referencia.",
-  },
-  {
-    icon: "📋",
-    title: "Historial personal",
-    desc: "Guarda y revisa todas tus consultas anteriores.",
-  },
-];
 
 export function HomeScreen() {
   return (
@@ -27,9 +10,10 @@ export function HomeScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
+      {/* Header row */}
       <View style={styles.heroRow}>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeLetter}>P</Text>
+          <Ionicons name="fitness" size={26} color={Colors.white} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.heroTitle}>PhysioGuide AI</Text>
@@ -37,29 +21,26 @@ export function HomeScreen() {
         </View>
       </View>
 
+      {/* Banner */}
       <View style={styles.banner}>
         <Text style={styles.bannerTitle}>¿Tienes una molestia?</Text>
         <Text style={styles.bannerBody}>
-          Usa la IA para orientarte antes de visitar a tu entrenador atlético.
+          Usa la consulta para orientarte antes de visitar a tu entrenador atlético.
           No sustituye la valoración profesional.
         </Text>
       </View>
 
-      <Text style={styles.sectionTitle}>¿Qué puedes hacer?</Text>
-      {features.map((f) => (
-        <View key={f.title} style={styles.featureCard}>
-          <Text style={styles.featureIcon}>{f.icon}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.featureTitle}>{f.title}</Text>
-            <Text style={styles.featureDesc}>{f.desc}</Text>
-          </View>
-        </View>
-      ))}
-
+      {/* Disclaimer */}
       <View style={styles.disclaimer}>
+        <Ionicons
+          name="warning-outline"
+          size={18}
+          color="#92400E"
+          style={{ marginTop: 1 }}
+        />
         <Text style={styles.disclaimerText}>
-          ⚠️  Esta app proporciona orientación informativa. Ante síntomas
-          graves o urgentes acude a urgencias o a tu médico.
+          Esta app proporciona orientación informativa. Ante síntomas graves o urgentes
+          acude a urgencias o a tu médico.
         </Text>
       </View>
     </ScrollView>
@@ -95,11 +76,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  heroBadgeLetter: {
-    color: Colors.white,
-    fontSize: 24,
-    fontWeight: "700",
-  },
   heroTitle: {
     fontSize: 22,
     fontWeight: "700",
@@ -115,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: 18,
     padding: 20,
-    marginBottom: 28,
+    marginBottom: 20,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -133,47 +109,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: Colors.text,
-    marginBottom: 14,
-  },
-  featureCard: {
+  disclaimer: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 14,
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  featureIcon: {
-    fontSize: 26,
-    marginTop: 2,
-  },
-  featureTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.text,
-    marginBottom: 2,
-  },
-  featureDesc: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-  disclaimer: {
-    marginTop: 20,
-    backgroundColor: "#FEF9C3",
+    gap: 10,
+    backgroundColor: "#FEF3C7",
     borderRadius: 12,
     padding: 14,
   },
   disclaimerText: {
+    flex: 1,
     fontSize: 12,
-    color: "#713F12",
+    color: "#92400E",
     lineHeight: 17,
   },
 });
