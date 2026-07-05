@@ -106,14 +106,17 @@ export function ChatInterface() {
     ].filter(Boolean).join("\n");
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
       const title = `${area} — ${new Date().toLocaleDateString("es-ES")}`;
-      const { data: conv } = await supabase
-        .from("conversations").insert({ title }).select("id, title, created_at").single();
-      if (!conv) throw new Error("No se pudo crear la consulta.");
+      const { data: conv, error: convErr } = await supabase
+        .from("conversations").insert({ title, user_id: user.id }).select("id, title, created_at").single();
+      if (!conv) throw new Error(convErr?.message ?? "No se pudo crear la consulta.");
 
-      const { data: userMsg } = await supabase
+      const { data: userMsg, error: userMsgErr } = await supabase
         .from("messages").insert({ conversation_id: conv.id, role: "user", content: userContent })
         .select("id, role, content").single();
+      if (!userMsg) throw new Error(userMsgErr?.message ?? "Error guardando mensaje.");
 
       const aiText = await callAI(area, onset.trim(), pain, hadTraumaVal, description.trim(), []);
 
