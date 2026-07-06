@@ -11,6 +11,7 @@ const links = [
   { href: "/consulta", label: "Consulta" },
   { href: "/conocimientos", label: "Conocimientos" },
   { href: "/sobre-nosotros", label: "Sobre Nosotros" },
+  { href: "/perfil", label: "Perfil" },
 ] as const;
 
 export function SiteNavbar() {

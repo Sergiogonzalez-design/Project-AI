@@ -8,11 +8,6 @@ type Conversation = { id: string; title: string; created_at: string };
 
 const SUPABASE_URL = "https://klxlzzgrymkexvuelzex.supabase.co";
 
-const bodyAreas = [
-  "Hombro", "Codo", "Muñeca / Mano", "Espalda alta",
-  "Espalda baja", "Cadera", "Rodilla", "Tobillo / Pie", "Cuello", "Otro",
-];
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }
@@ -307,24 +302,15 @@ export function ChatInterface() {
                   Describe tus síntomas. La IA analizará tu caso y podrás continuar la conversación.
                 </p>
 
-                {/* Body area chips */}
+                {/* Body area text input */}
                 <label className="mb-2 block text-sm font-semibold text-slate-700">Zona del cuerpo</label>
-                <div className="mb-5 flex flex-wrap gap-2">
-                  {bodyAreas.map((a) => (
-                    <button
-                      key={a}
-                      type="button"
-                      onClick={() => setArea(a)}
-                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                        area === a
-                          ? "border-blue-600 bg-blue-600 text-white"
-                          : "border-blue-200 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
-                      }`}
-                    >
-                      {a}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="text"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder="Ej: Hombro derecho, rodilla izquierda, espalda baja…"
+                  className="mb-5 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
 
                 <label className="mb-2 block text-sm font-semibold text-slate-700">¿Cómo y cuándo empezó?</label>
                 <textarea
@@ -378,7 +364,7 @@ export function ChatInterface() {
                   type="button" onClick={handleFormSubmit} disabled={loading}
                   className="w-full rounded-xl bg-blue-600 py-4 text-sm font-bold text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
                 >
-                  {loading ? "Analizando…" : "Enviar consulta"}
+                  Enviar consulta
                 </button>
               </div>
             </div>
@@ -491,6 +477,39 @@ export function ChatInterface() {
           </div>
         )}
       </div>
+
+      {/* ── Loading modal ── */}
+      {loading && view === "form" && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white px-8 py-10 text-center shadow-2xl">
+            {/* Spinner */}
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
+              <svg
+                className="h-8 w-8 animate-spin text-blue-600"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12" cy="12" r="10"
+                  stroke="currentColor" strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
+                />
+              </svg>
+            </div>
+            <p className="text-base font-semibold text-slate-800">
+              Nuestra IA está analizando tu caso
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Estaremos contigo en breve.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

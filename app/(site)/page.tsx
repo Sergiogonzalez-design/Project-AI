@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { Bot, ClipboardList, MessagesSquare, Newspaper } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -74,17 +75,17 @@ export default async function HomePage() {
           <div className="grid gap-4 sm:gap-6 sm:grid-cols-3">
             {[
               {
-                icon: "📝",
+                Icon: ClipboardList,
                 title: "Describe tus síntomas",
                 desc: "Rellena el formulario de consulta con la zona afectada, el dolor y cómo empezó.",
               },
               {
-                icon: "🤖",
+                Icon: Bot,
                 title: "La IA analiza tu caso",
                 desc: "Nuestro modelo, entrenado con protocolos de fisioterapia, te orienta de inmediato.",
               },
               {
-                icon: "💬",
+                Icon: MessagesSquare,
                 title: "Continúa la conversación",
                 desc: "Haz preguntas adicionales y revisa tus consultas anteriores cuando quieras.",
               },
@@ -93,7 +94,9 @@ export default async function HomePage() {
                 key={s.title}
                 className="rounded-2xl border border-blue-100 bg-white p-6 text-center shadow-sm"
               >
-                <div className="mb-4 text-4xl">{s.icon}</div>
+                <div className="mb-4 flex justify-center">
+                  <s.Icon className="h-10 w-10 text-blue-600" strokeWidth={1.5} />
+                </div>
                 <h3 className="mb-2 text-base font-semibold text-slate-800">
                   {s.title}
                 </h3>
@@ -106,8 +109,9 @@ export default async function HomePage() {
 
       {/* Disclaimer */}
       <section className="bg-amber-50 px-6 py-6">
-        <div className="mx-auto max-w-3xl rounded-xl border border-amber-200 px-5 py-4 text-center text-sm text-amber-800">
-          ⚠️ PhysioGuide AI proporciona orientación informativa, no diagnósticos médicos. Ante síntomas graves acude a urgencias o a tu médico.
+        <div className="mx-auto max-w-3xl rounded-xl border border-amber-200 px-5 py-4 text-center text-sm text-amber-800 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          PhysioGuide AI proporciona orientación informativa, no diagnósticos médicos. Ante síntomas graves acude a urgencias o a tu médico.
         </div>
       </section>
 
@@ -119,7 +123,7 @@ export default async function HomePage() {
           </h2>
           {news.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-blue-200 bg-white px-8 py-14 text-center text-slate-400">
-              <p className="text-4xl mb-3">📰</p>
+              <Newspaper className="mx-auto mb-3 h-10 w-10 text-blue-200" strokeWidth={1.5} />
               <p className="text-sm">Próximamente publicaremos novedades y artículos del equipo.</p>
             </div>
           ) : (
