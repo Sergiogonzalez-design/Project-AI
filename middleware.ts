@@ -58,7 +58,38 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (pathname === "/login" || pathname === "/signup")) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const destination = profile?.onboarding_completed ? "/" : "/onboarding";
+    return NextResponse.redirect(new URL(destination, request.url));
+  }
+
+  if (user && pathname !== "/onboarding" && !pathname.startsWith("/auth/")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile?.onboarding_completed) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
+
+  if (user && pathname === "/onboarding") {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.onboarding_completed) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   // Admin route: only the owner's email can access

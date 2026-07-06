@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { formatAthleteProfileContext } from "@/lib/format-athlete-profile";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -44,6 +45,16 @@ export async function POST(request: NextRequest) {
   ]
     .filter(Boolean)
     .join("\n");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select(
+      "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
+    )
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const athleteContext = formatAthleteProfileContext(profile);
 
   const embeddingResponse = await openai.embeddings.create({
     model: "text-embedding-3-small",
@@ -93,9 +104,15 @@ REGLAS DE FORMATO:
 - Para listas usa guiones (-) nunca asteriscos (*)
 - Lenguaje sencillo, no técnico`;
 
-  const userMessage = context
-    ? `El usuario tiene los siguientes síntomas:\n${queryText}\n\nInformación relevante de los documentos:\n${context}`
-    : `El usuario tiene los siguientes síntomas:\n${queryText}\n\n(No se encontró información específica en la base de conocimientos. Responde con tus conocimientos generales de fisioterapia.)`;
+  const userMessage = [
+    athleteContext ? `Perfil del paciente:\n${athleteContext}` : "",
+    `Síntomas actuales:\n${queryText}`,
+    context
+      ? `Información relevante de los documentos:\n${context}`
+      : "(No se encontró información específica en la base de conocimientos. Responde con tus conocimientos generales de fisioterapia.)",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",

@@ -66,7 +66,41 @@ Deno.serve(async (req) => {
           .filter(Boolean)
           .join("\n");
 
-    // Get relevant document context (skip for very short follow-ups)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select(
+        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
+      )
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const athleteContext = profile
+      ? [
+          profile.display_name ? `Nombre: ${profile.display_name}` : "",
+          profile.age ? `Edad: ${profile.age} años` : "",
+          profile.sex ? `Sexo: ${profile.sex}` : "",
+          profile.height_cm ? `Altura: ${profile.height_cm} cm` : "",
+          profile.weight_kg ? `Peso: ${profile.weight_kg} kg` : "",
+          profile.dominant_hand ? `Mano dominante: ${profile.dominant_hand}` : "",
+          profile.dominant_foot ? `Pie dominante: ${profile.dominant_foot}` : "",
+          profile.primary_sport ? `Deporte principal: ${profile.primary_sport}` : "",
+          profile.sport_position ? `Posición: ${profile.sport_position}` : "",
+          profile.competitive_level ? `Nivel competitivo: ${profile.competitive_level}` : "",
+          profile.sessions_per_week != null
+            ? `Sesiones de entrenamiento por semana: ${profile.sessions_per_week}`
+            : "",
+          profile.hours_per_week != null
+            ? `Horas de entrenamiento por semana: ${profile.hours_per_week}`
+            : "",
+          profile.current_season ? `Temporada actual: ${profile.current_season}` : "",
+          profile.performance_goals?.length
+            ? `Objetivos: ${profile.performance_goals.join(", ")}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : "";
+
     let context = "";
     if (queryText.length > 10) {
       const embeddingRes = await openai.embeddings.create({
@@ -115,12 +149,20 @@ REGLAS DE FORMATO:
     const history: HistoryMessage[] = conversationHistory ?? [];
 
     const userMessage = isFollowUp
-      ? (context
-          ? `${queryText}\n\nInformación relevante de los documentos:\n${context}`
-          : queryText)
-      : (context
-          ? `El usuario tiene los siguientes síntomas:\n${queryText}\n\nInformación relevante de los documentos:\n${context}`
-          : `El usuario tiene los siguientes síntomas:\n${queryText}\n\n(No se encontró información específica. Responde con tus conocimientos generales de fisioterapia.)`);
+      ? [
+          athleteContext ? `Perfil del paciente:\n${athleteContext}` : "",
+          queryText,
+          context ? `Información relevante de los documentos:\n${context}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+      : [
+          athleteContext ? `Perfil del paciente:\n${athleteContext}` : "",
+          `Síntomas actuales:\n${queryText}`,
+          context ? `Información relevante de los documentos:\n${context}` : "(No se encontró información específica en documentos. Responde con tus conocimientos generales de fisioterapia.)",
+        ]
+          .filter(Boolean)
+          .join("\n\n");
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",

@@ -27,7 +27,7 @@ export function SignupForm() {
         options: { emailRedirectTo: `${origin}/auth/callback` },
       });
       if (signError) { setError(signError.message); return; }
-      if (data.session) { router.replace("/"); router.refresh(); return; }
+      if (data.session) { router.replace("/onboarding"); router.refresh(); return; }
       setInfo("Revisa tu correo para confirmar la cuenta.");
     } finally {
       setLoading(false);
