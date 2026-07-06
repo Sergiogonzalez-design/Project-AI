@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -11,6 +11,11 @@ import {
   TextInput,
   View,
 } from "react-native";
+import {
+  AuthTextField,
+  authEmailProps,
+  authPasswordProps,
+} from "./AuthTextField";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
 
@@ -25,6 +30,8 @@ export function SignupScreen({ onSwitch }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmRef = useRef<TextInput>(null);
 
   async function handleSignup() {
     setError(null);
@@ -44,7 +51,7 @@ export function SignupScreen({ onSwitch }: Props) {
     setLoading(true);
     try {
       const { data, error: signError } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
       if (signError) {
@@ -64,11 +71,14 @@ export function SignupScreen({ onSwitch }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
@@ -77,39 +87,40 @@ export function SignupScreen({ onSwitch }: Props) {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Correo electrónico</Text>
-          <TextInput
-            style={styles.input}
+          <AuthTextField
+            label="Correo electrónico"
             placeholder="tu@correo.com"
-            placeholderTextColor="#94A3B8"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
             value={email}
             onChangeText={setEmail}
+            editable={!loading}
+            {...authEmailProps}
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Contraseña</Text>
-          <TextInput
-            style={styles.input}
+          <View style={{ height: 12 }} />
+
+          <AuthTextField
+            label="Contraseña"
             placeholder="Mínimo 6 caracteres"
-            placeholderTextColor="#94A3B8"
-            secureTextEntry
-            autoComplete="new-password"
             value={password}
             onChangeText={setPassword}
+            editable={!loading}
+            {...authPasswordProps}
+            ref={passwordRef}
+            onSubmitEditing={() => confirmRef.current?.focus()}
           />
 
-          <Text style={[styles.label, { marginTop: 16 }]}>
-            Repite la contraseña
-          </Text>
-          <TextInput
-            style={styles.input}
+          <View style={{ height: 12 }} />
+
+          <AuthTextField
+            label="Repite la contraseña"
             placeholder="Repite la contraseña"
-            placeholderTextColor="#94A3B8"
-            secureTextEntry
             value={confirm}
             onChangeText={setConfirm}
+            editable={!loading}
+            {...authPasswordProps}
+            ref={confirmRef}
+            onSubmitEditing={handleSignup}
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}

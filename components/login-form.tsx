@@ -21,7 +21,10 @@ export function LoginForm({ nextPath }: LoginFormProps) {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error: signError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
       if (signError) { setError(signError.message); return; }
       const safeNext =
         nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/";

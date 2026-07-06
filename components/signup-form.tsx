@@ -23,7 +23,8 @@ export function SignupForm() {
       const supabase = createClient();
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const { data, error: signError } = await supabase.auth.signUp({
-        email, password,
+        email: email.trim().toLowerCase(),
+        password,
         options: { emailRedirectTo: `${origin}/auth/callback` },
       });
       if (signError) { setError(signError.message); return; }
