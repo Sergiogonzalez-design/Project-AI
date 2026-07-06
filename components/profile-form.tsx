@@ -25,6 +25,7 @@ export function ProfileForm() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -255,27 +256,43 @@ export function ProfileForm() {
               )}
             </div>
 
-            {/* Divider */}
+            {/* Password change — collapsible */}
             <div className="border-t border-slate-100 pt-2">
-              <p className="mb-4 text-sm font-semibold text-slate-500">
-                Cambiar contraseña (opcional)
-              </p>
-              <div className="space-y-4">
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Nueva contraseña"
-                  className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirmar contraseña"
-                  className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordFields((v) => !v);
+                  if (showPasswordFields) { setNewPassword(""); setConfirmPassword(""); }
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-1 py-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
+              >
+                <span>Cambiar contraseña</span>
+                <svg
+                  className={`h-4 w-4 transition-transform ${showPasswordFields ? "rotate-180" : ""}`}
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                >
+                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {showPasswordFields && (
+                <div className="mt-4 space-y-4">
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Nueva contraseña (mín. 6 caracteres)"
+                    className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirmar contraseña"
+                    className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
