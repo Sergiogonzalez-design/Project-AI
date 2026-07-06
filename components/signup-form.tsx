@@ -40,7 +40,7 @@ export function SignupForm() {
       className="w-full max-w-sm rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8"
     >
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">Crear cuenta</h1>
           <p className="mt-1 text-sm text-slate-500">Regístrate para usar PhysioGuide AI</p>

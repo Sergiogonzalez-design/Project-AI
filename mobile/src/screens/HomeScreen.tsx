@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../lib/colors";
 
 export function HomeScreen() {
@@ -12,9 +12,7 @@ export function HomeScreen() {
     >
       {/* Header row */}
       <View style={styles.heroRow}>
-        <View style={styles.heroBadge}>
-          <Ionicons name="fitness" size={26} color={Colors.white} />
-        </View>
+        <Image source={require("../../assets/logo.png")} style={styles.heroLogo} />
         <View style={{ flex: 1 }}>
           <Text style={styles.heroTitle}>PhysioGuide AI</Text>
           <Text style={styles.heroSub}>Tu guía de fisioterapia inteligente</Text>
@@ -63,18 +61,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 8,
   },
-  heroBadge: {
+  heroLogo: {
     width: 52,
     height: 52,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
+    resizeMode: "contain",
   },
   heroTitle: {
     fontSize: 22,

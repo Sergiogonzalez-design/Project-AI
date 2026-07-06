@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -12,6 +13,10 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Colors } from "../lib/colors";
+import { supabase } from "../lib/supabase";
+
+const EDGE_URL = "https://klxlzzgrymkexvuelzex.supabase.co/functions/v1/ai-consult";
 
 /** Renders a string that may contain **bold** sections as React Native Text. */
 function BoldText({ text, style, boldStyle }: {
@@ -35,15 +40,7 @@ function BoldText({ text, style, boldStyle }: {
     </Text>
   );
 }
-import { Colors } from "../lib/colors";
-import { supabase } from "../lib/supabase";
 
-const EDGE_URL = "https://klxlzzgrymkexvuelzex.supabase.co/functions/v1/ai-consult";
-
-const bodyAreas = [
-  "Hombro", "Codo", "Muñeca / Mano", "Espalda alta",
-  "Espalda baja", "Cadera", "Rodilla", "Tobillo / Pie", "Cuello", "Otro",
-];
 const painLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 type Message = { id: string; role: "user" | "assistant"; content: string };
@@ -105,7 +102,7 @@ export function AIInquiriesScreen() {
 
   async function handleFormSubmit() {
     setFormError(null);
-    if (!area) { setFormError("Selecciona la zona del cuerpo."); return; }
+    if (!area.trim()) { setFormError("Indica la zona del cuerpo."); return; }
     if (!onset.trim()) { setFormError("Describe cómo y cuándo empezó."); return; }
     if (hadTrauma === "Sí" && !traumaDetail.trim()) {
       setFormError("Describe el golpe o gesto brusco."); return;
@@ -213,19 +210,13 @@ export function AIInquiriesScreen() {
           </Text>
 
           <Text style={styles.sectionLabel}>Zona del cuerpo</Text>
-          <View style={styles.chipGrid}>
-            {bodyAreas.map((a) => (
-              <Pressable
-                key={a}
-                style={[styles.chip, area === a && styles.chipSelected]}
-                onPress={() => setArea(a)}
-              >
-                <Text style={[styles.chipText, area === a && styles.chipTextSelected]}>
-                  {a}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Ej: Hombro derecho, rodilla izquierda..."
+            placeholderTextColor={Colors.textLight}
+            value={area}
+            onChangeText={setArea}
+          />
 
           <Text style={styles.sectionLabel}>¿Cómo y cuándo empezó?</Text>
           <TextInput
@@ -299,13 +290,19 @@ export function AIInquiriesScreen() {
             onPress={handleFormSubmit}
             disabled={submitting}
           >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitBtnText}>Enviar consulta</Text>
-            )}
+            <Text style={styles.submitBtnText}>Enviar consulta</Text>
           </Pressable>
         </ScrollView>
+
+        <Modal visible={submitting} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.modalTitle}>Nuestra IA está analizando tu caso</Text>
+              <Text style={styles.modalSub}>Estaremos contigo en breve.</Text>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     );
   }
@@ -475,6 +472,21 @@ const styles = StyleSheet.create({
   },
   submitBtnPressed: { backgroundColor: Colors.primaryDark },
   submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: "700" },
+  modalOverlay: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center", justifyContent: "center", padding: 24,
+  },
+  modalBox: {
+    width: "100%", maxWidth: 320, backgroundColor: Colors.white,
+    borderRadius: 20, padding: 28, alignItems: "center",
+  },
+  modalTitle: {
+    marginTop: 16, fontSize: 16, fontWeight: "700",
+    color: Colors.text, textAlign: "center",
+  },
+  modalSub: {
+    marginTop: 8, fontSize: 14, color: Colors.textSecondary, textAlign: "center",
+  },
 
   // Chat styles
   chatTopBar: {

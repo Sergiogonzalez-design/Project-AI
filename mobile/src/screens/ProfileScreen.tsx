@@ -5,31 +5,31 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from "react-native";
+import { AthleteProfileCard } from "../components/AthleteProfileCard";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
-const preferences = [
-  { id: "notifications", label: "Notificaciones push" },
-  { id: "reminders", label: "Recordatorios de seguimiento" },
-];
-
 export function ProfileScreen() {
   const [user, setUser] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
-  const [prefs, setPrefs] = useState<Record<string, boolean>>({
-    notifications: true,
-    reminders: false,
-  });
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       setUser(data.user);
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", data.user.id)
+          .single();
+        setDisplayName(profile?.display_name ?? "");
+      }
       setLoading(false);
     });
   }, []);
@@ -60,9 +60,11 @@ export function ProfileScreen() {
     );
   }
 
-  const initials = user?.email
-    ? user.email.slice(0, 2).toUpperCase()
-    : "U";
+  const initials = displayName
+    ? displayName.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()
+    : user?.email
+      ? user.email.slice(0, 2).toUpperCase()
+      : "U";
 
   return (
     <ScrollView
@@ -77,11 +79,16 @@ export function ProfileScreen() {
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
-        <Text style={styles.email}>{user?.email ?? "—"}</Text>
+        <Text style={styles.email}>{displayName || user?.email || "—"}</Text>
+        {displayName ? (
+          <Text style={styles.emailSub}>{user?.email}</Text>
+        ) : null}
         <View style={styles.badge}>
           <Text style={styles.badgeText}>Plan gratuito</Text>
         </View>
       </View>
+
+      <AthleteProfileCard />
 
       {/* Account info */}
       <View style={styles.card}>
@@ -95,28 +102,6 @@ export function ProfileScreen() {
               : "—"
           }
         />
-      </View>
-
-      {/* Preferences */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Preferencias</Text>
-        {preferences.map((p, i) => (
-          <View
-            key={p.id}
-            style={[
-              styles.prefRow,
-              i < preferences.length - 1 && styles.prefRowBorder,
-            ]}
-          >
-            <Text style={styles.prefLabel}>{p.label}</Text>
-            <Switch
-              value={prefs[p.id]}
-              onValueChange={(v) => setPrefs((prev) => ({ ...prev, [p.id]: v }))}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.white}
-            />
-          </View>
-        ))}
       </View>
 
       {/* Sign out */}
@@ -174,7 +159,8 @@ const styles = StyleSheet.create({
   avatarText: {
     color: Colors.white, fontSize: 28, fontWeight: "700",
   },
-  email: { fontSize: 16, fontWeight: "600", color: Colors.text, marginBottom: 6 },
+  email: { fontSize: 16, fontWeight: "600", color: Colors.text, marginBottom: 2 },
+  emailSub: { fontSize: 13, color: Colors.textSecondary, marginBottom: 6 },
   badge: {
     backgroundColor: Colors.primaryLight,
     borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4,

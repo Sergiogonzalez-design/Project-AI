@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -47,9 +48,7 @@ export function LoginScreen({ onSwitch }: Props) {
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeLetter}>P</Text>
-          </View>
+          <Image source={require("../../assets/logo.png")} style={styles.logo} />
           <Text style={styles.title}>PhysioGuide AI</Text>
           <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
         </View>
@@ -121,24 +120,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
-  badge: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
+  logo: {
+    width: 72,
+    height: 72,
     marginBottom: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  badgeLetter: {
-    color: Colors.white,
-    fontSize: 28,
-    fontWeight: "700",
+    resizeMode: "contain",
   },
   title: {
     fontSize: 26,

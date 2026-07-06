@@ -147,7 +147,7 @@ export function OnboardingForm() {
   return (
     <div className="w-full max-w-lg rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8">
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">
             {step === 1 ? "Información básica" : "Perfil deportivo"}

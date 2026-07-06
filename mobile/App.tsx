@@ -1,35 +1,56 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { Session } from "@supabase/supabase-js";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { LoginScreen } from "./src/components/LoginScreen";
 import { SignupScreen } from "./src/components/SignupScreen";
 import { Colors } from "./src/lib/colors";
 import { supabase } from "./src/lib/supabase";
 import { AppTabs } from "./src/navigation/AppTabs";
+import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authView, setAuthView] = useState<"login" | "signup">("login");
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+
+  const checkOnboarding = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", userId)
+      .maybeSingle();
+    setOnboardingDone(data?.onboarding_completed ?? false);
+  }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
+      if (data.session?.user) {
+        await checkOnboarding(data.session.user.id);
+      } else {
+        setOnboardingDone(null);
+      }
       setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+      async (_event, newSession) => {
         setSession(newSession);
+        if (newSession?.user) {
+          await checkOnboarding(newSession.user.id);
+        } else {
+          setOnboardingDone(null);
+        }
       }
     );
 
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [checkOnboarding]);
 
-  if (loading) {
+  if (loading || (session && onboardingDone === null)) {
     return (
       <View style={styles.splash}>
         <ActivityIndicator size="large" color={Colors.primary} />
@@ -46,6 +67,15 @@ export default function App() {
         ) : (
           <SignupScreen onSwitch={() => setAuthView("login")} />
         )}
+      </>
+    );
+  }
+
+  if (!onboardingDone) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <OnboardingScreen onComplete={() => setOnboardingDone(true)} />
       </>
     );
   }

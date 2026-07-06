@@ -1,5 +1,6 @@
 "use client";
 
+import { AthleteProfileSection } from "@/components/athlete-profile-section";
 import { createClient } from "@/lib/supabase/client";
 import { Camera, Check, Loader2, Mail, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -321,6 +322,10 @@ export function ProfileForm() {
               "Guardar cambios"
             )}
           </button>
+        </div>
+
+        <div className="mt-6">
+          <AthleteProfileSection />
         </div>
       </div>
     </div>

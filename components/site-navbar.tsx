@@ -32,18 +32,15 @@ export function SiteNavbar() {
     <header className="sticky top-0 z-50 w-full border-b border-blue-100 bg-white shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-0 h-16">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center" aria-label="PhysioGuide AI — Inicio">
           <Image
-            src="/logo.png"
+            src="/logo-icon.png"
             alt="PhysioGuide AI"
-            width={44}
-            height={44}
+            width={52}
+            height={52}
             className="object-contain"
             priority
           />
-          <span className="text-base font-bold tracking-tight text-blue-700">
-            PhysioGuide AI
-          </span>
         </Link>
 
         {/* Desktop nav */}

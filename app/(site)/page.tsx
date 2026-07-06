@@ -32,13 +32,13 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-14 text-center text-white sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl">
-          <div className="mb-5 inline-flex items-center justify-center">
+          <div className="mb-5 inline-flex items-center justify-center rounded-2xl bg-white p-3 shadow-lg">
             <Image
-              src="/logo.png"
+              src="/logo-icon.png"
               alt="PhysioGuide AI"
               width={90}
               height={90}
-              className="object-contain drop-shadow-lg mix-blend-multiply sm:w-[120px] sm:h-[120px]"
+              className="object-contain sm:w-[120px] sm:h-[120px]"
               priority
             />
           </div>
