@@ -58,6 +58,14 @@ export function ProfileForm() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const MAX_MB = 5;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setError(`La imagen es demasiado grande. El tamaño máximo es ${MAX_MB} MB.`);
+      e.target.value = "";
+      return;
+    }
+    setError(null);
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   }
@@ -68,40 +76,58 @@ export function ProfileForm() {
       setError("Las contraseñas no coinciden.");
       return;
     }
+    if (newPassword && newPassword.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
     setSaving(true);
-    try {
-      let uploadedUrl = avatarUrl;
+    const errors: string[] = [];
 
+    try {
+      // 1. Avatar upload
+      let uploadedUrl = avatarUrl;
       if (avatarFile) {
-        const ext = avatarFile.name.split(".").pop();
+        const ext = avatarFile.name.split(".").pop() ?? "jpg";
         const path = `${userId}/avatar.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from("avatars")
           .upload(path, avatarFile, { upsert: true });
-        if (uploadErr) throw new Error(uploadErr.message);
-        uploadedUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}?t=${Date.now()}`;
+        if (uploadErr) {
+          errors.push(`Foto: ${uploadErr.message}`);
+        } else {
+          uploadedUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}?t=${Date.now()}`;
+          setAvatarUrl(uploadedUrl);
+          setAvatarFile(null);
+        }
       }
 
+      // 2. Profile row
       const { error: profileErr } = await supabase
         .from("profiles")
         .upsert({ id: userId, display_name: displayName.trim(), avatar_url: uploadedUrl, updated_at: new Date().toISOString() });
-      if (profileErr) throw new Error(profileErr.message);
+      if (profileErr) errors.push(`Perfil: ${profileErr.message}`);
 
+      // 3. Auth (email / password) — independent of avatar
       const authUpdates: { email?: string; password?: string } = {};
       if (newEmail && newEmail !== email) authUpdates.email = newEmail;
       if (newPassword) authUpdates.password = newPassword;
       if (Object.keys(authUpdates).length > 0) {
         const { error: authErr } = await supabase.auth.updateUser(authUpdates);
-        if (authErr) throw new Error(authErr.message);
-        if (authUpdates.email) setEmail(newEmail);
+        if (authErr) {
+          errors.push(`Cuenta: ${authErr.message}`);
+        } else {
+          if (authUpdates.email) setEmail(newEmail);
+          setNewPassword("");
+          setConfirmPassword("");
+        }
       }
 
-      setAvatarUrl(uploadedUrl);
-      setAvatarFile(null);
-      setNewPassword("");
-      setConfirmPassword("");
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      if (errors.length > 0) {
+        setError(errors.join(" · "));
+      } else {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar.");
     } finally {
@@ -234,7 +260,10 @@ export function ProfileForm() {
           {/* Error */}
           {error && (
             <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
+              {error
+                .replace("The object exceeded the maximum allowed size", "La imagen es demasiado grande (máx. 5 MB)")
+                .replace("New password should be different from the old password.", "La nueva contraseña debe ser diferente a la actual.")
+                .replace("Password should be at least 6 characters.", "La contraseña debe tener al menos 6 caracteres.")}
             </p>
           )}
 
