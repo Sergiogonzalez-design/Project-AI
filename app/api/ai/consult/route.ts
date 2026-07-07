@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     painLevel: number;
     hadTrauma: string;
     description: string;
+    symptomContext?: string;
   };
 
   const queryText = [
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
     `Nivel de dolor: ${body.painLevel}/10`,
     `Traumatismo: ${body.hadTrauma}`,
     body.description ? `Información adicional: ${body.description}` : "",
+    body.symptomContext ? `Detalles del caso:\n${body.symptomContext}` : "",
   ]
     .filter(Boolean)
     .join("\n");

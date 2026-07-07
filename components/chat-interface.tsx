@@ -1,15 +1,59 @@
 "use client";
 
+import {
+  ConsultaAdaptiveShoulder,
+  isLastShoulderSection,
+} from "@/components/consulta-adaptive-shoulder";
+import { ConsultaGenericFields } from "@/components/consulta-generic-fields";
+import { bodyPartLabel, type BodyPartId } from "@/lib/body-parts";
+import {
+  defaultGenericConsultaAnswers,
+  formatGenericConsulta,
+  validateGenericConsulta,
+  type GenericConsultaAnswers,
+} from "@/lib/consulta-generic";
+import {
+  defaultShoulderAdaptiveAnswers,
+  detectRedFlags,
+  formatShoulderAdaptive,
+  getVisibleShoulderSections,
+  validateShoulderAdaptive,
+  validateShoulderSection,
+  type ShoulderAdaptiveAnswers,
+} from "@/lib/consulta-shoulder-adaptive";
+import {
+  questionnaireForText,
+  questionnaireIntroMessage,
+} from "@/lib/detect-body-part";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef, useState } from "react";
 
 type Message = { id: string; role: "user" | "assistant"; content: string };
 type Conversation = { id: string; title: string; created_at: string };
+type Phase = "intro" | "questionnaire" | "followup";
 
 const SUPABASE_URL = "https://klxlzzgrymkexvuelzex.supabase.co";
+const WELCOME_MESSAGE = "¿Qué te duele? Cuéntanos en detalle qué te pasa.";
+const WELCOME_ID = "welcome";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
+
+function welcomeMessage(): Message {
+  return { id: WELCOME_ID, role: "assistant", content: WELCOME_MESSAGE };
+}
+
+function renderAssistantContent(content: string) {
+  return content.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={i} className="font-bold text-blue-700">
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
 }
 
 export function ChatInterface() {
@@ -18,27 +62,29 @@ export function ChatInterface() {
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeTitle, setActiveTitle] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [view, setView] = useState<"form" | "chat">("form");
-
-  const [area, setArea] = useState("");
-  const [onset, setOnset] = useState("");
-  const [pain, setPain] = useState(5);
-  const [hadTrauma, setHadTrauma] = useState<"No" | "Sí">("No");
-  const [traumaDetail, setTraumaDetail] = useState("");
-  const [description, setDescription] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [activeTitle, setActiveTitle] = useState("Nueva consulta");
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage()]);
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [initialMessage, setInitialMessage] = useState("");
+  const [questionnairePart, setQuestionnairePart] = useState<BodyPartId | "generic">("shoulder");
+  const [shoulderAnswers, setShoulderAnswers] = useState<ShoulderAdaptiveAnswers>(
+    defaultShoulderAdaptiveAnswers
+  );
+  const [genericAnswers, setGenericAnswers] = useState<GenericConsultaAnswers>(
+    defaultGenericConsultaAnswers
+  );
+  const [shoulderSectionIndex, setShoulderSectionIndex] = useState(0);
+  const [shoulderSectionError, setShoulderSectionError] = useState<string | null>(null);
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingModal, setLoadingModal] = useState(false);
 
-  // Desktop: sidebar collapse. Mobile: drawer overlay.
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => { loadConversations(); }, []);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading, phase]);
 
   async function loadConversations() {
     const { data } = await supabase
@@ -59,7 +105,7 @@ export function ChatInterface() {
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
     setMessages((data as Message[]) ?? []);
-    setView("chat");
+    setPhase("followup");
     setLoading(false);
   }
 
@@ -68,126 +114,265 @@ export function ChatInterface() {
     return data.session;
   }
 
-  async function callAI(
-    bodyArea: string, onsetType: string, painLevel: number,
-    hadTraumaVal: string, desc: string,
-    history: { role: string; content: string }[]
-  ): Promise<string> {
+  async function callAI(body: Record<string, unknown>): Promise<string> {
     const session = await getSession();
     const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-consult`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
-      body: JSON.stringify({ bodyArea, onsetType, painLevel, hadTrauma: hadTraumaVal, description: desc, conversationHistory: history }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token ?? ""}`,
+      },
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error("Error en la IA");
-    const data = await res.json() as { answer: string };
+    const data = (await res.json()) as { answer: string };
     return data.answer;
   }
 
-  async function handleFormSubmit() {
-    setFormError(null);
-    if (!area) { setFormError("Selecciona la zona del cuerpo."); return; }
-    if (!onset.trim()) { setFormError("Describe cómo y cuándo empezó."); return; }
-    if (hadTrauma === "Sí" && !traumaDetail.trim()) { setFormError("Describe el golpe o gesto brusco."); return; }
-    setLoading(true);
+  function conversationTitleFromText(text: string): string {
+    const short = text.trim().slice(0, 40);
+    return short.length < text.trim().length ? `${short}…` : short;
+  }
 
-    const hadTraumaVal = hadTrauma === "No" ? "No" : `Sí: ${traumaDetail.trim()}`;
-    const userContent = [
-      `Zona afectada: ${area}`,
-      `Cómo empezó: ${onset.trim()}`,
-      `Nivel de dolor: ${pain}/10`,
-      `Traumatismo: ${hadTraumaVal}`,
-      description.trim() ? `Detalles: ${description.trim()}` : "",
-    ].filter(Boolean).join("\n");
+  function buildSymptomContext(): string {
+    const introBlock = `Descripción inicial del paciente:\n${initialMessage}`;
+    if (questionnairePart === "shoulder") {
+      return [introBlock, "", formatShoulderAdaptive(shoulderAnswers, introBlock)].join("\n");
+    }
+    return formatGenericConsulta(genericAnswers, introBlock);
+  }
+
+  async function handleIntroSubmit() {
+    if (!input.trim() || loading || phase !== "intro") return;
+    const text = input.trim();
+    setInput("");
+
+    const { part } = questionnaireForText(text);
+    const introBotMsg = questionnaireIntroMessage(part);
+
+    setInitialMessage(text);
+    setQuestionnairePart(part);
+    setShoulderAnswers(defaultShoulderAdaptiveAnswers());
+    setGenericAnswers(defaultGenericConsultaAnswers());
+    setShoulderSectionIndex(0);
+    setShoulderSectionError(null);
+
+    setMessages((prev) => [
+      ...prev,
+      { id: `user-${Date.now()}`, role: "user", content: text },
+      { id: `q-intro-${Date.now()}`, role: "assistant", content: introBotMsg },
+    ]);
+    setPhase("questionnaire");
+  }
+
+  async function handleQuestionnaireSubmit() {
+    if (loading) return;
+
+    if (questionnairePart === "shoulder") {
+      const sections = getVisibleShoulderSections(shoulderAnswers);
+      const lastSection = sections[sections.length - 1];
+      if (lastSection) {
+        const sectionErr = validateShoulderSection(lastSection, shoulderAnswers);
+        if (sectionErr) {
+          setShoulderSectionError(sectionErr);
+          setShoulderSectionIndex(sections.length - 1);
+          return;
+        }
+      }
+      const err = validateShoulderAdaptive(shoulderAnswers);
+      if (err) {
+        setShoulderSectionError(err);
+        return;
+      }
+    } else {
+      const err = validateGenericConsulta(genericAnswers);
+      if (err) {
+        setShoulderSectionError(err);
+        return;
+      }
+    }
+
+    setLoading(true);
+    setLoadingModal(true);
+
+    const symptomContext = buildSymptomContext();
+    const { part, detected } = questionnaireForText(initialMessage);
+    const areaLabel =
+      part === "shoulder"
+        ? "Hombro"
+        : detected.length > 0
+          ? detected.map((p) => bodyPartLabel(p)).join(", ")
+          : conversationTitleFromText(initialMessage);
+    const painLevel =
+      questionnairePart === "shoulder"
+        ? shoulderAnswers.intensidad_dolor
+        : genericAnswers.intensidad_dolor;
+    const onsetType =
+      questionnairePart === "shoulder"
+        ? `${shoulderAnswers.inicio} — ${shoulderAnswers.evolucion}. Mecanismo: ${shoulderAnswers.mecanismo}`
+        : `${genericAnswers.inicio} — ${genericAnswers.evolucion}. Mecanismo: ${genericAnswers.mecanismo}`;
+    const hadTraumaVal =
+      questionnairePart === "shoulder"
+        ? shoulderAnswers.mecanismo === "Caída" || shoulderAnswers.mecanismo === "Golpe directo"
+          ? `Sí: ${shoulderAnswers.mecanismo}`
+          : "No"
+        : genericAnswers.mecanismo === "Caída" || genericAnswers.mecanismo === "Golpe directo"
+          ? `Sí: ${genericAnswers.mecanismo}`
+          : "No";
+    const redFlagsUrgent =
+      questionnairePart === "shoulder"
+        ? detectRedFlags(shoulderAnswers).urgent
+        : genericAnswers.rf_deformidad === "Sí" ||
+          genericAnswers.rf_fiebre === "Sí" ||
+          genericAnswers.rf_perdida_sensibilidad === "Sí";
+    const contextForAi = redFlagsUrgent
+      ? `⚠️ PRIORIDAD ALTA — BANDERAS ROJAS DETECTADAS\n\n${symptomContext}`
+      : symptomContext;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
-      const title = `${area} — ${new Date().toLocaleDateString("es-ES")}`;
+
+      const title = `${areaLabel} — ${new Date().toLocaleDateString("es-ES")}`;
       const { data: conv, error: convErr } = await supabase
-        .from("conversations").insert({ title, user_id: user.id }).select("id, title, created_at").single();
+        .from("conversations")
+        .insert({ title, user_id: user.id })
+        .select("id, title, created_at")
+        .single();
       if (!conv) throw new Error(convErr?.message ?? "No se pudo crear la consulta.");
 
-      const { data: userMsg, error: userMsgErr } = await supabase
-        .from("messages").insert({ conversation_id: conv.id, role: "user", content: userContent })
-        .select("id, role, content").single();
-      if (!userMsg) throw new Error(userMsgErr?.message ?? "Error guardando mensaje.");
+      await supabase.from("messages").insert({
+        conversation_id: conv.id,
+        role: "assistant",
+        content: WELCOME_MESSAGE,
+      });
+      for (const msg of messages) {
+        if (msg.id === WELCOME_ID) continue;
+        await supabase.from("messages").insert({
+          conversation_id: conv.id,
+          role: msg.role,
+          content: msg.content,
+        });
+      }
 
-      const aiText = await callAI(area, onset.trim(), pain, hadTraumaVal, description.trim(), []);
-
-      const { data: aiMsg } = await supabase
-        .from("messages").insert({ conversation_id: conv.id, role: "assistant", content: aiText })
-        .select("id, role, content").single();
-
-      await supabase.from("consultas").insert({
-        body_area: area,
-        started_when: onset.trim() || "No especificado",
-        onset_type: onset.trim() || "No especificado",
-        pain_level: pain,
-        had_trauma: hadTraumaVal,
-        description: description.trim() || null,
+      const aiText = await callAI({
+        bodyArea: areaLabel,
+        onsetType,
+        painLevel,
+        hadTrauma: hadTraumaVal,
+        description: initialMessage,
+        symptomContext: contextForAi,
+        conversationHistory: [],
       });
 
-      setConversations((prev) => [conv as Conversation, ...prev]);
+      const { data: aiMsg } = await supabase
+        .from("messages")
+        .insert({ conversation_id: conv.id, role: "assistant", content: aiText })
+        .select("id, role, content")
+        .single();
+
+      await supabase.from("consultas").insert({
+        body_area: areaLabel,
+        started_when: onsetType,
+        onset_type: onsetType,
+        pain_level: painLevel,
+        had_trauma: hadTraumaVal,
+        description: initialMessage,
+        symptom_details: {
+          questionnaireVersion: 4,
+          mode: "chat-then-questionnaire",
+          initialMessage,
+          questionnairePart,
+          shoulder: questionnairePart === "shoulder" ? shoulderAnswers : null,
+          generic: questionnairePart === "generic" ? genericAnswers : null,
+          redFlagsUrgent,
+        },
+      });
+
       setActiveId(conv.id);
       setActiveTitle(title);
-      setMessages([userMsg as Message, aiMsg as Message]);
-      setView("chat");
+      setConversations((prev) => [conv as Conversation, ...prev]);
+      setMessages((prev) => [...prev, aiMsg as Message]);
+      setPhase("followup");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Error desconocido.");
+      alert(err instanceof Error ? err.message : "Error al analizar tu caso.");
     } finally {
       setLoading(false);
+      setLoadingModal(false);
     }
   }
 
-  async function handleSendMessage() {
-    if (!input.trim() || !activeId || loading) return;
+  async function handleFollowupSubmit() {
+    if (!input.trim() || loading || phase !== "followup" || !activeId) return;
     const text = input.trim();
     setInput("");
     setLoading(true);
 
-    const tempId = `temp-${Date.now()}`;
-    setMessages((prev) => [...prev, { id: tempId, role: "user", content: text }]);
+    const tempUserId = `temp-user-${Date.now()}`;
+    setMessages((prev) => [...prev, { id: tempUserId, role: "user", content: text }]);
 
     try {
-      await supabase.from("messages").insert({ conversation_id: activeId, role: "user", content: text });
-
-      const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
-      const session = await getSession();
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-consult`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
-        body: JSON.stringify({ bodyArea: "seguimiento", onsetType: text, painLevel: 0, hadTrauma: "No", description: "", conversationHistory: history }),
+      await supabase.from("messages").insert({
+        conversation_id: activeId,
+        role: "user",
+        content: text,
       });
 
-      const aiData = await res.json() as { answer: string };
+      const conversationHistory = messages
+        .filter(
+          (m) =>
+            m.id !== WELCOME_ID &&
+            !m.id.startsWith("q-intro") &&
+            !m.id.startsWith("temp-")
+        )
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const aiText = await callAI({
+        bodyArea: "seguimiento",
+        onsetType: text,
+        painLevel: 0,
+        hadTrauma: "No",
+        description: "",
+        conversationHistory,
+      });
+
       const { data: aiMsg } = await supabase
-        .from("messages").insert({ conversation_id: activeId, role: "assistant", content: aiData.answer })
-        .select("id, role, content").single();
+        .from("messages")
+        .insert({ conversation_id: activeId, role: "assistant", content: aiText })
+        .select("id, role, content")
+        .single();
 
       setMessages((prev) =>
-        prev.filter((m) => m.id !== tempId).concat([
-          { id: `user-${Date.now()}`, role: "user", content: text },
-          aiMsg as Message,
-        ])
+        prev
+          .filter((m) => m.id !== tempUserId)
+          .concat([
+            { id: `user-${Date.now()}`, role: "user", content: text },
+            aiMsg as Message,
+          ])
       );
     } catch {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setMessages((prev) => prev.filter((m) => m.id !== tempUserId));
     } finally {
       setLoading(false);
     }
   }
 
   function startNewConsultation() {
-    setActiveId(null); setActiveTitle("");
-    setMessages([]);
-    setArea(""); setOnset(""); setPain(5); setHadTrauma("No");
-    setTraumaDetail(""); setDescription(""); setFormError(null);
-    setView("form");
+    setActiveId(null);
+    setActiveTitle("Nueva consulta");
+    setMessages([welcomeMessage()]);
+    setPhase("intro");
+    setInitialMessage("");
+    setQuestionnairePart("shoulder");
+    setShoulderAnswers(defaultShoulderAdaptiveAnswers());
+    setGenericAnswers(defaultGenericConsultaAnswers());
+    setShoulderSectionIndex(0);
+    setShoulderSectionError(null);
+    setInput("");
     setMobileSidebarOpen(false);
   }
 
-  /* ── Shared sidebar content ── */
   const SidebarContent = () => (
     <div className="flex h-full flex-col p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -223,21 +408,21 @@ export function ChatInterface() {
     </div>
   );
 
-  return (
-    /* Use dynamic viewport height so mobile browsers address bar doesn't cause overflow */
-    <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100dvh - 64px)" }}>
+  const showChatInput = phase === "intro" || phase === "followup";
+  const inputPlaceholder =
+    phase === "intro" ? "Cuéntanos qué te pasa…" : "Escribe tu pregunta…";
+  const onSend = phase === "intro" ? handleIntroSubmit : handleFollowupSubmit;
 
-      {/* ── Mobile sidebar drawer overlay ── */}
+  return (
+    <div className="flex flex-1 overflow-hidden bg-slate-50" style={{ height: "calc(100dvh - 64px)" }}>
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
-          {/* Backdrop */}
           <button
             type="button"
             aria-label="Cerrar menú"
             className="absolute inset-0 bg-black/40"
             onClick={() => setMobileSidebarOpen(false)}
           />
-          {/* Drawer */}
           <aside className="relative z-10 flex w-72 flex-col bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-blue-100 px-4 py-3">
               <span className="text-sm font-bold text-slate-700">Consultas</span>
@@ -257,14 +442,14 @@ export function ChatInterface() {
         </div>
       )}
 
-      {/* ── Desktop sidebar ── */}
-      <aside className={`hidden md:flex ${desktopSidebarOpen ? "w-64" : "w-0"} shrink-0 overflow-hidden border-r border-blue-100 bg-white transition-all duration-200`}>
+      <aside
+        className={`hidden md:flex ${desktopSidebarOpen ? "w-64" : "w-0"} shrink-0 overflow-hidden border-r border-blue-100 bg-white transition-all duration-200`}
+      >
         <div className="w-64">
           <SidebarContent />
         </div>
       </aside>
 
-      {/* Desktop sidebar toggle */}
       <button
         type="button"
         onClick={() => setDesktopSidebarOpen((o) => !o)}
@@ -276,224 +461,169 @@ export function ChatInterface() {
         </svg>
       </button>
 
-      {/* ── Main content ── */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        {view === "form" ? (
-          <>
-            {/* Mobile top bar for form view */}
-            <div className="flex items-center gap-3 border-b border-blue-100 bg-white px-4 py-3 md:hidden">
-              <button
-                type="button"
-                onClick={() => setMobileSidebarOpen(true)}
-                className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50"
-                aria-label="Mis consultas"
+        <div className="flex items-center gap-3 border-b border-blue-100 bg-white px-4 py-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(true)}
+            className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50 md:hidden"
+            aria-label="Mis consultas"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+            </svg>
+          </button>
+          <p className="flex-1 truncate text-sm font-semibold text-slate-700">{activeTitle}</p>
+          <button
+            type="button"
+            onClick={startNewConsultation}
+            className="shrink-0 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
+          >
+            + Nueva
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <div
+            className={`mx-auto max-w-3xl space-y-5 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 ${
+              phase === "questionnaire" ? "pb-28" : "pb-4"
+            }`}
+          >
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
-                </svg>
-              </button>
-              <span className="text-sm font-semibold text-slate-700">Nueva consulta</span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
-              <div className="mx-auto max-w-xl">
-                <h1 className="mb-1 text-xl font-bold text-slate-800 sm:text-2xl hidden md:block">Nueva consulta</h1>
-                <p className="mb-6 text-sm text-slate-500 leading-relaxed hidden md:block">
-                  Describe tus síntomas. La IA analizará tu caso y podrás continuar la conversación.
-                </p>
-
-                {/* Body area text input */}
-                <label className="mb-2 block text-sm font-semibold text-slate-700">Zona del cuerpo</label>
-                <input
-                  type="text"
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  placeholder="Ej: Hombro derecho, rodilla izquierda, espalda baja…"
-                  className="mb-5 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-
-                <label className="mb-2 block text-sm font-semibold text-slate-700">¿Cómo y cuándo empezó?</label>
-                <textarea
-                  value={onset} onChange={(e) => setOnset(e.target.value)}
-                  placeholder="Ej: Hace 3 días jugando al fútbol, de repente…" rows={3}
-                  className="mb-5 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Nivel de dolor: <span className="text-blue-600 font-bold">{pain}/10</span>
-                </label>
-                <input
-                  type="range" min={1} max={10} value={pain}
-                  onChange={(e) => setPain(Number(e.target.value))}
-                  className="mb-5 w-full accent-blue-600"
-                />
-
-                <label className="mb-2 block text-sm font-semibold text-slate-700">¿Hubo golpe, caída o gesto brusco?</label>
-                <div className="mb-4 flex gap-3">
-                  {(["No", "Sí"] as const).map((v) => (
-                    <button
-                      key={v} type="button" onClick={() => setHadTrauma(v)}
-                      className={`flex-1 rounded-xl border py-3 text-sm font-semibold transition-colors ${
-                        hadTrauma === v
-                          ? "border-blue-600 bg-blue-600 text-white"
-                          : "border-blue-200 bg-white text-slate-600 hover:border-blue-400"
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-                {hadTrauma === "Sí" && (
-                  <textarea
-                    value={traumaDetail} onChange={(e) => setTraumaDetail(e.target.value)}
-                    placeholder="Describe el golpe, caída o gesto brusco" rows={2}
-                    className="mb-5 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  />
+                {msg.role === "assistant" && (
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    IA
+                  </div>
                 )}
-
-                <label className="mb-2 block text-sm font-semibold text-slate-700">Información adicional (opcional)</label>
-                <textarea
-                  value={description} onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Cualquier detalle adicional…" rows={3}
-                  className="mb-5 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-
-                {formError && <p className="mb-4 text-sm text-red-600">{formError}</p>}
-
-                <button
-                  type="button" onClick={handleFormSubmit} disabled={loading}
-                  className="w-full rounded-xl bg-blue-600 py-4 text-sm font-bold text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
+                <div
+                  className={`max-w-[92%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed sm:max-w-[85%] sm:px-4 sm:py-3 ${
+                    msg.role === "user"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white border border-slate-200 text-slate-800 shadow-sm"
+                  }`}
                 >
-                  Enviar consulta
-                </button>
+                  {msg.role === "user" ? (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{renderAssistantContent(msg.content)}</div>
+                  )}
+                  {msg.role === "assistant" &&
+                    msg.id !== WELCOME_ID &&
+                    !msg.id.startsWith("q-intro") &&
+                    phase === "followup" && (
+                      <p className="mt-2 text-xs text-slate-400">
+                        Orientación informativa, no diagnóstico médico.
+                      </p>
+                    )}
+                </div>
               </div>
-            </div>
-          </>
-        ) : (
-          /* Chat view */
-          <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Chat header (mobile + desktop) */}
-            <div className="flex items-center gap-3 border-b border-blue-100 bg-white px-4 py-3 shrink-0">
-              {/* Mobile: hamburger to open sidebar */}
+            ))}
+
+            {phase === "questionnaire" && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                {questionnairePart === "shoulder" ? (
+                  <>
+                    <ConsultaAdaptiveShoulder
+                      value={shoulderAnswers}
+                      onChange={setShoulderAnswers}
+                      sectionIndex={shoulderSectionIndex}
+                      onSectionIndexChange={setShoulderSectionIndex}
+                      sectionError={shoulderSectionError}
+                      onSectionError={setShoulderSectionError}
+                    />
+                    {isLastShoulderSection(shoulderAnswers, shoulderSectionIndex) && (
+                      <button
+                        type="button"
+                        onClick={handleQuestionnaireSubmit}
+                        disabled={loading}
+                        className="mt-4 w-full rounded-xl bg-blue-600 py-4 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
+                      >
+                        Obtener orientación de la IA
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <ConsultaGenericFields value={genericAnswers} onChange={setGenericAnswers} />
+                    {shoulderSectionError && (
+                      <p className="mb-3 text-sm text-red-600">{shoulderSectionError}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleQuestionnaireSubmit}
+                      disabled={loading}
+                      className="w-full rounded-xl bg-blue-600 py-4 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
+                    >
+                      Obtener orientación de la IA
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {loading && !loadingModal && phase === "followup" && (
+              <div className="flex gap-3 justify-start">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  IA
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <div className="flex gap-1">
+                    <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:0ms]" />
+                    <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:150ms]" />
+                    <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        </div>
+
+        {showChatInput && (
+          <div className="shrink-0 border-t border-blue-100 bg-white px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:py-4">
+            <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    onSend();
+                  }
+                }}
+                placeholder={inputPlaceholder}
+                rows={1}
+                disabled={loading}
+                className="flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+              />
               <button
                 type="button"
-                onClick={() => setMobileSidebarOpen(true)}
-                className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50 md:hidden"
-                aria-label="Mis consultas"
+                onClick={onSend}
+                disabled={!input.trim() || loading}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white transition hover:bg-blue-700 disabled:opacity-40"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
                 </svg>
               </button>
-
-              <p className="flex-1 truncate text-sm font-semibold text-slate-700">{activeTitle}</p>
-
-              <button
-                type="button"
-                onClick={startNewConsultation}
-                className="shrink-0 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
-              >
-                + Nueva
-              </button>
             </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4 sm:px-5 sm:py-6">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {msg.role === "assistant" && (
-                    <div className="mr-2 mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                      IA
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-blue-600 text-white rounded-br-sm"
-                        : "bg-white border border-blue-100 text-slate-800 rounded-bl-sm shadow-sm"
-                    }`}
-                  >
-                    {msg.role === "user" ? (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    ) : (
-                      <div className="whitespace-pre-wrap">
-                        {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
-                          part.startsWith("**") && part.endsWith("**") ? (
-                            <strong key={i} className="font-bold text-blue-700">
-                              {part.slice(2, -2)}
-                            </strong>
-                          ) : (
-                            <span key={i}>{part}</span>
-                          )
-                        )}
-                      </div>
-                    )}
-                    {msg.role === "assistant" && (
-                      <p className="mt-2 text-xs text-slate-400">⚠️ Orientación informativa, no diagnóstico médico.</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">IA</div>
-                  <div className="rounded-2xl rounded-bl-sm border border-blue-100 bg-white px-4 py-3 shadow-sm">
-                    <div className="flex gap-1">
-                      <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:0ms]" />
-                      <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:150ms]" />
-                      <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:300ms]" />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={bottomRef} />
-            </div>
-
-            {/* Input bar */}
-            <div className="shrink-0 border-t border-blue-100 bg-white px-3 py-3 sm:px-4 sm:py-3">
-              <div className="mx-auto flex max-w-3xl items-end gap-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
-                  }}
-                  placeholder="Escribe tu pregunta…"
-                  rows={1}
-                  className="flex-1 resize-none rounded-xl border border-blue-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-                <button
-                  type="button"
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || loading}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow transition hover:bg-blue-700 disabled:opacity-50"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <p className="mx-auto mt-2 max-w-3xl text-center text-xs text-slate-400">
+              La IA puede cometer errores. Considera verificar la información importante.
+            </p>
           </div>
         )}
       </div>
 
-      {/* ── Loading modal ── */}
-      {loading && view === "form" && (
+      {loadingModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
           <div className="mx-4 w-full max-w-sm rounded-2xl bg-white px-8 py-10 text-center shadow-2xl">
-            {/* Spinner */}
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
-              <svg
-                className="h-8 w-8 animate-spin text-blue-600"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12" cy="12" r="10"
-                  stroke="currentColor" strokeWidth="4"
-                />
+              <svg className="h-8 w-8 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path
                   className="opacity-75"
                   fill="currentColor"
@@ -504,9 +634,7 @@ export function ChatInterface() {
             <p className="text-base font-semibold text-slate-800">
               Nuestra IA está analizando tu caso
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Estaremos contigo en breve.
-            </p>
+            <p className="mt-2 text-sm text-slate-500">Estaremos contigo en breve.</p>
           </div>
         </div>
       )}

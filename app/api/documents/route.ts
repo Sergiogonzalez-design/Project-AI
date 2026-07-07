@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -34,9 +35,8 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!user || user.email !== adminEmail) {
+    const admin = await requireAdmin(supabase);
+    if (!admin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -93,10 +93,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // Admin route: only the owner's email can access
-  if (pathname.startsWith("/admin")) {
+  if (pathname.startsWith("/admin") && pathname !== "/admin/access-denied") {
     const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) {
+      return NextResponse.redirect(new URL("/admin/access-denied", request.url));
+    }
     if (!user || user.email !== adminEmail) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/admin/access-denied", request.url));
     }
   }
 

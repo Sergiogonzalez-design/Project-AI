@@ -3,14 +3,12 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
 import { Colors } from "../lib/colors";
 import { AIInquiriesScreen } from "../screens/AIInquiriesScreen";
-import { ContactScreen } from "../screens/ContactScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 
 export type TabParamList = {
   Home: undefined;
   AIInquiries: undefined;
-  Contact: undefined;
   Profile: undefined;
 };
 
@@ -79,16 +77,6 @@ export function AppTabs() {
           tabBarLabel: "Consulta",
           tabBarIcon: ({ focused }) =>
             tabIcon("chatbubble-ellipses-outline", "chatbubble-ellipses", focused),
-        }}
-      />
-      <Tab.Screen
-        name="Contact"
-        component={ContactScreen}
-        options={{
-          title: "Contacto",
-          tabBarLabel: "Contacto",
-          tabBarIcon: ({ focused }) =>
-            tabIcon("call-outline", "call", focused),
         }}
       />
       <Tab.Screen

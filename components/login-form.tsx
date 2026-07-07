@@ -44,7 +44,11 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         <Image src="/logo-icon.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">Iniciar sesión</h1>
-          <p className="mt-1 text-sm text-slate-500">Accede a tu cuenta de PhysioGuide AI</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {nextPath === "/admin"
+              ? "Acceso de administrador — subir documentos a la IA"
+              : "Accede a tu cuenta de PhysioGuide AI"}
+          </p>
         </div>
       </div>
 
@@ -79,7 +83,10 @@ export function LoginForm({ nextPath }: LoginFormProps) {
 
       <p className="mt-5 text-center text-sm text-slate-500">
         ¿No tienes cuenta?{" "}
-        <Link href="/signup" className="font-semibold text-blue-600 hover:underline">
+        <Link
+          href={nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : "/signup"}
+          className="font-semibold text-blue-600 hover:underline"
+        >
           Crear cuenta
         </Link>
       </p>
