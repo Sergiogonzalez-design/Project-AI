@@ -40,7 +40,7 @@ export function StreamingAssistantMessage({
 
     setVisibleCount(0);
     let count = 0;
-    let timer: ReturnType<typeof window.setInterval> | null = null;
+    let timer: number | null = null;
 
     const tick = () => {
       count += 1;
