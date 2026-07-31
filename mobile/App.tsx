@@ -3,34 +3,51 @@ import { Session } from "@supabase/supabase-js";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LoginScreen } from "./src/components/LoginScreen";
 import { SignupScreen } from "./src/components/SignupScreen";
 import { Colors } from "./src/lib/colors";
-import { isSupabaseConfigured } from "./src/lib/supabase-config";
+import { I18nProvider, useI18n } from "./src/lib/i18n";
+import { isAdminEmail, isSupabaseConfigured } from "./src/lib/supabase-config";
 import { supabase } from "./src/lib/supabase";
 import { AppTabs } from "./src/navigation/AppTabs";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import {
+  ATHLETE_PROFILE_COLUMNS,
+  isAthleteProfileComplete,
+} from "./src/lib/athlete-profile-complete";
 
-export default function App() {
+function AppInner() {
+  const { ready } = useI18n();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authView, setAuthView] = useState<"login" | "signup">("login");
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
-  const checkOnboarding = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", userId)
-      .maybeSingle();
-    setOnboardingDone(data?.onboarding_completed ?? false);
-  }, []);
+  const isAdmin = isAdminEmail(session?.user?.email);
+
+  const checkOnboarding = useCallback(
+    async (userId: string, email: string | undefined) => {
+      // Admin uses the same login; skip athlete onboarding only for that account
+      if (isAdminEmail(email)) {
+        setOnboardingDone(true);
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select(ATHLETE_PROFILE_COLUMNS)
+        .eq("id", userId)
+        .maybeSingle();
+      setOnboardingDone(isAthleteProfileComplete(data));
+    },
+    []
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
       if (data.session?.user) {
-        await checkOnboarding(data.session.user.id);
+        await checkOnboarding(data.session.user.id, data.session.user.email);
       } else {
         setOnboardingDone(null);
       }
@@ -41,7 +58,7 @@ export default function App() {
       async (_event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
-          await checkOnboarding(newSession.user.id);
+          await checkOnboarding(newSession.user.id, newSession.user.email);
         } else {
           setOnboardingDone(null);
         }
@@ -51,7 +68,7 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, [checkOnboarding]);
 
-  if (loading || (session && onboardingDone === null)) {
+  if (!ready || loading || (session && onboardingDone === null)) {
     return (
       <View style={styles.splash}>
         <ActivityIndicator size="large" color={Colors.primary} />
@@ -62,7 +79,7 @@ export default function App() {
   if (!isSupabaseConfigured()) {
     return (
       <View style={styles.configError}>
-        <Text style={styles.configTitle}>Supabase no configurado</Text>
+        <Text style={styles.configTitle}>Supabase</Text>
         <Text style={styles.configBody}>
           Copia mobile/.env.example a mobile/.env y usa la misma URL y clave que la web
           (proyecto klxlzzgrymkexvuelzex).
@@ -95,9 +112,20 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <StatusBar style="light" />
-      <AppTabs />
+      <StatusBar style="dark" />
+      {/* Remount tabs when admin status changes so the Admin tab never leaks to other users */}
+      <AppTabs key={isAdmin ? "admin" : "user"} isAdmin={isAdmin} />
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <I18nProvider>
+        <AppInner />
+      </I18nProvider>
+    </SafeAreaProvider>
   );
 }
 

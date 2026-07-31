@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,7 +17,9 @@ import {
   authEmailProps,
   authPasswordProps,
 } from "./AuthTextField";
+import { DismissKeyboard } from "./DismissKeyboard";
 import { Colors } from "../lib/colors";
+import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 
 type Props = {
@@ -25,15 +28,16 @@ type Props = {
 
 function translateAuthError(message: string): string {
   if (message.includes("Invalid login credentials")) {
-    return "Correo o contraseña incorrectos. Si te registraste en la web, confirma tu correo primero.";
+    return "Correo o contraseña incorrectos.";
   }
   if (message.includes("Email not confirmed")) {
-    return "Confirma tu correo antes de iniciar sesión (revisa tu bandeja de entrada).";
+    return "Esta cuenta aún no está activa. Vuelve a registrarte o contacta con soporte.";
   }
   return message;
 }
 
 export function LoginScreen({ onSwitch }: Props) {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -65,22 +69,23 @@ export function LoginScreen({ onSwitch }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-      >
+      <DismissKeyboard>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={Keyboard.dismiss}
+        >
         <View style={styles.header}>
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
-          <Text style={styles.title}>PhysioGuide AI</Text>
-          <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+          <Text style={styles.title}>{t.auth.loginTitle}</Text>
+          <Text style={styles.subtitle}>{t.auth.loginSubtitle}</Text>
         </View>
 
         <View style={styles.card}>
           <AuthTextField
-            label="Correo electrónico"
-            placeholder="tu@correo.com"
+            label={t.auth.email}
             value={email}
             onChangeText={setEmail}
             editable={!loading}
@@ -91,8 +96,7 @@ export function LoginScreen({ onSwitch }: Props) {
           <View style={{ height: 12 }} />
 
           <AuthTextField
-            label="Contraseña"
-            placeholder="Tu contraseña"
+            label={t.auth.password}
             value={password}
             onChangeText={setPassword}
             editable={!loading}
@@ -115,18 +119,19 @@ export function LoginScreen({ onSwitch }: Props) {
             {loading ? (
               <ActivityIndicator color={Colors.white} />
             ) : (
-              <Text style={styles.buttonText}>Entrar</Text>
+              <Text style={styles.buttonText}>{t.auth.login}</Text>
             )}
           </Pressable>
 
           <Pressable style={styles.switchRow} onPress={onSwitch} disabled={loading}>
             <Text style={styles.switchText}>
-              ¿No tienes cuenta?{" "}
-              <Text style={styles.switchLink}>Crear cuenta</Text>
+              {t.auth.noAccount}
+              <Text style={styles.switchLink}>{t.auth.signup}</Text>
             </Text>
           </Pressable>
         </View>
       </ScrollView>
+      </DismissKeyboard>
     </KeyboardAvoidingView>
   );
 }
@@ -137,26 +142,38 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 40,
   },
-  header: { alignItems: "center", marginBottom: 32 },
-  logo: { width: 72, height: 72, marginBottom: 12, resizeMode: "contain" },
+  header: { alignItems: "center", marginBottom: 28 },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+    resizeMode: "contain",
+  },
   title: {
-    fontSize: 26,
-    fontWeight: "700",
+    fontSize: 32,
+    fontWeight: "800",
     color: Colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
-  subtitle: { marginTop: 6, fontSize: 15, color: Colors.textSecondary },
+  subtitle: {
+    marginTop: 8,
+    fontSize: 15,
+    color: Colors.textSecondary,
+    letterSpacing: -0.1,
+  },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
   },
   error: {
     marginTop: 12,
@@ -168,14 +185,14 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 24,
     backgroundColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 5,
   },
   buttonPressed: { backgroundColor: Colors.primaryDark },
   buttonDisabled: { opacity: 0.7 },
@@ -183,9 +200,9 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 16,
     fontWeight: "700",
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
-  switchRow: { marginTop: 20, alignItems: "center" },
+  switchRow: { marginTop: 24, alignItems: "center" },
   switchText: { fontSize: 14, color: Colors.textSecondary },
-  switchLink: { color: Colors.primary, fontWeight: "600" },
+  switchLink: { color: Colors.primary, fontWeight: "700" },
 });

@@ -1,6 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import OpenAI from "npm:openai@4";
+import {
+  AI_DATA_FIDELITY_RULES,
+  AI_EVIDENCE_AND_SEVERITY_RULES,
+  AI_FOLLOW_UP_EVIDENCE_RULES,
+  AI_IMAGE_CONTEXT_RULES,
+  appendSourcesFooter,
+  buildFunctionalQuestionsPromptBlock,
+  formatRagContext,
+  languageInstruction,
+  type RagChunk,
+} from "./response-rules.ts";
 
 const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
@@ -11,6 +22,267 @@ const CORS = {
 };
 
 type HistoryMessage = { role: "user" | "assistant"; content: string };
+
+type RequestBody = {
+  mode?: "triage" | "general_chat" | "clinical_screen" | "consult" | "reminders";
+  message?: string;
+  bodyArea?: string;
+  onsetType?: string;
+  painLevel?: number;
+  hadTrauma?: string;
+  description?: string;
+  symptomContext?: string;
+  conversationHistory?: HistoryMessage[];
+  language?: "es" | "en";
+  /** Public URL of an injury photo in the consult-photos bucket */
+  imageUrl?: string | null;
+};
+
+type TextContentPart = { type: "text"; text: string };
+type ImageContentPart = {
+  type: "image_url";
+  image_url: { url: string; detail: "high" | "low" | "auto" };
+};
+type UserContent = string | Array<TextContentPart | ImageContentPart>;
+
+function isAllowedConsultImageUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    if (!supabaseUrl) return false;
+    const base = new URL(supabaseUrl);
+    return (
+      u.origin === base.origin &&
+      u.pathname.includes("/storage/v1/object/public/consult-photos/")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeImageUrl(imageUrl?: string | null): string | null {
+  if (!imageUrl || typeof imageUrl !== "string") return null;
+  const trimmed = imageUrl.trim();
+  return isAllowedConsultImageUrl(trimmed) ? trimmed : null;
+}
+
+function buildUserContent(text: string, imageUrl?: string | null): UserContent {
+  const safe = sanitizeImageUrl(imageUrl);
+  if (!safe) return text;
+  return [
+    { type: "text", text },
+    { type: "image_url", image_url: { url: safe, detail: "high" } },
+  ];
+}
+
+function withImageRules(prompt: string, hasImage: boolean): string {
+  if (!hasImage) return prompt;
+  return `${prompt}\n\n${AI_IMAGE_CONTEXT_RULES}`;
+}
+
+function withLanguage(prompt: string, language: "es" | "en"): string {
+  return `${prompt}\n\n${languageInstruction(language)}`;
+}
+
+function buildAthleteContext(profile: Record<string, unknown> | null): string {
+  if (!profile) return "";
+  const lines = [
+    profile.display_name ? `Nombre: ${profile.display_name}` : "",
+    profile.age ? `Edad: ${profile.age} años` : "",
+    profile.sex ? `Sexo: ${profile.sex}` : "",
+    profile.height_cm ? `Altura: ${profile.height_cm} cm` : "",
+    profile.weight_kg ? `Peso: ${profile.weight_kg} kg` : "",
+    profile.dominant_hand ? `Mano dominante: ${profile.dominant_hand}` : "",
+    profile.dominant_foot ? `Pie dominante: ${profile.dominant_foot}` : "",
+    profile.primary_sport ? `Deporte habitual: ${profile.primary_sport}` : "",
+    profile.sport_position ? `Posición: ${profile.sport_position}` : "",
+    profile.competitive_level ? `Nivel competitivo: ${profile.competitive_level}` : "",
+    profile.sessions_per_week != null
+      ? `Sesiones de entrenamiento por semana: ${profile.sessions_per_week}`
+      : "",
+    profile.hours_per_week != null
+      ? `Horas de entrenamiento por semana: ${profile.hours_per_week}`
+      : "",
+    profile.current_season ? `Temporada actual: ${profile.current_season}` : "",
+    Array.isArray(profile.performance_goals) && profile.performance_goals.length
+      ? `Objetivos: ${profile.performance_goals.join(", ")}`
+      : "",
+  ].filter(Boolean);
+  if (!lines.length) return "";
+  return [
+    "Perfil del paciente (ÚSALO para riesgo, prevalencia, carga y diferenciales; NO lo uses como mecanismo/causa de la lesión salvo que el relato o el cuestionario lo confirmen):",
+    ...lines,
+  ].join("\n");
+}
+
+async function embedAndMatch(
+  supabase: ReturnType<typeof createClient>,
+  queryText: string,
+  matchCount: number
+): Promise<RagChunk[]> {
+  if (queryText.trim().length <= 10) return [];
+  const embeddingRes = await openai.embeddings.create({
+    model: "text-embedding-3-small",
+    input: queryText.slice(0, 8000),
+  });
+  const queryEmbedding = embeddingRes.data[0].embedding;
+  const { data: chunks } = await supabase.rpc("match_document_chunks", {
+    query_embedding: queryEmbedding,
+    match_count: matchCount,
+    match_threshold: 0.3,
+  });
+  return (chunks ?? []) as RagChunk[];
+}
+
+async function fetchRagContext(
+  supabase: ReturnType<typeof createClient>,
+  queryText: string,
+  bodyArea = ""
+): Promise<{ context: string; sources: string[] }> {
+  const primary = await embedAndMatch(supabase, queryText, 6);
+  const functionalQuery = [
+    bodyArea,
+    "Functional Assessment Special Tests Clinical Tests valoración funcional movement tests",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const functional = await embedAndMatch(supabase, functionalQuery, 4);
+
+  const byId = new Map<string, RagChunk>();
+  for (const c of [...primary, ...functional]) {
+    const key = `${c.source_name ?? ""}::${(c.content ?? "").slice(0, 80)}`;
+    if (!byId.has(key)) byId.set(key, c);
+  }
+  return formatRagContext([...byId.values()]);
+}
+
+const TRIAGE_SYSTEM_PROMPT = `Eres Physio, asistente de Kinora. Clasificas cada mensaje del usuario (inicial o de seguimiento).
+
+Devuelve SOLO JSON válido con esta forma:
+{
+  "action": "questionnaire" | "respond",
+  "bodyPart": "shoulder" | "elbow" | "wrist_hand" | "finger" | "neck" | "back" | "hip" | "knee" | "ankle_foot" | null,
+  "intent": "general" | "symptom_other" | null,
+  "answer": "string o null"
+}
+
+REGLAS DE CLASIFICACIÓN:
+
+1) action = "questionnaire" SI el usuario describe un PROBLEMA PERSONAL ACTUAL (dolor, molestia, lesión, limitación, hinchazón, traumatismo, rigidez) en CUALQUIER zona musculoesquelética.
+   - Incluye: hombro, codo, muñeca/mano, dedo(s), cuello/cervical, espalda, cadera, rodilla, pierna baja/tobillo/pie.
+   - Incluye mensajes de seguimiento como "también me duele el codo" o "ahora me molesta el cuello".
+   - bodyPart debe ser la zona principal de ESTE mensaje (shoulder, elbow, wrist_hand, finger, neck, back, hip, knee, ankle_foot).
+   - Usa "finger" cuando el problema es específico de uno o varios dedos; "wrist_hand" para muñeca/mano en general; "neck" para cuello/cervical; "back" para espalda/lumbar/dorsal.
+   - CRÍTICO — NO confundas rodilla con pierna bajo la rodilla:
+     * "me duele la pierna, justo debajo de la rodilla" / "debajo de la rodilla" / "below the knee" / "espinilla" / "shin" / "pantorrilla" / "gemelo" / "pierna" (sin decir que duele la articulación de la rodilla) → bodyPart = "ankle_foot" (pierna baja / tibia / tobillo-pie). NUNCA "knee".
+     * "me duele la rodilla" / "menisco" / "ligamento cruzado" / "rótula" → bodyPart = "knee".
+     * Si menciona "rodilla" solo como referencia de ubicación ("debajo de la rodilla"), NO es knee.
+   - CRÍTICO — pie / planta NO es "pierna":
+     * "me duele la planta del pie" / "fascitis" / "talón" / "me duele el pie" → bodyPart = "ankle_foot" (el cuestionario se adapta al PIE). No trates el relato como dolor de pantorrilla/espinilla.
+   - intent = null, answer = null
+   - NUNCA saltes el cuestionario para dar ya un informe clínico: primero se recogen datos.
+
+2) action = "respond" con intent = "general" si pregunta por ejercicios, movilidad, estiramientos, prevención, información educativa, rutinas, ergonomía, o dudas generales — AUNQUE mencione una zona corporal.
+   - Ejemplos: "ejercicios de movilidad para hombro", "cómo estirar la muñeca", "qué es la epicondilitis"
+
+2b) action = "respond" con intent = "general" si el usuario NO describe un problema actual sino que pregunta CÓMO usar la consulta, qué debe hacer o pide aclaraciones.
+   - Ejemplos: "hola qué hago", "¿te digo lo que me duele o cómo funciona esto?", "cómo funciona", "por dónde empiezo", "no sé qué contarte"
+   - LEE el mensaje completo: si pregunta por el proceso, RESPONDE explicando que puede contar qué le molesta, dónde, cuándo empezó, etc.; después harás preguntas; no es diagnóstico. NO abras cuestionario.
+   - Aunque diga "duele" de forma hipotética ("¿te digo lo que me duele?") NO es síntoma actual → respond, NO questionnaire.
+
+3) action = "respond" con intent = "general" — answer: respuesta útil en español (6-14 frases), empática, práctica, sin informe clínico largo. Indica que no es diagnóstico. Si procede, invita a describir molestias concretas para una valoración más detallada.
+
+4) action = "respond" con intent = "symptom_other" SOLO si describe síntomas personales ACTUALES pero NO se puede asignar una zona concreta (muy vago) o varias zonas a la vez sin zona principal clara.
+   - bodyPart = null, answer = null (el cliente abrirá cuestionario genérico)
+
+NO uses "questionnaire" para peticiones de ejercicios, consejos generales o preguntas hipotéticas.
+NO uses clinical screen / respuesta larga de lesiones sin cuestionario cuando hay un problema personal en una zona.`;
+
+const GENERAL_CHAT_PROMPT = `Eres Physio, asistente de fisioterapia y medicina deportiva de Kinora.
+
+El usuario hace una consulta general (ejercicios, movilidad, prevención, información) o pregunta cómo funciona la consulta / qué debe hacer.
+
+LEE SIEMPRE el mensaje del usuario y responde a lo que pregunta. No ignores su pregunta ni saltes directo a un cuestionario.
+
+Si pregunta cómo funciona o qué debe hacer (ej. "hola qué hago", "¿te digo lo que me duele o cómo funciona esto?"):
+- Explícale con claridad: puede contarte qué le molesta, en qué zona del cuerpo, desde cuándo y qué la empeora
+- Indica que le harás algunas preguntas para orientarle mejor
+- La orientación no sustituye una valoración presencial ni es un diagnóstico
+- Invítale a escribir su molestia cuando quiera
+
+Responde en español:
+- Empático, claro y práctico (normalmente 6-14 frases; más si hace falta para una mini-rutina)
+- NO emitas diagnóstico definitivo
+- Puedes sugerir ejercicios o consejos generales con precauciones
+- Si no hay una lesión descrita, no inventes síntomas ni mecanismos
+- Cierra invitando a contarte molestias concretas si quiere una orientación más personalizada`;
+
+const REMINDERS_SYSTEM_PROMPT = `Eres Physio de Kinora. Generas recordatorios locales inteligentes para un paciente con una molestia musculoesquelética.
+
+Devuelve SOLO JSON válido:
+{
+  "reminders": [
+    { "title": string, "body": string, "dayOffset": number, "hour": number }
+  ]
+}
+
+Reglas:
+- Exactamente 5 a 7 recordatorios.
+- dayOffset: 0 a 10 (días desde hoy).
+- hour: 8 a 20.
+- Personaliza título y cuerpo a la zona lesionada, dolor y contexto.
+- Tono empático, claro, accionable; sin diagnóstico ni alarmismo.
+- Incluye movilidad suave, gestión de carga, chequeo de síntomas y seguimiento.
+- Si language=en responde en inglés; si language=es en español.
+- No inventes diagnósticos concretos; habla de molestia/zona.`;
+
+const CLINICAL_SCREEN_PROMPT = `Eres un asistente de fisioterapia y medicina deportiva para Kinora. Orientas al usuario en español con claridad, empatía y detalle moderado (aprox. 450-800 palabras).
+
+IMPORTANTE: NO emites diagnósticos definitivos.
+
+${AI_EVIDENCE_AND_SEVERITY_RULES}
+
+Integra la descripción del paciente, el cuestionario (si hay) y el PERFIL del paciente (edad, sexo, antropometría, deporte, carga) para orientar riesgo y diferenciales. No inventes datos que no estén en el contexto.
+El deporte habitual del perfil NO implica por sí solo el mecanismo de la lesión.
+
+${AI_DATA_FIDELITY_RULES}`;
+
+const INITIAL_SYSTEM_PROMPT = `Eres un asistente de fisioterapia y medicina deportiva para Kinora. Orientas al usuario en español con claridad, empatía y detalle moderado (aprox. 450-850 palabras).
+
+IMPORTANTE: NO emites diagnósticos definitivos. Usas las variables clínicas para estimar estructuras afectadas, posibles lesiones (con confianza alta/media/baja), gravedad y el siguiente paso adecuado.
+
+En el resumen (2-4 frases): zona, mecanismo, evolución, intensidad, limitación. Si hay banderas rojas o PRIORIDAD ALTA, destácalo al inicio.
+
+OBLIGATORIO si el caso NO es urgente: incluye la sección **Pruebas funcionales** con 3–6 pruebas concretas y pide al paciente que las haga y te responda los resultados. Sin esas pruebas no puedes orientar bien qué tiene.
+
+${AI_EVIDENCE_AND_SEVERITY_RULES}
+
+REGLAS:
+- Usa todo el contexto clínico del cuestionario
+- Lenguaje sencillo, tono cercano
+
+${AI_DATA_FIDELITY_RULES}`;
+
+const FOLLOW_UP_SYSTEM_PROMPT = `Eres un asistente de fisioterapia para Kinora. Estás en una conversación de SEGUIMIENTO: el paciente ya recibió una valoración inicial estructurada.
+
+REGLAS ESTRICTAS PARA ESTE MENSAJE:
+- Es el MISMO caso. Usa el historial. NUNCA reinicies como si fuera una consulta nueva ni repitas todo el cuestionario o toda la batería de tests sin interpretar lo que ya respondió.
+- Si el paciente responde a tests funcionales (p. ej. "pude hacer los 3, pero me duele otra cosa / duele en otro sitio"): INTERPRETA eso primero. Baja hipótesis locales no reproducidas; abre alternativas (otra estructura local o causa a distancia, p. ej. cuello → codo). Haz 1–3 preguntas concretas de aclaración; no vuelvas a pedir "haz otra vez todos los tests" ni un informe completo.
+- Integra TODA la historia (mecanismo, neurológicos, agravantes, antecedentes) con las pruebas: las pruebas confirman/descartan, no borran hallazgos previos. Si hay neurológicos claros, no priorices solo musculotendinoso.
+- Tras interpretar: reordena hipótesis de mayor a menor probabilidad y di qué evidencia sube/baja cada una.
+- Responde SOLO a la pregunta concreta del paciente en este turno
+- NO repitas el informe completo ni vuelvas a usar todas las secciones de la primera respuesta
+- NO reescribas el "Resumen de tu consulta" salvo que lo pidan explícitamente
+- Sé directo, empático y específico (normalmente 4-12 frases; más si interpreta respuestas a tests funcionales)
+- Evalúa causas locales Y posibles orígenes referidos cuando encaje (cuello/hombro/lumbar, etc.)
+- Si hay perfil del paciente en el contexto, úsalo para matizar riesgo/carga/diferenciales (sin reinventar el mecanismo)
+- Si preguntan qué hacer, adónde ir o si preocuparse: responde con pasos claros (urgencias / médico / fisioterapeuta / autocuidado) y cuándo
+- Puedes usar un encabezado **Qué debes hacer ahora** si la pregunta es sobre acciones concretas
+- No uses formato de informe completo con todas las secciones salvo que el paciente pida reevaluación completa
+- Si concluyes qué lesión o cuadro puede tener el paciente, escribe ese nombre en negrita (p. ej. **síndrome del pronador**). Solo el nombre, no la frase entera.
+- Destaca también en negrita adónde debe acudir o qué prueba: **fisioterapeuta**, **médico**, **urgencias**, **ecografía**, etc.
+
+${AI_FOLLOW_UP_EVIDENCE_RULES}`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,19 +312,208 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json() as {
-      bodyArea: string;
-      onsetType: string;
-      painLevel: number;
-      hadTrauma: string;
-      description: string;
-      symptomContext?: string;
-      conversationHistory?: HistoryMessage[];
-    };
+    const body = (await req.json()) as RequestBody;
+    const mode = body.mode ?? "consult";
+    const language = body.language === "en" ? "en" : "es";
 
-    const { bodyArea, onsetType, painLevel, hadTrauma, description, symptomContext, conversationHistory } = body;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select(
+        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
+      )
+      .eq("id", user.id)
+      .maybeSingle();
 
-    // For follow-up messages, the key question is in onsetType; body area won't be "seguimiento"
+    const athleteContext = buildAthleteContext(profile);
+
+    if (mode === "triage") {
+      const message = body.message?.trim() ?? "";
+      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      if (!message && !imageUrl) {
+        return new Response(JSON.stringify({ error: "message required" }), {
+          status: 400,
+          headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+
+      const triageText = imageUrl
+        ? `${message || "(El paciente adjuntó una foto de la lesión sin texto.)"}\n\nHay una foto adjunta: úsala para ayudar a identificar la zona corporal si el texto es ambiguo.`
+        : message;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: withLanguage(
+              withImageRules(TRIAGE_SYSTEM_PROMPT, Boolean(imageUrl)),
+              language
+            ),
+          },
+          { role: "user", content: buildUserContent(triageText, imageUrl) },
+        ],
+        temperature: 0.2,
+        max_tokens: 600,
+      });
+
+      const raw = completion.choices[0].message.content ?? "{}";
+      let parsed: Record<string, unknown>;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = { action: "respond", intent: "general" };
+      }
+
+      return new Response(JSON.stringify(parsed), {
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    if (mode === "general_chat") {
+      const message = body.message?.trim() ?? "";
+      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const { context } = await fetchRagContext(supabase, message);
+      const userMessage = [
+        `Consulta del usuario:\n${message || "(Foto de la lesión adjunta)"}`,
+        imageUrl
+          ? "El paciente adjuntó una foto: descríbela solo si aporta y responde en consecuencia."
+          : "",
+        athleteContext ? athleteContext : "",
+        context
+          ? `Información de referencia:\n${context}`
+          : "(Responde con conocimientos generales de fisioterapia.)",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: withLanguage(
+              withImageRules(GENERAL_CHAT_PROMPT, Boolean(imageUrl)),
+              language
+            ),
+          },
+          { role: "user", content: buildUserContent(userMessage, imageUrl) },
+        ],
+        temperature: 0.5,
+        max_tokens: 800,
+      });
+
+      const answer = completion.choices[0].message.content ?? "";
+      return new Response(JSON.stringify({ answer }), {
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    if (mode === "reminders") {
+      const bodyArea = body.bodyArea ?? "";
+      const description = body.description ?? "";
+      const painLevel = body.painLevel ?? 0;
+      const symptomContext = body.symptomContext ?? "";
+
+      const userMessage = [
+        `language=${language}`,
+        `Zona / body area: ${bodyArea}`,
+        `Dolor / pain: ${painLevel}/10`,
+        description ? `Descripción: ${description}` : "",
+        symptomContext ? `Contexto clínico:\n${symptomContext}` : "",
+        athleteContext ? athleteContext : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: withLanguage(REMINDERS_SYSTEM_PROMPT, language),
+          },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.4,
+        max_tokens: 900,
+      });
+
+      const raw = completion.choices[0].message.content ?? "{}";
+      let parsed: Record<string, unknown>;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = { reminders: [] };
+      }
+
+      return new Response(JSON.stringify(parsed), {
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    if (mode === "clinical_screen") {
+      const message = body.message?.trim() ?? "";
+      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const bodyArea = body.bodyArea ?? "Consulta general";
+      const { context, sources } = await fetchRagContext(
+        supabase,
+        `${bodyArea}\n${message}`,
+        bodyArea
+      );
+      const userMessage = [
+        `Zona afectada: ${bodyArea}`,
+        `Descripción del paciente:\n${message || "(Foto de la lesión adjunta)"}`,
+        imageUrl
+          ? "Hay una foto de la lesión adjunta: incorpórala a la orientación según las reglas de foto."
+          : "",
+        athleteContext ? athleteContext : "",
+        context
+          ? `Información relevante de los documentos:\n${context}`
+          : "(Responde con conocimientos generales de fisioterapia.)",
+        buildFunctionalQuestionsPromptBlock(bodyArea),
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: withLanguage(
+              withImageRules(CLINICAL_SCREEN_PROMPT, Boolean(imageUrl)),
+              language
+            ),
+          },
+          { role: "user", content: buildUserContent(userMessage, imageUrl) },
+        ],
+        temperature: 0.3,
+        max_tokens: 1600,
+      });
+
+      const answer = appendSourcesFooter(
+        completion.choices[0].message.content ?? "",
+        sources,
+        language
+      );
+      return new Response(JSON.stringify({ answer, sourcesUsed: sources.length }), {
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    const {
+      bodyArea = "",
+      onsetType = "",
+      painLevel = 0,
+      hadTrauma = "No",
+      description = "",
+      symptomContext,
+      conversationHistory,
+    } = body;
+    const imageUrl = sanitizeImageUrl(body.imageUrl);
+
     const isFollowUp = bodyArea === "seguimiento";
 
     const queryText = isFollowUp
@@ -68,123 +529,41 @@ Deno.serve(async (req) => {
           .filter(Boolean)
           .join("\n");
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select(
-        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
-      )
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const athleteContext = profile
-      ? [
-          profile.display_name ? `Nombre: ${profile.display_name}` : "",
-          profile.age ? `Edad: ${profile.age} años` : "",
-          profile.sex ? `Sexo: ${profile.sex}` : "",
-          profile.height_cm ? `Altura: ${profile.height_cm} cm` : "",
-          profile.weight_kg ? `Peso: ${profile.weight_kg} kg` : "",
-          profile.dominant_hand ? `Mano dominante: ${profile.dominant_hand}` : "",
-          profile.dominant_foot ? `Pie dominante: ${profile.dominant_foot}` : "",
-          profile.primary_sport ? `Deporte principal: ${profile.primary_sport}` : "",
-          profile.sport_position ? `Posición: ${profile.sport_position}` : "",
-          profile.competitive_level ? `Nivel competitivo: ${profile.competitive_level}` : "",
-          profile.sessions_per_week != null
-            ? `Sesiones de entrenamiento por semana: ${profile.sessions_per_week}`
-            : "",
-          profile.hours_per_week != null
-            ? `Horas de entrenamiento por semana: ${profile.hours_per_week}`
-            : "",
-          profile.current_season ? `Temporada actual: ${profile.current_season}` : "",
-          profile.performance_goals?.length
-            ? `Objetivos: ${profile.performance_goals.join(", ")}`
-            : "",
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : "";
-
-    let context = "";
-    if (queryText.length > 10) {
-      const embeddingRes = await openai.embeddings.create({
-        model: "text-embedding-3-small",
-        input: queryText,
-      });
-      const queryEmbedding = embeddingRes.data[0].embedding;
-
-      const { data: chunks } = await supabase.rpc("match_document_chunks", {
-        query_embedding: queryEmbedding,
-        match_count: 5,
-        match_threshold: 0.3,
-      });
-
-      if (chunks && chunks.length > 0) {
-        context = chunks.map((c: { content: string }) => c.content).join("\n\n---\n\n");
-      }
-    }
-
-    const initialSystemPrompt = `Eres un asistente de fisioterapia y medicina deportiva para PhysioGuide AI. Orientas al usuario en español con claridad, empatía y detalle moderado (respuestas completas pero no excesivamente largas: aprox. 450-700 palabras).
-
-IMPORTANTE: NO emites diagnósticos definitivos. Usas las variables clínicas para estimar estructuras afectadas, posibles lesiones (con confianza alta/media/baja), gravedad y el siguiente paso adecuado.
-
-FORMATO OBLIGATORIO — responde SIEMPRE en este orden con estos encabezados en negrita:
-
-**Resumen de tu consulta**
-2-4 frases con lo esencial (zona, mecanismo, evolución, intensidad, limitación). Si hay banderas rojas o PRIORIDAD ALTA, destácalo al inicio.
-
-**Estructuras que podrían estar afectadas**
-Lista estructuras anatómicas posiblemente implicadas con confianza (alta/media/baja) para cada una.
-
-**Posibles lesiones (orientativas)**
-Lesiones compatibles con el cuadro, con nivel de confianza. Sin diagnóstico definitivo.
-
-**Qué hacer mientras tanto**
-Consejos prácticos concretos: reposo relativo, hielo/calor, movimientos a evitar, ergonomía, etc.
-
-**Qué debes hacer ahora**
-Sección FINAL y la más importante. Indica con claridad qué debe hacer el paciente:
-- Si debe ir a urgencias, médico, fisioterapeuta o puede autocuidarse
-- Plazo recomendado (hoy, en 48-72 h, si empeora...)
-- Qué señales de alarma vigilar
-- Si puede entrenar o debe parar
-Sé específico y accionable, como si le dijeras "esto es lo que yo haría en tu situación".
-
-**¿Necesitas contactar con nuestro fisioterapeuta?**
-Pregunta si quiere valoración personalizada. Si hay banderas rojas, insiste en atención médica urgente.
-
-REGLAS:
-- Usa todo el contexto clínico del cuestionario
-- Lenguaje sencillo, tono cercano
-- Usa ** solo para encabezados; listas con guiones (-)`;
-
-    const followUpSystemPrompt = `Eres un asistente de fisioterapia para PhysioGuide AI. Estás en una conversación de SEGUIMIENTO: el paciente ya recibió una valoración inicial estructurada.
-
-REGLAS ESTRICTAS PARA ESTE MENSAJE:
-- Responde SOLO a la pregunta concreta del paciente en este turno
-- NO repitas el informe completo ni vuelvas a usar todas las secciones de la primera respuesta
-- NO reescribas el "Resumen de tu consulta" salvo que lo pidan explícitamente
-- Usa el historial de chat para mantener coherencia con lo ya dicho
-- Sé directo, empático y específico (normalmente 4-10 frases; más solo si la pregunta lo requiere)
-- Si preguntan qué hacer, adónde ir o si preocuparse: responde con pasos claros (urgencias / médico / fisioterapeuta / autocuidado) y cuándo
-- Puedes usar un encabezado **Qué debes hacer ahora** si la pregunta es sobre acciones concretas
-- NO emitas diagnóstico definitivo
-- No uses formato de informe completo con todas las secciones`;
-
-    const systemPrompt = isFollowUp ? followUpSystemPrompt : initialSystemPrompt;
-
-    // Build messages array: system + conversation history + new user message
+    const { context, sources } = await fetchRagContext(
+      supabase,
+      queryText,
+      isFollowUp ? "" : bodyArea
+    );
+    const systemPrompt = withLanguage(
+      withImageRules(
+        isFollowUp ? FOLLOW_UP_SYSTEM_PROMPT : INITIAL_SYSTEM_PROMPT,
+        Boolean(imageUrl)
+      ),
+      language
+    );
     const history: HistoryMessage[] = conversationHistory ?? [];
 
     const userMessage = isFollowUp
       ? [
+          athleteContext ? athleteContext : "",
           context ? `Información de referencia:\n${context}` : "",
-          `Pregunta del paciente: ${onsetType}`,
+          `Pregunta del paciente: ${onsetType || "(Foto de la lesión adjunta)"}`,
+          imageUrl
+            ? "Hay una foto adjunta en este mensaje: úsala para precisar la orientación."
+            : "",
         ]
           .filter(Boolean)
           .join("\n\n")
       : [
-          athleteContext ? `Perfil del paciente:\n${athleteContext}` : "",
           `Síntomas actuales:\n${queryText}`,
-          context ? `Información relevante de los documentos:\n${context}` : "(No se encontró información específica en documentos. Responde con tus conocimientos generales de fisioterapia.)",
+          imageUrl
+            ? "Hay una foto de la lesión adjunta: incorpórala al razonamiento clínico según las reglas de foto (hallazgos visibles + relato + cuestionario)."
+            : "",
+          athleteContext ? athleteContext : "",
+          context
+            ? `Información relevante de los documentos:\n${context}`
+            : "(No se encontró información específica en documentos. Responde con tus conocimientos generales de fisioterapia.)",
+          buildFunctionalQuestionsPromptBlock(bodyArea),
         ]
           .filter(Boolean)
           .join("\n\n");
@@ -194,18 +573,21 @@ REGLAS ESTRICTAS PARA ESTE MENSAJE:
       messages: [
         { role: "system", content: systemPrompt },
         ...history,
-        { role: "user", content: userMessage },
+        { role: "user", content: buildUserContent(userMessage, imageUrl) },
       ],
       temperature: isFollowUp ? 0.4 : 0.3,
-      max_tokens: isFollowUp ? 700 : 1200,
+      max_tokens: isFollowUp ? 900 : 1700,
     });
 
-    const answer = completion.choices[0].message.content ?? "";
-
-    return new Response(
-      JSON.stringify({ answer }),
-      { headers: { ...CORS, "Content-Type": "application/json" } }
+    const answer = appendSourcesFooter(
+      completion.choices[0].message.content ?? "",
+      sources,
+      language
     );
+
+    return new Response(JSON.stringify({ answer, sourcesUsed: sources.length }), {
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return new Response(JSON.stringify({ error: message }), {

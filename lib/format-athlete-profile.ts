@@ -1,3 +1,6 @@
+import { sportHasPosition } from "@/lib/sport-has-position";
+import { ATHLETE_PROFILE_HEADER } from "@/lib/ai-consult-rules";
+
 export function formatAthleteProfileContext(profile: {
   display_name?: string | null;
   age?: number | null;
@@ -24,8 +27,12 @@ export function formatAthleteProfileContext(profile: {
     profile.weight_kg ? `Peso: ${profile.weight_kg} kg` : "",
     profile.dominant_hand ? `Mano dominante: ${profile.dominant_hand}` : "",
     profile.dominant_foot ? `Pie dominante: ${profile.dominant_foot}` : "",
-    profile.primary_sport ? `Deporte principal: ${profile.primary_sport}` : "",
-    profile.sport_position ? `Posición: ${profile.sport_position}` : "",
+    profile.primary_sport
+      ? `Deporte habitual: ${profile.primary_sport}`
+      : "",
+    profile.sport_position && sportHasPosition(profile.primary_sport ?? "")
+      ? `Posición: ${profile.sport_position}`
+      : "",
     profile.competitive_level ? `Nivel competitivo: ${profile.competitive_level}` : "",
     profile.sessions_per_week != null
       ? `Sesiones de entrenamiento por semana: ${profile.sessions_per_week}`
@@ -39,5 +46,5 @@ export function formatAthleteProfileContext(profile: {
       : "",
   ].filter(Boolean);
 
-  return lines.length > 0 ? lines.join("\n") : "";
+  return lines.length > 0 ? [ATHLETE_PROFILE_HEADER, ...lines].join("\n") : "";
 }

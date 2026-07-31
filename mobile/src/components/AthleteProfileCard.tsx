@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
   Modal,
   Pressable,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { DismissKeyboard } from "./DismissKeyboard";
 import {
   COMPETITIVE_LEVELS,
   CURRENT_SEASONS,
@@ -17,7 +19,9 @@ import {
   DOMINANT_HAND_OPTIONS,
   PERFORMANCE_GOALS,
   SEX_OPTIONS,
+  normalizeSportsInput,
 } from "../lib/profile-options";
+import { sportHasPosition } from "../lib/sport-has-position";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
 
@@ -107,6 +111,55 @@ export function AthleteProfileCard() {
   }, []);
 
   async function handleSave() {
+    if (!age || Number(age) < 1) {
+      setError("Introduce una edad válida.");
+      return;
+    }
+    if (!sex) {
+      setError("Selecciona tu sexo.");
+      return;
+    }
+    if (!heightCm || Number(heightCm) < 50) {
+      setError("Introduce tu altura.");
+      return;
+    }
+    if (!weightKg || Number(weightKg) < 20) {
+      setError("Introduce tu peso.");
+      return;
+    }
+    if (!dominantHand) {
+      setError("Selecciona tu mano dominante.");
+      return;
+    }
+    if (!dominantFoot) {
+      setError("Selecciona tu pie dominante.");
+      return;
+    }
+    if (!primarySport.trim()) {
+      setError("Indica tu deporte principal.");
+      return;
+    }
+    if (!competitiveLevel) {
+      setError("Selecciona tu nivel competitivo.");
+      return;
+    }
+    if (!sessionsPerWeek) {
+      setError("Indica tus sesiones por semana.");
+      return;
+    }
+    if (!hoursPerWeek) {
+      setError("Indica tus horas por semana.");
+      return;
+    }
+    if (!currentSeason) {
+      setError("Selecciona la temporada actual.");
+      return;
+    }
+    if (performanceGoals.length === 0) {
+      setError("Selecciona al menos un objetivo.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -117,8 +170,8 @@ export function AthleteProfileCard() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        primary_sport: primarySport.trim(),
-        sport_position: sportPosition.trim() || null,
+        primary_sport: normalizeSportsInput(primarySport),
+        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
         competitive_level: competitiveLevel,
         sessions_per_week: Number(sessionsPerWeek),
         hours_per_week: Number(hoursPerWeek),
@@ -127,7 +180,11 @@ export function AthleteProfileCard() {
       };
       const { error: saveErr } = await supabase
         .from("profiles")
-        .update({ ...updated, updated_at: new Date().toISOString() })
+        .update({
+          ...updated,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", userId);
       if (saveErr) throw new Error(saveErr.message);
       setProfile(updated);
@@ -206,7 +263,9 @@ export function AthleteProfileCard() {
             <Row label="Mano" value={profile?.dominant_hand} />
             <Row label="Pie" value={profile?.dominant_foot} />
             <Row label="Deporte" value={profile?.primary_sport} />
-            <Row label="Posición" value={profile?.sport_position} />
+            {sportHasPosition(profile?.primary_sport ?? "") && (
+              <Row label="Posición" value={profile?.sport_position} />
+            )}
             <Row label="Nivel" value={profile?.competitive_level} />
             <Row
               label="Entrenamiento"
@@ -238,7 +297,14 @@ export function AthleteProfileCard() {
       </View>
 
       <Modal visible={editing} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={styles.modalRoot} contentContainerStyle={styles.modalContent}>
+        <DismissKeyboard>
+          <ScrollView
+            style={styles.modalRoot}
+            contentContainerStyle={styles.modalContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            onScrollBeginDrag={Keyboard.dismiss}
+          >
           <Text style={styles.modalTitle}>Editar perfil deportivo</Text>
 
           <Text style={styles.fieldLabel}>Edad</Text>
@@ -254,10 +320,24 @@ export function AthleteProfileCard() {
           <ChipPicker options={DOMINANT_HAND_OPTIONS} value={dominantHand} onSelect={setDominantHand} />
           <Text style={styles.fieldLabel}>Pie dominante</Text>
           <ChipPicker options={DOMINANT_FOOT_OPTIONS} value={dominantFoot} onSelect={setDominantFoot} />
-          <Text style={styles.fieldLabel}>Deporte principal</Text>
-          <TextInput style={styles.input} value={primarySport} onChangeText={setPrimarySport} />
-          <Text style={styles.fieldLabel}>Posición</Text>
-          <TextInput style={styles.input} value={sportPosition} onChangeText={setSportPosition} />
+          <Text style={styles.fieldLabel}>¿Qué deporte practicas?</Text>
+          <TextInput
+            style={styles.input}
+            value={primarySport}
+            onChangeText={(next) => {
+              setPrimarySport(next);
+              if (!sportHasPosition(next)) setSportPosition("");
+            }}
+            placeholder="Puedes poner varios: fútbol, pádel…"
+            placeholderTextColor={Colors.textSecondary}
+          />
+          <Text style={styles.hint}>Si practicas más de uno, sepáralos con comas.</Text>
+          {sportHasPosition(primarySport) && (
+            <>
+              <Text style={styles.fieldLabel}>Posición (opcional)</Text>
+              <TextInput style={styles.input} value={sportPosition} onChangeText={setSportPosition} />
+            </>
+          )}
           <Text style={styles.fieldLabel}>Nivel</Text>
           <ChipPicker options={COMPETITIVE_LEVELS} value={competitiveLevel} onSelect={setCompetitiveLevel} />
           <Text style={styles.fieldLabel}>Sesiones / Horas por semana</Text>
@@ -293,7 +373,8 @@ export function AthleteProfileCard() {
               )}
             </Pressable>
           </View>
-        </ScrollView>
+          </ScrollView>
+        </DismissKeyboard>
       </Modal>
     </>
   );
@@ -320,6 +401,7 @@ const styles = StyleSheet.create({
   modalContent: { padding: 20, paddingBottom: 48 },
   modalTitle: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 20 },
   fieldLabel: { fontSize: 13, fontWeight: "600", color: Colors.text, marginTop: 14, marginBottom: 6 },
+  hint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
   input: {
     borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: Colors.text, backgroundColor: Colors.surface,

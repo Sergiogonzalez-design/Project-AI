@@ -5,6 +5,11 @@ import {
   getSupabaseUrl,
   isSupabaseConfigured,
 } from "@/lib/supabase/env";
+import { isAdminEmail } from "@/lib/admin-auth";
+import {
+  ATHLETE_PROFILE_COLUMNS,
+  isAthleteProfileComplete,
+} from "@/lib/athlete-profile-complete";
 
 export async function middleware(request: NextRequest) {
   if (!isSupabaseConfigured()) {
@@ -49,7 +54,8 @@ export async function middleware(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname.startsWith("/auth/") ||
-    pathname === "/api/supabase-health";
+    pathname === "/api/supabase-health" ||
+    pathname.startsWith("/api/admin/");
 
   if (!user && !isPublic) {
     const loginUrl = new URL("/login", request.url);
@@ -57,49 +63,74 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  const isAdminUser = isAdminEmail(user?.email);
+
   if (user && (pathname === "/login" || pathname === "/signup")) {
+    // Same login for everyone — land on the app; admin sees Admin in the nav
+    const next = request.nextUrl.searchParams.get("next");
+    const safeNext =
+      next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+
+    if (isAdminUser) {
+      return NextResponse.redirect(
+        new URL(safeNext ?? "/consulta", request.url)
+      );
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
-      .select("onboarding_completed")
+      .select(ATHLETE_PROFILE_COLUMNS)
       .eq("id", user.id)
       .maybeSingle();
 
-    const destination = profile?.onboarding_completed ? "/" : "/onboarding";
+    const destination = safeNext
+      ? safeNext
+      : isAthleteProfileComplete(profile)
+        ? "/consulta"
+        : "/onboarding";
     return NextResponse.redirect(new URL(destination, request.url));
   }
 
-  if (user && pathname !== "/onboarding" && !pathname.startsWith("/auth/")) {
+  const isAdminPath =
+    pathname.startsWith("/admin") && pathname !== "/admin/access-denied";
+
+  // Admin console: only the configured owner email
+  if (isAdminPath) {
+    if (!user || !isAdminUser) {
+      return NextResponse.redirect(new URL("/admin/access-denied", request.url));
+    }
+    return supabaseResponse;
+  }
+
+  if (
+    user &&
+    pathname !== "/onboarding" &&
+    !pathname.startsWith("/auth/") &&
+    !isAdminUser
+  ) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("onboarding_completed")
+      .select(ATHLETE_PROFILE_COLUMNS)
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!profile?.onboarding_completed) {
+    if (!isAthleteProfileComplete(profile)) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
   }
 
   if (user && pathname === "/onboarding") {
+    if (isAdminUser) {
+      return NextResponse.redirect(new URL("/consulta", request.url));
+    }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("onboarding_completed")
+      .select(ATHLETE_PROFILE_COLUMNS)
       .eq("id", user.id)
       .maybeSingle();
 
-    if (profile?.onboarding_completed) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-  }
-
-  // Admin route: only the owner's email can access
-  if (pathname.startsWith("/admin") && pathname !== "/admin/access-denied") {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!adminEmail) {
-      return NextResponse.redirect(new URL("/admin/access-denied", request.url));
-    }
-    if (!user || user.email !== adminEmail) {
-      return NextResponse.redirect(new URL("/admin/access-denied", request.url));
+    if (isAthleteProfileComplete(profile)) {
+      return NextResponse.redirect(new URL("/consulta", request.url));
     }
   }
 

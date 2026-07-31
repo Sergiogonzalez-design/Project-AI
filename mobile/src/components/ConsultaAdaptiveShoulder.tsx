@@ -5,31 +5,41 @@ import {
   detectRedFlags,
   getVisibleShoulderQuestions,
   getVisibleShoulderSections,
-  SHOULDER_SECTION_LABELS,
+  localizeShoulderLabel,
+  localizeShoulderOption,
+  localizeShoulderSection,
   validateShoulderSection,
+  type ConsultLocale,
   type ShoulderAdaptiveAnswers,
   type ShoulderQuestionDef,
 } from "../lib/consulta-shoulder-adaptive";
 import { Colors } from "../lib/colors";
+import { chipStyle, chipTextStyle } from "./ui/chipStyle";
+import { PainScale } from "./ui/PainScale";
+import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
 
 function ChipGroup({
   options,
   value,
   onChange,
+  displayOption,
 }: {
   options: readonly string[];
   value: string;
   onChange: (v: string) => void;
+  displayOption?: (opt: string) => string;
 }) {
   return (
     <View style={styles.chipGrid}>
       {options.map((opt) => (
         <Pressable
           key={opt}
-          style={[styles.chip, value === opt && styles.chipSelected]}
+          style={chipStyle(value === opt)}
           onPress={() => onChange(opt)}
         >
-          <Text style={[styles.chipText, value === opt && styles.chipTextSelected]}>{opt}</Text>
+          <Text style={chipTextStyle(value === opt)}>
+            {displayOption ? displayOption(opt) : opt}
+          </Text>
         </Pressable>
       ))}
     </View>
@@ -40,12 +50,20 @@ function MultiChipGroup({
   options,
   value,
   onChange,
+  displayOption,
 }: {
   options: readonly string[];
   value: string[];
   onChange: (v: string[]) => void;
+  displayOption?: (opt: string) => string;
 }) {
-  const noneOption = options.find((o) => o === "Ninguno" || o === "Ninguno en particular");
+  const noneOption = options.find(
+    (o) =>
+      o === "Ninguno" ||
+      o === "Ninguno en particular" ||
+      o === "Sin limitación" ||
+      o === "Ninguna"
+  );
 
   function toggle(opt: string) {
     if (noneOption && opt === noneOption) {
@@ -65,11 +83,11 @@ function MultiChipGroup({
       {options.map((opt) => (
         <Pressable
           key={opt}
-          style={[styles.chip, value.includes(opt) && styles.chipSelected]}
+          style={chipStyle(value.includes(opt))}
           onPress={() => toggle(opt)}
         >
-          <Text style={[styles.chipText, value.includes(opt) && styles.chipTextSelected]}>
-            {opt}
+          <Text style={chipTextStyle(value.includes(opt))}>
+            {displayOption ? displayOption(opt) : opt}
           </Text>
         </Pressable>
       ))}
@@ -81,37 +99,33 @@ function QuestionField({
   q,
   answers,
   onPatch,
+  locale,
 }: {
   q: ShoulderQuestionDef;
   answers: ShoulderAdaptiveAnswers;
   onPatch: (p: Partial<ShoulderAdaptiveAnswers>) => void;
+  locale: ConsultLocale;
 }) {
   const val = answers[q.id];
+  const label = localizeShoulderLabel(q.id, q.label, locale);
+  const displayOption = (opt: string) => localizeShoulderOption(opt, locale);
 
   if (q.type === "slider") {
     const num = typeof val === "number" ? val : 5;
     return (
-      <View style={styles.field}>
-        <Text style={styles.label}>{q.label}: {num}/10</Text>
-        <View style={styles.painRow}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-            <Pressable
-              key={n}
-              style={[styles.painChip, num === n && styles.chipSelected]}
-              onPress={() => onPatch({ [q.id]: n } as Partial<ShoulderAdaptiveAnswers>)}
-            >
-              <Text style={[styles.painText, num === n && styles.chipTextSelected]}>{n}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
+      <PainScale
+        value={num}
+        onChange={(v) => onPatch({ [q.id]: v } as Partial<ShoulderAdaptiveAnswers>)}
+        label={label}
+        locale={locale}
+      />
     );
   }
 
   if (q.type === "text") {
     return (
       <View style={styles.field}>
-        <Text style={styles.label}>{q.label}</Text>
+        <Text style={styles.label}>{label}</Text>
         <TextInput
           style={styles.input}
           value={typeof val === "string" ? val : ""}
@@ -125,11 +139,12 @@ function QuestionField({
   if (q.type === "multi" && q.options) {
     return (
       <View style={styles.field}>
-        <Text style={styles.label}>{q.label}</Text>
+        <Text style={styles.label}>{label}</Text>
         <MultiChipGroup
           options={q.options}
           value={Array.isArray(val) ? val : []}
           onChange={(v) => onPatch({ [q.id]: v } as Partial<ShoulderAdaptiveAnswers>)}
+          displayOption={displayOption}
         />
       </View>
     );
@@ -138,11 +153,12 @@ function QuestionField({
   if (q.options) {
     return (
       <View style={styles.field}>
-        <Text style={styles.label}>{q.label}</Text>
+        <Text style={styles.label}>{label}</Text>
         <ChipGroup
           options={q.options}
           value={typeof val === "string" ? val : ""}
           onChange={(v) => onPatch({ [q.id]: v } as Partial<ShoulderAdaptiveAnswers>)}
+          displayOption={displayOption}
         />
       </View>
     );
@@ -158,6 +174,7 @@ type Props = {
   onSectionIndexChange: (i: number) => void;
   sectionError: string | null;
   onSectionError: (msg: string | null) => void;
+  locale?: ConsultLocale;
 };
 
 export function ConsultaAdaptiveShoulder({
@@ -167,6 +184,7 @@ export function ConsultaAdaptiveShoulder({
   onSectionIndexChange,
   sectionError,
   onSectionError,
+  locale = "es",
 }: Props) {
   const answers = value ?? defaultShoulderAdaptiveAnswers();
   const sections = getVisibleShoulderSections(answers);
@@ -200,9 +218,7 @@ export function ConsultaAdaptiveShoulder({
 
   return (
     <View>
-      <Text style={styles.stepText}>
-        Paso {sectionIndex + 1} de {sections.length}
-      </Text>
+      <QuestionnaireProgress stepIndex={sectionIndex} totalSteps={sections.length} locale={locale} />
 
       {currentSection === "red_flags" && (
         <View style={styles.warnBox}>
@@ -220,10 +236,10 @@ export function ConsultaAdaptiveShoulder({
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>{SHOULDER_SECTION_LABELS[currentSection]}</Text>
+      <Text style={styles.sectionTitle}>{localizeShoulderSection(currentSection, locale)}</Text>
 
       {sectionQuestions.map((q) => (
-        <QuestionField key={q.id} q={q} answers={answers} onPatch={patch} />
+        <QuestionField key={q.id} q={q} answers={answers} onPatch={patch} locale={locale} />
       ))}
 
       {sectionError ? <Text style={styles.error}>{sectionError}</Text> : null}

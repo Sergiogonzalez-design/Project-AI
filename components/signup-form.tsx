@@ -11,25 +11,36 @@ export function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setInfo(null);
     setLoading(true);
     try {
-      const supabase = createClient();
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const { data, error: signError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: { emailRedirectTo: `${origin}/auth/callback` },
+      const emailNorm = email.trim().toLowerCase();
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailNorm, password }),
       });
-      if (signError) { setError(signError.message); return; }
-      if (data.session) { router.replace("/onboarding"); router.refresh(); return; }
-      setInfo("Revisa tu correo para confirmar la cuenta.");
+      const payload = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setError(payload.error ?? "No se pudo crear la cuenta.");
+        return;
+      }
+
+      const supabase = createClient();
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email: emailNorm,
+        password,
+      });
+      if (signError) {
+        setError(signError.message);
+        return;
+      }
+      router.replace("/onboarding");
+      router.refresh();
     } finally {
       setLoading(false);
     }
@@ -38,13 +49,13 @@ export function SignupForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-sm rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8"
+      className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white px-6 py-9 shadow-xl shadow-blue-500/10 sm:px-8"
     >
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo-icon.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="Kinora" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">Crear cuenta</h1>
-          <p className="mt-1 text-sm text-slate-500">Regístrate para usar PhysioGuide AI</p>
+          <p className="mt-1 text-sm text-slate-500">Regístrate para usar Kinora</p>
         </div>
       </div>
 
@@ -69,11 +80,6 @@ export function SignupForm() {
       </div>
 
       {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
-      {info && (
-        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700" role="status">
-          {info}
-        </div>
-      )}
 
       <button
         type="submit" disabled={loading}

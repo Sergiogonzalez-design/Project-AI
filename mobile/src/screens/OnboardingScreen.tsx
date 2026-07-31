@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { DismissKeyboard } from "../components/DismissKeyboard";
 import {
   COMPETITIVE_LEVELS,
   CURRENT_SEASONS,
@@ -18,7 +20,9 @@ import {
   DOMINANT_HAND_OPTIONS,
   PERFORMANCE_GOALS,
   SEX_OPTIONS,
+  normalizeSportsInput,
 } from "../lib/profile-options";
+import { sportHasPosition } from "../lib/sport-has-position";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
 
@@ -121,8 +125,8 @@ export function OnboardingScreen({ onComplete }: Props) {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        primary_sport: primarySport.trim(),
-        sport_position: sportPosition.trim() || null,
+        primary_sport: normalizeSportsInput(primarySport),
+        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
         competitive_level: competitiveLevel,
         sessions_per_week: Number(sessionsPerWeek),
         hours_per_week: Number(hoursPerWeek),
@@ -145,7 +149,13 @@ export function OnboardingScreen({ onComplete }: Props) {
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <DismissKeyboard>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          onScrollBeginDrag={Keyboard.dismiss}
+        >
         <Image source={require("../../assets/logo.png")} style={styles.logo} />
         <Text style={styles.title}>
           {step === 1 ? "Información básica" : "Perfil deportivo"}
@@ -189,8 +199,19 @@ export function OnboardingScreen({ onComplete }: Props) {
           </>
         ) : (
           <>
-            <Field label="Deporte principal" value={primarySport} onChangeText={setPrimarySport} />
-            <Field label="Posición (opcional)" value={sportPosition} onChangeText={setSportPosition} />
+            <Field
+              label="¿Qué deporte practicas?"
+              value={primarySport}
+              onChangeText={(next) => {
+                setPrimarySport(next);
+                if (!sportHasPosition(next)) setSportPosition("");
+              }}
+              placeholder="Puedes poner varios: fútbol, pádel…"
+            />
+            <Text style={styles.hint}>Si practicas más de uno, sepáralos con comas.</Text>
+            {sportHasPosition(primarySport) && (
+              <Field label="Posición (opcional)" value={sportPosition} onChangeText={setSportPosition} />
+            )}
             <Text style={styles.label}>Nivel competitivo</Text>
             <Chips options={COMPETITIVE_LEVELS} value={competitiveLevel} onChange={setCompetitiveLevel} />
             <View style={styles.row}>
@@ -226,6 +247,7 @@ export function OnboardingScreen({ onComplete }: Props) {
           </>
         )}
       </ScrollView>
+      </DismissKeyboard>
     </KeyboardAvoidingView>
   );
 }
@@ -235,11 +257,13 @@ function Field({
   value,
   onChangeText,
   keyboardType,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChangeText: (t: string) => void;
   keyboardType?: "numeric" | "default";
+  placeholder?: string;
 }) {
   return (
     <>
@@ -249,6 +273,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
+        placeholder={placeholder}
         placeholderTextColor={Colors.textLight}
       />
     </>
@@ -265,6 +290,7 @@ const styles = StyleSheet.create({
   progressBar: { flex: 1, height: 4, borderRadius: 2, backgroundColor: Colors.border },
   progressActive: { backgroundColor: Colors.primary },
   label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginTop: 16, marginBottom: 8 },
+  hint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
   input: {
     borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12, fontSize: 15,

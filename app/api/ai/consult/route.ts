@@ -3,6 +3,14 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { formatAthleteProfileContext } from "@/lib/format-athlete-profile";
+import {
+  AI_DATA_FIDELITY_RULES,
+  AI_EVIDENCE_AND_SEVERITY_RULES,
+  appendSourcesFooter,
+  formatRagContext,
+  type RagChunk,
+} from "@/lib/ai-consult-rules";
+import { buildFunctionalQuestionsPromptBlock } from "@/lib/consulta-functional-tests";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
     "match_document_chunks",
     {
       query_embedding: queryEmbedding,
-      match_count: 5,
+      match_count: 6,
       match_threshold: 0.3,
     }
   );
@@ -77,41 +85,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: matchError.message }, { status: 500 });
   }
 
-  const context =
-    chunks && chunks.length > 0
-      ? chunks.map((c: { content: string }) => c.content).join("\n\n---\n\n")
-      : "";
+  const functionalEmbedding = await openai.embeddings.create({
+    model: "text-embedding-3-small",
+    input: `${body.bodyArea} Functional Assessment Special Tests valoración funcional`,
+  });
+  const { data: functionalChunks } = await supabase.rpc("match_document_chunks", {
+    query_embedding: functionalEmbedding.data[0].embedding,
+    match_count: 4,
+    match_threshold: 0.3,
+  });
 
-  const systemPrompt = `Eres un asistente de fisioterapia y medicina deportiva para PhysioGuide AI. Tu función es orientar al usuario en español de forma clara, empática y estructurada.
+  const merged = new Map<string, RagChunk>();
+  for (const c of [...(chunks ?? []), ...(functionalChunks ?? [])] as RagChunk[]) {
+    const key = `${c.source_name ?? ""}::${(c.content ?? "").slice(0, 80)}`;
+    if (!merged.has(key)) merged.set(key, c);
+  }
+  const { context, sources } = formatRagContext([...merged.values()]);
 
-FORMATO OBLIGATORIO — responde SIEMPRE en este orden exacto con estos encabezados en negrita:
+  const systemPrompt = `Eres un asistente de fisioterapia y medicina deportiva para Kinora. Orientas al usuario en español con claridad, empatía y detalle moderado.
 
-**Resumen de tu consulta**
-Describe brevemente en 2-3 frases lo que el paciente ha explicado (zona, cómo empezó, nivel de dolor, si hubo traumatismo).
+IMPORTANTE: NO emites diagnósticos definitivos.
+OBLIGATORIO si el caso NO es urgente: incluye la sección **Pruebas funcionales** con 3–6 pruebas concretas y pide al paciente que las haga y te responda los resultados.
 
-**Posibles causas**
-Explica de forma sencilla qué puede haber provocado la lesión o molestia.
+${AI_EVIDENCE_AND_SEVERITY_RULES}
 
-**Posibles lesiones**
-Menciona las lesiones más probables según los síntomas descritos. No hagas diagnóstico definitivo.
-
-**Qué hacer mientras esperas**
-Da consejos prácticos y concretos: reposo, hielo/calor, elevación, medicación básica si aplica, movimientos a evitar, etc.
-
-**¿Necesitas contactar con nuestro fisioterapeuta?**
-Pregunta al usuario si quiere que le pongamos en contacto con nuestro fisioterapeuta para una valoración personalizada. Si hay signos de alarma, recomienda atención médica urgente.
-
-REGLAS DE FORMATO:
-- Usa ** únicamente para los encabezados de sección, no para resaltar palabras dentro del texto
-- Para listas usa guiones (-) nunca asteriscos (*)
-- Lenguaje sencillo, no técnico`;
+${AI_DATA_FIDELITY_RULES}`;
 
   const userMessage = [
-    athleteContext ? `Perfil del paciente:\n${athleteContext}` : "",
     `Síntomas actuales:\n${queryText}`,
+    athleteContext ? athleteContext : "",
     context
       ? `Información relevante de los documentos:\n${context}`
       : "(No se encontró información específica en la base de conocimientos. Responde con tus conocimientos generales de fisioterapia.)",
+    buildFunctionalQuestionsPromptBlock(body.bodyArea),
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -123,13 +129,17 @@ REGLAS DE FORMATO:
       { role: "user", content: userMessage },
     ],
     temperature: 0.3,
-    max_tokens: 900,
+    max_tokens: 1700,
   });
 
-  const answer = completion.choices[0].message.content ?? "";
+  const answer = appendSourcesFooter(
+    completion.choices[0].message.content ?? "",
+    sources
+  );
 
   return NextResponse.json({
     answer,
-    sourcesUsed: chunks?.length ?? 0,
+    sourcesUsed: sources.length,
+    sources,
   });
 }

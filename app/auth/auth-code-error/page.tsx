@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Error de acceso · PhysioGuide AI",
+  title: "Error de acceso · Kinora",
 };
 
 export default function AuthCodeErrorPage() {

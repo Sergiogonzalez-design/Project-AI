@@ -8,7 +8,7 @@ import {
 export type GenericConsultaAnswers = {
   evolucion: string;
   inicio: string;
-  mecanismo: string;
+  mecanismo: string[];
   mecanismo_otro: string;
   intensidad_dolor: number;
   descripcion: string;
@@ -21,7 +21,7 @@ export function defaultGenericConsultaAnswers(): GenericConsultaAnswers {
   return {
     evolucion: "",
     inicio: "",
-    mecanismo: "",
+    mecanismo: [],
     mecanismo_otro: "",
     intensidad_dolor: 5,
     descripcion: "",
@@ -34,8 +34,8 @@ export function defaultGenericConsultaAnswers(): GenericConsultaAnswers {
 export function validateGenericConsulta(a: GenericConsultaAnswers): string | null {
   if (!a.evolucion) return "Indica cuánto tiempo llevas con el problema.";
   if (!a.inicio) return "Indica cómo fue el inicio.";
-  if (!a.mecanismo) return "Indica qué pudo provocarlo.";
-  if (a.mecanismo === "Otro" && !a.mecanismo_otro.trim()) return "Describe el mecanismo.";
+  if (!a.mecanismo.length) return "Indica qué pudo provocarlo.";
+  if (a.mecanismo.includes("Otro") && !a.mecanismo_otro.trim()) return "Describe el mecanismo.";
   if (!a.rf_deformidad || !a.rf_fiebre || !a.rf_perdida_sensibilidad) {
     return "Responde las preguntas de urgencia.";
   }
@@ -57,7 +57,7 @@ export function formatGenericConsulta(a: GenericConsultaAnswers, bodyMapText: st
     redFlags.length ? `⚠️ BANDERAS ROJAS: ${redFlags.join(", ")}` : "Sin banderas rojas marcadas",
     `Evolución: ${a.evolucion}`,
     `Inicio: ${a.inicio}`,
-    `Mecanismo: ${a.mecanismo}${a.mecanismo === "Otro" ? ` (${a.mecanismo_otro})` : ""}`,
+    `Mecanismo: ${a.mecanismo.join(", ")}${a.mecanismo.includes("Otro") ? ` (${a.mecanismo_otro})` : ""}`,
     `Intensidad dolor: ${a.intensidad_dolor}/10`,
     a.descripcion.trim() ? `Detalles adicionales: ${a.descripcion.trim()}` : "",
   ]

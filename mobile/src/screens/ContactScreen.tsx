@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -12,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { DismissKeyboard } from "../components/DismissKeyboard";
 import { Colors } from "../lib/colors";
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
@@ -62,12 +64,15 @@ export function ContactScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView
-        style={styles.root}
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <DismissKeyboard>
+        <ScrollView
+          style={styles.root}
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={Keyboard.dismiss}
+        >
         <Text style={styles.pageTitle}>Contacto</Text>
         <Text style={styles.pageSubtitle}>
           Contacta directamente con tu entrenador atlético.
@@ -141,6 +146,7 @@ export function ContactScreen() {
           )}
         </Pressable>
       </ScrollView>
+      </DismissKeyboard>
     </KeyboardAvoidingView>
   );
 }

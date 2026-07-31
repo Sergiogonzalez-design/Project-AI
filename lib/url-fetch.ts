@@ -39,7 +39,7 @@ export async function fetchUrlHtml(url: URL): Promise<string> {
       signal: controller.signal,
       headers: {
         "User-Agent":
-          "PhysioGuideBot/1.0 (+https://project-ai-swart.vercel.app; knowledge ingestion)",
+          "KinoraBot/1.0 (+https://project-ai-swart.vercel.app; knowledge ingestion)",
         Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
       },
       redirect: "follow",

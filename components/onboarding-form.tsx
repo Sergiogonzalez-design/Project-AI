@@ -10,7 +10,9 @@ import {
   DOMINANT_HAND_OPTIONS,
   PERFORMANCE_GOALS,
   SEX_OPTIONS,
+  normalizeSportsInput,
 } from "@/lib/profile-options";
+import { sportHasPosition } from "@/lib/sport-has-position";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
@@ -122,8 +124,8 @@ export function OnboardingForm() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        primary_sport: primarySport.trim(),
-        sport_position: sportPosition.trim() || null,
+        primary_sport: normalizeSportsInput(primarySport),
+        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
         competitive_level: competitiveLevel,
         sessions_per_week: Number(sessionsPerWeek),
         hours_per_week: Number(hoursPerWeek),
@@ -135,7 +137,7 @@ export function OnboardingForm() {
 
       if (saveErr) throw new Error(saveErr.message);
 
-      router.replace("/");
+      router.replace("/consulta");
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al guardar el perfil.");
@@ -147,7 +149,7 @@ export function OnboardingForm() {
   return (
     <div className="w-full max-w-lg rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8">
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo-icon.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="Kinora" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">
             {step === 1 ? "Información básica" : "Perfil deportivo"}
@@ -260,26 +262,35 @@ export function OnboardingForm() {
       ) : (
         <div className="space-y-5">
           <div>
-            <label className={labelClass}>Deporte principal</label>
+            <label className={labelClass}>¿Qué deporte practicas?</label>
             <input
               type="text"
               value={primarySport}
-              onChange={(e) => setPrimarySport(e.target.value)}
-              placeholder="Ej: Fútbol, natación, baloncesto…"
+              onChange={(e) => {
+                const next = e.target.value;
+                setPrimarySport(next);
+                if (!sportHasPosition(next)) setSportPosition("");
+              }}
+              placeholder="Puedes poner varios: fútbol, pádel, natación…"
               className={inputClass}
             />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Si practicas más de uno, sepáralos con comas.
+            </p>
           </div>
 
-          <div>
-            <label className={labelClass}>Posición (opcional)</label>
-            <input
-              type="text"
-              value={sportPosition}
-              onChange={(e) => setSportPosition(e.target.value)}
-              placeholder="Ej: Delantero, portero, base…"
-              className={inputClass}
-            />
-          </div>
+          {sportHasPosition(primarySport) && (
+            <div>
+              <label className={labelClass}>Posición (opcional)</label>
+              <input
+                type="text"
+                value={sportPosition}
+                onChange={(e) => setSportPosition(e.target.value)}
+                placeholder="Ej: Delantero, portero, base…"
+                className={inputClass}
+              />
+            </div>
+          )}
 
           <div>
             <label className={labelClass}>Nivel competitivo</label>

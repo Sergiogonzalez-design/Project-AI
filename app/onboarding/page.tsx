@@ -3,7 +3,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Completa tu perfil · PhysioGuide AI",
+  title: "Completa tu perfil · Kinora",
   description: "Información básica y perfil deportivo",
 };
 

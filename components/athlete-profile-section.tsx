@@ -8,7 +8,9 @@ import {
   DOMINANT_HAND_OPTIONS,
   PERFORMANCE_GOALS,
   SEX_OPTIONS,
+  normalizeSportsInput,
 } from "@/lib/profile-options";
+import { sportHasPosition } from "@/lib/sport-has-position";
 import { Check, Loader2, Pencil, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -174,8 +176,8 @@ export function AthleteProfileSection() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        primary_sport: primarySport.trim(),
-        sport_position: sportPosition.trim() || null,
+        primary_sport: normalizeSportsInput(primarySport),
+        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
         competitive_level: competitiveLevel,
         sessions_per_week: Number(sessionsPerWeek),
         hours_per_week: Number(hoursPerWeek),
@@ -185,7 +187,11 @@ export function AthleteProfileSection() {
 
       const { error: saveErr } = await supabase
         .from("profiles")
-        .update({ ...updated, updated_at: new Date().toISOString() })
+        .update({
+          ...updated,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", userId);
 
       if (saveErr) throw new Error(saveErr.message);
@@ -216,6 +222,9 @@ export function AthleteProfileSection() {
   }
 
   const hasData = profile?.primary_sport || profile?.age;
+  const showPositionField = sportHasPosition(primarySport);
+  const showSavedPosition =
+    sportHasPosition(profile?.primary_sport ?? "") && !!profile?.sport_position;
 
   return (
     <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
@@ -264,7 +273,9 @@ export function AthleteProfileSection() {
                 Deporte y entrenamiento
               </p>
               <SummaryRow label="Deporte" value={profile?.primary_sport} />
-              <SummaryRow label="Posición" value={profile?.sport_position} />
+              {showSavedPosition && (
+                <SummaryRow label="Posición" value={profile?.sport_position} />
+              )}
               <SummaryRow label="Nivel" value={profile?.competitive_level} />
               <SummaryRow
                 label="Entrenamiento"
@@ -335,13 +346,34 @@ export function AthleteProfileSection() {
           <div className="space-y-4 border-t border-slate-100 pt-6">
             <p className="text-sm font-bold text-slate-700">Perfil deportivo</p>
             <div>
-              <label className={labelClass}>Deporte principal</label>
-              <input type="text" value={primarySport} onChange={(e) => setPrimarySport(e.target.value)} className={inputClass} />
+              <label className={labelClass}>¿Qué deporte practicas?</label>
+              <input
+                type="text"
+                value={primarySport}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setPrimarySport(next);
+                  if (!sportHasPosition(next)) setSportPosition("");
+                }}
+                placeholder="Puedes poner varios: fútbol, pádel, natación…"
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Si practicas más de uno, sepáralos con comas.
+              </p>
             </div>
-            <div>
-              <label className={labelClass}>Posición (opcional)</label>
-              <input type="text" value={sportPosition} onChange={(e) => setSportPosition(e.target.value)} className={inputClass} />
-            </div>
+            {showPositionField && (
+              <div>
+                <label className={labelClass}>Posición (opcional)</label>
+                <input
+                  type="text"
+                  value={sportPosition}
+                  onChange={(e) => setSportPosition(e.target.value)}
+                  placeholder="Ej: Delantero, portero, base…"
+                  className={inputClass}
+                />
+              </div>
+            )}
             <div>
               <label className={labelClass}>Nivel competitivo</label>
               <ChipGroup options={COMPETITIVE_LEVELS} value={competitiveLevel} onChange={setCompetitiveLevel} />

@@ -27,7 +27,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
       });
       if (signError) { setError(signError.message); return; }
       const safeNext =
-        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/";
+        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/consulta";
       router.replace(safeNext);
       router.refresh();
     } finally {
@@ -38,16 +38,16 @@ export function LoginForm({ nextPath }: LoginFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-sm rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8"
+      className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white px-6 py-9 shadow-xl shadow-blue-500/10 sm:px-8"
     >
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo-icon.png" alt="PhysioGuide AI" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="Kinora" width={56} height={56} className="object-contain" />
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Iniciar sesión</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Iniciar sesión</h1>
           <p className="mt-1 text-sm text-slate-500">
             {nextPath === "/admin"
-              ? "Acceso de administrador — subir documentos a la IA"
-              : "Accede a tu cuenta de PhysioGuide AI"}
+              ? "Acceso de administrador — panel de gestión"
+              : "Accede a tu cuenta de Kinora"}
           </p>
         </div>
       </div>
@@ -58,7 +58,6 @@ export function LoginForm({ nextPath }: LoginFormProps) {
           type="email" name="email" autoComplete="email" required
           value={email} onChange={(e) => setEmail(e.target.value)}
           className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          placeholder="tu@correo.com"
         />
       </div>
 
@@ -68,7 +67,6 @@ export function LoginForm({ nextPath }: LoginFormProps) {
           type="password" name="password" autoComplete="current-password" required minLength={6}
           value={password} onChange={(e) => setPassword(e.target.value)}
           className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          placeholder="••••••••"
         />
       </div>
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PhysioGuide AI",
+    "name": "Kinora",
     "slug": "physioguidea",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -31,7 +31,23 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "color": "#2563EB"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "Kinora necesita acceso a tus fotos para adjuntar una imagen de la lesión a la consulta.",
+          cameraPermission:
+            "Kinora necesita la cámara para fotografiar la zona lesionada."
+        }
+      ]
     ],
     "extra": {
       "eas": {

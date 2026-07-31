@@ -1,18 +1,24 @@
 export const Colors = {
-  primary: "#1D4ED8",       // blue-700 — main brand blue
-  primaryLight: "#DBEAFE",  // blue-100 — light tint backgrounds
-  primaryDark: "#1E3A8A",   // blue-900 — pressed / headers
+  primary: "#2563EB",
+  primaryLight: "#DBEAFE",
+  primarySoft: "#EFF6FF",
+  primaryDark: "#1E40AF",
   white: "#FFFFFF",
-  background: "#F8FAFF",    // off-white with blue tint
+  background: "#F5F8FF",
   surface: "#FFFFFF",
-  border: "#BFDBFE",        // blue-200
-  text: "#1E293B",          // slate-800
-  textSecondary: "#64748B", // slate-500
-  textLight: "#94A3B8",     // slate-400
+  border: "#E2E8F0",
+  borderStrong: "#BFDBFE",
+  text: "#0F172A",
+  textSecondary: "#64748B",
+  textLight: "#94A3B8",
   danger: "#EF4444",
+  dangerSoft: "#FEF2F2",
   success: "#10B981",
+  successSoft: "#ECFDF5",
+  warning: "#F59E0B",
+  warningSoft: "#FFFBEB",
   tabBar: "#FFFFFF",
-  tabBarBorder: "#E2E8F0",
-  tabIconActive: "#1D4ED8",
+  tabBarBorder: "#F1F5F9",
+  tabIconActive: "#2563EB",
   tabIconInactive: "#94A3B8",
 };

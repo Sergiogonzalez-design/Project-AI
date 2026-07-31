@@ -2,11 +2,12 @@ export const BODY_PARTS = [
   { id: "shoulder", label: "Hombro" },
   { id: "elbow", label: "Codo" },
   { id: "wrist_hand", label: "Muñeca / Mano" },
+  { id: "finger", label: "Dedos" },
   { id: "neck", label: "Cuello" },
   { id: "back", label: "Espalda" },
   { id: "hip", label: "Cadera" },
   { id: "knee", label: "Rodilla" },
-  { id: "ankle_foot", label: "Tobillo / Pie" },
+  { id: "ankle_foot", label: "Pierna baja / Tobillo / Pie" },
 ] as const;
 
 export type BodyPartId = (typeof BODY_PARTS)[number]["id"];

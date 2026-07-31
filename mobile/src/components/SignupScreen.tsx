@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,7 +17,10 @@ import {
   authEmailProps,
   authPasswordProps,
 } from "./AuthTextField";
+import { DismissKeyboard } from "./DismissKeyboard";
 import { Colors } from "../lib/colors";
+import { useI18n } from "../lib/i18n";
+import { WEB_APP_URL } from "../lib/admin-api";
 import { supabase } from "../lib/supabase";
 
 type Props = {
@@ -24,18 +28,17 @@ type Props = {
 };
 
 export function SignupScreen({ onSwitch }: Props) {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
 
   async function handleSignup() {
     setError(null);
-    setInfo(null);
     if (!email.trim() || !password.trim()) {
       setError("Rellena todos los campos.");
       return;
@@ -50,19 +53,26 @@ export function SignupScreen({ onSwitch }: Props) {
     }
     setLoading(true);
     try {
-      const { data, error: signError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+      const emailNorm = email.trim().toLowerCase();
+      const res = await fetch(`${WEB_APP_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailNorm, password }),
+      });
+      const payload = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setError(payload.error ?? "No se pudo crear la cuenta.");
+        return;
+      }
+
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email: emailNorm,
         password,
       });
       if (signError) {
         setError(signError.message);
-        return;
       }
-      if (!data.session) {
-        setInfo(
-          "Revisa tu correo y confirma la cuenta para poder entrar."
-        );
-      }
+      // Session change is handled by App.tsx auth listener → onboarding
     } finally {
       setLoading(false);
     }
@@ -74,15 +84,17 @@ export function SignupScreen({ onSwitch }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-      >
+      <DismissKeyboard>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={Keyboard.dismiss}
+        >
         <View style={styles.header}>
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
-          <Text style={styles.title}>PhysioGuide AI</Text>
+          <Text style={styles.title}>{t.auth.signupTitle}</Text>
           <Text style={styles.subtitle}>Crea tu cuenta</Text>
         </View>
 
@@ -124,7 +136,6 @@ export function SignupScreen({ onSwitch }: Props) {
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          {info ? <Text style={styles.info}>{info}</Text> : null}
 
           <Pressable
             style={({ pressed }) => [
@@ -149,6 +160,7 @@ export function SignupScreen({ onSwitch }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+      </DismissKeyboard>
     </KeyboardAvoidingView>
   );
 }
@@ -175,10 +187,10 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   title: {
-    fontSize: 26,
-    fontWeight: "700",
+    fontSize: 32,
+    fontWeight: "800",
     color: Colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   subtitle: {
     marginTop: 6,
@@ -187,29 +199,15 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.text,
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: Colors.text,
-    backgroundColor: Colors.background,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
   },
   error: {
     marginTop: 12,
@@ -217,23 +215,17 @@ const styles = StyleSheet.create({
     color: Colors.danger,
     textAlign: "center",
   },
-  info: {
-    marginTop: 12,
-    fontSize: 13,
-    color: Colors.primary,
-    textAlign: "center",
-  },
   button: {
     marginTop: 24,
     backgroundColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 5,
   },
   buttonPressed: {
     backgroundColor: Colors.primaryDark,

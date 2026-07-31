@@ -13,12 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PhysioGuide AI",
+  title: "Kinora",
   description: "Guía y consulta de fisioterapia",
-  icons: {
-    icon: "/logo-icon.png",
-    apple: "/logo-icon.png",
-  },
 };
 
 export default function RootLayout({
@@ -31,7 +27,7 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-white font-sans text-neutral-900 antialiased">
+      <body className="flex min-h-full flex-col bg-[#F5F8FF] font-sans text-slate-900 antialiased">
         {children}
       </body>
     </html>

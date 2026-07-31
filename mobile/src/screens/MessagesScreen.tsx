@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -192,6 +193,9 @@ export function MessagesScreen() {
           keyExtractor={(m) => m.id}
           contentContainerStyle={styles.messageList}
           onContentSizeChange={scrollToEnd}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          onScrollBeginDrag={Keyboard.dismiss}
           renderItem={({ item: msg }) => {
             const isUser = msg.sender_role === "user";
             return (

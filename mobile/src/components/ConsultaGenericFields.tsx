@@ -5,26 +5,84 @@ import {
   GENERIC_FIELD_OPTIONS,
   type GenericConsultaAnswers,
 } from "../lib/consulta-generic";
+import {
+  localizeShoulderOption,
+  type ConsultLocale,
+} from "../lib/consulta-shoulder-adaptive";
 import { Colors } from "../lib/colors";
+import { chipStyle, chipTextStyle } from "./ui/chipStyle";
+import { PainScale } from "./ui/PainScale";
+
+const GENERIC_LABELS_EN = {
+  banner: "Questionnaire to gather details before guidance.",
+  urgency: "Urgency check",
+  rf_deformidad: "Obvious deformity?",
+  rf_fiebre: "Associated fever?",
+  rf_perdida_sensibilidad: "Loss of sensation?",
+  problem: "Your problem",
+  evolucion: "How long have you had this?",
+  inicio: "How did it start?",
+  mecanismo: "What may have caused it? (you can select several)",
+  mecanismo_otro: "Describe the mechanism",
+  intensidad: "Pain intensity",
+  descripcion: "Additional details (optional)",
+  descripcion_ph: "Any extra information…",
+} as const;
 
 function ChipGroup({
   options,
   value,
   onChange,
+  displayOption,
 }: {
   options: readonly string[];
   value: string;
   onChange: (v: string) => void;
+  displayOption?: (opt: string) => string;
 }) {
   return (
     <View style={styles.chipGrid}>
       {options.map((opt) => (
         <Pressable
           key={opt}
-          style={[styles.chip, value === opt && styles.chipSelected]}
+          style={chipStyle(value === opt)}
           onPress={() => onChange(opt)}
         >
-          <Text style={[styles.chipText, value === opt && styles.chipTextSelected]}>{opt}</Text>
+          <Text style={chipTextStyle(value === opt)}>
+            {displayOption ? displayOption(opt) : opt}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function MultiChipGroup({
+  options,
+  value,
+  onChange,
+  displayOption,
+}: {
+  options: readonly string[];
+  value: string[];
+  onChange: (v: string[]) => void;
+  displayOption?: (opt: string) => string;
+}) {
+  const toggle = (opt: string) => {
+    if (value.includes(opt)) onChange(value.filter((v) => v !== opt));
+    else onChange([...value, opt]);
+  };
+  return (
+    <View style={styles.chipGrid}>
+      {options.map((opt) => (
+        <Pressable
+          key={opt}
+          style={chipStyle(value.includes(opt))}
+          onPress={() => toggle(opt)}
+        >
+          <Text style={chipTextStyle(value.includes(opt))}>
+            {displayOption ? displayOption(opt) : opt}
+          </Text>
         </Pressable>
       ))}
     </View>
@@ -34,63 +92,63 @@ function ChipGroup({
 type Props = {
   value: GenericConsultaAnswers;
   onChange: (v: GenericConsultaAnswers) => void;
+  locale?: ConsultLocale;
 };
 
-export function ConsultaGenericFields({ value, onChange }: Props) {
+export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props) {
   const a = value ?? defaultGenericConsultaAnswers();
   const patch = (p: Partial<GenericConsultaAnswers>) => onChange({ ...a, ...p });
+  const en = locale === "en";
+  const L = GENERIC_LABELS_EN;
+  const displayOption = (opt: string) => localizeShoulderOption(opt, locale);
 
   return (
     <View>
       <View style={styles.warnBox}>
         <Text style={styles.warnText}>
-          Cuestionario detallado disponible para hombro. Para otras zonas, responde estas preguntas básicas.
+          {en
+            ? L.banner
+            : "Cuestionario para recoger detalles antes de orientación."}
         </Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Comprobación de urgencia</Text>
-      <Text style={styles.label}>¿Deformidad evidente?</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_deformidad} onChange={(rf_deformidad) => patch({ rf_deformidad })} />
-      <Text style={styles.label}>¿Fiebre asociada?</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_fiebre} onChange={(rf_fiebre) => patch({ rf_fiebre })} />
-      <Text style={styles.label}>¿Pérdida de sensibilidad?</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_perdida_sensibilidad} onChange={(rf_perdida_sensibilidad) => patch({ rf_perdida_sensibilidad })} />
+      <Text style={styles.sectionTitle}>{en ? L.urgency : "Comprobación de urgencia"}</Text>
+      <Text style={styles.label}>{en ? L.rf_deformidad : "¿Deformidad evidente?"}</Text>
+      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_deformidad} onChange={(rf_deformidad) => patch({ rf_deformidad })} displayOption={displayOption} />
+      <Text style={styles.label}>{en ? L.rf_fiebre : "¿Fiebre asociada?"}</Text>
+      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_fiebre} onChange={(rf_fiebre) => patch({ rf_fiebre })} displayOption={displayOption} />
+      <Text style={styles.label}>{en ? L.rf_perdida_sensibilidad : "¿Pérdida de sensibilidad?"}</Text>
+      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_perdida_sensibilidad} onChange={(rf_perdida_sensibilidad) => patch({ rf_perdida_sensibilidad })} displayOption={displayOption} />
 
-      <Text style={styles.sectionTitle}>Tu problema</Text>
-      <Text style={styles.label}>¿Cuánto tiempo llevas con esto?</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.evolution} value={a.evolucion} onChange={(evolucion) => patch({ evolucion })} />
-      <Text style={styles.label}>¿Cómo fue el inicio?</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.onset} value={a.inicio} onChange={(inicio) => patch({ inicio })} />
-      <Text style={styles.label}>¿Qué pudo provocarlo?</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.mechanism} value={a.mecanismo} onChange={(mecanismo) => patch({ mecanismo })} />
-      {a.mecanismo === "Otro" && (
+      <Text style={styles.sectionTitle}>{en ? L.problem : "Tu problema"}</Text>
+      <Text style={styles.label}>{en ? L.evolucion : "¿Cuánto tiempo llevas con esto?"}</Text>
+      <ChipGroup options={GENERIC_FIELD_OPTIONS.evolution} value={a.evolucion} onChange={(evolucion) => patch({ evolucion })} displayOption={displayOption} />
+      <Text style={styles.label}>{en ? L.inicio : "¿Cómo fue el inicio?"}</Text>
+      <ChipGroup options={GENERIC_FIELD_OPTIONS.onset} value={a.inicio} onChange={(inicio) => patch({ inicio })} displayOption={displayOption} />
+      <Text style={styles.label}>{en ? L.mecanismo : "¿Qué pudo provocarlo? (puedes marcar varias)"}</Text>
+      <MultiChipGroup options={GENERIC_FIELD_OPTIONS.mechanism} value={a.mecanismo} onChange={(mecanismo) => patch({ mecanismo })} displayOption={displayOption} />
+      {a.mecanismo.includes("Otro") && (
         <TextInput
           style={styles.input}
           value={a.mecanismo_otro}
           onChangeText={(mecanismo_otro) => patch({ mecanismo_otro })}
-          placeholder="Describe el mecanismo"
+          placeholder={en ? L.mecanismo_otro : "Describe el mecanismo"}
           placeholderTextColor={Colors.textLight}
         />
       )}
-      <Text style={styles.label}>Intensidad del dolor: {a.intensidad_dolor}/10</Text>
-      <View style={styles.painRow}>
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-          <Pressable
-            key={n}
-            style={[styles.painChip, a.intensidad_dolor === n && styles.chipSelected]}
-            onPress={() => patch({ intensidad_dolor: n })}
-          >
-            <Text style={[styles.painText, a.intensidad_dolor === n && styles.chipTextSelected]}>{n}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Text style={styles.label}>Detalles adicionales (opcional)</Text>
+      <PainScale
+        value={a.intensidad_dolor}
+        onChange={(v) => patch({ intensidad_dolor: v })}
+        label={en ? L.intensidad : "Intensidad del dolor"}
+        locale={locale}
+      />
+      <Text style={styles.label}>{en ? L.descripcion : "Detalles adicionales (opcional)"}</Text>
       <TextInput
         style={styles.input}
         value={a.descripcion}
         onChangeText={(descripcion) => patch({ descripcion })}
         multiline
-        placeholder="Cualquier información extra…"
+        placeholder={en ? L.descripcion_ph : "Cualquier información extra…"}
         placeholderTextColor={Colors.textLight}
       />
     </View>

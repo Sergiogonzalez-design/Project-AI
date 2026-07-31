@@ -6,4 +6,4 @@ export const THERAPIST = {
 } as const;
 
 export const THERAPIST_WELCOME =
-  "Hola, soy David Ramirez Moreno, entrenador atlético de PhysioGuide AI. Este es tu canal directo conmigo. Cuando actives Premium podrás enviarme mensajes y te responderé personalmente lo antes posible.";
+  "Hola, soy David Ramirez Moreno, entrenador atlético de Kinora. Este es tu canal directo conmigo. Cuando actives Premium podrás enviarme mensajes y te responderé personalmente lo antes posible.";

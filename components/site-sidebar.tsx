@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { isClientAdminEmail } from "@/lib/is-admin-client";
 import { createClient } from "@/lib/supabase/client";
 
-const links = [
+const baseLinks = [
   { href: "/consulta", label: "Consulta" },
-  { href: "/conocimientos", label: "Conocimientos" },
   { href: "/sobre-nosotros", label: "Sobre Nosotros" },
 ] as const;
 
@@ -15,6 +15,25 @@ export function SiteSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const isAdmin = isClientAdminEmail(userEmail);
+
+  const links = useMemo(() => {
+    if (!isAdmin) return [...baseLinks];
+    return [...baseLinks, { href: "/admin", label: "Admin" }];
+  }, [isAdmin]);
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -34,11 +53,12 @@ export function SiteSidebar() {
         href="/"
         className="mb-10 text-lg font-semibold tracking-tight text-neutral-900"
       >
-        PhysioGuide AI
+        Kinora
       </Link>
       <nav className="flex flex-1 flex-col gap-1">
         {links.map(({ href, label }) => {
-          const active = pathname === href;
+          const active =
+            href === "/admin" ? pathname.startsWith("/admin") : pathname === href;
           return (
             <Link
               key={href}
