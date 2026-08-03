@@ -38,7 +38,16 @@ export type FunctionalProtocolId =
   | "adductor"
   | "biceps"
   | "pectoral"
-  | "triceps";
+  | "triceps"
+  | "ankle"
+  | "foot"
+  | "shoulder"
+  | "elbow"
+  | "wrist_hand"
+  | "knee"
+  | "hip"
+  | "lumbar"
+  | "cervical";
 
 export type FunctionalProtocol = {
   id: FunctionalProtocolId;
@@ -654,6 +663,734 @@ export const TRICEPS_PROTOCOL: FunctionalProtocol = {
   },
 };
 
+/** Ankle — from Foot & Ankle Assessment Dossier (Part 24). */
+export const ANKLE_PROTOCOL: FunctionalProtocol = {
+  id: "ankle",
+  match: /tobillo|ankle|esguince(\s*(de\s*)?tobillo)?|maleolo|ATFL|CAI|ankle_foot/i,
+  name: {
+    es: "Valoración funcional — Tobillo",
+    en: "Functional assessment — Ankle",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay deformidad marcada, imposibilidad de apoyar 4 pasos tras trauma (Ottawa), o sospecha de fractura/luxación → HOSPITAL / URGENCIAS. NO pidas batería de tests funcionales en ese caso.",
+    en:
+      "If there is marked deformity, inability to walk 4 steps after trauma (Ottawa), or suspected fracture/dislocation → go to ER/hospital. Do NOT run the functional test battery in that case.",
+  },
+  historyItems: [
+    {
+      id: "hx_inversion_twist",
+      question: {
+        es: "¿Fue un torcedura / inversión (el pie hacia dentro)?",
+        en: "Was it a twist / inversion (foot rolling inward)?",
+      },
+    },
+    {
+      id: "hx_pop_snap",
+      question: {
+        es: "¿Escuchaste o notaste un chasquido?",
+        en: "Did you hear or feel a pop/snap?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_full_wb_walk",
+      question: {
+        es: "¿Puedes apoyar el pie completo y dar 4 pasos sin cojera marcada?",
+        en: "Can you put full weight on the foot and take 4 steps without a marked limp?",
+      },
+      positiveWhen: "no",
+    },
+    {
+      id: "test_single_heel_raise",
+      question: {
+        es: "¿Duele o no puedes hacer elevaciones de talón a una sola pierna?",
+        en: "Does it hurt or can you not do single-leg heel raises?",
+      },
+    },
+    {
+      id: "test_single_leg_stance",
+      question: {
+        es: "¿Aguantas 20–30 segundos a la pata coja sin dolor fuerte o inestabilidad?",
+        en: "Can you hold a single-leg stance 20–30 seconds without strong pain or instability?",
+      },
+      positiveWhen: "no",
+    },
+    {
+      id: "test_lateral_ligament_pain",
+      question: {
+        es: "¿Duele al tocar justo delante/debajo del maleolo lateral (tobillo por fuera)?",
+        en: "Does it hurt to touch just in front of / below the lateral malleolus (outer ankle)?",
+      },
+    },
+    {
+      id: "test_giving_way",
+      question: {
+        es: "¿Notas que el tobillo “falla” o se va al caminar o girar?",
+        en: "Does the ankle feel like it “gives way” when walking or turning?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo establecido: 24–36 h de reposo relativo (evitar carrera, saltos y cambios de dirección). Protección con vendaje/tobillera si ayuda. Luego repetir exactamente los mismos tests SÍ/NO.",
+    en:
+      "Established protocol: 24–36 h of relative rest (avoid running, jumping, and cutting). Brace/tape if helpful. Then repeat exactly the same yes/no tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si al repetir los tests (tras ~36 h) sigue doliendo o inestable, recomendar valoración presencial; RX si criterios Ottawa / trauma; eco o RMN según sospecha de tendón/ligamento.",
+    en:
+      "If on retest (after ~36 h) it still hurts or feels unstable, recommend in-person assessment; X-ray if Ottawa/trauma criteria; ultrasound or MRI depending on tendon/ligament suspicion.",
+  },
+};
+
+/** Foot / plantar — from Foot & Ankle Assessment Dossier (Part 24). */
+export const FOOT_PROTOCOL: FunctionalProtocol = {
+  id: "foot",
+  match:
+    /pie\b|foot|fascitis|plantar|tal[oó]n|hallux|metatars|antepi[eé]|arco\s*(medial|plantar)/i,
+  name: {
+    es: "Valoración funcional — Pie / fascia plantar",
+    en: "Functional assessment — Foot / plantar fascia",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay trauma de mediopié con imposibilidad de apoyar, dolor óseo en 5.º metatarsiano/navicular (Ottawa pie), o deformidad → HOSPITAL / imagen urgente.",
+    en:
+      "If midfoot trauma with inability to bear weight, bone pain at 5th MT/navicular (Ottawa foot), or deformity → ER / urgent imaging.",
+  },
+  historyItems: [
+    {
+      id: "hx_first_step_pain",
+      question: {
+        es: "¿Te duele mucho el primer paso de la mañana en el talón o el arco?",
+        en: "Is the first step in the morning very painful in the heel or arch?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_morning_first_step",
+      question: {
+        es: "¿El dolor del talón/arco es peor al primer apoyo y luego mejora un poco al caminar?",
+        en: "Is heel/arch pain worst with the first steps and then eases a bit as you walk?",
+      },
+    },
+    {
+      id: "test_windlass_hallux",
+      question: {
+        es: "¿Duele la planta (cerca del talón) al extender el dedo gordo hacia arriba?",
+        en: "Does the sole (near the heel) hurt when you extend the big toe upward?",
+      },
+    },
+    {
+      id: "test_forefoot_tiptoe",
+      question: {
+        es: "¿Duele el antepié al ponerte de puntillas suaves?",
+        en: "Does the forefoot hurt when you gently rise onto tiptoes?",
+      },
+    },
+    {
+      id: "test_metatarsal_squeeze",
+      question: {
+        es: "¿Duele o hay chasquido al comprimir el antepié entre los metatarsianos?",
+        en: "Is there pain or a click when squeezing the forefoot across the metatarsals?",
+      },
+    },
+    {
+      id: "test_heel_raise_arch",
+      question: {
+        es: "¿Duele por dentro del arco o notas que el arco “colapsa” al hacer elevaciones de talón?",
+        en: "Does the inner arch hurt or feel like it “collapses” during heel raises?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo establecido: 24–36 h de reposo relativo (evitar carrera descalzo, saltos y carga intensa en antepié). Hielo breve si hay inflamación. Luego repetir exactamente los mismos tests SÍ/NO.",
+    en:
+      "Established protocol: 24–36 h of relative rest (avoid barefoot running, jumping, and heavy forefoot load). Brief ice if swollen. Then repeat exactly the same yes/no tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si al repetir los tests (tras ~36 h) sigue doliendo, recomendar valoración presencial; eco si fascitis/tendón persistente; RX si trauma/Ottawa pie.",
+    en:
+      "If on retest (after ~36 h) it still hurts, recommend in-person assessment; ultrasound if persistent fasciopathy/tendon pain; X-ray if trauma/Ottawa foot.",
+  },
+};
+
+/** Shoulder — elevation, reach behind, ER, cervical screen. */
+export const SHOULDER_PROTOCOL: FunctionalProtocol = {
+  id: "shoulder",
+  match: /hombro|shoulder|manguito|rotator\s*cuff|supraespin|deltoides/i,
+  name: {
+    es: "Valoración funcional — Hombro",
+    en: "Functional assessment — Shoulder",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay deformidad marcada, imposibilidad total de mover el brazo tras trauma, sospecha de luxación/fractura, o dolor de hombro izquierdo con sudor frío/náuseas/opresión torácica → URGENCIAS YA. No batería de tests.",
+    en:
+      "If marked deformity, total inability to move the arm after trauma, suspected dislocation/fracture, or left shoulder pain with cold sweat/nausea/chest pressure → ER NOW. No test battery.",
+  },
+  historyItems: [
+    {
+      id: "hx_overhead_trauma",
+      question: {
+        es: "¿El dolor empezó al levantar el brazo por encima de la cabeza, lanzar o caer sobre el hombro/brazo?",
+        en: "Did the pain start when raising the arm overhead, throwing, or falling on the shoulder/arm?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_overhead_elevation",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?",
+        en: "Can you raise the arm overhead without strong pain?",
+      },
+    },
+    {
+      id: "test_reach_behind",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes alcanzar la espalda (como abrocharte / meter la camiseta) sin dolor o bloqueo fuerte?",
+        en: "Can you reach behind your back (as if fastening a bra / tucking a shirt) without strong pain or blocking?",
+      },
+    },
+    {
+      id: "test_er_at_90",
+      positiveWhen: "no",
+      question: {
+        es: "Con el brazo a 90°, ¿puedes rotar la palma hacia arriba/atrás sin miedo a que se ‘salga’?",
+        en: "With the arm at 90°, can you rotate the palm up/back without fear it will ‘pop out’?",
+      },
+    },
+    {
+      id: "test_hold_light_front",
+      positiveWhen: "no",
+      question: {
+        es: "¿Aguantas un objeto ligero con el brazo extendido al frente 10–15 segundos sin dolor fuerte?",
+        en: "Can you hold a light object with the arm straight out in front for 10–15 seconds without strong pain?",
+      },
+    },
+    {
+      id: "test_neck_screen_shoulder",
+      question: {
+        es: "¿Al girar o inclinar la cabeza empeora el dolor del hombro o aparece hormigueo en el brazo?",
+        en: "Does turning or tilting the head worsen the shoulder pain or cause arm tingling?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar press, lanzamientos y cargas por encima de la cabeza). Luego repetir los mismos tests SÍ/NO.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid press, throwing, and overhead loads). Then repeat the same yes/no tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → valoración presencial; eco y/o RMN de manguito/partes blandas; si sospecha labrum → RMN (artro-RMN más específica).",
+    en:
+      "If retest still bad → in-person assessment; US and/or MRI for cuff/soft tissue; if labral suspicion → MRI (MR arthrogram more specific).",
+  },
+};
+
+/** Elbow — grip, ROM, resisted wrist, cervical screen. */
+export const ELBOW_PROTOCOL: FunctionalProtocol = {
+  id: "elbow",
+  match: /codo|elbow|epic[oó]ndil|epicondilit|codo\s*de\s*tenista|codo\s*de\s*golfista/i,
+  name: {
+    es: "Valoración funcional — Codo",
+    en: "Functional assessment — Elbow",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay deformidad, bloqueo total tras trauma, o imposibilidad clara de flexionar/extender → HOSPITAL / imagen urgente.",
+    en:
+      "If deformity, total lock after trauma, or clear inability to flex/extend → ER / urgent imaging.",
+  },
+  historyItems: [
+    {
+      id: "hx_grip_overload",
+      question: {
+        es: "¿El dolor empeora al agarrar, girar un pomo o levantar peso con el brazo?",
+        en: "Does pain worsen when gripping, turning a doorknob, or lifting with the arm?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_grip_pain",
+      question: {
+        es: "Con el codo estirado, ¿duele al cerrar el puño con fuerza o al girar un pomo?",
+        en: "With the elbow straight, does it hurt to make a strong fist or turn a doorknob?",
+      },
+    },
+    {
+      id: "test_elbow_full_rom",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes flexionar y extender el codo completo comparando con el otro lado?",
+        en: "Can you fully bend and straighten the elbow compared with the other side?",
+      },
+    },
+    {
+      id: "test_resisted_wrist",
+      question: {
+        es: "¿Duele al levantar la muñeca contra una resistencia suave (mano de un familiar)?",
+        en: "Does it hurt to lift the wrist against light resistance (a relative’s hand)?",
+      },
+    },
+    {
+      id: "test_carry_weight_elbow",
+      question: {
+        es: "¿Duele al llevar peso (bolsa, botella) con el codo casi estirado?",
+        en: "Does it hurt to carry weight (bag, bottle) with the elbow nearly straight?",
+      },
+    },
+    {
+      id: "test_neck_screen_elbow",
+      question: {
+        es: "¿Al girar la cabeza a derecha e izquierda empeora el dolor del codo o el hormigueo del brazo?",
+        en: "Does turning the head left/right worsen elbow pain or arm tingling?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar agarre fuerte, press y cargas con codo estirado). Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid hard gripping, pressing, and loads with a straight elbow). Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; RX si trauma; eco/RMN si tendón/ligamento; mantener cribado cervical si hay hormigueo.",
+    en:
+      "If retest still bad → in-person; X-ray if trauma; US/MRI if tendon/ligament; keep cervical screen if tingling.",
+  },
+};
+
+/** Wrist / hand — load, twist, prayer, fist. */
+export const WRIST_HAND_PROTOCOL: FunctionalProtocol = {
+  id: "wrist_hand",
+  match: /mu[nñ]eca|wrist|mano\b|hand|t[uú]nel\s*carpiano|TFCC|escafoides/i,
+  name: {
+    es: "Valoración funcional — Muñeca / mano",
+    en: "Functional assessment — Wrist / hand",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Tras caída sobre la mano: dolor en la “tabaquera” (base del pulgar) o imposibilidad de apoyar → sospecha de escafoides / fractura → HOSPITAL / RX (RX normal inicial no descarta).",
+    en:
+      "After a fall on the hand: snuffbox pain (base of thumb) or inability to load → suspect scaphoid/fracture → ER / X-ray (early normal X-ray does not rule it out).",
+  },
+  historyItems: [
+    {
+      id: "hx_fall_outstretched",
+      question: {
+        es: "¿Caíste apoyando la mano abierta o recibiste un golpe directo en la muñeca?",
+        en: "Did you fall onto an outstretched hand or take a direct blow to the wrist?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_palm_load",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes apoyar la palma y cargar un poco de peso sin dolor intenso?",
+        en: "Can you put the palm down and take a little weight without intense pain?",
+      },
+    },
+    {
+      id: "test_key_twist",
+      question: {
+        es: "¿Duele al girar una llave o abrir un tarro?",
+        en: "Does it hurt to turn a key or open a jar?",
+      },
+    },
+    {
+      id: "test_wrist_rom",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes flexionar y extender la muñeca de forma similar al otro lado?",
+        en: "Can you bend and extend the wrist similarly to the other side?",
+      },
+    },
+    {
+      id: "test_prayer_tingle",
+      question: {
+        es: "Si juntas las manos en posición de rezo y bajas los codos, ¿aparece hormigueo o dolor?",
+        en: "If you put palms together in a prayer position and lower the elbows, do tingling or pain appear?",
+      },
+    },
+    {
+      id: "test_full_fist",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes hacer un puño completo y abrirlo sin bloqueo ni chasquido fuerte?",
+        en: "Can you make a full fist and open it without locking or a strong click?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar apoyo de palma, giros fuertes y cargas). Hielo breve si hay hinchazón. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid palm loading, hard twists, and heavy loads). Brief ice if swollen. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; RX si trauma/escafoides; eco/RMN según tendón/TFCC/nervio.",
+    en:
+      "If retest still bad → in-person; X-ray if trauma/scaphoid; US/MRI depending on tendon/TFCC/nerve.",
+  },
+};
+
+/** Knee — ROM, step-down, SLS, lock. */
+export const KNEE_PROTOCOL: FunctionalProtocol = {
+  id: "knee",
+  match: /rodilla|knee|menisco|r[oó]tula|patel|LCA|ACL|LCL|MCL|cruzado/i,
+  name: {
+    es: "Valoración funcional — Rodilla",
+    en: "Functional assessment — Knee",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si la rodilla está muy hinchada tras trauma, no puedes apoyarla, hay deformidad, o se bloquea y no puedes estirarla → HOSPITAL / imagen urgente.",
+    en:
+      "If the knee is very swollen after trauma, you cannot bear weight, there is deformity, or it locks and will not straighten → ER / urgent imaging.",
+  },
+  historyItems: [
+    {
+      id: "hx_twist_pop_knee",
+      question: {
+        es: "¿Hubo un giro, un chasquido o un traumatismo directo en la rodilla?",
+        en: "Was there a twist, a pop, or a direct blow to the knee?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_knee_full_rom",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes flexionar y extender la rodilla completa comparando con la otra?",
+        en: "Can you fully bend and straighten the knee compared with the other side?",
+      },
+    },
+    {
+      id: "test_step_down",
+      question: {
+        es: "Al bajar un escalón despacio con la pierna afectada, ¿duele delante, dentro o fuera de la rodilla?",
+        en: "When stepping down slowly on the affected leg, does it hurt at the front, inside, or outside of the knee?",
+      },
+    },
+    {
+      id: "test_sls_knee",
+      positiveWhen: "no",
+      question: {
+        es: "¿Aguantas 20–30 segundos a la pata coja sin que la rodilla ‘falle’?",
+        en: "Can you hold a single-leg stance 20–30 seconds without the knee ‘giving way’?",
+      },
+    },
+    {
+      id: "test_knee_lock",
+      question: {
+        es: "¿La rodilla se bloquea o no puedes estirarla del todo?",
+        en: "Does the knee lock or can you not fully straighten it?",
+      },
+    },
+    {
+      id: "test_hip_screen_knee",
+      question: {
+        es: "¿Duele también al ponerte los calcetines o al girar la cadera del mismo lado?",
+        en: "Does it also hurt when putting on socks or rotating the hip on the same side?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar carrera, saltos y sentadillas profundas). Hielo/elevación si hay hinchazón. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid running, jumping, and deep squats). Ice/elevation if swollen. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; RX si trauma; RMN si menisco/ligamento; cribado de cadera si el patrón no es típico local.",
+    en:
+      "If retest still bad → in-person; X-ray if trauma; MRI if meniscus/ligament; hip screen if the pattern is not typical local.",
+  },
+};
+
+/** Hip — squat, SLS, side-leg raise, socks. */
+export const HIP_PROTOCOL: FunctionalProtocol = {
+  id: "hip",
+  match: /cadera|hip|FAI|trocanter|acet[aá]bul|labrum\s*(de\s*)?cadera/i,
+  name: {
+    es: "Valoración funcional — Cadera",
+    en: "Functional assessment — Hip",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Corredor con dolor inguinal progresivo + dolor nocturno + imposibilidad de salto monopodal → sospecha fractura de estrés / AVN → valoración médica/imagen urgente (no trates como tendinitis benigna).",
+    en:
+      "Runner with progressive groin pain + night pain + inability to hop → suspect stress fracture / AVN → urgent medical/imaging assessment (do not treat as benign tendinitis).",
+  },
+  historyItems: [
+    {
+      id: "hx_groin_deep",
+      question: {
+        es: "¿El dolor es profundo en la ingle o en el costado de la cadera (trocanter)?",
+        en: "Is the pain deep in the groin or on the side of the hip (trochanter)?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_partial_squat_hip",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes hacer una sentadilla parcial (como sentarte en una silla alta) sin dolor fuerte en la ingle?",
+        en: "Can you do a partial squat (as if sitting on a tall chair) without strong groin pain?",
+      },
+    },
+    {
+      id: "test_sls_hip",
+      question: {
+        es: "De pie a la pata coja 20–30 s, ¿aparece dolor en el costado de la cadera o cojera?",
+        en: "In a single-leg stance 20–30 s, does side-hip pain or a limp appear?",
+      },
+    },
+    {
+      id: "test_side_leg_raise",
+      question: {
+        es: "Tumbado de lado, ¿duele al levantar la pierna de arriba (separarla del cuerpo)?",
+        en: "Lying on your side, does it hurt to lift the top leg (away from the body)?",
+      },
+    },
+    {
+      id: "test_socks_cross_legs",
+      question: {
+        es: "¿Duele más al cruzar las piernas o al ponerte los calcetines?",
+        en: "Does it hurt more when crossing the legs or putting on socks?",
+      },
+    },
+    {
+      id: "test_hop_hip",
+      positiveWhen: "no",
+      question: {
+        es: "Si es seguro: ¿puedes hacer un pequeño salto a una sola pierna sin dolor inguinal fuerte?",
+        en: "If safe: can you do a small single-leg hop without strong groin pain?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar carrera, sentadillas profundas y estiramientos agresivos de flexores). Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid running, deep squats, and aggressive hip-flexor stretches). Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; RX si trauma/sospecha ósea; eco/RMN de partes blandas; artro-RMN si sospecha labrum.",
+    en:
+      "If retest still bad → in-person; X-ray if trauma/bony suspicion; US/MRI for soft tissue; MR arthrogram if labral suspicion.",
+  },
+};
+
+/** Lumbar — forward bend, SLS, sit-to-stand, walk. */
+export const LUMBAR_PROTOCOL: FunctionalProtocol = {
+  id: "lumbar",
+  match: /lumbar|lumbago|espalda\s*baja|low\s*back|ci[aá]tica|lumbalgia/i,
+  name: {
+    es: "Valoración funcional — Lumbar / espalda baja",
+    en: "Functional assessment — Lumbar / low back",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay retención/incontinencia de orina o heces, anestesia en silla de montar, debilidad grave en ambas piernas o pie caído súbito → URGENCIAS YA (posible cauda equina).",
+    en:
+      "If urinary/fecal retention or incontinence, saddle anesthesia, severe bilateral leg weakness, or sudden foot drop → ER NOW (possible cauda equina).",
+  },
+  historyItems: [
+    {
+      id: "hx_leg_radiation",
+      question: {
+        es: "¿El dolor baja por la nalga o la pierna (ciática) o se queda solo en la espalda baja?",
+        en: "Does the pain go down the buttock or leg (sciatica), or stay only in the low back?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_forward_bend",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes inclinarte hacia delante como para tocar las rodillas y volver sin bloqueo o dolor que baje a la pierna?",
+        en: "Can you bend forward as if to touch the knees and return without locking or pain going down the leg?",
+      },
+    },
+    {
+      id: "test_sls_lumbar",
+      positiveWhen: "no",
+      question: {
+        es: "¿Aguantas 20–30 segundos a la pata coja (lado más afectado) sin dolor lumbar intenso?",
+        en: "Can you hold a single-leg stance 20–30 seconds (more affected side) without intense low-back pain?",
+      },
+    },
+    {
+      id: "test_sit_to_stand",
+      question: {
+        es: "Al sentarte y levantarte de una silla sin usar las manos, ¿hay debilidad o dolor que baje a la pierna?",
+        en: "When sitting and standing from a chair without using your hands, is there weakness or pain going down the leg?",
+      },
+    },
+    {
+      id: "test_walk_change",
+      question: {
+        es: "¿Caminar unos minutos empeora claramente el dolor o el hormigueo de la pierna?",
+        en: "Does walking for a few minutes clearly worsen the pain or leg tingling?",
+      },
+    },
+    {
+      id: "test_cough_sneeze",
+      question: {
+        es: "¿Al toser o estornudar aumenta el dolor que baja a la pierna?",
+        en: "Does coughing or sneezing increase pain that goes down the leg?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar flexiones forzadas, cargas pesadas y estar mucho rato encorvado). Camina suave si no empeora. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid forced bending, heavy lifting, and long periods slumped). Gentle walking if it does not worsen. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; RMN si irradiación/neurológicos persistentes; mantener vigilancia de banderas rojas.",
+    en:
+      "If retest still bad → in-person; MRI if persistent radiation/neurological signs; keep watching for red flags.",
+  },
+};
+
+/** Cervical — rotation, flexion/extension, arm neuro, sustained look-up. */
+export const CERVICAL_PROTOCOL: FunctionalProtocol = {
+  id: "cervical",
+  match: /cervical|cuello|neck|whiplash|latigazo\s*cervical/i,
+  name: {
+    es: "Valoración funcional — Cervical / cuello",
+    en: "Functional assessment — Cervical / neck",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay trauma + dolor de cuello y no puedes girar 45°, o aparecen déficits neurológicos graves, o signos de CAD/ictus (mareo + diplopía + disartria + ataxia + caída) → URGENCIAS YA.",
+    en:
+      "If trauma + neck pain and you cannot turn 45°, or severe neurological deficits, or CAD/stroke signs (dizziness + diplopia + dysarthria + ataxia + drop attacks) → ER NOW.",
+  },
+  historyItems: [
+    {
+      id: "hx_trauma_neck",
+      question: {
+        es: "¿Hubo un golpe, latigazo o accidente antes del dolor de cuello?",
+        en: "Was there a blow, whiplash, or accident before the neck pain?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_neck_rotation",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes girar la cabeza a derecha e izquierda de forma similar, sin dolor fuerte?",
+        en: "Can you turn the head left and right similarly, without strong pain?",
+      },
+    },
+    {
+      id: "test_look_up_down",
+      question: {
+        es: "Al mirar al techo o al ombligo, ¿aparece mareo, visión borrosa o dolor que baja al brazo?",
+        en: "When looking up at the ceiling or down at the navel, do dizziness, blurred vision, or arm pain appear?",
+      },
+    },
+    {
+      id: "test_arm_neuro",
+      question: {
+        es: "¿Notas hormigueo, entumecimiento o debilidad en alguna mano o brazo?",
+        en: "Do you notice tingling, numbness, or weakness in either hand or arm?",
+      },
+    },
+    {
+      id: "test_sustained_look_up",
+      positiveWhen: "no",
+      question: {
+        es: "¿Aguantas 20–30 segundos mirando un poco hacia arriba sin empeorar síntomas?",
+        en: "Can you hold a slight upward gaze for 20–30 seconds without worsening symptoms?",
+      },
+    },
+    {
+      id: "test_overhead_reach_neck",
+      question: {
+        es: "¿Al elevar los brazos o cargar una mochila empeora el dolor del cuello o el hormigueo?",
+        en: "Does raising the arms or wearing a backpack worsen the neck pain or tingling?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar mirar arriba forzado, cargas en cabeza/hombros y pantallas muy bajas). Movilidad suave si no hay banderas rojas. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid forced looking up, head/shoulder loads, and very low screens). Gentle mobility if no red flags. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; RMN si irradiación/neurológicos persistentes; RX/C-spine rules si trauma.",
+    en:
+      "If retest still bad → in-person; MRI if persistent radiation/neurological signs; X-ray/C-spine rules if trauma.",
+  },
+};
+
 export const FUNCTIONAL_PROTOCOLS: FunctionalProtocol[] = [
   TRICEPS_PROTOCOL,
   PECTORAL_PROTOCOL,
@@ -663,6 +1400,15 @@ export const FUNCTIONAL_PROTOCOLS: FunctionalProtocol[] = [
   ADDUCTOR_PROTOCOL,
   HAMSTRING_PROTOCOL,
   QUAD_PROTOCOL,
+  ANKLE_PROTOCOL,
+  FOOT_PROTOCOL,
+  SHOULDER_PROTOCOL,
+  ELBOW_PROTOCOL,
+  WRIST_HAND_PROTOCOL,
+  KNEE_PROTOCOL,
+  HIP_PROTOCOL,
+  LUMBAR_PROTOCOL,
+  CERVICAL_PROTOCOL,
 ];
 
 /** Default rest / retest timing for every non-urgent body region. */
@@ -767,7 +1513,7 @@ export function buildUniversalNonUrgentPathwayPrompt(bodyArea: string): string {
   const imagingEn = imagingAfterFailedRetest(bodyArea || "general", "en");
   return [
     "PROTOCOLO UNIVERSAL NO URGENTE (obligatorio en TODAS las zonas):",
-    "1) OBLIGATORIO: pide **Pruebas funcionales** (3–6 tests concretos). El paciente debe hacerlas y responderte los resultados para orientar mejor qué tiene.",
+    "1) OBLIGATORIO: pide **Pruebas funcionales** (3–6 tests concretos en lenguaje cotidiano, SIN nombres clínicos). El paciente debe hacerlas y responderte los resultados para orientar mejor qué tiene.",
     `2) Si los tests sugieren lesión/molestia relevante → reposo relativo ${UNIVERSAL_REST_HOURS.min}–${UNIVERSAL_REST_HOURS.max} h (frío/elevación si hay inflamación).`,
     `3) Retest: repetir los MISMOS tests tras ese plazo (aviso ~${UNIVERSAL_REST_HOURS.notify} h).`,
     "4) Si el retest no mejora o sigue doliendo → imagen adaptada a la zona (NO en la primera pasada, salvo urgencia).",
@@ -874,6 +1620,50 @@ export function findFunctionalProtocolLoose(
     return QUAD_PROTOCOL;
   }
 
+  if (
+    /fascitis|plantar|tal[oó]n|hallux|metatars|antepi[eé]|arco\s*(medial|plantar)|primer\s*paso/i.test(
+      text
+    )
+  ) {
+    return FOOT_PROTOCOL;
+  }
+
+  if (/tobillo|ankle|esguince|maleolo|ATFL|CAI|ankle_foot/i.test(text)) {
+    return ANKLE_PROTOCOL;
+  }
+
+  if (/\bpie\b|foot/i.test(text)) {
+    return FOOT_PROTOCOL;
+  }
+
+  if (/hombro|shoulder|manguito|rotator\s*cuff/i.test(text)) {
+    return SHOULDER_PROTOCOL;
+  }
+
+  if (/codo|elbow|epic[oó]ndil/i.test(text)) {
+    return ELBOW_PROTOCOL;
+  }
+
+  if (/mu[nñ]eca|wrist|mano\b|hand|t[uú]nel\s*carpiano|TFCC|escafoides/i.test(text)) {
+    return WRIST_HAND_PROTOCOL;
+  }
+
+  if (/rodilla|knee|menisco|r[oó]tula|patel|LCA|ACL|cruzado/i.test(text)) {
+    return KNEE_PROTOCOL;
+  }
+
+  if (/cadera|hip|FAI|trocanter/i.test(text)) {
+    return HIP_PROTOCOL;
+  }
+
+  if (/lumbar|lumbago|espalda\s*baja|low\s*back|ci[aá]tica/i.test(text)) {
+    return LUMBAR_PROTOCOL;
+  }
+
+  if (/cervical|cuello|neck|whiplash/i.test(text)) {
+    return CERVICAL_PROTOCOL;
+  }
+
   return null;
 }
 
@@ -977,7 +1767,25 @@ export function buildFunctionalProtocolPromptBlock(
                   ? "pectoral / chest"
                   : protocol.id === "triceps"
                     ? "tríceps / triceps"
-                    : protocol.id;
+                    : protocol.id === "ankle"
+                      ? "tobillo / ankle"
+                      : protocol.id === "foot"
+                        ? "pie / fascia plantar / foot"
+                        : protocol.id === "shoulder"
+                          ? "hombro / shoulder"
+                          : protocol.id === "elbow"
+                            ? "codo / elbow"
+                            : protocol.id === "wrist_hand"
+                              ? "muñeca-mano / wrist-hand"
+                              : protocol.id === "knee"
+                                ? "rodilla / knee"
+                                : protocol.id === "hip"
+                                  ? "cadera / hip"
+                                  : protocol.id === "lumbar"
+                                    ? "lumbar / low back"
+                                    : protocol.id === "cervical"
+                                      ? "cervical / neck"
+                                      : protocol.id;
 
   const lines = [
     `PROTOCOLO ESTRUCTURADO — ${protocol.name.es} / ${protocol.name.en}`,

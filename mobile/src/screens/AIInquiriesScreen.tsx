@@ -35,6 +35,7 @@ import {
 } from "../components/ConsultaAdaptiveWrist";
 import { AssistantMessageWithSources } from "../components/AssistantMessageWithSources";
 import { ConsultaGenericFields } from "../components/ConsultaGenericFields";
+import { DismissKeyboard } from "../components/DismissKeyboard";
 import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
 import { ScrollToBottomButton } from "../components/ScrollToBottomButton";
@@ -162,7 +163,7 @@ import {
   triageMessage,
   type AdaptiveQuestionnairePart,
 } from "../lib/consulta-triage";
-import { callEdgeText } from "../lib/consulta-api";
+import { callEdgeText, callEdgeJson } from "../lib/consulta-api";
 import {
   detectConsultLanguage,
   type ConsultLanguage,
@@ -354,6 +355,7 @@ export function AIInquiriesScreen() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [physioReportSentBanner, setPhysioReportSentBanner] = useState(false);
 
   const chatScrollRef = useRef<ScrollView>(null);
   const questionnaireScrollRef = useRef<ScrollView>(null);
@@ -614,6 +616,65 @@ export function AIInquiriesScreen() {
       { id: aiMsgId, role: "assistant", content: answer },
     ]);
     setPhase("followup");
+  }
+
+  /**
+   * Best-effort, fire-and-forget: if this patient is linked to a physio,
+   * generate a clinician-oriented report and store it for their dashboard.
+   * Never throws — must not block or degrade the patient's own chat experience.
+   */
+  async function maybeGenerateAndSendPhysioReport(params: {
+    patientId: string;
+    conversationId: string;
+    bodyArea: string;
+    onsetType: string;
+    painLevel: number;
+    hadTrauma: string;
+    description: string;
+    symptomContext: string;
+    patientSummary: string;
+    language: ConsultLanguage;
+  }): Promise<boolean> {
+    try {
+      const { data: patientProfile } = await supabase
+        .from("profiles")
+        .select("physio_id")
+        .eq("id", params.patientId)
+        .maybeSingle();
+      const physioId = (patientProfile as { physio_id?: string | null } | null)?.physio_id;
+      if (!physioId) return false;
+
+      const raw = await callEdgeJson({
+        mode: "physio_report",
+        language: params.language,
+        bodyArea: params.bodyArea,
+        onsetType: params.onsetType,
+        painLevel: params.painLevel,
+        hadTrauma: params.hadTrauma,
+        description: params.description,
+        symptomContext: params.symptomContext,
+        patientSummary: params.patientSummary,
+      });
+      const answer = (raw as { answer?: string } | null)?.answer;
+      if (!answer) return false;
+
+      const { error: insertError } = await supabase.from("clinical_reports").insert({
+        patient_id: params.patientId,
+        physio_id: physioId,
+        conversation_id: params.conversationId,
+        body_area: params.bodyArea,
+        patient_summary: params.patientSummary,
+        physio_report: answer,
+      });
+      if (insertError) {
+        console.error("No se pudo guardar el informe para el fisioterapeuta:", insertError);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("No se pudo generar el informe para el fisioterapeuta:", err);
+      return false;
+    }
   }
 
   function markPartEvaluated(part: BodyPartId | "generic") {
@@ -1111,6 +1172,21 @@ export function AIInquiriesScreen() {
           },
         });
 
+        void maybeGenerateAndSendPhysioReport({
+          patientId: user.id,
+          conversationId: activeId,
+          bodyArea: areaLabel,
+          onsetType,
+          painLevel,
+          hadTrauma: hadTraumaVal,
+          description: initialMessage,
+          symptomContext: contextForAi,
+          patientSummary: answer,
+          language: consultLanguage,
+        }).then((sent) => {
+          if (sent) setPhysioReportSentBanner(true);
+        });
+
         setRevealingMessageId((aiMsg as Message).id);
         setMessages((prev) => [...prev, aiMsg as Message]);
         markPartEvaluated(questionnairePart);
@@ -1177,6 +1253,21 @@ export function AIInquiriesScreen() {
           generic: questionnairePart === "generic" ? genericAnswers : null,
           redFlagsUrgent,
         },
+      });
+
+      void maybeGenerateAndSendPhysioReport({
+        patientId: user.id,
+        conversationId: conv.id,
+        bodyArea: areaLabel,
+        onsetType,
+        painLevel,
+        hadTrauma: hadTraumaVal,
+        description: initialMessage,
+        symptomContext: contextForAi,
+        patientSummary: answer,
+        language: consultLanguage,
+      }).then((sent) => {
+        if (sent) setPhysioReportSentBanner(true);
       });
 
       setActiveId(conv.id);
@@ -1753,6 +1844,28 @@ export function AIInquiriesScreen() {
       keyboardVerticalOffset={90}
     >
       {renderTopBar()}
+
+      {physioReportSentBanner ? (
+        <View
+          style={{
+            backgroundColor: "#ECFDF5",
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: "#A7F3D0",
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: "700", color: "#065F46" }}>
+            Informe enviado a tu fisioterapeuta
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: 12, color: "#047857" }}>
+            El resumen clínico se ha enviado correctamente. Ya puede revisarlo antes de la cita.
+          </Text>
+          <Pressable onPress={() => setPhysioReportSentBanner(false)} style={{ marginTop: 6 }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#065F46" }}>Cerrar</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {physioIntro && phase === "intro" && !activeId ? (
         <PhysioIntro onSkip={skipPhysioIntro} />

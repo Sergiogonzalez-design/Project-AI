@@ -33,9 +33,11 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       email?: string;
       password?: string;
+      accountType?: "patient" | "physio";
     };
     const email = body.email?.trim().toLowerCase() ?? "";
     const password = body.password ?? "";
+    const accountType = body.accountType === "physio" ? "physio" : "patient";
 
     if (!email || password.length < 6) {
       return NextResponse.json(
@@ -63,6 +65,7 @@ export async function POST(request: NextRequest) {
         id: data.user.id,
         onboarding_completed: false,
         is_admin: false,
+        account_type: accountType,
       });
     }
 

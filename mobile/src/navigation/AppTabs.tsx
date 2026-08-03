@@ -10,10 +10,14 @@ import { useI18n } from "../lib/i18n";
 import { AIInquiriesScreen } from "../screens/AIInquiriesScreen";
 import { AboutUsScreen } from "../screens/AboutUsScreen";
 import { AdminScreen } from "../screens/AdminScreen";
+import { PhysioLinkScreen } from "../screens/PhysioLinkScreen";
+import { PhysioPatientsScreen } from "../screens/PhysioPatientsScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 
 export type TabParamList = {
   AIInquiries: undefined;
+  PhysioLink: undefined;
+  Patients: undefined;
   AboutUs: undefined;
   Admin: undefined;
   Profile: undefined;
@@ -23,14 +27,15 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 type AppTabsProps = {
   isAdmin?: boolean;
+  isPhysio?: boolean;
 };
 
-export function AppTabs({ isAdmin = false }: AppTabsProps) {
+export function AppTabs({ isAdmin = false, isPhysio = false }: AppTabsProps) {
   const { t } = useI18n();
 
   return (
     <Tab.Navigator
-      initialRouteName="AIInquiries"
+      initialRouteName={isPhysio ? "Patients" : "AIInquiries"}
       screenOptions={{
         headerStyle: {
           backgroundColor: Colors.white,
@@ -70,19 +75,54 @@ export function AppTabs({ isAdmin = false }: AppTabsProps) {
         tabBarInactiveTintColor: Colors.tabIconInactive,
       }}
     >
-      <Tab.Screen
-        name="AIInquiries"
-        component={AIInquiriesScreen}
-        options={{
-          title: t.headers.consulta,
-          tabBarLabel: t.tabs.consulta,
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.tabIconWrap, focused && styles.tabIconWrapFocused]}>
-              <PhysioAvatar size={24} style={styles.physioTabAvatar} />
-            </View>
-          ),
-        }}
-      />
+      {isPhysio ? (
+        <Tab.Screen
+          name="Patients"
+          component={PhysioPatientsScreen}
+          options={{
+            title: "Pacientes",
+            tabBarLabel: "Pacientes",
+            tabBarIcon: ({ focused }) => (
+              <Ionicons
+                name={focused ? "people" : "people-outline"}
+                size={24}
+                color={focused ? Colors.tabIconActive : Colors.tabIconInactive}
+              />
+            ),
+          }}
+        />
+      ) : (
+        <>
+          <Tab.Screen
+            name="AIInquiries"
+            component={AIInquiriesScreen}
+            options={{
+              title: t.headers.consulta,
+              tabBarLabel: t.tabs.consulta,
+              tabBarIcon: ({ focused }) => (
+                <View style={[styles.tabIconWrap, focused && styles.tabIconWrapFocused]}>
+                  <PhysioAvatar size={24} style={styles.physioTabAvatar} />
+                </View>
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="PhysioLink"
+            component={PhysioLinkScreen}
+            options={{
+              title: "Fisioterapia",
+              tabBarLabel: "Fisioterapia",
+              tabBarIcon: ({ focused }) => (
+                <Ionicons
+                  name={focused ? "medkit" : "medkit-outline"}
+                  size={24}
+                  color={focused ? Colors.tabIconActive : Colors.tabIconInactive}
+                />
+              ),
+            }}
+          />
+        </>
+      )}
       <Tab.Screen
         name="AboutUs"
         component={AboutUsScreen}

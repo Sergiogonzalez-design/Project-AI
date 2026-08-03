@@ -29,6 +29,7 @@ Structured clinical orientation documents for **Kinora AI** training and RAG (re
 | `Kinora_Clinical_Outcome_Measures_AI_Orientation.pdf` | Part 21 — NDI, ODI, QuickDASH, LEFS, FAAM, KOOS/HOOS, Oxford, VAS/NPRS, PSFS, TUG, YBT, VISA, CAIT |
 | `Kinora_Thoracic_Spine_Clinical_Database_AI_Orientation.pdf` | Part 22 — thoracic clinical DB template (complements Part 3) |
 | `Kinora_Lumbar_Spine_Clinical_Database_AI_Orientation.pdf` | Part 23 — lumbar clinical DB template (complements Part 5) |
+| `Kinora_Foot_Ankle_Assessment_Dossier_AI_Orientation.pdf` | Part 24 — foot & ankle physiotherapeutic assessment dossier (anamnesis → RTS; complements Parts 10–11) |
 
 ### How to use
 
@@ -47,6 +48,7 @@ Structured clinical orientation documents for **Kinora AI** training and RAG (re
    python scripts/generate_foot_knowledge_pdf.py
    python scripts/generate_cervical_spine_knowledge_pdf.py
    python scripts/generate_clinical_master_databases_pdf.py
+   python scripts/generate_foot_ankle_assessment_dossier_pdf.py
    ```
 2. **Admin → Conocimientos** — upload the PDFs needed for RAG orientation.
 
@@ -56,6 +58,7 @@ Structured clinical orientation documents for **Kinora AI** training and RAG (re
 - **Deep existing spine:** Part 3 (thoracic) and Part 5 (lumbar) remain the primary deep spine modules.
 - **Parts 13–21:** master/cross-cutting databases (ribs/TMJ/head/PNS/vascular/red flags/imaging/exercises/outcomes).
 - **Parts 22–23:** template-style thoracic/lumbar clinical DBs that **complement** Parts 3 and 5 (not replacements).
+- **Part 24:** foot & ankle **assessment dossier** (sports-physio valuation workflow) that **complements** Parts 10–11.
 
 ### Disclaimer
 

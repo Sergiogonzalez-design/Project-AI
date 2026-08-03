@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export function SignupForm() {
   const router = useRouter();
+  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export function SignupForm() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailNorm, password }),
+        body: JSON.stringify({ email: emailNorm, password, accountType }),
       });
       const payload = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -56,6 +57,34 @@ export function SignupForm() {
         <div>
           <h1 className="text-xl font-bold text-slate-800">Crear cuenta</h1>
           <p className="mt-1 text-sm text-slate-500">Regístrate para usar Kinora</p>
+        </div>
+      </div>
+
+      <div className="mb-5 flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-slate-700">Soy...</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setAccountType("patient")}
+            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+              accountType === "patient"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-slate-200 text-slate-500 hover:border-slate-300"
+            }`}
+          >
+            Persona
+          </button>
+          <button
+            type="button"
+            onClick={() => setAccountType("physio")}
+            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+              accountType === "physio"
+                ? "border-blue-500 bg-blue-50 text-blue-700"
+                : "border-slate-200 text-slate-500 hover:border-slate-300"
+            }`}
+          >
+            Fisioterapeuta
+          </button>
         </div>
       </div>
 

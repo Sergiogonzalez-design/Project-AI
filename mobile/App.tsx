@@ -12,10 +12,15 @@ import { isAdminEmail, isSupabaseConfigured } from "./src/lib/supabase-config";
 import { supabase } from "./src/lib/supabase";
 import { AppTabs } from "./src/navigation/AppTabs";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import { PhysioOnboardingScreen } from "./src/screens/PhysioOnboardingScreen";
 import {
   ATHLETE_PROFILE_COLUMNS,
   isAthleteProfileComplete,
 } from "./src/lib/athlete-profile-complete";
+import {
+  PHYSIO_PROFILE_COLUMNS,
+  isPhysioProfileComplete,
+} from "./src/lib/physio-profile-complete";
 
 function AppInner() {
   const { ready } = useI18n();
@@ -23,6 +28,7 @@ function AppInner() {
   const [loading, setLoading] = useState(true);
   const [authView, setAuthView] = useState<"login" | "signup">("login");
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [isPhysio, setIsPhysio] = useState(false);
 
   const isAdmin = isAdminEmail(session?.user?.email);
 
@@ -30,9 +36,28 @@ function AppInner() {
     async (userId: string, email: string | undefined) => {
       // Admin uses the same login; skip athlete onboarding only for that account
       if (isAdminEmail(email)) {
+        setIsPhysio(false);
         setOnboardingDone(true);
         return;
       }
+      const { data: accountData } = await supabase
+        .from("profiles")
+        .select("account_type")
+        .eq("id", userId)
+        .maybeSingle();
+      const physio = accountData?.account_type === "physio";
+      setIsPhysio(physio);
+
+      if (physio) {
+        const { data } = await supabase
+          .from("profiles")
+          .select(PHYSIO_PROFILE_COLUMNS)
+          .eq("id", userId)
+          .maybeSingle();
+        setOnboardingDone(isPhysioProfileComplete(data));
+        return;
+      }
+
       const { data } = await supabase
         .from("profiles")
         .select(ATHLETE_PROFILE_COLUMNS)
@@ -105,7 +130,11 @@ function AppInner() {
     return (
       <>
         <StatusBar style="dark" />
-        <OnboardingScreen onComplete={() => setOnboardingDone(true)} />
+        {isPhysio ? (
+          <PhysioOnboardingScreen onComplete={() => setOnboardingDone(true)} />
+        ) : (
+          <OnboardingScreen onComplete={() => setOnboardingDone(true)} />
+        )}
       </>
     );
   }
@@ -113,8 +142,12 @@ function AppInner() {
   return (
     <NavigationContainer>
       <StatusBar style="dark" />
-      {/* Remount tabs when admin status changes so the Admin tab never leaks to other users */}
-      <AppTabs key={isAdmin ? "admin" : "user"} isAdmin={isAdmin} />
+      {/* Remount tabs when admin/physio status changes so tabs never leak between roles */}
+      <AppTabs
+        key={isAdmin ? "admin" : isPhysio ? "physio" : "user"}
+        isAdmin={isAdmin}
+        isPhysio={isPhysio}
+      />
     </NavigationContainer>
   );
 }

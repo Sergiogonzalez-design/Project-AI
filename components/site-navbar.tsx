@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const baseLinks = [
   { href: "/consulta", label: "Consulta" },
+  { href: "/fisioterapia", label: "Fisioterapia" },
   { href: "/sobre-nosotros", label: "Sobre Nosotros" },
   { href: "/perfil", label: "Perfil" },
 ] as const;

@@ -1,13 +1,14 @@
 import Image from "next/image";
 
-const GREETING =
+const DEFAULT_GREETING =
   "¡Hola! Soy Physio, tu asistente de Kinora. ¿En qué puedo ayudarte hoy?";
 
 type Props = {
   onSkip?: () => void;
+  greeting?: string;
 };
 
-export function PhysioIntro({ onSkip }: Props) {
+export function PhysioIntro({ onSkip, greeting = DEFAULT_GREETING }: Props) {
   return (
     <button
       type="button"
@@ -26,7 +27,7 @@ export function PhysioIntro({ onSkip }: Props) {
         />
       </div>
       <div className="max-w-lg rounded-2xl border border-blue-100 bg-white px-5 py-4 shadow-md shadow-blue-500/10">
-        <p className="text-sm leading-relaxed text-slate-700 sm:text-base">{GREETING}</p>
+        <p className="text-sm leading-relaxed text-slate-700 sm:text-base">{greeting}</p>
       </div>
       {onSkip ? (
         <p className="mt-5 text-sm font-semibold tracking-wide text-blue-600">
@@ -37,4 +38,4 @@ export function PhysioIntro({ onSkip }: Props) {
   );
 }
 
-export const PHYSIO_GREETING = GREETING;
+export const PHYSIO_GREETING = DEFAULT_GREETING;

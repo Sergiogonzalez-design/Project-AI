@@ -21,7 +21,7 @@ export const AI_DATA_FIDELITY_RULES = `FIDELIDAD A LOS DATOS (CRÍTICO — incum
   · Pierna / pie ← lumbar / ciática
   Si los tests LOCALES no reproducen el dolor, SUBE la sospecha de origen referido y haz cribado proximal (p. ej. girar/inclinar la cabeza en dolor de hombro o codo).
 - HIPÓTESIS BAJA CONFIANZA: no priorices labrum/pinzamiento de cadera si el paciente negó dolor profundo al sentarse/chasquido y solo describe glúteo/isquio/aductor.
-- LENGUAJE SENCILLO: habla como a un paciente, no como en un paper. Evita jerga (signo en C, FAI, PLRI, Spurling, tabaquera, etc.) en lo que ve el paciente; explica en palabras cotidianas.
+- LENGUAJE SENCILLO (DESTINATARIO = PACIENTE): habla como a un paciente, no como en un paper. Evita jerga (signo en C, FAI, PLRI, Spurling, Neer, Hawkins, Jobe, Lachman, McMurray, tabaquera, etc.) en lo que ve el paciente; explica en palabras cotidianas. Si necesitas un concepto técnico, tradúcelo a una acción o sensación cotidiana.
 - En "Resumen de tu consulta", cita localización y origen tal como aparecen en los datos del caso.`;
 
 /**
@@ -51,15 +51,21 @@ PASO 2 — ¿ES URGENTE / HOSPITAL?
   → NO pidas batería de tests funcionales ni el ciclo de reposo 24–36 h.
   → Añade **Pruebas de imagen recomendadas** (RX, RMN, eco…) justo antes de **Qué debes hacer ahora**.
 
-PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO):
-- En la PRIMERA respuesta estructurada (tras el cuestionario), SIEMPRE pide al paciente que haga **pruebas funcionales** concretas para orientar mejor qué tiene.
+PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIACIÓN KINORA):
+- En la PRIMERA respuesta estructurada (tras el cuestionario), SIEMPRE incluye la sección **Pruebas funcionales**. Sin ella la respuesta está incompleta.
 - NO te limites a hipotetizar: necesitas que el paciente las haga y te diga el resultado. Explica en 1 frase por qué (para entender mejor qué estructura está implicada).
-- Incluye una sección clara titulada exactamente: **Pruebas funcionales** (justo antes de **Qué debes hacer ahora**, o dentro de ella si encaja mejor).
-- Lista 3–6 pruebas numeradas, en lenguaje cotidiano, fáciles de hacer en casa. Cada una empieza por ¿ y termina en ? (español).
-- Usa el protocolo estructurado / RAG / banco local de esa zona. Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. cuello si duele el codo).
+- Incluye una sección clara titulada exactamente: **Pruebas funcionales** (justo antes de **Qué debes hacer ahora**).
+- Lista 3–6 pruebas numeradas, fáciles de hacer en casa. Cada una empieza por ¿ y terminar en ? (español).
+- LENGUAJE DE LAS PRUEBAS (CRÍTICO — el paciente NO es un fisioterapeuta):
+  · NUNCA uses nombres de tests clínicos (“Test de Neer”, “Hawkins-Kennedy”, “Empty can / Jobe”, “Spurling”, “Lachman”, “McMurray”, “Thompson”, “Ottawa”, “Windlass”, “Phalen”, etc.).
+  · NUNCA empieces con “Test de…”. Describe SOLO la acción cotidiana y qué debe notar.
+  · BIEN: “¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?” / “Levanta el brazo por encima de la cabeza y dime si duele.”
+  · MAL: “1. Test de Neer: …” / “Empty can test: …”
+  · Si el banco/RAG trae un nombre técnico, TRADÚCELO a instrucción sencilla antes de mostrárselo al paciente.
+- Usa el protocolo estructurado / RAG / Assessment Dossier / banco local de esa zona. Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. girar/inclinar la cabeza si duele el codo), también en lenguaje cotidiano.
 - Di explícitamente: “Haz estas pruebas y responde aquí qué pasa en cada una (sí/no, dónde duele, comparado con el otro lado).”
 - Preguntas CLARAS; parar si dolor intenso, mareo o inestabilidad.
-- PROTOCOLOS ESTRUCTURADOS (cuádriceps, isquiotibiales, gemelo, Aquiles, aductores, bíceps, pectoral, tríceps, nervios, fascitis, etc.): si hay bloque de protocolo, úsalo.
+- PROTOCOLOS ESTRUCTURADOS (cuádriceps, isquiotibiales, gemelo, Aquiles, aductores, bíceps, pectoral, tríceps, tobillo, pie/fascitis, nervios, etc.): si hay bloque de protocolo, úsalo (siempre con la redacción sencilla anterior).
 
 PASO 3b — INTERPRETAR RESPUESTAS A TESTS (CRÍTICO — no reinicies el caso):
 - Cuando el paciente responde a tests, INTERPRETA esas respuestas en el MISMO caso. NUNCA trates la respuesta como una consulta nueva ni vuelvas a pedir todo el cuestionario / todos los tests desde cero.
@@ -138,6 +144,7 @@ IMPORTANTE SOBRE **Pruebas funcionales**:
 - Obligatoria en la primera valoración si el caso NO es urgente/hospital.
 - Si el caso ES urgente: omite **Pruebas funcionales** (ve a hospital/imagen).
 - En seguimientos: no repitas toda la batería si el paciente ya respondió; interpreta y solo añade pruebas nuevas si hace falta aclarar.
+- Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas.
 
 FUENTES / EVIDENCIA (OBLIGATORIO):
 - Cada conclusión clínica importante debe ir seguida de: Fuente: <nombre exacto del documento de "Información relevante">
@@ -262,11 +269,11 @@ const FUNCTIONAL_BY_HINT: { match: RegExp; questions: string[] }[] = [
   {
     match: /hombro|shoulder/i,
     questions: [
-      "¿Puedes elevar el brazo por encima de la cabeza? ¿Hasta dónde llega y dónde duele más?",
-      "Si intentas alcanzar la espalda, ¿duele o se bloquea?",
-      "Con el brazo a 90°, ¿puedes rotar sin miedo a que se ‘salga’?",
-      "¿Aguantas un objeto ligero con el brazo al frente 10–15 s?",
-      "Gira o inclina la cabeza: ¿empeora el dolor del hombro o aparece hormigueo en el brazo?",
+      "¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte? (SÍ/NO)",
+      "¿Puedes alcanzar la espalda sin dolor o bloqueo fuerte? (SÍ/NO)",
+      "Con el brazo a 90°, ¿puedes rotar sin miedo a que se ‘salga’? (SÍ/NO)",
+      "¿Aguantas un objeto ligero al frente 10–15 s sin dolor fuerte? (SÍ/NO)",
+      "¿Al girar/inclinar la cabeza empeora el dolor del hombro o hay hormigueo? (SÍ/NO)",
     ],
   },
   {
@@ -300,19 +307,20 @@ const FUNCTIONAL_BY_HINT: { match: RegExp; questions: string[] }[] = [
   {
     match: /codo|elbow/i,
     questions: [
-      "Con el codo estirado, ¿duele al cerrar el puño o girar un pomo?",
-      "¿Puedes flexionar y extender el codo completo vs el otro lado?",
-      "¿Duele al llevar peso (bolsa) con el codo casi estirado?",
-      "Gira la cabeza a derecha e izquierda: ¿empeora el dolor del codo o el hormigueo del brazo?",
-      "Si miras un poco hacia arriba o hacia el ombligo, ¿cambia el dolor del brazo/codo?",
+      "Con el codo estirado, ¿duele al cerrar el puño o girar un pomo? (SÍ/NO)",
+      "¿Puedes flexionar y extender el codo completo vs el otro lado? (SÍ/NO)",
+      "¿Duele al llevar peso (bolsa) con el codo casi estirado? (SÍ/NO)",
+      "¿Al girar la cabeza empeora el dolor del codo o el hormigueo? (SÍ/NO)",
+      "¿Duele al levantar la muñeca contra resistencia suave? (SÍ/NO)",
     ],
   },
   {
     match: /muñeca|muneca|wrist|mano|dedo|finger/i,
     questions: [
-      "¿Puedes apoyar la palma y cargar un poco de peso sin dolor intenso?",
-      "Al girar una llave o abrir un tarro, ¿dónde duele más?",
-      "¿Puedes hacer un puño completo sin bloqueo ni chasquido?",
+      "¿Puedes apoyar la palma y cargar un poco de peso sin dolor intenso? (SÍ/NO)",
+      "¿Duele al girar una llave o abrir un tarro? (SÍ/NO)",
+      "¿Puedes hacer un puño completo sin bloqueo ni chasquido? (SÍ/NO)",
+      "En posición de rezo, ¿aparece hormigueo o dolor? (SÍ/NO)",
     ],
   },
   {
@@ -352,19 +360,23 @@ const FUNCTIONAL_BY_HINT: { match: RegExp; questions: string[] }[] = [
     ],
   },
   {
-    match: /tobillo|ankle/i,
+    match: /tobillo|ankle|esguince|maleolo|ankle_foot/i,
     questions: [
-      "¿Cuántas elevaciones de talón a una pierna haces vs el lado sano?",
-      "¿Aguantas 20–30 s a la pata coja?",
-      "Al caminar, ¿evitas un borde del pie?",
+      "¿Puedes apoyar el pie completo y dar 4 pasos sin cojera marcada?",
+      "¿Cuántas elevaciones de talón a una sola pierna haces vs el lado sano?",
+      "¿Aguantas 20–30 s a la pata coja sin dolor fuerte o inestabilidad?",
+      "¿Duele al tocar delante/debajo del maleolo lateral (tobillo por fuera)?",
+      "Al caminar o girar, ¿notas que el tobillo “falla”?",
     ],
   },
   {
     match: /rodilla|knee/i,
     questions: [
-      "¿Flexión/extensión completa vs la otra rodilla?",
-      "Al bajar un escalón despacio, ¿dónde duele?",
-      "¿Aguantas 20–30 s a la pata coja sin que ‘falle’?",
+      "¿Flexión/extensión completa vs la otra rodilla? (SÍ/NO)",
+      "Al bajar un escalón despacio, ¿duele delante, dentro o fuera? (SÍ/NO)",
+      "¿Aguantas 20–30 s a la pata coja sin que ‘falle’? (SÍ/NO)",
+      "¿La rodilla se bloquea o no puedes estirarla del todo? (SÍ/NO)",
+      "¿Duele también al ponerte calcetines o girar la cadera? (SÍ/NO)",
     ],
   },
   {
@@ -379,33 +391,38 @@ const FUNCTIONAL_BY_HINT: { match: RegExp; questions: string[] }[] = [
   {
     match: /cadera|hip/i,
     questions: [
-      "¿Sentadilla parcial sin dolor fuerte en la ingle?",
-      "¿Dolor en el costado de la cadera o cojera a la pata coja 20–30 s?",
-      "¿Duele al ponerte los calcetines o cruzar piernas?",
+      "¿Sentadilla parcial sin dolor fuerte en la ingle? (SÍ/NO)",
+      "¿Dolor en el costado de la cadera o cojera a la pata coja 20–30 s? (SÍ/NO)",
+      "¿Duele al ponerte los calcetines o cruzar piernas? (SÍ/NO)",
+      "Tumbado de lado, ¿duele al levantar la pierna de arriba? (SÍ/NO)",
     ],
   },
   {
     match: /lumbar|espalda\s*baja|lumbago/i,
     questions: [
-      "¿Puedes inclinarte hacia delante y volver sin dolor que baje a la pierna?",
-      "¿Aguantas 20–30 s a la pata coja sin dolor lumbar intenso?",
-      "¿Caminar mejora, empeora o no cambia el dolor?",
+      "¿Puedes inclinarte hacia delante y volver sin dolor que baje a la pierna? (SÍ/NO)",
+      "¿Aguantas 20–30 s a la pata coja sin dolor lumbar intenso? (SÍ/NO)",
+      "¿Caminar empeora el dolor o el hormigueo? (SÍ/NO)",
+      "¿Toser/estornudar aumenta el dolor a la pierna? (SÍ/NO)",
     ],
   },
   {
     match: /cuello|cervical/i,
     questions: [
-      "Gira la cabeza a ambos lados: ¿dónde duele y hasta dónde llegas?",
-      "¿Aparece mareo, visión borrosa o dolor que baja al brazo al mirar arriba/abajo?",
-      "¿Hormigueo o debilidad en alguna mano?",
+      "¿Puedes girar la cabeza a ambos lados sin dolor fuerte? (SÍ/NO)",
+      "¿Aparece mareo, visión borrosa o dolor al brazo al mirar arriba/abajo? (SÍ/NO)",
+      "¿Hormigueo o debilidad en alguna mano? (SÍ/NO)",
+      "¿Aguantas 20–30 s mirando un poco arriba sin empeorar? (SÍ/NO)",
     ],
   },
   {
-    match: /pie\b|foot|fascitis/i,
+    match: /pie\b|foot|fascitis|plantar|tal[oó]n|hallux|metatars/i,
     questions: [
-      "¿Dolor fuerte en el primer paso de la mañana en talón/arco?",
+      "¿Te duele mucho el primer paso de la mañana en el talón o el arco?",
+      "¿Duele la planta (cerca del talón) al extender el dedo gordo hacia arriba?",
       "¿Duele el antepié al ponerte de puntillas suaves?",
-      "¿Chasquido o dolor entre dedos al comprimir el antepié?",
+      "¿Duele o hay chasquido al comprimir el antepié entre los metatarsianos?",
+      "¿Duele por dentro del arco o notas que el arco “colapsa” al hacer elevaciones de talón?",
     ],
   },
 ];
@@ -472,6 +489,62 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
     /cuadr[ií]ceps|cu[aá]driceps|quad|muslo\s*anterior|recto\s*femoral|anterior\s*thigh/i.test(
       area
     );
+  const isFoot =
+    !isTriceps &&
+    !isPectoral &&
+    !isBiceps &&
+    !isAchilles &&
+    !isCalf &&
+    !isAdductor &&
+    !isHamstring &&
+    !isQuad &&
+    /fascitis|plantar|tal[oó]n|hallux|metatars|antepi[eé]|primer\s*paso|\bpie\b|foot/i.test(
+      area
+    );
+  const isAnkle =
+    !isTriceps &&
+    !isPectoral &&
+    !isBiceps &&
+    !isAchilles &&
+    !isCalf &&
+    !isAdductor &&
+    !isHamstring &&
+    !isQuad &&
+    !isFoot &&
+    /tobillo|ankle|esguince|maleolo|ATFL|CAI|ankle_foot/i.test(area);
+  const isShoulder =
+    !isTriceps &&
+    !isPectoral &&
+    !isBiceps &&
+    /hombro|shoulder|manguito|rotator\s*cuff/i.test(area);
+  const isElbow =
+    !isTriceps &&
+    !isPectoral &&
+    !isBiceps &&
+    !isShoulder &&
+    /codo|elbow|epic[oó]ndil/i.test(area);
+  const isWrist =
+    !isTriceps &&
+    !isPectoral &&
+    !isBiceps &&
+    !isShoulder &&
+    !isElbow &&
+    /mu[nñ]eca|wrist|mano\b|hand|t[uú]nel\s*carpiano|TFCC|escafoides/i.test(area);
+  const isKnee =
+    !isQuad &&
+    !isHamstring &&
+    /rodilla|knee|menisco|r[oó]tula|patel|LCA|ACL|cruzado/i.test(area);
+  const isHip =
+    !isAdductor &&
+    !isHamstring &&
+    !isKnee &&
+    /cadera|hip|FAI|trocanter/i.test(area);
+  const isLumbar =
+    /lumbar|lumbago|espalda\s*baja|low\s*back|ci[aá]tica/i.test(area);
+  const isCervical =
+    !isShoulder &&
+    !isElbow &&
+    /cervical|cuello|neck|whiplash/i.test(area);
 
   const calfAchillesShared = [
     "IMPORTANTE: todas las preguntas son SÍ/NO.",
@@ -490,118 +563,130 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
     "SI SOSPECHA (primera pasada): reposo relativo 24–36 h; Kinora recordará (~36 h) para repetir los MISMOS tests SÍ/NO; NO ecografía aún (salvo urgencia).",
   ];
 
-  const protocol = isTriceps
-    ? [
-        "PROTOCOLO ESTRUCTURADO — Valoración funcional — Tríceps / Functional assessment — Triceps",
-        "IMPORTANTE: todas las preguntas son SÍ/NO. En español: empezar por ¿ y terminar en ?; respetar tildes (tríceps, etc.).",
-        "TESTS SÍ/NO (primera pasada Y retest ~36 h):",
-        "1. [id=test_elbow_extend_flex_painless] ES: ¿Puedes estirar / flexionar el codo sin dolor? | EN: Can you straighten / bend the elbow without pain? (positivo/preocupante si NO)",
-        "2. [id=test_triceps_dip_diamond] ES: ¿Puedes hacer un fondo de tríceps (fondo con manos en diamante)? | EN: Can you do a triceps dip (diamond-hand dip)? (positivo/preocupante si NO)",
-        "3. [id=test_bench_press] ES: ¿Puedes hacer press de banca? | EN: Can you do the bench press? (positivo/preocupante si NO)",
-        "PUNTUACIÓN: si ≥ 2 de 3 (~67%+) positivos → sospecha de lesión de tríceps.",
-        "SI SOSPECHA (primera pasada): reposo relativo 24–36 h; Kinora recordará (~36 h) para repetir los MISMOS tests SÍ/NO; NO ecografía aún (salvo urgencia).",
-        "SI RETEST tras ~36 h y sigue doliendo → recomendar ecografía (ultrasonido) de tríceps.",
-      ].join("\n")
-    : isPectoral
-    ? [
-        "PROTOCOLO ESTRUCTURADO — Valoración funcional — Pectoral / Functional assessment — Pectoral (chest)",
-        "IMPORTANTE: todas las preguntas son SÍ/NO. En español: empezar por ¿ y terminar en ?; respetar tildes (algún, atrás, etc.).",
-        "TESTS SÍ/NO (primera pasada y retests):",
-        "1. [id=hx_whip_chest_exercise] ES: ¿Has notado un latigazo al hacer algún ejercicio de pecho? | EN: Did you feel a sudden whip-like snap while doing a chest exercise? (SÍ/NO)",
-        "2. [id=hx_keep_training] ES: ¿Has podido seguir entrenando? | EN: Were you able to keep training? (positivo/preocupante si NO)",
-        "3. [id=test_arm_back_elbow_straight] ES: ¿Puedes llevar el brazo atrás con el codo estirado sin dolor? | EN: Can you take the arm back with the elbow straight without pain? (positivo/preocupante si NO)",
-        "4. [id=test_arms_cross_shape] ES: ¿Puedes poner los brazos en forma de cruz sin un dolor fuerte? | EN: Can you hold your arms out in a cross (T-pose) without strong pain? (positivo/preocupante si NO)",
-        "5. [id=test_pushups_no_high_pain] ES: ¿Puedes hacer flexiones sin un dolor elevado? | EN: Can you do push-ups without high pain? (positivo/preocupante si NO)",
-        "PUNTUACIÓN: si ≥ 3 de 5 (~60%+) positivos → sospecha de lesión de pectoral.",
-        "SI HAY DOLOR (primera pasada): reposo relativo 24–36 h; Kinora recordará (~36 h) para repetir los MISMOS tests; NO ecografía aún.",
-        "SI RETEST (~36 h) y dolor IGUAL O MAYOR → ecografía de pectoral.",
-        "SI RETEST (~36 h) y el dolor HA BAJADO → esperar ~24 h más, notificar, y repetir otra vez los mismos tests.",
-        "SI SEGUNDO RETEST y sigue doliendo → ecografía de pectoral.",
-        "SI SEGUNDO RETEST y ya no duele → reposo relativo y hielo; retorno gradual al entrenamiento de pecho.",
-      ].join("\n")
-    : isBiceps
-    ? [
-        "PROTOCOLO ESTRUCTURADO — Valoración funcional — Bíceps / Functional assessment — Biceps",
-        "IMPORTANTE: todas las preguntas son SÍ/NO.",
-        "BANDERA ROJA / URGENCIA: si es evidente una rotura grave de bíceps (chasquido/rotura súbita + deformidad tipo Popeye + imposibilidad clara de flexionar + dolor muy intenso), mandar a urgencias / hospital ahora. NO aplicar reposo 24–36 h en ese caso.",
-        "TESTS SÍ/NO (primera pasada Y retest ~36 h, solo si NO es rotura evidente grave):",
-        "1. [id=hx_heavy_load_elbow_extended] ES: ¿Has ido a coger un gran peso con el codo estirado? | EN: Were you picking up a heavy weight with the elbow straight? (SÍ/NO)",
-        "2. [id=hx_pop_tear_sensation] ES: ¿Has notado como que crujiese o se partiese algo? | EN: Did you feel something crack or tear? (SÍ/NO)",
-        "3. [id=test_much_swelling] ES: ¿Se ha inflamado mucho? | EN: Has it swollen a lot? (SÍ/NO)",
-        "4. [id=test_can_flex_elbow] ES: ¿Puedes flexionar el codo? | EN: Can you bend (flex) the elbow? (positivo/preocupante si NO)",
-        "5. [id=test_can_flex_with_weight] ES: ¿Puedes flexionar el codo con peso? | EN: Can you bend the elbow while holding a weight? (positivo/preocupante si NO)",
-        "PUNTUACIÓN: si ≥ 3 de 5 (~60%+) positivos → sospecha de lesión de bíceps.",
-        "SI SOSPECHA sin bandera roja: reposo relativo 24–36 h; Kinora recordará (~36 h) para repetir los MISMOS tests SÍ/NO; NO ecografía aún.",
-        "SI RETEST tras ~36 h y sigue doliendo → recomendar ecografía (ultrasonido) de bíceps.",
-      ].join("\n")
-    : isAchilles
-    ? [
-        "PROTOCOLO ESTRUCTURADO — Valoración funcional — Tendón de Aquiles / Functional assessment — Achilles tendon",
-        ...calfAchillesShared,
-        "SI RETEST tras ~36 h y sigue doliendo / tests positivos → recomendar ecografía (ultrasonido) del tendón de Aquiles.",
-      ].join("\n")
-    : isCalf
-      ? [
-          "PROTOCOLO ESTRUCTURADO — Valoración funcional — Gemelo (pantorrilla) / Functional assessment — Calf",
-          ...calfAchillesShared,
-          "SI RETEST tras ~36 h y sigue doliendo / tests positivos → recomendar ecografía (ultrasonido) de gemelo / pantorrilla.",
-          "SI YA HUBO ECOGRAFÍA “NORMAL” Y DÍAS DESPUÉS EL DOLOR SIGUE IGUAL (típico en gemelo, cuádriceps, isquiotibiales): repetir eco en otro centro (segunda opinión) o pedir RMN.",
-        ].join("\n")
-      : isAdductor
-        ? [
-            "PROTOCOLO ESTRUCTURADO — Valoración funcional — Aductores / Functional assessment — Adductors",
-            "IMPORTANTE: todas las preguntas son SÍ/NO.",
-            "TESTS SÍ/NO (primera pasada Y retest ~36 h):",
-            "1. [id=test_lateral_leg_open] ES: ¿Duele al abrir lateralmente la pierna? | EN: Does it hurt when opening the leg out to the side? (SÍ/NO)",
-            "2. [id=test_butterfly_stretch] ES: ¿Duele al hacer el estiramiento mariposa desde sentado? | EN: Does it hurt doing the butterfly stretch while seated? (SÍ/NO)",
-            "3. [id=test_deep_squat_floor] ES: ¿Duele al hacer una sentadilla profunda hasta el suelo? | EN: Does it hurt doing a deep squat all the way to the floor? (SÍ/NO)",
-            "4. [id=test_ball_squeeze] ES: ¿Puedes comprimir una pelota con las piernas? | EN: Can you squeeze a ball between your legs? (positivo/preocupante si NO)",
-            "5. [id=test_copenhagen_plank] ES: ¿Duele al hacer la plancha de Copenhague? | EN: Does it hurt doing the Copenhagen plank? (SÍ/NO)",
-            "PUNTUACIÓN: si ≥ 3 de 5 (~60%+) positivos → sospecha de lesión de aductores.",
-            "SI SOSPECHA (primera pasada): reposo relativo 24–36 h; Kinora recordará (~36 h) para repetir los MISMOS tests SÍ/NO; NO ecografía aún (salvo urgencia).",
-            "SI RETEST tras ~36 h y el dolor sigue alto en esos estiramientos / gestos → recomendar ecografía (ultrasonido) de aductores.",
-          ].join("\n")
-        : isHamstring
-          ? [
-              "PROTOCOLO ESTRUCTURADO — Valoración funcional — Isquiotibiales (hamstring) / Functional assessment — Hamstrings",
-              "HISTORIA / MECANISMO (primera pasada; no hace falta repetir en el retest si ya respondió):",
-              "1. [id=hx_running_pedrada] ES: ¿Ibas corriendo y/o notaste una “pedrada” (golpe brusco en el muslo posterior)? | EN: Were you running and/or did you feel a sudden “stone-hit” sensation in the back of the thigh?",
-              "2. [id=hx_hand_back] ES: ¿Te llevaste la mano hacia atrás cuando lo notaste? | EN: Did you reach your hand toward the back of the thigh when you felt it?",
-              "3. [id=hx_keep_running] ES: ¿Pudiste seguir corriendo después? | EN: Were you able to keep running afterward?",
-              "4. [id=hx_deadlift_heavy] ES: ¿Estabas haciendo peso muerto con mucho peso? | EN: Were you doing a heavy deadlift?",
-              "",
-              "TESTS (primera pasada Y retest a las ~36 h — idioma del usuario ES o EN):",
-              "1. [id=test_knee_flexion] ES: ¿Duele al flexionar la rodilla (llevar el talón hacia el glúteo)? | EN: Does it hurt when flexing the knee (heel toward the buttock)?",
-              "2. [id=test_toe_touch_extended] ES: ¿Duele al tocar la punta de los pies con la rodilla estirada? | EN: Does it hurt when reaching for your toes with the knee straight?",
-              "3. [id=pain_nprs scale=1-10] ES: ¿Cuánto duele del 1 al 10? | EN: How much does it hurt from 1 to 10? (positivo si ≥4)",
-              "4. [id=test_nordic_curl] ES: ¿Duele al hacer curl nórdico (o el gesto de curl nórdico, aunque sea suave)? | EN: Does it hurt when doing a Nordic curl (or a gentle Nordic-curl motion)?",
-              "PUNTUACIÓN (tests): si ≥ 2 de 4 positivos (~50%+; escala 1–10 cuenta positivo si ≥4) → sospecha de lesión de isquiotibiales. Historia sugerente (pedrada, mano atrás, no poder seguir, peso muerto pesado) refuerza la sospecha.",
-              "SI SOSPECHA (primera pasada): reposo relativo 24–36 h (evitar sprint, estiramientos agresivos y peso muerto pesado); Kinora recordará (~36 h) para repetir los MISMOS tests; NO ecografía aún (salvo urgencia).",
-              "SI RETEST tras ~36 h y sigue doliendo / tests positivos → recomendar ecografía (ultrasonido) de isquiotibiales.",
-          "SI YA HUBO ECOGRAFÍA “NORMAL” Y DÍAS DESPUÉS EL DOLOR SIGUE IGUAL (típico en gemelo, cuádriceps, isquiotibiales): repetir eco en otro centro (segunda opinión) o pedir RMN.",
-            ].join("\n")
-          : isQuad
-            ? [
-                "PROTOCOLO ESTRUCTURADO — Valoración funcional — Cuádriceps / Functional assessment — Quadriceps",
-                "Preguntas sí/no (mostrar en el idioma del usuario ES o EN):",
-                "1. [id=pain_running] ES: ¿Duele al correr? | EN: Does it hurt when running?",
-                "2. [id=pain_kicking] ES: ¿Duele al pegar una patada o chutar un balón? | EN: Does it hurt when kicking a ball?",
-                "3. [id=pain_resisted_extension] ES: ¿Duele al hacer una extensión resistida (estirar la rodilla contra resistencia)? | EN: Does it hurt with resisted knee extension?",
-                "4. [id=pain_squat] ES: ¿Duele al hacer una sentadilla? | EN: Does it hurt when doing a squat?",
-                "5. [id=hematoma] ES: ¿Hay hematoma (moratón) visible? | EN: Is there a visible bruise (hematoma)?",
-                "PUNTUACIÓN: si ≥ 3 de 5 (~60%+) son SÍ → sospecha de lesión de cuádriceps.",
-                "SI SOSPECHA (primera pasada): protocolo 24–36 h de reposo relativo; avisar que Kinora recordará (~36 h) para repetir el mismo test; NO ecografía aún (salvo urgencia).",
-                "SI RETEST tras 24–36 h y sigue ≥60% positivo → recomendar ecografía (ultrasonido).",
-          "SI YA HUBO ECOGRAFÍA “NORMAL” Y DÍAS DESPUÉS EL DOLOR SIGUE IGUAL (típico en gemelo, cuádriceps, isquiotibiales): repetir eco en otro centro (segunda opinión) o pedir RMN.",
-              ].join("\n")
-            : "";
+  let protocol = "";
+  if (isTriceps) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Valoración funcional — Tríceps / Functional assessment — Triceps",
+      "TESTS SÍ/NO:",
+      "1. [id=test_elbow_extend_flex_painless] ES: ¿Puedes estirar / flexionar el codo sin dolor? | EN: Can you straighten / bend the elbow without pain? (positivo si NO)",
+      "2. [id=test_triceps_dip_diamond] ES: ¿Puedes hacer un fondo de tríceps (manos en diamante)? | EN: Can you do a triceps dip (diamond hands)? (positivo si NO)",
+      "3. [id=test_bench_press] ES: ¿Puedes hacer press de banca? | EN: Can you do bench press? (positivo si NO)",
+      "PUNTUACIÓN: ≥ 2/3 → sospecha. Reposo 24–36 h + retest; eco si sigue.",
+    ].join("\n");
+  } else if (isPectoral) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Valoración funcional — Pectoral",
+      "TESTS SÍ/NO: latigazo pecho; seguir entrenando (NO=positivo); brazo atrás; cruz; flexiones sin dolor alto.",
+      "PUNTUACIÓN: ≥ 3/5 → sospecha. Reposo 24–36 h + retest; eco si igual/peor.",
+    ].join("\n");
+  } else if (isBiceps) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Valoración funcional — Bíceps",
+      "BANDERA ROJA: rotura grave (Popeye + no flexionar) → URGENCIAS.",
+      "TESTS SÍ/NO: peso con codo estirado; crujido; inflamación; flexionar; flexionar con peso.",
+      "PUNTUACIÓN: ≥ 3/5 → sospecha. Reposo 24–36 h + retest; eco si sigue.",
+    ].join("\n");
+  } else if (isAchilles) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Tendón de Aquiles",
+      ...calfAchillesShared,
+      "SI RETEST sigue → eco de Aquiles.",
+    ].join("\n");
+  } else if (isCalf) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Gemelo",
+      ...calfAchillesShared,
+      "SI RETEST sigue → eco de gemelo. Eco normal + dolor igual → otra eco u RMN.",
+    ].join("\n");
+  } else if (isAdductor) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Aductores",
+      "TESTS SÍ/NO: abrir pierna; mariposa; sentadilla profunda; comprimir pelota; Copenhague.",
+      "PUNTUACIÓN: ≥ 3/5 → sospecha. Reposo 24–36 h + retest; eco si sigue.",
+    ].join("\n");
+  } else if (isHamstring) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Isquiotibiales",
+      "HISTORIA: pedrada; mano atrás; seguir corriendo; peso muerto.",
+      "TESTS: flexión rodilla; punta de pies rodilla estirada; dolor 1–10 (≥4 positivo); curl nórdico.",
+      "PUNTUACIÓN: ≥ 2/4 → sospecha. Reposo 24–36 h + retest; eco si sigue.",
+    ].join("\n");
+  } else if (isQuad) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Cuádriceps",
+      "TESTS SÍ/NO: correr; patada; extensión resistida; sentadilla; hematoma.",
+      "PUNTUACIÓN: ≥ 3/5 → sospecha. Reposo 24–36 h + retest; eco si sigue.",
+    ].join("\n");
+  } else if (isAnkle) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Tobillo",
+      "BANDERA ROJA: Ottawa / deformidad → HOSPITAL.",
+      "TESTS: 4 pasos apoyo; elevación talón 1 pierna; pata coja 20–30 s; dolor maleolo lateral; giving way.",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest.",
+    ].join("\n");
+  } else if (isFoot) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Pie / fascia",
+      "TESTS: primer paso mañana; Windlass dedo gordo; puntillas antepié; squeeze metatarsos; arco en heel raise.",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest.",
+    ].join("\n");
+  } else if (isShoulder) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Hombro",
+      "BANDERA ROJA: luxación/fractura o hombro izq + signos cardíacos → URGENCIAS.",
+      "TESTS SÍ/NO: elevar por encima cabeza; alcanzar espalda; rotar a 90°; objeto ligero 10–15 s; cribado cuello (giro/inclinación).",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest; eco/RMN si sigue.",
+    ].join("\n");
+  } else if (isElbow) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Codo",
+      "TESTS SÍ/NO: puño/pomo codo estirado; ROM completo; muñeca resistida; llevar peso; cribado cuello.",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest.",
+    ].join("\n");
+  } else if (isWrist) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Muñeca / mano",
+      "BANDERA ROJA: caída + tabaquera → escafoides / HOSPITAL.",
+      "TESTS SÍ/NO: apoyo palma; girar llave; ROM muñeca; posición rezo; puño completo.",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest.",
+    ].join("\n");
+  } else if (isKnee) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Rodilla",
+      "BANDERA ROJA: bloqueo / no apoyar tras trauma → HOSPITAL.",
+      "TESTS SÍ/NO: ROM completo; bajar escalón; pata coja; bloqueo; cribado cadera (calcetines).",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest.",
+    ].join("\n");
+  } else if (isHip) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Cadera",
+      "BANDERA ROJA: corredor + inguinal progresivo + nocturno + no hop → imagen urgente.",
+      "TESTS SÍ/NO: sentadilla parcial; pata coja; elevación pierna en lado; calcetines/cruzar; hop monopodal.",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest.",
+    ].join("\n");
+  } else if (isLumbar) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Lumbar",
+      "BANDERA ROJA: cauda equina → URGENCIAS.",
+      "TESTS SÍ/NO: inclinarse delante; pata coja; silla sin manos; caminar empeora; tos/estornudo a pierna.",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest; RMN si neurológicos.",
+    ].join("\n");
+  } else if (isCervical) {
+    protocol = [
+      "PROTOCOLO ESTRUCTURADO — Cervical",
+      "BANDERA ROJA: CAD/ictus features o trauma + no girar 45° → URGENCIAS.",
+      "TESTS SÍ/NO: giro cabeza; mirar arriba/abajo (mareo/brazo); hormigueo mano; mirada arriba 20–30 s; mochila/brazos elevados.",
+      "PUNTUACIÓN: ≥ 2/5 → sospecha. Reposo 24–36 h + retest.",
+    ].join("\n");
+  }
 
   return [
     protocol,
-    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/obvio → HOSPITAL → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 tests concretos; el paciente debe hacerlas y responder) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
+    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/obvio → HOSPITAL → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 tests concretos; el paciente debe hacerlas y responder; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
     `Banco de tests de valoración funcional para la zona "${area || "general"}".`,
-    "OBLIGATORIO: copia/adapta estas pruebas a la sección **Pruebas funcionales** de tu respuesta (salvo urgencia hospitalaria).",
-    "PRIORIDAD: protocolo estructurado > RAG Functional Assessment / Special Tests > banco local:",
+    "CRÍTICO — DIFERENCIACIÓN KINORA: copia/adapta estas pruebas a la sección **Pruebas funcionales** y pide: «Haz estas pruebas y responde aquí qué pasa en cada una» (salvo urgencia hospitalaria).",
+    "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como instrucción cotidiana de movimiento (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco trae jerga, tradúcela.",
+    "PRIORIDAD: protocolo estructurado > RAG Functional Assessment / Special Tests / Assessment Dossier > banco local:",
     ...questions.map((q, i) => `${i + 1}. ${q}`),
     "Prioriza tests de los documentos RAG cuando existan y cita su fuente (salvo banco fijo del protocolo).",
   ]

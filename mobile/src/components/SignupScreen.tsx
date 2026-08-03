@@ -29,6 +29,7 @@ type Props = {
 
 export function SignupScreen({ onSwitch }: Props) {
   const { t } = useI18n();
+  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -57,7 +58,7 @@ export function SignupScreen({ onSwitch }: Props) {
       const res = await fetch(`${WEB_APP_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailNorm, password }),
+        body: JSON.stringify({ email: emailNorm, password, accountType }),
       });
       const payload = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -99,6 +100,38 @@ export function SignupScreen({ onSwitch }: Props) {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.roleLabel}>Soy...</Text>
+          <View style={styles.roleRow}>
+            <Pressable
+              style={[styles.roleOption, accountType === "patient" && styles.roleOptionActive]}
+              onPress={() => setAccountType("patient")}
+            >
+              <Text
+                style={[
+                  styles.roleOptionText,
+                  accountType === "patient" && styles.roleOptionTextActive,
+                ]}
+              >
+                Persona
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.roleOption, accountType === "physio" && styles.roleOptionActive]}
+              onPress={() => setAccountType("physio")}
+            >
+              <Text
+                style={[
+                  styles.roleOptionText,
+                  accountType === "physio" && styles.roleOptionTextActive,
+                ]}
+              >
+                Fisioterapeuta
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={{ height: 12 }} />
+
           <AuthTextField
             label="Correo electrónico"
             placeholder="tu@correo.com"
@@ -214,6 +247,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.danger,
     textAlign: "center",
+  },
+  roleLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  roleRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  roleOption: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+  },
+  roleOptionActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  roleOptionText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+  },
+  roleOptionTextActive: {
+    color: "#fff",
   },
   button: {
     marginTop: 24,

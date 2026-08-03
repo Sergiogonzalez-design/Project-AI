@@ -10,11 +10,14 @@ export const PHYSIO_GREETING_EN =
 
 type Props = {
   onSkip?: () => void;
+  greeting?: string;
 };
 
-export function PhysioIntro({ onSkip }: Props) {
+export function PhysioIntro({ onSkip, greeting }: Props) {
   const { locale, t } = useI18n();
-  const greeting = locale === "en" ? PHYSIO_GREETING_EN : PHYSIO_GREETING;
+  const text =
+    greeting ??
+    (locale === "en" ? PHYSIO_GREETING_EN : PHYSIO_GREETING);
 
   return (
     <Pressable
@@ -29,7 +32,7 @@ export function PhysioIntro({ onSkip }: Props) {
         resizeMode="contain"
       />
       <View style={styles.bubble}>
-        <Text style={styles.text}>{greeting}</Text>
+        <Text style={styles.text}>{text}</Text>
       </View>
       {onSkip ? <Text style={styles.hint}>{t.consulta.tapToContinue}</Text> : null}
     </Pressable>

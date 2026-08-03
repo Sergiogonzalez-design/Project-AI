@@ -337,6 +337,8 @@ export function ChatInterface() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [linkedPhysioLabel, setLinkedPhysioLabel] = useState<string | null>(null);
+  const [physioReportSentBanner, setPhysioReportSentBanner] = useState(false);
 
   function clearAttachment() {
     setAttachedFile(null);
@@ -532,6 +534,77 @@ export function ChatInterface() {
     });
     if (!res.ok) throw new Error("Error en la IA");
     return res.json();
+  }
+
+  /**
+   * Best-effort, fire-and-forget: if this patient is linked to a physio,
+   * generate a clinician-oriented report and store it for their dashboard.
+   * Never throws — must not block or degrade the patient's own chat experience.
+   */
+  async function maybeGenerateAndSendPhysioReport(params: {
+    patientId: string;
+    conversationId: string;
+    bodyArea: string;
+    onsetType: string;
+    painLevel: number;
+    hadTrauma: string;
+    description: string;
+    symptomContext: string;
+    patientSummary: string;
+    language: ConsultLanguage;
+  }): Promise<{ sent: boolean; physioLabel?: string | null }> {
+    try {
+      const { data: patientProfile } = await supabase
+        .from("profiles")
+        .select("physio_id")
+        .eq("id", params.patientId)
+        .maybeSingle();
+      const physioId = (patientProfile as { physio_id?: string | null } | null)?.physio_id;
+      if (!physioId) return { sent: false };
+
+      const raw = await callEdgeJson(
+        {
+          mode: "physio_report",
+          bodyArea: params.bodyArea,
+          onsetType: params.onsetType,
+          painLevel: params.painLevel,
+          hadTrauma: params.hadTrauma,
+          description: params.description,
+          symptomContext: params.symptomContext,
+          patientSummary: params.patientSummary,
+        },
+        params.language
+      );
+      const answer = (raw as { answer?: string } | null)?.answer;
+      if (!answer) return { sent: false };
+
+      const { error: insertError } = await supabase.from("clinical_reports").insert({
+        patient_id: params.patientId,
+        physio_id: physioId,
+        conversation_id: params.conversationId,
+        body_area: params.bodyArea,
+        patient_summary: params.patientSummary,
+        physio_report: answer,
+      });
+      if (insertError) {
+        console.error("No se pudo guardar el informe para el fisioterapeuta:", insertError);
+        return { sent: false };
+      }
+
+      let physioLabel: string | null = null;
+      try {
+        const { data: linked } = await supabase.rpc("patient_get_linked_physio");
+        const row = Array.isArray(linked) ? linked[0] : linked;
+        physioLabel =
+          [row?.physio_name, row?.clinic_name].filter(Boolean).join(" · ") || null;
+      } catch {
+        physioLabel = null;
+      }
+      return { sent: true, physioLabel };
+    } catch (err) {
+      console.error("No se pudo generar el informe para el fisioterapeuta:", err);
+      return { sent: false };
+    }
   }
 
   async function triageMessage(
@@ -1126,6 +1199,24 @@ export function ChatInterface() {
           },
         });
 
+        void maybeGenerateAndSendPhysioReport({
+          patientId: user.id,
+          conversationId: activeId,
+          bodyArea: areaLabel,
+          onsetType,
+          painLevel,
+          hadTrauma: hadTraumaVal,
+          description: initialMessage,
+          symptomContext: contextForAi,
+          patientSummary: aiText,
+          language: consultLanguage,
+        }).then(({ sent, physioLabel }) => {
+          if (sent) {
+            setPhysioReportSentBanner(true);
+            if (physioLabel) setLinkedPhysioLabel(physioLabel);
+          }
+        });
+
         setRevealingMessageId((aiMsg as Message).id);
         setMessages((prev) => [...prev, aiMsg as Message]);
         markPartEvaluated(questionnairePart);
@@ -1191,6 +1282,24 @@ export function ChatInterface() {
               : null,
           redFlagsUrgent,
         },
+      });
+
+      void maybeGenerateAndSendPhysioReport({
+        patientId: user.id,
+        conversationId: conv.id,
+        bodyArea: areaLabel,
+        onsetType,
+        painLevel,
+        hadTrauma: hadTraumaVal,
+        description: initialMessage,
+        symptomContext: contextForAi,
+        patientSummary: aiText,
+        language: consultLanguage,
+      }).then(({ sent, physioLabel }) => {
+        if (sent) {
+          setPhysioReportSentBanner(true);
+          if (physioLabel) setLinkedPhysioLabel(physioLabel);
+        }
       });
 
       setActiveId(conv.id);
@@ -1516,6 +1625,30 @@ export function ChatInterface() {
             + Nueva
           </button>
         </div>
+
+        {physioReportSentBanner ? (
+          <div className="shrink-0 border-b border-emerald-200 bg-emerald-50 px-4 py-3">
+            <div className="mx-auto flex max-w-3xl items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  Informe enviado a tu fisioterapeuta
+                </p>
+                <p className="mt-0.5 text-xs text-emerald-800">
+                  El resumen clínico de esta consulta se ha enviado correctamente
+                  {linkedPhysioLabel ? ` a ${linkedPhysioLabel}` : ""}. Ya puede
+                  revisarlo en su panel antes de la cita.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhysioReportSentBanner(false)}
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="relative min-h-0 flex-1">
         <div
