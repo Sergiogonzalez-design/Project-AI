@@ -56,16 +56,17 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
 - NO te limites a hipotetizar: necesitas que el paciente las haga y te diga el resultado. Explica en 1 frase por qué (para entender mejor qué estructura está implicada).
 - Incluye una sección clara titulada exactamente: **Pruebas funcionales** (justo antes de **Qué debes hacer ahora**).
 - Lista 3–6 pruebas numeradas, fáciles de hacer en casa. Cada una empieza por ¿ y terminar en ? (español).
+- CALIDAD CLÍNICA (CRÍTICO — investiga, no copies sin pensar): el banco/protocolo local de abajo es un MÍNIMO de referencia, no el techo. Antes de listar las pruebas, razona qué estructuras/diferenciales concretos maneja ESTE caso (mecanismo, localización exacta, agravantes, banderas ya vistas) y elige o adapta las pruebas con mejor capacidad discriminativa para ESE caso — apóyate en el conocimiento de tests especiales de fisioterapia/medicina deportiva con buena sensibilidad/especificidad para esas estructuras, y en los documentos RAG si aportan algo más específico que el banco genérico. No te quedes con las 3-5 preguntas más obvias/genéricas si hay una prueba más específica que discrimine mejor entre las hipótesis planteadas.
 - LENGUAJE DE LAS PRUEBAS (CRÍTICO — el paciente NO es un fisioterapeuta):
   · NUNCA uses nombres de tests clínicos (“Test de Neer”, “Hawkins-Kennedy”, “Empty can / Jobe”, “Spurling”, “Lachman”, “McMurray”, “Thompson”, “Ottawa”, “Windlass”, “Phalen”, etc.).
   · NUNCA empieces con “Test de…”. Describe SOLO la acción cotidiana y qué debe notar.
   · BIEN: “¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?” / “Levanta el brazo por encima de la cabeza y dime si duele.”
   · MAL: “1. Test de Neer: …” / “Empty can test: …”
-  · Si el banco/RAG trae un nombre técnico, TRADÚCELO a instrucción sencilla antes de mostrárselo al paciente.
-- Usa el protocolo estructurado / RAG / Assessment Dossier / banco local de esa zona. Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. girar/inclinar la cabeza si duele el codo), también en lenguaje cotidiano.
+  · Si el banco/RAG trae un nombre técnico o una prueba clínica reconocida (p. ej. Thessaly, pivot shift, cajón anterior, apprehension), TRADÚCELA fielmente al movimiento/sensación cotidiana equivalente que el paciente puede hacer en casa sin material clínico — no la simplifiques hasta perder lo que realmente discrimina (ej. "gira la rodilla ligeramente flexionada apoyando el pie en el suelo, sin saltar" en vez de solo "¿duele al girar?").
+- Usa el protocolo estructurado / RAG / Assessment Dossier / banco local de esa zona como PUNTO DE PARTIDA, y amplíalo o afínalo con tu propio razonamiento clínico cuando el caso lo pida (p. ej. si hay sospecha de inestabilidad, añade una prueba de estabilidad; si hay sospecha meniscal/de bloqueo, añade una prueba de compresión-rotación en carga). Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. girar/inclinar la cabeza si duele el codo), también en lenguaje cotidiano.
 - Di explícitamente: “Haz estas pruebas y responde aquí qué pasa en cada una (sí/no, dónde duele, comparado con el otro lado).”
 - Preguntas CLARAS; parar si dolor intenso, mareo o inestabilidad.
-- PROTOCOLOS ESTRUCTURADOS (cuádriceps, isquiotibiales, gemelo, Aquiles, aductores, bíceps, pectoral, tríceps, tobillo, pie/fascitis, nervios, etc.): si hay bloque de protocolo, úsalo (siempre con la redacción sencilla anterior).
+- PROTOCOLOS ESTRUCTURADOS (cuádriceps, isquiotibiales, gemelo, Aquiles, aductores, bíceps, pectoral, tríceps, tobillo, pie/fascitis, nervios, etc.): úsalos como base obligatoria (nunca los omitas), pero puedes añadir 1–2 pruebas adicionales más específicas para el caso si el protocolo fijo no cubre un diferencial relevante (siempre con la redacción sencilla anterior).
 
 PASO 3b — INTERPRETAR RESPUESTAS A TESTS (CRÍTICO — no reinicies el caso):
 - Cuando el paciente responde a tests, INTERPRETA esas respuestas en el MISMO caso. NUNCA trates la respuesta como una consulta nueva ni vuelvas a pedir todo el cuestionario / todos los tests desde cero.
@@ -683,13 +684,81 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
   return [
     protocol,
     "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/obvio → HOSPITAL → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 tests concretos; el paciente debe hacerlas y responder; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
-    `Banco de tests de valoración funcional para la zona "${area || "general"}".`,
-    "CRÍTICO — DIFERENCIACIÓN KINORA: copia/adapta estas pruebas a la sección **Pruebas funcionales** y pide: «Haz estas pruebas y responde aquí qué pasa en cada una» (salvo urgencia hospitalaria).",
-    "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como instrucción cotidiana de movimiento (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco trae jerga, tradúcela.",
-    "PRIORIDAD: protocolo estructurado > RAG Functional Assessment / Special Tests / Assessment Dossier > banco local:",
+    `Banco de tests de valoración funcional (MÍNIMO de referencia, no lista cerrada) para la zona "${area || "general"}".`,
+    "CRÍTICO — DIFERENCIACIÓN KINORA: usa estas pruebas como base para la sección **Pruebas funcionales** y pide: «Haz estas pruebas y responde aquí qué pasa en cada una» (salvo urgencia hospitalaria). NO te limites a copiarlas literalmente: razona sobre las hipótesis más probables de ESTE caso concreto (mecanismo, zona exacta, agravantes) y, si una prueba clínica más específica y con mejor evidencia discrimina mejor entre esas hipótesis, sustitúyela o añádela (traducida a instrucción cotidiana). El objetivo es una valoración de calidad profesional, no una lista genérica.",
+    "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como instrucción cotidiana de movimiento (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco o una prueba clínica más específica trae jerga, tradúcela sin perder lo que realmente evalúa.",
+    "PRIORIDAD: protocolo estructurado > RAG Functional Assessment / Special Tests / Assessment Dossier > tu propio razonamiento clínico para este caso > banco local genérico:",
     ...questions.map((q, i) => `${i + 1}. ${q}`),
-    "Prioriza tests de los documentos RAG cuando existan y cita su fuente (salvo banco fijo del protocolo).",
+    "Prioriza tests de los documentos RAG cuando existan y cita su fuente (salvo banco fijo del protocolo). Si ni el protocolo ni el RAG cubren bien el diferencial que sospechas, añade tú una prueba adicional relevante en vez de omitirla.",
   ]
     .filter(Boolean)
     .join("\n");
 }
+
+/** Labels for clinic_equipment IDs (keep in sync with lib/physio-equipment-options.ts). */
+const PHYSIO_EQUIPMENT_LABELS: Record<string, string> = {
+  diagnostic_ultrasound: "Ecógrafo (ultrasonido diagnóstico)",
+  xray_in_clinic: "Radiografía (RX) en la clínica",
+  mri_in_clinic: "Resonancia (RMN) en la clínica / centro",
+  pressure_platform: "Plataforma de presión / podoscopio",
+  dynamometer: "Dinamómetro",
+  algometer: "Algómetro",
+  goniometer: "Goniómetro / inclinómetro",
+  tens_ems: "TENS / electroestimulación",
+  therapeutic_ultrasound: "Ultrasonido terapéutico",
+  therapeutic_laser: "Láser terapéutico",
+  shockwave: "Ondas de choque (ESWT / EPTE)",
+  diathermy_rf: "Diatermia / radiofrecuencia",
+  magnetotherapy: "Magnetoterapia",
+  cryotherapy: "Crioterapia avanzada",
+  heat_pack: "Termoterapia (compresas, infrarrojos…)",
+  resistance_bands: "Bandas elásticas / theraband",
+  free_weights: "Pesas libres / mancuernas",
+  gym_machines: "Máquinas de musculación",
+  stationary_bike: "Bicicleta estática",
+  treadmill: "Cinta de correr",
+  pilates_reformer: "Reformer / Pilates",
+  suspension_trx: "TRX / entrenamiento en suspensión",
+  balance_props: "Material de equilibrio / propiocepción",
+  parallel_bars: "Barras paralelas",
+  traction_table: "Camilla de tracción",
+  hydrotherapy: "Hidroterapia / piscina",
+  dry_needling: "Punción seca",
+  acupuncture: "Acupuntura",
+  kinesio_tape: "Vendaje neuromuscular (tape)",
+  functional_taping: "Vendaje funcional",
+  manual_basic: "Solo material básico (camilla + exploración manual)",
+};
+
+/** Clinic equipment block for physio_chat (keep in sync with lib/physio-equipment-options.ts). */
+export function buildPhysioEquipmentContext(profile: {
+  display_name?: string | null;
+  clinic_name?: string | null;
+  clinic_equipment?: string[] | null;
+  clinic_equipment_notes?: string | null;
+} | null): string {
+  if (!profile) return "";
+  const ids = Array.isArray(profile.clinic_equipment) ? profile.clinic_equipment : [];
+  const labels = ids.map((id) => PHYSIO_EQUIPMENT_LABELS[id] ?? id);
+  const notes = profile.clinic_equipment_notes?.trim();
+  if (!labels.length && !notes) return "";
+
+  return [
+    "Contexto de la consulta del fisioterapeuta (material disponible):",
+    profile.display_name ? `Fisioterapeuta: ${profile.display_name}` : "",
+    profile.clinic_name ? `Clínica: ${profile.clinic_name}` : "",
+    labels.length
+      ? `Material / equipo DISPONIBLE en su consulta:\n${labels.map((l) => `- ${l}`).join("\n")}`
+      : "",
+    notes ? `Notas adicionales del fisioterapeuta sobre su material: ${notes}` : "",
+    "",
+    "REGLAS DE USO DEL MATERIAL (CRÍTICO):",
+    "- Prioriza recomendaciones, pruebas y tratamientos que pueda hacer CON el material que tiene.",
+    "- Si algo es clínicamente indicado pero NO está en la lista (p. ej. RX, RMN, ecógrafo, ondas de choque), recomiéndalo igual y dile explícitamente que derive o busque un centro donde hacerlo (p. ej. «Te recomendaría que el paciente se haga una radiografía; como no tienes RX en consulta, indícale un centro de imagen / urgencias / médico según el caso»).",
+    "- No inventes que tiene un equipo que no figura en la lista.",
+    "- Si solo tiene material básico, centra la consulta en exploración manual, razonamiento clínico y ejercicio con poco material; sigue recomendando derivaciones de imagen o técnicas especializadas cuando procedan.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+

@@ -16,12 +16,13 @@ async function edgeHeaders(): Promise<Record<string, string>> {
 }
 
 export async function callEdgeText(
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
+  extras?: Record<string, unknown>
 ): Promise<string> {
   const res = await fetch(EDGE_URL, {
     method: "POST",
     headers: await edgeHeaders(),
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...(extras ?? {}), ...body }),
   });
   const data = (await res.json()) as { answer?: string; error?: string };
   if (!res.ok || data.error) {
@@ -34,12 +35,13 @@ export async function callEdgeText(
 }
 
 export async function callEdgeJson(
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
+  extras?: Record<string, unknown>
 ): Promise<unknown> {
   const res = await fetch(EDGE_URL, {
     method: "POST",
     headers: await edgeHeaders(),
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...(extras ?? {}), ...body }),
   });
   const data = (await res.json()) as Record<string, unknown>;
   if (!res.ok) {

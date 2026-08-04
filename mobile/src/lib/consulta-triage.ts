@@ -66,7 +66,7 @@ const EDUCATIONAL_QUERY =
   /ejercicio|estiramiento|movilidad|rutina|c[óo]mo\s+(funciona|hacer|estirar|mejorar)|qu[eé]\s+es|prevenci[oó]n|consejo|informaci[oó]n|gu[ií]a|tutorial|explic/i;
 
 const META_CLARIFICATION_QUERY =
-  /qu[eé]\s+hago|qu[eé]\s+debo|qu[eé]\s+tengo\s+que\s+hacer|c[oó]mo\s+funciona|how\s+does\s+(?:this|it)\s+work|what\s+(?:do|should)\s+i\s+do|how\s+do\s+i\s+(?:use|start)|por\s+d[oó]nde\s+empiezo|no\s+s[eé]\s+(?:qu[eé]|c[oó]mo)|explic(?:a|ame)\s+c[oó]mo|c[oó]mo\s+(?:se\s+)?usa|what\s+is\s+this/i;
+  /qu[eé]\s+hago|qu[eé]\s+debo|qu[eé]\s+tengo\s+que\s+hacer|c[oó]mo\s+funciona|how\s+does\s+(?:this|it)\s+work|what\s+(?:do|should)\s+i\s+do|how\s+do\s+i\s+(?:use|start)|por\s+d[oó]nde\s+empiezo|no\s+s[eé]\s+(?:qu[eé]|c[oó]mo)|explic(?:a|ame)\s+c[oó]mo|c[oó]mo\s+(?:se\s+)?usa|what\s+is\s+this|por\s+qu[eé]\s+(?:estoy|me\s+(?:han|has)\s+env)|(?:mi\s+)?fisio(?:terapeuta)?|c[oó]digo|informe|antes\s+de\s+(?:la\s+)?cita|why\s+(?:am\s+i|did)|physio\s+sent/i;
 
 const HYPOTHETICAL_SYMPTOM_QUESTION =
   /(?:te\s+)?(?:digo|cuento|explico|escribo)\s+(?:lo\s+que\s+)?(?:me\s+)?duele\s+o|(?:debo|tengo\s+que)\s+(?:decirte|contarte|escribir).*(?:duele|dolor)/i;
@@ -208,14 +208,18 @@ export function hasFullAdaptiveUi(part: AdaptiveQuestionnairePart | BodyPartId |
 export async function triageMessage(
   text: string,
   imageUrl?: string | null,
-  _language?: string
+  _language?: string,
+  extras?: Record<string, unknown>
 ): Promise<ConsultaTriageResult> {
   try {
-    const raw = await callEdgeJson({
-      mode: "triage",
-      message: text,
-      ...(imageUrl ? { imageUrl } : {}),
-    });
+    const raw = await callEdgeJson(
+      {
+        mode: "triage",
+        message: text,
+        ...(imageUrl ? { imageUrl } : {}),
+      },
+      extras
+    );
     return refineTriageBodyPart(parseTriageResult(raw), text);
   } catch {
     return refineTriageBodyPart(fallbackTriageFromText(text), text);
@@ -227,19 +231,23 @@ export async function respondToUserMessage(
   text: string,
   triage: ConsultaTriageResult,
   imageUrl?: string | null,
-  language: "es" | "en" = "es"
+  language: "es" | "en" = "es",
+  extras?: Record<string, unknown>
 ): Promise<string> {
   let answer = triage.answer?.trim() ?? "";
   if (answer) return answer;
 
   const mode = triage.intent === "symptom_other" ? "clinical_screen" : "general_chat";
-  const raw = await callEdgeJson({
-    mode,
-    message: text,
-    language,
-    bodyArea: bodyAreaLabelFromText(text),
-    ...(imageUrl ? { imageUrl } : {}),
-  });
+  const raw = await callEdgeJson(
+    {
+      mode,
+      message: text,
+      language,
+      bodyArea: bodyAreaLabelFromText(text),
+      ...(imageUrl ? { imageUrl } : {}),
+    },
+    extras
+  );
   if (raw && typeof raw === "object" && typeof (raw as { answer?: string }).answer === "string") {
     return (raw as { answer: string }).answer;
   }

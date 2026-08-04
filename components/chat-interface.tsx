@@ -42,6 +42,11 @@ import { PhysioIntro } from "@/components/physio-intro";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { StreamingAssistantMessage } from "@/components/streaming-assistant-message";
 import { TrustPanel } from "@/components/ui/trust-panel";
+import {
+  buildPhysioLinkedIntroGreeting,
+  buildPhysioLinkedWelcome,
+  physioDisplayName,
+} from "@/lib/physio-linked-welcome";
 import { bodyPartLabel, type BodyPartId } from "@/lib/body-parts";
 import {
   defaultGenericConsultaAnswers,
@@ -165,7 +170,14 @@ type Message = {
   image_url?: string | null;
   created_at?: string | null;
 };
-type Conversation = { id: string; title: string; created_at: string };
+type Conversation = {
+  id: string;
+  title: string;
+  created_at: string;
+  physio_id?: string | null;
+  physio_name?: string | null;
+  clinic_name?: string | null;
+};
 type Phase = "intro" | "questionnaire" | "followup";
 
 const SUPABASE_URL = "https://klxlzzgrymkexvuelzex.supabase.co";
@@ -210,8 +222,29 @@ function groupConversationsByDate(conversations: Conversation[]) {
   return buckets.filter((b) => b.items.length > 0);
 }
 
-function welcomeMessage(): Message {
-  return { id: WELCOME_ID, role: "assistant", content: WELCOME_MESSAGE };
+/** Groups Fisioterapia conversations by the physiotherapist + clinic they belong to. */
+function groupConversationsByPhysio(conversations: Conversation[]) {
+  const groups: { label: string; items: Conversation[] }[] = [];
+  const indexByLabel = new Map<string, number>();
+
+  for (const c of conversations) {
+    const name = c.physio_name?.trim() || "Fisioterapeuta";
+    const clinic = c.clinic_name?.trim();
+    const label = clinic ? `${name} — ${clinic}` : name;
+    const idx = indexByLabel.get(label);
+    if (idx === undefined) {
+      indexByLabel.set(label, groups.length);
+      groups.push({ label, items: [c] });
+    } else {
+      groups[idx].items.push(c);
+    }
+  }
+
+  return groups;
+}
+
+function welcomeMessage(content: string = WELCOME_MESSAGE): Message {
+  return { id: WELCOME_ID, role: "assistant", content };
 }
 
 function renderAssistantContent(content: string) {
@@ -265,18 +298,38 @@ function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string 
   );
 }
 
-export function ChatInterface() {
+type LinkedPhysioInfo = {
+  physio_id?: string | null;
+  physio_name: string | null;
+  clinic_name?: string | null;
+};
+
+type ChatInterfaceProps = {
+  /** When set (Fisioterapia flow), welcome copy names the linked physio and explains the report. */
+  linkedPhysio?: LinkedPhysioInfo | null;
+};
+
+export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
   const supabase = createClient();
+  const welcomeText = linkedPhysio
+    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name)
+    : WELCOME_MESSAGE;
+  const introGreeting = linkedPhysio
+    ? buildPhysioLinkedIntroGreeting(linkedPhysio.physio_name)
+    : undefined;
   const messagesRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const questionnaireRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [openingConversation, setOpeningConversation] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTitle, setActiveTitle] = useState("Nueva consulta");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [physioIntro, setPhysioIntro] = useState(true);
+  // Fisioterapia never boots into the intro animation — wait for history first.
+  const [physioIntro, setPhysioIntro] = useState(!linkedPhysio);
   const [phase, setPhase] = useState<Phase>("intro");
   const [initialMessage, setInitialMessage] = useState("");
   const [questionnairePart, setQuestionnairePart] = useState<BodyPartId | "generic">("shoulder");
@@ -426,7 +479,7 @@ export function ChatInterface() {
   function skipPhysioIntro() {
     if (!physioIntro || activeId) return;
     setPhysioIntro(false);
-    setMessages((prev) => (prev.length === 0 ? [welcomeMessage()] : prev));
+    setMessages((prev) => (prev.length === 0 ? [welcomeMessage(welcomeText)] : prev));
   }
 
   useEffect(() => {
@@ -440,30 +493,74 @@ export function ChatInterface() {
   async function loadConversations() {
     const { data } = await supabase
       .from("conversations")
-      .select("id, title, created_at")
+      .select("id, title, created_at, physio_id, physio_name, clinic_name")
+      .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
       .order("created_at", { ascending: false })
-      .limit(10);
-    setConversations((data as Conversation[]) ?? []);
+      .limit(linkedPhysio ? 30 : 10);
+    const list = (data as Conversation[]) ?? [];
+    setConversations(list);
+
+    // Fisioterapia: open latest assigned chat before revealing the UI (avoids intro /
+    // empty-chat / typing-indicator flashes when switching from Consulta).
+    if (linkedPhysio && list.length > 0) {
+      const preferred =
+        (linkedPhysio.physio_id
+          ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
+          : null) ?? list[0];
+      await loadConversation(preferred.id, preferred.title);
+      return;
+    }
+
+    if (linkedPhysio) {
+      // First assigned consult — show intro only once history is confirmed empty.
+      setPhysioIntro(true);
+    }
+    setHistoryLoaded(true);
   }
 
   async function loadConversation(id: string, title: string) {
     setActiveId(id);
     setActiveTitle(title);
-    setLoading(true);
+    setOpeningConversation(true);
     setMobileSidebarOpen(false);
+    setPhysioIntro(false);
+    setPhase("followup");
+    setRevealingMessageId(null);
+    setEvaluatedParts([]);
+    setCaseImageUrl(null);
+    clearAttachment();
+    setPhysioReportSentBanner(false);
+
     const { data } = await supabase
       .from("messages")
       .select("id, role, content, image_url, created_at")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
+
     setMessages((data as Message[]) ?? []);
+    setOpeningConversation(false);
+    setHistoryLoaded(true);
+  }
+
+  function clearToFisioIdle() {
+    setActiveId(null);
+    setActiveTitle(
+      linkedPhysio
+        ? `Consulta con ${physioDisplayName(linkedPhysio.physio_name)}`
+        : "Nueva consulta"
+    );
+    setMessages([]);
     setRevealingMessageId(null);
+    setShowScrollDown(false);
     setPhysioIntro(false);
-    setPhase("followup");
+    setPhase("intro");
+    setInitialMessage("");
     setEvaluatedParts([]);
+    setInput("");
     setCaseImageUrl(null);
     clearAttachment();
-    setLoading(false);
+    setMobileSidebarOpen(false);
+    setPhysioReportSentBanner(false);
   }
 
   async function deleteConversation(id: string) {
@@ -484,9 +581,18 @@ export function ChatInterface() {
       return;
     }
 
-    setConversations((prev) => prev.filter((c) => c.id !== id));
+    const remaining = conversations.filter((c) => c.id !== id);
+    setConversations(remaining);
     if (activeId === id) {
-      startNewConsultation();
+      if (linkedPhysio) {
+        if (remaining[0]) {
+          await loadConversation(remaining[0].id, remaining[0].title);
+        } else {
+          clearToFisioIdle();
+        }
+      } else {
+        startNewConsultation();
+      }
     }
   }
 
@@ -508,6 +614,13 @@ export function ChatInterface() {
       },
       body: JSON.stringify({
         language: languageOverride ?? consultLanguage,
+        ...(linkedPhysio
+          ? {
+              fisioterapiaFlow: true,
+              linkedPhysioName: linkedPhysio.physio_name,
+              linkedClinicName: linkedPhysio.clinic_name ?? null,
+            }
+          : {}),
         ...body,
       }),
     });
@@ -529,6 +642,13 @@ export function ChatInterface() {
       },
       body: JSON.stringify({
         language: languageOverride ?? consultLanguage,
+        ...(linkedPhysio
+          ? {
+              fisioterapiaFlow: true,
+              linkedPhysioName: linkedPhysio.physio_name,
+              linkedClinicName: linkedPhysio.clinic_name ?? null,
+            }
+          : {}),
         ...body,
       }),
     });
@@ -718,16 +838,29 @@ export function ChatInterface() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
+    if (linkedPhysio && conversations.length > 0) {
+      throw new Error(
+        "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
+      );
+    }
+
     const title = conversationTitleFromText(text);
     const { data: conv, error: convErr } = await supabase
       .from("conversations")
-      .insert({ title, user_id: user.id })
-      .select("id, title, created_at")
+      .insert({
+        title,
+        user_id: user.id,
+        kind: linkedPhysio ? "fisioterapia" : "consulta",
+        physio_id: linkedPhysio?.physio_id ?? null,
+        physio_name: linkedPhysio?.physio_name ?? null,
+        clinic_name: linkedPhysio?.clinic_name ?? null,
+      })
+      .select("id, title, created_at, physio_id, physio_name, clinic_name")
       .single();
     if (!conv) throw new Error(convErr?.message ?? "No se pudo crear la consulta.");
 
     await supabase.from("messages").insert([
-      { conversation_id: conv.id, role: "assistant", content: WELCOME_MESSAGE },
+      { conversation_id: conv.id, role: "assistant", content: welcomeText },
       {
         conversation_id: conv.id,
         role: "user",
@@ -1226,17 +1359,29 @@ export function ChatInterface() {
       }
 
       const title = `${areaLabel} — ${new Date().toLocaleDateString("es-ES")}`;
+      if (linkedPhysio && conversations.length > 0) {
+        throw new Error(
+          "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
+        );
+      }
       const { data: conv, error: convErr } = await supabase
         .from("conversations")
-        .insert({ title, user_id: user.id })
-        .select("id, title, created_at")
+        .insert({
+          title,
+          user_id: user.id,
+          kind: linkedPhysio ? "fisioterapia" : "consulta",
+          physio_id: linkedPhysio?.physio_id ?? null,
+          physio_name: linkedPhysio?.physio_name ?? null,
+          clinic_name: linkedPhysio?.clinic_name ?? null,
+        })
+        .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
       if (!conv) throw new Error(convErr?.message ?? "No se pudo crear la consulta.");
 
       await supabase.from("messages").insert({
         conversation_id: conv.id,
         role: "assistant",
-        content: WELCOME_MESSAGE,
+        content: welcomeText,
       });
       for (const msg of messages) {
         if (msg.id === WELCOME_ID) continue;
@@ -1402,6 +1547,9 @@ export function ChatInterface() {
   }
 
   function startNewConsultation() {
+    // Fisioterapia is only for physio-assigned chats — never start a free new one here.
+    if (linkedPhysio) return;
+
     setActiveId(null);
     setActiveTitle("Nueva consulta");
     setMessages([]);
@@ -1435,20 +1583,30 @@ export function ChatInterface() {
           c.title.toLowerCase().includes(sidebarSearch.trim().toLowerCase())
         )
       : conversations;
-    const groups = groupConversationsByDate(filtered);
+    const groups = linkedPhysio
+      ? groupConversationsByPhysio(filtered)
+      : groupConversationsByDate(filtered);
 
     return (
       <div className="flex h-full flex-col p-3">
-        <button
-          type="button"
-          onClick={startNewConsultation}
-          className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-          </svg>
-          Nueva consulta
-        </button>
+        {!linkedPhysio && (
+          <button
+            type="button"
+            onClick={startNewConsultation}
+            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            Nueva consulta
+          </button>
+        )}
+        {linkedPhysio && (
+          <p className="mb-3 rounded-xl bg-blue-50 px-3 py-2.5 text-[11px] leading-snug text-blue-700">
+            Este chat es para lo que te ha pedido tu fisioterapeuta. Para otras preguntas, usa la pestaña{" "}
+            <span className="font-semibold">Consulta</span>.
+          </p>
+        )}
 
         <div className="relative mb-3">
           <svg
@@ -1473,7 +1631,7 @@ export function ChatInterface() {
         </div>
 
         <p className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-          Mis consultas
+          {linkedPhysio ? "Mis fisioterapeutas" : "Mis consultas"}
         </p>
 
         <div className="scrollbar-thin flex-1 space-y-3 overflow-y-auto">
@@ -1551,7 +1709,20 @@ export function ChatInterface() {
     );
   };
 
-  const showChatInput = !physioIntro && (phase === "intro" || phase === "followup");
+  const showChatInput =
+    historyLoaded &&
+    !openingConversation &&
+    !physioIntro &&
+    (phase === "intro" || phase === "followup") &&
+    (!linkedPhysio || Boolean(activeId) || conversations.length === 0);
+  const showFisioPickExisting =
+    Boolean(linkedPhysio) &&
+    historyLoaded &&
+    !openingConversation &&
+    conversations.length > 0 &&
+    !activeId;
+  const showFisioBootstrap =
+    Boolean(linkedPhysio) && (!historyLoaded || (openingConversation && messages.length === 0));
   const inputPlaceholder =
     phase === "intro" ? "Cuéntanos qué te pasa…" : "Pregunta lo que quieras";
   const onSend = phase === "intro" ? handleIntroSubmit : handleFollowupSubmit;
@@ -1617,13 +1788,15 @@ export function ChatInterface() {
             </svg>
           </button>
           <p className="flex-1 truncate text-sm font-semibold text-slate-800">{activeTitle}</p>
-          <button
-            type="button"
-            onClick={startNewConsultation}
-            className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors duration-150 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-          >
-            + Nueva
-          </button>
+          {!linkedPhysio && (
+            <button
+              type="button"
+              onClick={startNewConsultation}
+              className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors duration-150 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+            >
+              + Nueva
+            </button>
+          )}
         </div>
 
         {physioReportSentBanner ? (
@@ -1656,8 +1829,27 @@ export function ChatInterface() {
           onScroll={updateScrollDownVisibility}
           className="scrollbar-thin h-full min-h-0 overflow-y-auto overscroll-contain"
         >
-          {physioIntro && phase === "intro" && !activeId ? (
-            <PhysioIntro onSkip={skipPhysioIntro} />
+          {showFisioBootstrap ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-slate-500">Cargando…</p>
+            </div>
+          ) : physioIntro &&
+            phase === "intro" &&
+            !activeId &&
+            (!linkedPhysio || conversations.length === 0) ? (
+            <PhysioIntro onSkip={skipPhysioIntro} greeting={introGreeting} />
+          ) : showFisioPickExisting ? (
+            <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center px-6 text-center">
+              <p className="text-sm font-semibold text-slate-800">
+                Elige una consulta de tu fisioterapeuta
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                En Fisioterapia no puedes abrir chats nuevos. Abre una consulta de la
+                lista (asignada por tu fisioterapeuta) o ve a la pestaña{" "}
+                <span className="font-semibold text-slate-700">Consulta</span> para
+                otras preguntas.
+              </p>
+            </div>
           ) : (
           <div
             className={`mx-auto w-full max-w-3xl space-y-5 px-4 py-4 sm:space-y-6 sm:px-6 lg:px-8 ${
@@ -1968,7 +2160,7 @@ export function ChatInterface() {
               </div>
             )}
 
-            {loading && !loadingModal && (phase === "followup" || phase === "intro") && (
+            {loading && !loadingModal && !openingConversation && (phase === "followup" || phase === "intro") && (
               <div className="animate-fade-in-up flex items-start gap-3 justify-start">
                 <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-blue-100">
                   <PhysioAvatar size={36} />

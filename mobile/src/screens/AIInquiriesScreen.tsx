@@ -175,6 +175,11 @@ import {
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import { getNotificationsEnabled } from "../lib/notifications";
+import {
+  buildPhysioLinkedIntroGreeting,
+  buildPhysioLinkedWelcome,
+  physioDisplayName,
+} from "../lib/physio-linked-welcome";
 import { refreshSmartReminders } from "../lib/smart-reminders";
 import { supabase } from "../lib/supabase";
 import { FadeInView } from "../components/ui/FadeInView";
@@ -191,7 +196,14 @@ type Message = {
   content: string;
   image_url?: string | null;
 };
-type Conversation = { id: string; title: string; created_at: string };
+type Conversation = {
+  id: string;
+  title: string;
+  created_at: string;
+  physio_id?: string | null;
+  physio_name?: string | null;
+  clinic_name?: string | null;
+};
 
 function formatDate(iso: string, locale: "es" | "en" = "es") {
   return new Date(iso).toLocaleDateString(locale === "en" ? "en-US" : "es-ES", {
@@ -238,6 +250,27 @@ function groupConversationsByDate(
     { label: labels.older, items: buckets.older },
   ];
   return groups.filter((g) => g.items.length > 0);
+}
+
+/** Groups Fisioterapia conversations by the physiotherapist + clinic they belong to. */
+function groupConversationsByPhysio(conversations: Conversation[]): ConversationGroup[] {
+  const groups: ConversationGroup[] = [];
+  const indexByLabel = new Map<string, number>();
+
+  for (const c of conversations) {
+    const name = c.physio_name?.trim() || "Fisioterapeuta";
+    const clinic = c.clinic_name?.trim();
+    const label = clinic ? `${name} — ${clinic}` : name;
+    const idx = indexByLabel.get(label);
+    if (idx === undefined) {
+      indexByLabel.set(label, groups.length);
+      groups.push({ label, items: [c] });
+    } else {
+      groups[idx].items.push(c);
+    }
+  }
+
+  return groups;
 }
 
 function BoldText({ text, style, boldStyle }: {
@@ -290,8 +323,8 @@ function BoldText({ text, style, boldStyle }: {
   );
 }
 
-function welcomeMessage(): Message {
-  return { id: WELCOME_ID, role: "assistant", content: WELCOME_MESSAGE };
+function welcomeMessage(content: string = WELCOME_MESSAGE): Message {
+  return { id: WELCOME_ID, role: "assistant", content };
 }
 
 function titleFromText(text: string): string {
@@ -308,12 +341,36 @@ function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string 
   );
 }
 
-export function AIInquiriesScreen() {
+type LinkedPhysioInfo = {
+  physio_id?: string | null;
+  physio_name: string | null;
+  clinic_name?: string | null;
+};
+
+type AIInquiriesScreenProps = {
+  linkedPhysio?: LinkedPhysioInfo | null;
+};
+
+export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProps) {
   const headerHeight = useHeaderHeight();
   const { t, locale } = useI18n();
+  const welcomeText = linkedPhysio
+    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name)
+    : WELCOME_MESSAGE;
+  const introGreeting = linkedPhysio
+    ? buildPhysioLinkedIntroGreeting(linkedPhysio.physio_name)
+    : undefined;
+  const fisioEdgeExtras = linkedPhysio
+    ? {
+        fisioterapiaFlow: true,
+        linkedPhysioName: linkedPhysio.physio_name,
+        linkedClinicName: linkedPhysio.clinic_name ?? null,
+      }
+    : undefined;
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [physioIntro, setPhysioIntro] = useState(true);
+  // Fisioterapia never boots into the intro animation — wait for history first.
+  const [physioIntro, setPhysioIntro] = useState(!linkedPhysio);
   const [phase, setPhase] = useState<Phase>("intro");
   const [initialMessage, setInitialMessage] = useState("");
   const [questionnairePart, setQuestionnairePart] = useState<BodyPartId | "generic">("shoulder");
@@ -350,6 +407,8 @@ export function AIInquiriesScreen() {
   const [showScrollDown, setShowScrollDown] = useState(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [openingConversation, setOpeningConversation] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTitle, setActiveTitle] = useState(t.consulta.newConsulta.replace("+ ", ""));
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -370,7 +429,7 @@ export function AIInquiriesScreen() {
   function skipPhysioIntro() {
     if (!physioIntro || activeId) return;
     setPhysioIntro(false);
-    setMessages((prev) => (prev.length === 0 ? [welcomeMessage()] : prev));
+    setMessages((prev) => (prev.length === 0 ? [welcomeMessage(welcomeText)] : prev));
   }
 
   useEffect(() => {
@@ -427,30 +486,71 @@ export function AIInquiriesScreen() {
   async function loadConversations() {
     const { data } = await supabase
       .from("conversations")
-      .select("id, title, created_at")
+      .select("id, title, created_at, physio_id, physio_name, clinic_name")
+      .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
       .order("created_at", { ascending: false })
-      .limit(10);
-    setConversations((data as Conversation[]) ?? []);
+      .limit(linkedPhysio ? 30 : 10);
+    const list = (data as Conversation[]) ?? [];
+    setConversations(list);
+
+    if (linkedPhysio && list.length > 0) {
+      const preferred =
+        (linkedPhysio.physio_id
+          ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
+          : null) ?? list[0];
+      await loadConversation(preferred.id, preferred.title);
+      return;
+    }
+
+    if (linkedPhysio) {
+      setPhysioIntro(true);
+    }
+    setHistoryLoaded(true);
   }
 
   async function loadConversation(id: string, title: string) {
     setActiveId(id);
     setActiveTitle(title);
-    setChatLoading(true);
+    setOpeningConversation(true);
     setHistoryOpen(false);
+    setPhysioIntro(false);
+    setPhase("followup");
+    setRevealingMessageId(null);
+    setEvaluatedParts([]);
+    setCaseImageUrl(null);
+    setAttachedUri(null);
+    setPhysioReportSentBanner(false);
+
     const { data } = await supabase
       .from("messages")
       .select("id, role, content, image_url")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
+
     setMessages((data as Message[]) ?? []);
+    setOpeningConversation(false);
+    setHistoryLoaded(true);
+  }
+
+  function clearToFisioIdle() {
+    setActiveId(null);
+    setActiveTitle(
+      linkedPhysio
+        ? `Consulta con ${physioDisplayName(linkedPhysio.physio_name)}`
+        : t.consulta.newConsulta.replace("+ ", "")
+    );
+    setMessages([]);
     setRevealingMessageId(null);
+    setShowScrollDown(false);
     setPhysioIntro(false);
-    setPhase("followup");
+    setPhase("intro");
+    setInitialMessage("");
     setEvaluatedParts([]);
+    setInput("");
     setCaseImageUrl(null);
     setAttachedUri(null);
-    setChatLoading(false);
+    setHistoryOpen(false);
+    setPhysioReportSentBanner(false);
   }
 
   function deleteConversation(id: string) {
@@ -470,9 +570,18 @@ export function AIInquiriesScreen() {
               return;
             }
 
-            setConversations((prev) => prev.filter((c) => c.id !== id));
+            const remaining = conversations.filter((c) => c.id !== id);
+            setConversations(remaining);
             if (activeId === id) {
-              startNewConsultation();
+              if (linkedPhysio) {
+                if (remaining[0]) {
+                  await loadConversation(remaining[0].id, remaining[0].title);
+                } else {
+                  clearToFisioIdle();
+                }
+              } else {
+                startNewConsultation();
+              }
             }
           })();
         },
@@ -481,6 +590,8 @@ export function AIInquiriesScreen() {
   }
 
   function startNewConsultation() {
+    if (linkedPhysio) return;
+
     setActiveId(null);
     setActiveTitle(t.consulta.newConsulta.replace("+ ", ""));
     setMessages([]);
@@ -580,21 +691,36 @@ export function AIInquiriesScreen() {
     imageUrl?: string | null,
     language: ConsultLanguage = consultLanguage
   ) {
-    const answer = await respondToUserMessage(text, triage, imageUrl, language);
+    const answer = await respondToUserMessage(text, triage, imageUrl, language, fisioEdgeExtras);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
+    if (linkedPhysio && conversations.length > 0) {
+      throw new Error(
+        locale === "en"
+          ? "You can't open new chats in Fisioterapia. Continue an existing one or use the Consulta tab."
+          : "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
+      );
+    }
+
     const title = titleFromText(text);
     const { data: conv, error: convErr } = await supabase
       .from("conversations")
-      .insert({ title, user_id: user.id })
-      .select("id, title, created_at")
+      .insert({
+        title,
+        user_id: user.id,
+        kind: linkedPhysio ? "fisioterapia" : "consulta",
+        physio_id: linkedPhysio?.physio_id ?? null,
+        physio_name: linkedPhysio?.physio_name ?? null,
+        clinic_name: linkedPhysio?.clinic_name ?? null,
+      })
+      .select("id, title, created_at, physio_id, physio_name, clinic_name")
       .single();
     if (!conv) throw new Error(convErr?.message ?? "No se pudo crear la consulta.");
 
     await supabase.from("messages").insert([
-      { conversation_id: conv.id, role: "assistant", content: WELCOME_MESSAGE },
+      { conversation_id: conv.id, role: "assistant", content: welcomeText },
       {
         conversation_id: conv.id,
         role: "user",
@@ -644,17 +770,20 @@ export function AIInquiriesScreen() {
       const physioId = (patientProfile as { physio_id?: string | null } | null)?.physio_id;
       if (!physioId) return false;
 
-      const raw = await callEdgeJson({
-        mode: "physio_report",
-        language: params.language,
-        bodyArea: params.bodyArea,
-        onsetType: params.onsetType,
-        painLevel: params.painLevel,
-        hadTrauma: params.hadTrauma,
-        description: params.description,
-        symptomContext: params.symptomContext,
-        patientSummary: params.patientSummary,
-      });
+      const raw = await callEdgeJson(
+        {
+          mode: "physio_report",
+          language: params.language,
+          bodyArea: params.bodyArea,
+          onsetType: params.onsetType,
+          painLevel: params.painLevel,
+          hadTrauma: params.hadTrauma,
+          description: params.description,
+          symptomContext: params.symptomContext,
+          patientSummary: params.patientSummary,
+        },
+        fisioEdgeExtras
+      );
       const answer = (raw as { answer?: string } | null)?.answer;
       if (!answer) return false;
 
@@ -783,7 +912,7 @@ export function AIInquiriesScreen() {
         { id: userMsgId, role: "user", content: text, image_url: imageUrl },
       ]);
 
-      const triage = await triageMessage(text, imageUrl, lang);
+      const triage = await triageMessage(text, imageUrl, lang, fisioEdgeExtras);
 
       if (isMetaOrClarificationQuery(text)) {
         await respondToInitialMessage(
@@ -1127,17 +1256,20 @@ export function AIInquiriesScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
-      const answer = await callEdgeText({
-        bodyArea: areaLabel,
-        onsetType,
-        painLevel,
-        hadTrauma: hadTraumaVal,
-        description: initialMessage,
-        symptomContext: contextForAi,
-        conversationHistory: [],
-        language: consultLanguage,
-        ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
-      });
+      const answer = await callEdgeText(
+        {
+          bodyArea: areaLabel,
+          onsetType,
+          painLevel,
+          hadTrauma: hadTraumaVal,
+          description: initialMessage,
+          symptomContext: contextForAi,
+          conversationHistory: [],
+          language: consultLanguage,
+          ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
+        },
+        fisioEdgeExtras
+      );
 
       if (activeId) {
         const { data: aiMsg } = await supabase
@@ -1201,17 +1333,31 @@ export function AIInquiriesScreen() {
       const title = `${areaLabel} — ${new Date().toLocaleDateString(
         locale === "en" ? "en-US" : "es-ES"
       )}`;
+      if (linkedPhysio && conversations.length > 0) {
+        throw new Error(
+          locale === "en"
+            ? "You can't open new chats in Fisioterapia. Continue an existing one or use the Consulta tab."
+            : "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
+        );
+      }
       const { data: conv, error: convErr } = await supabase
         .from("conversations")
-        .insert({ title, user_id: user.id })
-        .select("id, title, created_at")
+        .insert({
+          title,
+          user_id: user.id,
+          kind: linkedPhysio ? "fisioterapia" : "consulta",
+          physio_id: linkedPhysio?.physio_id ?? null,
+          physio_name: linkedPhysio?.physio_name ?? null,
+          clinic_name: linkedPhysio?.clinic_name ?? null,
+        })
+        .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
       if (!conv) throw new Error(convErr?.message ?? "No se pudo crear la consulta.");
 
       await supabase.from("messages").insert({
         conversation_id: conv.id,
         role: "assistant",
-        content: WELCOME_MESSAGE,
+        content: welcomeText,
       });
       for (const msg of messages) {
         if (msg.id === WELCOME_ID) continue;
@@ -1306,7 +1452,7 @@ export function AIInquiriesScreen() {
         { id: userMsgId, role: "user", content: text, image_url: imageUrl },
       ]);
 
-      const triage = await triageMessage(text, imageUrl, consultLanguage);
+      const triage = await triageMessage(text, imageUrl, consultLanguage, fisioEdgeExtras);
 
       if (shouldStartQuestionnaire(triage, evaluatedParts)) {
         await supabase.from("messages").insert({
@@ -1349,16 +1495,19 @@ export function AIInquiriesScreen() {
         },
       ].slice(-10);
 
-      const answer = await callEdgeText({
-        bodyArea: "seguimiento",
-        onsetType: text,
-        painLevel: 0,
-        hadTrauma: "No",
-        description: "",
-        conversationHistory: history,
-        language: consultLanguage,
-        ...(imageUrl ? { imageUrl } : {}),
-      });
+      const answer = await callEdgeText(
+        {
+          bodyArea: "seguimiento",
+          onsetType: text,
+          painLevel: 0,
+          hadTrauma: "No",
+          description: "",
+          conversationHistory: history,
+          language: consultLanguage,
+          ...(imageUrl ? { imageUrl } : {}),
+        },
+        fisioEdgeExtras
+      );
 
       const { data: aiMsg } = await supabase
         .from("messages")
@@ -1376,7 +1525,20 @@ export function AIInquiriesScreen() {
     }
   }
 
-  const showChatInput = !physioIntro && (phase === "intro" || phase === "followup");
+  const showChatInput =
+    historyLoaded &&
+    !openingConversation &&
+    !physioIntro &&
+    (phase === "intro" || phase === "followup") &&
+    (!linkedPhysio || Boolean(activeId) || conversations.length === 0);
+  const showFisioPickExisting =
+    Boolean(linkedPhysio) &&
+    historyLoaded &&
+    !openingConversation &&
+    conversations.length > 0 &&
+    !activeId;
+  const showFisioBootstrap =
+    Boolean(linkedPhysio) && (!historyLoaded || (openingConversation && messages.length === 0));
 
   function renderTopBar() {
     return (
@@ -1394,10 +1556,12 @@ export function AIInquiriesScreen() {
         <Text style={styles.chatTopBarTitle} numberOfLines={1}>
           {activeTitle}
         </Text>
-        <Pressable style={styles.newBtn} onPress={startNewConsultation}>
-          <Ionicons name="add" size={16} color={Colors.white} />
-          <Text style={styles.newBtnText}>{t.consulta.new}</Text>
-        </Pressable>
+        {!linkedPhysio && (
+          <Pressable style={styles.newBtn} onPress={startNewConsultation}>
+            <Ionicons name="add" size={16} color={Colors.white} />
+            <Text style={styles.newBtnText}>{t.consulta.new}</Text>
+          </Pressable>
+        )}
       </View>
     );
   }
@@ -1407,7 +1571,9 @@ export function AIInquiriesScreen() {
     const filtered = query
       ? conversations.filter((c) => c.title.toLowerCase().includes(query))
       : conversations;
-    const groups = groupConversationsByDate(filtered, locale);
+    const groups = linkedPhysio
+      ? groupConversationsByPhysio(filtered)
+      : groupConversationsByDate(filtered, locale);
 
     return (
       <Modal
@@ -1419,7 +1585,11 @@ export function AIInquiriesScreen() {
         <View style={styles.historyOverlay}>
           <View style={[styles.historyPanel, { marginTop: headerHeight }]}>
             <View style={styles.historyHeader}>
-              <Text style={styles.historyHeaderTitle}>{t.consulta.myConsultas}</Text>
+              <Text style={styles.historyHeaderTitle}>
+                {linkedPhysio
+                  ? (locale === "en" ? "My physiotherapists" : "Mis fisioterapeutas")
+                  : t.consulta.myConsultas}
+              </Text>
               <Pressable
                 style={styles.historyCloseBtn}
                 onPress={() => setHistoryOpen(false)}
@@ -1429,13 +1599,22 @@ export function AIInquiriesScreen() {
               </Pressable>
             </View>
 
-            <Pressable
-              style={({ pressed }) => [styles.historyNewBtn, pressed && styles.historyNewBtnPressed]}
-              onPress={startNewConsultation}
-            >
-              <Ionicons name="add" size={16} color={Colors.white} />
-              <Text style={styles.historyNewBtnText}>{t.consulta.newConsulta}</Text>
-            </Pressable>
+            {!linkedPhysio && (
+              <Pressable
+                style={({ pressed }) => [styles.historyNewBtn, pressed && styles.historyNewBtnPressed]}
+                onPress={startNewConsultation}
+              >
+                <Ionicons name="add" size={16} color={Colors.white} />
+                <Text style={styles.historyNewBtnText}>{t.consulta.newConsulta}</Text>
+              </Pressable>
+            )}
+            {linkedPhysio && (
+              <Text style={styles.historyHintText}>
+                {locale === "en"
+                  ? "This chat is for what your physiotherapist asked. For other questions, use the Consulta tab."
+                  : "Este chat es para lo que te ha pedido tu fisioterapeuta. Para otras preguntas, usa la pestaña Consulta."}
+              </Text>
+            )}
 
             {conversations.length > 0 && (
               <View style={styles.historySearchWrap}>
@@ -1867,8 +2046,39 @@ export function AIInquiriesScreen() {
         </View>
       ) : null}
 
-      {physioIntro && phase === "intro" && !activeId ? (
-        <PhysioIntro onSkip={skipPhysioIntro} />
+      {showFisioBootstrap ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={Colors.primary} />
+          <Text style={{ marginTop: 10, fontSize: 13, color: Colors.textSecondary }}>
+            {locale === "en" ? "Loading…" : "Cargando…"}
+          </Text>
+        </View>
+      ) : physioIntro &&
+        phase === "intro" &&
+        !activeId &&
+        (!linkedPhysio || conversations.length === 0) ? (
+        <PhysioIntro onSkip={skipPhysioIntro} greeting={introGreeting} />
+      ) : showFisioPickExisting ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 }}>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: Colors.text, textAlign: "center" }}>
+            {locale === "en"
+              ? "Choose a consultation from your physiotherapist"
+              : "Elige una consulta de tu fisioterapeuta"}
+          </Text>
+          <Text
+            style={{
+              marginTop: 8,
+              fontSize: 12,
+              lineHeight: 18,
+              color: Colors.textSecondary,
+              textAlign: "center",
+            }}
+          >
+            {locale === "en"
+              ? "You can't open new chats in Fisioterapia. Open one from the list or use the Consulta tab for other questions."
+              : "En Fisioterapia no puedes abrir chats nuevos. Abre una consulta de la lista o usa la pestaña Consulta para otras preguntas."}
+          </Text>
+        </View>
       ) : (
       <View style={styles.chatScrollArea}>
         <ScrollView
@@ -1963,7 +2173,7 @@ export function AIInquiriesScreen() {
               </View>
             </FadeInView>
           ))}
-          {chatLoading && !loadingModal ? (
+          {chatLoading && !loadingModal && !openingConversation ? (
             <View style={[styles.bubbleRow, styles.bubbleRowAI]}>
               <PhysioAvatar size={32} />
               <View style={[styles.bubble, styles.bubbleAI, styles.loadingBubble]}>
@@ -2197,6 +2407,18 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   historyNewBtnPressed: { backgroundColor: Colors.primaryDark },
+  historyHintText: {
+    marginHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: '#EFF6FF',
+    color: Colors.primaryDark,
+    fontSize: 11,
+    lineHeight: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   historyNewBtnText: {
     color: Colors.white,
     fontSize: 14,

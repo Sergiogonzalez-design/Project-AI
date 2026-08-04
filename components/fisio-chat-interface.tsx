@@ -42,18 +42,67 @@ function welcomeMessage(): Message {
   return { id: WELCOME_ID, role: "assistant", content: WELCOME_MESSAGE };
 }
 
+/** Remove leftover markdown asterisks after bold segments are extracted. */
+function stripMarkdownStars(text: string) {
+  return text
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2") // *italic* → italic
+    .replace(/\*/g, "");
+}
+
+function renderInlineParts(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={i} className="font-bold text-neutral-900">
+        {stripMarkdownStars(part.slice(2, -2))}
+      </strong>
+    ) : (
+      <span key={i}>{stripMarkdownStars(part)}</span>
+    )
+  );
+}
+
 function renderAssistantContent(content: string) {
-  return content.split("\n").map((line, li) => (
-    <p key={li} className={li > 0 ? "mt-2" : undefined}>
-      {line.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-        part.startsWith("**") && part.endsWith("**") ? (
-          <strong key={i}>{part.slice(2, -2)}</strong>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      )}
-    </p>
-  ));
+  return content.split("\n").map((line, li) => {
+    const trimmed = line.trim().replace(/^\*\s+/, "• ");
+    const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+    const headingText = headingMatch?.[2] ?? null;
+    // Whole-line bold, e.g. **1. Exploración física**
+    const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
+    const numberedText =
+      headingText && /^\d+\.\s+\S/.test(headingText)
+        ? headingText
+        : wholeBoldMatch && /^\d+\.\s+\S/.test(wholeBoldMatch[1])
+          ? wholeBoldMatch[1]
+          : /^\d+\.\s+\S/.test(stripMarkdownStars(trimmed))
+            ? stripMarkdownStars(trimmed)
+            : null;
+
+    if (numberedText) {
+      return (
+        <p key={li} className={li > 0 ? "mt-3" : undefined}>
+          <strong className="font-bold text-blue-700">
+            {stripMarkdownStars(numberedText)}
+          </strong>
+        </p>
+      );
+    }
+
+    if (headingText) {
+      return (
+        <p key={li} className={li > 0 ? "mt-3" : undefined}>
+          <strong className="font-bold text-blue-700">
+            {stripMarkdownStars(headingText)}
+          </strong>
+        </p>
+      );
+    }
+
+    return (
+      <p key={li} className={li > 0 ? "mt-2" : undefined}>
+        {renderInlineParts(trimmed)}
+      </p>
+    );
+  });
 }
 
 /**
@@ -503,12 +552,16 @@ export function FisioChatInterface() {
                   );
                 })}
                 {loading ? (
-                  <div className="flex items-start gap-3">
+                  <div className="animate-fade-in-up flex items-start gap-3">
                     <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-blue-100">
                       <PhysioAvatar size={36} />
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-400 shadow-[var(--shadow-card)]">
-                      Pensando…
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[var(--shadow-card)]">
+                      <div className="flex gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:0ms]" />
+                        <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:150ms]" />
+                        <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce [animation-delay:300ms]" />
+                      </div>
                     </div>
                   </div>
                 ) : null}

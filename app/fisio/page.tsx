@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { PhysioEquipmentSettings } from "@/components/physio-equipment-settings";
 import { createClient } from "@/lib/supabase/client";
 
 type PhysioPatient = {
@@ -12,17 +13,6 @@ type PhysioPatient = {
   last_sign_in_at: string | null;
   onboarding_completed: boolean;
 };
-
-function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default function FisioPatientsPage() {
   const [patients, setPatients] = useState<PhysioPatient[]>([]);
@@ -156,10 +146,6 @@ export default function FisioPatientsPage() {
         <h2 className="text-base font-semibold text-neutral-900">
           Consulta clínica con Physio
         </h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          Mismo chat que tus pacientes, con lenguaje técnico (maniobras,
-          diferenciales, imagen).
-        </p>
         <Link
           href="/fisio/consulta"
           className="mt-3 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
@@ -167,6 +153,8 @@ export default function FisioPatientsPage() {
           Abrir consulta
         </Link>
       </section>
+
+      <PhysioEquipmentSettings />
 
       <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between gap-3">
@@ -212,7 +200,7 @@ export default function FisioPatientsPage() {
                         ) : null}
                       </div>
                       <p className="mt-0.5 truncate text-xs text-neutral-500">
-                        {patient.email} · Alta {formatDate(patient.created_at)}
+                        {patient.email}
                       </p>
                     </div>
                     <span className="text-neutral-400">→</span>

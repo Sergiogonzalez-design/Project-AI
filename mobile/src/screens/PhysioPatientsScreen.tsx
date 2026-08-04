@@ -18,8 +18,10 @@ import {
 import { DismissKeyboard } from "../components/DismissKeyboard";
 import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
+import { TypingIndicator } from "../components/TypingIndicator";
 import { Colors } from "../lib/colors";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
+import { PHYSIO_EQUIPMENT_CATEGORIES } from "../lib/physio-equipment-options";
 import { supabase } from "../lib/supabase";
 
 type PhysioPatient = {
@@ -58,23 +60,63 @@ function formatDate(value: string | null) {
   });
 }
 
+function stripMarkdownStars(text: string) {
+  return text
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2")
+    .replace(/\*/g, "");
+}
+
 function BoldText({ text }: { text: string }) {
+  const lines = text.split("\n");
   return (
     <Text style={styles.reportBody}>
-      {text.split("\n").map((line, li) => (
-        <Text key={li}>
-          {line.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-            part.startsWith("**") && part.endsWith("**") ? (
-              <Text key={i} style={styles.reportBodyBold}>
-                {part.slice(2, -2)}
-              </Text>
-            ) : (
-              <Text key={i}>{part}</Text>
-            )
-          )}
-          {li < text.split("\n").length - 1 ? "\n" : ""}
-        </Text>
-      ))}
+      {lines.map((line, li) => {
+        const trimmed = line.trim().replace(/^\*\s+/, "• ");
+        const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+        const headingText = headingMatch?.[2] ?? null;
+        const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
+        const numberedText =
+          headingText && /^\d+\.\s+\S/.test(headingText)
+            ? headingText
+            : wholeBoldMatch && /^\d+\.\s+\S/.test(wholeBoldMatch[1])
+              ? wholeBoldMatch[1]
+              : /^\d+\.\s+\S/.test(stripMarkdownStars(trimmed))
+                ? stripMarkdownStars(trimmed)
+                : null;
+
+        if (numberedText) {
+          return (
+            <Text key={li}>
+              <Text style={styles.headingBlue}>{stripMarkdownStars(numberedText)}</Text>
+              {li < lines.length - 1 ? "\n" : ""}
+            </Text>
+          );
+        }
+
+        if (headingText) {
+          return (
+            <Text key={li}>
+              <Text style={styles.headingBlue}>{stripMarkdownStars(headingText)}</Text>
+              {li < lines.length - 1 ? "\n" : ""}
+            </Text>
+          );
+        }
+
+        return (
+          <Text key={li}>
+            {trimmed.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+              part.startsWith("**") && part.endsWith("**") ? (
+                <Text key={i} style={styles.subtitleBlack}>
+                  {stripMarkdownStars(part.slice(2, -2))}
+                </Text>
+              ) : (
+                <Text key={i}>{stripMarkdownStars(part)}</Text>
+              )
+            )}
+            {li < lines.length - 1 ? "\n" : ""}
+          </Text>
+        );
+      })}
     </Text>
   );
 }
@@ -86,6 +128,10 @@ export function PhysioPatientsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
+  const [equipment, setEquipment] = useState<string[]>([]);
+  const [equipmentNotes, setEquipmentNotes] = useState("");
+  const [equipmentOpen, setEquipmentOpen] = useState(false);
+  const [equipmentSaving, setEquipmentSaving] = useState(false);
 
   const [selectedPatient, setSelectedPatient] = useState<PhysioPatient | null>(null);
   const [reports, setReports] = useState<ClinicalReport[]>([]);
@@ -191,6 +237,21 @@ export function PhysioPatientsScreen() {
     }
     setUnreadByPatient(counts);
     setLoading(false);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("clinic_equipment, clinic_equipment_notes")
+        .eq("id", user.id)
+        .maybeSingle();
+      const ids = (profile?.clinic_equipment as string[] | null) ?? [];
+      setEquipment(ids);
+      setEquipmentNotes((profile?.clinic_equipment_notes as string | null) ?? "");
+      if (ids.length === 0) setEquipmentOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -211,6 +272,44 @@ export function PhysioPatientsScreen() {
     setInviteCode((data as string) ?? null);
   }
 
+  function toggleEquipment(id: string) {
+    setEquipment((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  async function saveEquipment() {
+    if (equipment.length === 0) {
+      Alert.alert(
+        "Material",
+        "Selecciona al menos una opción (o «Solo material básico»)."
+      );
+      return;
+    }
+    setEquipmentSaving(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setEquipmentSaving(false);
+      return;
+    }
+    const { error: saveErr } = await supabase
+      .from("profiles")
+      .update({
+        clinic_equipment: equipment,
+        clinic_equipment_notes: equipmentNotes.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    setEquipmentSaving(false);
+    if (saveErr) {
+      Alert.alert("Error", saveErr.message);
+      return;
+    }
+    Alert.alert("Guardado", "Physio ya puede usar tu material en la consulta.");
+  }
+
   async function openPatient(patient: PhysioPatient) {
     setSelectedPatient(patient);
     setReports([]);
@@ -225,6 +324,23 @@ export function PhysioPatientsScreen() {
     setReports(list);
     if (list.length > 0) setExpandedReportId(list[0].id);
     setReportsLoading(false);
+
+    // Opening this patient's informes clears the "nuevo" badge on the list.
+    const newIds = list.filter((r) => r.status === "new").map((r) => r.id);
+    if (newIds.length === 0) return;
+
+    const { error: updateError } = await supabase
+      .from("clinical_reports")
+      .update({ status: "viewed", viewed_at: new Date().toISOString() })
+      .in("id", newIds)
+      .eq("status", "new");
+
+    if (!updateError) {
+      setReports((prev) =>
+        prev.map((r) => (newIds.includes(r.id) ? { ...r, status: "viewed" } : r))
+      );
+      setUnreadByPatient((prev) => ({ ...prev, [patient.id]: 0 }));
+    }
   }
 
   async function toggleReport(report: ClinicalReport) {
@@ -362,8 +478,8 @@ export function PhysioPatientsScreen() {
               {chatLoading ? (
                 <View style={[styles.chatRow, styles.chatRowAssistant]}>
                   <PhysioAvatar size={32} style={{ marginRight: 8 }} />
-                  <View style={[styles.chatBubble, styles.chatAssistant]}>
-                    <Text style={styles.userMeta}>Pensando…</Text>
+                  <View style={[styles.chatBubble, styles.chatAssistant, styles.loadingBubble]}>
+                    <TypingIndicator />
                   </View>
                 </View>
               ) : null}
@@ -520,10 +636,6 @@ export function PhysioPatientsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Consulta clínica con Physio</Text>
-          <Text style={styles.userMeta}>
-            Mismo chat que tus pacientes, con lenguaje técnico (maniobras,
-            diferenciales, imagen).
-          </Text>
           <Pressable
             onPress={() => {
               setChatOpen(true);
@@ -537,6 +649,88 @@ export function PhysioPatientsScreen() {
           >
             <Text style={styles.primaryBtnText}>Abrir consulta</Text>
           </Pressable>
+        </View>
+
+        <View style={styles.card}>
+          <Pressable
+            onPress={() => setEquipmentOpen((v) => !v)}
+            style={styles.equipmentHeader}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Material de tu consulta</Text>
+              {equipment.length === 0 ? (
+                <Text style={styles.equipmentWarn}>
+                  Aún no indicado — completa para mejores recomendaciones.
+                </Text>
+              ) : (
+                <Text style={styles.userMeta}>
+                  {equipment.length} ítem{equipment.length === 1 ? "" : "s"} guardado
+                  {equipment.length === 1 ? "" : "s"}
+                </Text>
+              )}
+            </View>
+            <Ionicons
+              name={equipmentOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={Colors.textLight}
+            />
+          </Pressable>
+          {equipmentOpen ? (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.helpSmall}>
+                Physio adapta recomendaciones a lo que tienes. Si falta algo, te
+                sugerirá derivar.
+              </Text>
+              {PHYSIO_EQUIPMENT_CATEGORIES.map((cat) => (
+                <View key={cat.id} style={{ marginTop: 12 }}>
+                  <Text style={styles.categoryTitle}>{cat.title}</Text>
+                  <View style={styles.chips}>
+                    {cat.options.map((opt) => {
+                      const selected = equipment.includes(opt.id);
+                      return (
+                        <Pressable
+                          key={opt.id}
+                          onPress={() => toggleEquipment(opt.id)}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              selected && styles.chipTextSelected,
+                            ]}
+                          >
+                            {opt.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+              <TextInput
+                style={[styles.input, styles.notes]}
+                value={equipmentNotes}
+                onChangeText={setEquipmentNotes}
+                placeholder="Notas (opcional)"
+                placeholderTextColor={Colors.textLight}
+                multiline
+              />
+              <Pressable
+                onPress={() => void saveEquipment()}
+                disabled={equipmentSaving}
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  { marginTop: 12 },
+                  pressed && { opacity: 0.9 },
+                  equipmentSaving && { opacity: 0.6 },
+                ]}
+              >
+                <Text style={styles.primaryBtnText}>
+                  {equipmentSaving ? "Guardando…" : "Guardar material"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
 
         {error ? (
@@ -581,7 +775,7 @@ export function PhysioPatientsScreen() {
                     )}
                   </View>
                   <Text style={styles.userMeta}>
-                    {patient.email} · Alta {formatDate(patient.created_at)}
+                    {patient.email}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
@@ -631,6 +825,44 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 12,
   },
+  equipmentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  equipmentWarn: {
+    marginTop: -6,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#B45309",
+  },
+  helpSmall: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  categoryTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: Colors.textLight,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 8,
+  },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: {
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: Colors.white,
+  },
+  chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
+  chipTextSelected: { color: Colors.white },
+  notes: { minHeight: 72, textAlignVertical: "top", marginTop: 12 },
   codeDisplay: {
     fontSize: 28,
     fontWeight: "800",
@@ -757,6 +989,10 @@ const styles = StyleSheet.create({
   },
   reportBody: { fontSize: 14, lineHeight: 20, color: Colors.text },
   reportBodyBold: { fontWeight: "700", color: Colors.text },
+  headingBlue: { fontWeight: "700", color: Colors.primary },
+  numberedTitle: { fontWeight: "700", color: Colors.primary },
+  subtitleBlack: { fontWeight: "700", color: Colors.text },
+  loadingBubble: { paddingVertical: 14, paddingHorizontal: 16 },
   chatBubble: {
     borderRadius: 16,
     padding: 12,

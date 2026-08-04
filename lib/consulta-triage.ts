@@ -65,7 +65,7 @@ const EDUCATIONAL_QUERY =
   /ejercicio|estiramiento|movilidad|rutina|c[óo]mo\s+(funciona|hacer|estirar|mejorar)|qu[eé]\s+es|prevenci[oó]n|consejo|informaci[oó]n|gu[ií]a|tutorial|explic/i;
 
 const META_CLARIFICATION_QUERY =
-  /qu[eé]\s+hago|qu[eé]\s+debo|qu[eé]\s+tengo\s+que\s+hacer|c[oó]mo\s+funciona|how\s+does\s+(?:this|it)\s+work|what\s+(?:do|should)\s+i\s+do|how\s+do\s+i\s+(?:use|start)|por\s+d[oó]nde\s+empiezo|no\s+s[eé]\s+(?:qu[eé]|c[oó]mo)|explic(?:a|ame)\s+c[oó]mo|c[oó]mo\s+(?:se\s+)?usa|what\s+is\s+this/i;
+  /qu[eé]\s+hago|qu[eé]\s+debo|qu[eé]\s+tengo\s+que\s+hacer|c[oó]mo\s+funciona|how\s+does\s+(?:this|it)\s+work|what\s+(?:do|should)\s+i\s+do|how\s+do\s+i\s+(?:use|start)|por\s+d[oó]nde\s+empiezo|no\s+s[eé]\s+(?:qu[eé]|c[oó]mo)|explic(?:a|ame)\s+c[oó]mo|c[oó]mo\s+(?:se\s+)?usa|what\s+is\s+this|por\s+qu[eé]\s+(?:estoy|me\s+(?:han|has)\s+env)|(?:mi\s+)?fisio(?:terapeuta)?|c[oó]digo|informe|antes\s+de\s+(?:la\s+)?cita|why\s+(?:am\s+i|did)|physio\s+sent/i;
 
 const HYPOTHETICAL_SYMPTOM_QUESTION =
   /(?:te\s+)?(?:digo|cuento|explico|escribo)\s+(?:lo\s+que\s+)?(?:me\s+)?duele\s+o|(?:debo|tengo\s+que)\s+(?:decirte|contarte|escribir).*(?:duele|dolor)/i;

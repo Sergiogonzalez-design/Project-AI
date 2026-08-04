@@ -143,6 +143,7 @@ export async function middleware(request: NextRequest) {
     user &&
     pathname !== "/onboarding" &&
     !pathname.startsWith("/auth/") &&
+    !pathname.startsWith("/api/") &&
     !isAdminUser
   ) {
     const { data: profile } = await supabase
@@ -154,6 +155,17 @@ export async function middleware(request: NextRequest) {
     const destination = destinationFor(profile);
     if (destination === "/onboarding") {
       return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+
+    // Physios must stay on /fisio — patient pages like /fisioterapia share a
+    // session cookie, so without this they can open the code form and hit
+    // "los fisioterapeutas no pueden vincularse con un código".
+    if (profile?.account_type === "physio") {
+      const onPhysioArea =
+        pathname === "/fisio" || pathname.startsWith("/fisio/");
+      if (!onPhysioArea) {
+        return NextResponse.redirect(new URL("/fisio", request.url));
+      }
     }
   }
 

@@ -19,7 +19,6 @@ import { useI18n } from "../lib/i18n";
 import { deleteNewsImageByUrl, uploadNewsImageFromUri } from "../lib/news-image";
 import { isAdminEmail } from "../lib/supabase-config";
 import { supabase } from "../lib/supabase";
-import { DismissKeyboard } from "../components/DismissKeyboard";
 
 type TabKey = "users" | "news";
 
@@ -259,13 +258,13 @@ export function AdminScreen() {
   }
 
   return (
-    <DismissKeyboard>
       <ScrollView
         style={styles.root}
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={Keyboard.dismiss}
+        showsVerticalScrollIndicator
       >
       <Text style={styles.title}>{t.admin.title}</Text>
       <Text style={styles.subtitle}>{t.admin.subtitle}</Text>
@@ -463,13 +462,12 @@ export function AdminScreen() {
         </View>
       )}
     </ScrollView>
-    </DismissKeyboard>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
-  container: { padding: 20, paddingBottom: 48 },
+  container: { padding: 20, paddingBottom: 100, flexGrow: 1 },
   title: {
     fontSize: 28,
     fontWeight: "800",

@@ -33,10 +33,13 @@ export function PhysioCodeGate({ onLinked }: Props) {
     });
     setLoading(false);
     if (rpcError) {
+      const raw = rpcError.message ?? "";
       setError(
-        rpcError.message.includes("no encontrado")
+        raw.includes("no encontrado")
           ? "Código no encontrado. Comprueba que lo has escrito bien."
-          : rpcError.message
+          : raw.includes("fisioterapeutas no pueden")
+            ? "Estás en una cuenta de fisioterapeuta. Cierra sesión e inicia sesión con una cuenta de paciente (Persona) para introducir el código."
+            : raw
       );
       return;
     }

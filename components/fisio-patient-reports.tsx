@@ -68,12 +68,30 @@ export function FisioPatientReports({
     if (queryError) {
       setError(queryError.message);
       setReports([]);
-    } else {
-      const list = (data as ClinicalReport[]) ?? [];
-      setReports(list);
-      if (list.length > 0) setExpandedId((prev) => prev ?? list[0].id);
+      setLoading(false);
+      return;
     }
+
+    const list = (data as ClinicalReport[]) ?? [];
+    setReports(list);
+    if (list.length > 0) setExpandedId((prev) => prev ?? list[0].id);
     setLoading(false);
+
+    // Opening this page = accessing the informes → clear "nuevo" badges.
+    const newIds = list.filter((r) => r.status === "new").map((r) => r.id);
+    if (newIds.length === 0) return;
+
+    const { error: updateError } = await supabase
+      .from("clinical_reports")
+      .update({ status: "viewed", viewed_at: new Date().toISOString() })
+      .in("id", newIds)
+      .eq("status", "new");
+
+    if (!updateError) {
+      setReports((prev) =>
+        prev.map((r) => (newIds.includes(r.id) ? { ...r, status: "viewed" } : r))
+      );
+    }
   }, [patientId]);
 
   useEffect(() => {

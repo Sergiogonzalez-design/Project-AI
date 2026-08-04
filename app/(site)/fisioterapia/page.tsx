@@ -11,9 +11,12 @@ type LinkedPhysio = {
   clinic_name: string | null;
 };
 
+/** Avoid a loading flash every time the user switches Consulta ↔ Fisioterapia. */
+let linkedPhysioCache: LinkedPhysio | null | undefined;
+
 export default function FisioterapiaPage() {
-  const [loading, setLoading] = useState(true);
-  const [linked, setLinked] = useState<LinkedPhysio | null>(null);
+  const [loading, setLoading] = useState(linkedPhysioCache === undefined);
+  const [linked, setLinked] = useState<LinkedPhysio | null>(linkedPhysioCache ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -21,8 +24,11 @@ export default function FisioterapiaPage() {
       const supabase = createClient();
       const { data } = await supabase.rpc("patient_get_linked_physio");
       const row = Array.isArray(data) ? data[0] : data;
+      const next =
+        (row as LinkedPhysio | undefined)?.physio_id ? (row as LinkedPhysio) : null;
+      linkedPhysioCache = next;
       if (!cancelled) {
-        setLinked((row as LinkedPhysio | undefined)?.physio_id ? (row as LinkedPhysio) : null);
+        setLinked(next);
         setLoading(false);
       }
     })();
@@ -42,14 +48,19 @@ export default function FisioterapiaPage() {
   if (!linked) {
     return (
       <div className="h-[calc(100dvh-3.5rem)] overflow-y-auto bg-slate-50">
-        <PhysioCodeGate onLinked={(physio) => setLinked(physio)} />
+        <PhysioCodeGate
+          onLinked={(physio) => {
+            linkedPhysioCache = physio;
+            setLinked(physio);
+          }}
+        />
       </div>
     );
   }
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
-      <ChatInterface />
+      <ChatInterface linkedPhysio={linked} />
     </div>
   );
 }
