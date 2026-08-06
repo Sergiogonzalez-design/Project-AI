@@ -1,6 +1,7 @@
 import type { BodyPartId } from "@/lib/body-parts";
 
 export type BodyMapRegionId =
+  | "head"
   | "neck"
   | "shoulder_l"
   | "shoulder_r"
@@ -39,6 +40,7 @@ export type BodyMapSelection = {
 };
 
 export const BODY_MAP_REGIONS: BodyMapRegion[] = [
+  { id: "head", label: "Cabeza", bodyPartId: "head", views: ["front"], cx: 100, cy: 28, rx: 22, ry: 18 },
   { id: "neck", label: "Cuello", bodyPartId: "neck", views: ["front", "back"], cx: 100, cy: 52, rx: 18, ry: 12 },
   { id: "shoulder_l", label: "Hombro izquierdo", bodyPartId: "shoulder", views: ["front", "back"], cx: 62, cy: 78, rx: 22, ry: 18 },
   { id: "shoulder_r", label: "Hombro derecho", bodyPartId: "shoulder", views: ["front", "back"], cx: 138, cy: 78, rx: 22, ry: 18 },

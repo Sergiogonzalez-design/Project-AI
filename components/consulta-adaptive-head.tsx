@@ -7,18 +7,18 @@ import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "@/lib/consulta-red-f
 
 import { useEffect } from "react";
 import {
-  defaultBackAdaptiveAnswers,
-  detectBackRedFlags,
-  getVisibleBackQuestions,
-  getVisibleBackSections,
-  localizeBackLabel,
-  localizeBackOption,
-  localizeBackSection,
-  validateBackSection,
-  type BackAdaptiveAnswers,
-  type BackQuestionDef,
+  defaultHeadAdaptiveAnswers,
+  detectHeadRedFlags,
+  getVisibleHeadQuestions,
+  getVisibleHeadSections,
+  localizeHeadLabel,
+  localizeHeadOption,
+  localizeHeadSection,
+  validateHeadSection,
   type ConsultLocale,
-} from "@/lib/consulta-back-adaptive";
+  type HeadAdaptiveAnswers,
+  type HeadQuestionDef,
+} from "@/lib/consulta-head-adaptive";
 
 const labelClass = "mb-2.5 block text-base font-semibold text-slate-800";
 
@@ -103,21 +103,21 @@ function QuestionField({
   onPatch,
   locale,
 }: {
-  q: BackQuestionDef;
-  answers: BackAdaptiveAnswers;
-  onPatch: (p: Partial<BackAdaptiveAnswers>) => void;
+  q: HeadQuestionDef;
+  answers: HeadAdaptiveAnswers;
+  onPatch: (p: Partial<HeadAdaptiveAnswers>) => void;
   locale: ConsultLocale;
 }) {
   const val = answers[q.id];
-  const label = localizeBackLabel(q.id, q.label, locale);
-  const displayOption = (opt: string) => localizeBackOption(opt, locale);
+  const label = localizeHeadLabel(q.id, q.label, locale);
+  const displayOption = (opt: string) => localizeHeadOption(opt, locale);
 
   if (q.type === "slider") {
     const num = typeof val === "number" ? val : 5;
     return (
       <PainScale
         value={num}
-        onChange={(v) => onPatch({ [q.id]: v } as Partial<BackAdaptiveAnswers>)}
+        onChange={(v) => onPatch({ [q.id]: v } as Partial<HeadAdaptiveAnswers>)}
         label={label}
         locale={locale}
       />
@@ -130,7 +130,7 @@ function QuestionField({
         <label className={labelClass}>{label}</label>
         <textarea
           value={typeof val === "string" ? val : ""}
-          onChange={(e) => onPatch({ [q.id]: e.target.value } as Partial<BackAdaptiveAnswers>)}
+          onChange={(e) => onPatch({ [q.id]: e.target.value } as Partial<HeadAdaptiveAnswers>)}
           rows={2}
           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-50"
         />
@@ -145,7 +145,7 @@ function QuestionField({
         <MultiChipGroup
           options={q.options}
           value={Array.isArray(val) ? val : []}
-          onChange={(v) => onPatch({ [q.id]: v } as Partial<BackAdaptiveAnswers>)}
+          onChange={(v) => onPatch({ [q.id]: v } as Partial<HeadAdaptiveAnswers>)}
           displayOption={displayOption}
         />
       </div>
@@ -159,7 +159,7 @@ function QuestionField({
         <ChipGroup
           options={q.options}
           value={typeof val === "string" ? val : ""}
-          onChange={(v) => onPatch({ [q.id]: v } as Partial<BackAdaptiveAnswers>)}
+          onChange={(v) => onPatch({ [q.id]: v } as Partial<HeadAdaptiveAnswers>)}
           displayOption={displayOption}
         />
       </div>
@@ -170,8 +170,8 @@ function QuestionField({
 }
 
 type Props = {
-  value: BackAdaptiveAnswers;
-  onChange: (v: BackAdaptiveAnswers) => void;
+  value: HeadAdaptiveAnswers;
+  onChange: (v: HeadAdaptiveAnswers) => void;
   sectionIndex: number;
   onSectionIndexChange: (i: number) => void;
   sectionError: string | null;
@@ -179,7 +179,7 @@ type Props = {
   locale?: ConsultLocale;
 };
 
-export function ConsultaAdaptiveBack({
+export function ConsultaAdaptiveHead({
   value,
   onChange,
   sectionIndex,
@@ -188,13 +188,13 @@ export function ConsultaAdaptiveBack({
   onSectionError,
   locale = "es",
 }: Props) {
-  const answers = value ?? defaultBackAdaptiveAnswers();
-  const sections = getVisibleBackSections(answers);
+  const answers = value ?? defaultHeadAdaptiveAnswers();
+  const sections = getVisibleHeadSections(answers);
   const currentSection = sections[sectionIndex] ?? sections[0];
-  const sectionQuestions = getVisibleBackQuestions(answers).filter(
+  const sectionQuestions = getVisibleHeadQuestions(answers).filter(
     (q) => q.section === currentSection
   );
-  const { urgent, triggered } = detectBackRedFlags(answers);
+  const { urgent, triggered } = detectHeadRedFlags(answers);
   const isLastSection = sectionIndex >= sections.length - 1;
 
   useEffect(() => {
@@ -203,13 +203,13 @@ export function ConsultaAdaptiveBack({
     }
   }, [sectionIndex, sections.length, onSectionIndexChange]);
 
-  function patch(p: Partial<BackAdaptiveAnswers>) {
+  function patch(p: Partial<HeadAdaptiveAnswers>) {
     onChange({ ...answers, ...p });
   }
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateBackSection(currentSection, answers);
+    const err = validateHeadSection(currentSection, answers);
     if (err) {
       onSectionError(err);
       return;
@@ -236,7 +236,7 @@ export function ConsultaAdaptiveBack({
       )}
 
       <h2 className="mb-4 text-xl font-bold tracking-tight text-slate-900">
-        {localizeBackSection(currentSection, locale)}
+        {localizeHeadSection(currentSection, locale)}
       </h2>
 
       {sectionQuestions.map((q) => (
@@ -269,10 +269,10 @@ export function ConsultaAdaptiveBack({
   );
 }
 
-export function isLastBackSection(
-  answers: BackAdaptiveAnswers,
+export function isLastHeadSection(
+  answers: HeadAdaptiveAnswers,
   sectionIndex: number
 ): boolean {
-  const sections = getVisibleBackSections(answers);
+  const sections = getVisibleHeadSections(answers);
   return sectionIndex >= sections.length - 1;
 }

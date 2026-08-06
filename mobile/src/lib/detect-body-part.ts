@@ -131,6 +131,18 @@ const KEYWORDS: Record<BodyPartId, RegExp[]> = {
     /dedo en resorte/i,
     /articulaci[oó]n del dedo/i,
   ],
+  // Avoid bare "cabeza" alone — "por encima de la cabeza" is a shoulder movement phrase
+  head: [
+    /cefalea/i,
+    /migra[nñ]a/i,
+    /headache/i,
+    /dolor\s+(?:de\s+)?(?:la\s+)?cabeza/i,
+    /me\s+duele\s+(?:la\s+)?cabeza/i,
+    /duele\s+(?:la\s+)?cabeza/i,
+    /\bla\s+cabeza\b/i,
+    /my\s+head\b/i,
+    /head\s+pain/i,
+  ],
   neck: [/cuello/i, /neck/i, /cervical/i],
   back: [/espalda/i, /lumbar/i, /dorsal/i, /back/i],
   hip: [/cadera/i, /hip/i, /ingle/i, /aductor/i, /adductor/i, /pubalgia/i],
@@ -158,56 +170,85 @@ const KEYWORDS: Record<BodyPartId, RegExp[]> = {
   ],
 };
 
-/** Body parts mentioned in free text (may be empty). */
+/** True head/headache complaint — not the shoulder phrase "por encima de la cabeza". */
+export function isTrueHeadComplaint(text: string): boolean {
+  const t = text.trim();
+  if (
+    /cefalea|migra[nñ]a|headache|dolor\s+(?:de\s+)?(?:la\s+)?cabeza|me\s+duele\s+(?:la\s+)?cabeza|duele\s+(?:la\s+)?cabeza|my\s+head\b|head\s+pain/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+  const withoutOverhead = t.replace(/por\s+encima\s+de\s+(?:la\s+)?cabeza/gi, " ");
+  return /\bla\s+cabeza\b|\bcabeza\b/i.test(withoutOverhead);
+}
+
+/** Body parts mentioned in free text (may be empty), ordered by first mention. */
 export function detectBodyPartsFromText(text: string): BodyPartId[] {
   // Foot/plantar first so we never treat "planta del pie" as a shin/calf case
   if (isFootOrPlantarComplaint(text) || isBelowKneeOrLowerLeg(text)) {
-    return ["ankle_foot"];
+    // Still allow other zones named in the same message (e.g. shoulder + plantar pain)
+    const also: BodyPartId[] = [];
+    for (const [id, patterns] of Object.entries(KEYWORDS) as [BodyPartId, RegExp[]][]) {
+      if (id === "ankle_foot" || id === "knee") continue;
+      if (id === "head" && !isTrueHeadComplaint(text)) continue;
+      if (patterns.some((p) => p.test(text))) also.push(id);
+    }
+    if (also.length === 0) return ["ankle_foot"];
+    // Mention order across ankle_foot + others
+    const all = ["ankle_foot" as BodyPartId, ...also];
+    return sortPartsByFirstMention(text, all);
   }
   const found: BodyPartId[] = [];
   for (const [id, patterns] of Object.entries(KEYWORDS) as [BodyPartId, RegExp[]][]) {
+    if (id === "head" && !isTrueHeadComplaint(text)) continue;
     if (patterns.some((p) => p.test(text))) found.push(id);
   }
   // If both knee and ankle_foot matched because of "rodilla" landmark noise, prefer knee only when truly knee
   if (found.includes("knee") && found.includes("ankle_foot") && !isTrueKneeComplaint(text)) {
-    return found.filter((id) => id !== "knee");
+    return sortPartsByFirstMention(
+      text,
+      found.filter((id) => id !== "knee")
+    );
   }
-  return found;
+  return sortPartsByFirstMention(text, found);
+}
+
+function sortPartsByFirstMention(text: string, parts: BodyPartId[]): BodyPartId[] {
+  const scored = parts.map((id) => {
+    let min = Number.POSITIVE_INFINITY;
+    for (const p of KEYWORDS[id] ?? []) {
+      const flags = p.flags.includes("g") ? p.flags : `${p.flags}g`;
+      const re = new RegExp(p.source, flags);
+      const m = re.exec(text);
+      if (m?.index != null) min = Math.min(min, m.index);
+    }
+    return { id, min };
+  });
+  scored.sort((a, b) => a.min - b.min);
+  return scored.map((s) => s.id);
 }
 
 /**
  * Which questionnaire to show.
  * Full adaptive UIs: shoulder, elbow, wrist_hand, finger, neck.
  * Other single regions still start a questionnaire (generic fields until dedicated UI exists).
+ * When several zones are named, always pick the first mentioned (chat queues the rest).
  */
 export function questionnaireForText(text: string): {
   part: BodyPartId | "generic";
   detected: BodyPartId[];
 } {
   const detected = detectBodyPartsFromText(text);
-  if (detected.length === 1) {
+  if (detected.length >= 1) {
     return { part: detected[0], detected };
-  }
-  if (detected.includes("elbow") && !detected.includes("shoulder")) {
-    return { part: "elbow", detected };
-  }
-  if (detected.includes("shoulder") && !detected.includes("elbow")) {
-    return { part: "shoulder", detected };
-  }
-  if (detected.includes("neck") && detected.length === 1) {
-    return { part: "neck", detected };
-  }
-  if (detected.includes("finger") && !detected.includes("wrist_hand")) {
-    return { part: "finger", detected };
-  }
-  if (detected.includes("wrist_hand") && !detected.includes("finger")) {
-    return { part: "wrist_hand", detected };
-  }
-  if (detected.length > 1) {
-    return { part: "generic", detected };
   }
   if (/codo|elbow|epicond|b[ií]ceps(?!\s*femoral)|tr[ií]ceps(?!\s*sural)|popeye/i.test(text)) {
     return { part: "elbow", detected: ["elbow"] };
+  }
+  if (/cefalea|migra[nñ]a|headache|dolor\s+(?:de\s+)?(?:la\s+)?cabeza|me\s+duele\s+(?:la\s+)?cabeza|\bla\s+cabeza\b/i.test(text)) {
+    return { part: "head", detected: ["head"] };
   }
   if (/cuello|cervical|neck/i.test(text)) {
     return { part: "neck", detected: ["neck"] };
@@ -239,6 +280,85 @@ export function questionnaireForText(text: string): {
   return { part: "generic", detected: [] };
 }
 
+/** Patient said pectoral/chest without naming the shoulder joint. */
+export function isPectoralChestComplaint(text: string): boolean {
+  const t = text.trim();
+  if (!/pectoral|p[eé]ctoral|\bpecho\b|\bchest\b|press\s*banca|bench\s*press/i.test(t)) {
+    return false;
+  }
+  // If they also named the shoulder joint, keep "hombro" as the primary label.
+  if (/\bhombro\b|\bshoulder\b|manguito|rotador|deltoides|om[oó]plato/i.test(t)) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Patient-facing zone name for intros, titles, AI bodyArea, and "next part" prompts.
+ * Uses what they wrote (e.g. Pectoral) instead of internal questionnaire ids (shoulder).
+ */
+export function patientFacingPartLabel(
+  part: BodyPartId | "generic",
+  userText: string = "",
+  locale: "es" | "en" = "es"
+): string {
+  const text = userText.trim();
+  if (part === "shoulder" && isPectoralChestComplaint(text)) {
+    return locale === "en" ? "Pectoral / chest" : "Pectoral";
+  }
+  if (part === "ankle_foot") {
+    const focus = resolveAnkleFootFocus(text);
+    if (locale === "en") {
+      if (focus === "foot") return "Foot";
+      if (focus === "ankle") return "Ankle";
+      if (focus === "lower_leg") return "Lower leg";
+      return "Ankle / foot / lower leg";
+    }
+    if (focus === "foot") return "Pie";
+    if (focus === "ankle") return "Tobillo";
+    if (focus === "lower_leg") return "Pierna baja";
+    return "Tobillo / pie / pierna baja";
+  }
+  if (part === "hip") {
+    const peri =
+      /gl[uú]teo|isquio|aductor|adductor|hamstring|groin|ingle/i.test(text) &&
+      !/\bcadera\b|\bhip\b/i.test(text);
+    if (peri) {
+      return locale === "en"
+        ? "Buttock / hamstring / groin"
+        : "Glúteo / isquiotibial / ingle";
+    }
+  }
+  if (part === "generic") {
+    return locale === "en" ? "General" : "Consulta general";
+  }
+  const es: Record<BodyPartId, string> = {
+    shoulder: "Hombro",
+    elbow: "Codo",
+    wrist_hand: "Muñeca / mano",
+    finger: "Dedos",
+    head: "Cabeza",
+    neck: "Cuello",
+    back: "Espalda",
+    hip: "Cadera",
+    knee: "Rodilla",
+    ankle_foot: "Tobillo / pie",
+  };
+  const en: Record<BodyPartId, string> = {
+    shoulder: "Shoulder",
+    elbow: "Elbow",
+    wrist_hand: "Wrist / hand",
+    finger: "Fingers",
+    head: "Head",
+    neck: "Neck",
+    back: "Back",
+    hip: "Hip",
+    knee: "Knee",
+    ankle_foot: "Ankle / foot",
+  };
+  return (locale === "en" ? en : es)[part] ?? (locale === "en" ? "Affected area" : "Zona afectada");
+}
+
 export function questionnaireIntroMessage(
   part: BodyPartId | "generic",
   locale: "es" | "en" = "es",
@@ -268,12 +388,18 @@ export function questionnaireIntroMessage(
           ? "your lower leg (below the knee)"
           : "your ankle / foot / lower leg";
 
+  const shoulderZoneEs =
+    isPectoralChestComplaint(text) ? "tu pectoral / pecho" : "tu hombro";
+  const shoulderZoneEn =
+    isPectoralChestComplaint(text) ? "your pectoral / chest" : "your shoulder";
+
   if (locale === "en") {
     const labels: Partial<Record<BodyPartId | "generic", string>> = {
-      shoulder: "your shoulder",
+      shoulder: shoulderZoneEn,
       elbow: "your elbow",
       wrist_hand: "your wrist/hand",
       finger: "your finger",
+      head: "your head",
       neck: "your neck",
       back: "your back",
       hip: periHipSoftTissue
@@ -287,10 +413,11 @@ export function questionnaireIntroMessage(
     return `Thanks for sharing. To guide you better, I need to ask you some detailed questions about ${zone}. I'll only ask what's relevant based on your answers.`;
   }
   const labels: Partial<Record<BodyPartId | "generic", string>> = {
-    shoulder: "tu hombro",
+    shoulder: shoulderZoneEs,
     elbow: "tu codo",
     wrist_hand: "tu muñeca/mano",
     finger: "tu dedo",
+    head: "tu cabeza",
     neck: "tu cuello",
     back: "tu espalda",
     hip: periHipSoftTissue

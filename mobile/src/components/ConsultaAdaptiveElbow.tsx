@@ -17,6 +17,7 @@ import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
 import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
+import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
 
 function ChipGroup({
   options,
@@ -234,7 +235,7 @@ export function ConsultaAdaptiveElbow({
       {urgent && currentSection !== "red_flags" && (
         <View style={styles.redBox}>
           <Text style={styles.redText}>
-            Banderas rojas: {triggered.join(", ")}. Se priorizará atención urgente.
+            {redFlagsDetectedLabel(locale)} {triggered.join(", ")}. {redFlagsUrgencyNote(locale)}
           </Text>
         </View>
       )}

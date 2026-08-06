@@ -21,6 +21,10 @@ import {
   isLastNeckSection,
 } from "@/components/consulta-adaptive-neck";
 import {
+  ConsultaAdaptiveHead,
+  isLastHeadSection,
+} from "@/components/consulta-adaptive-head";
+import {
   ConsultaAdaptiveLowerLeg,
   isLastLowerLegSection,
 } from "@/components/consulta-adaptive-lower-leg";
@@ -43,10 +47,12 @@ import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { StreamingAssistantMessage } from "@/components/streaming-assistant-message";
 import { TrustPanel } from "@/components/ui/trust-panel";
 import {
+  buildPhysioLinkedCompletionMessage,
   buildPhysioLinkedIntroGreeting,
   buildPhysioLinkedWelcome,
   physioDisplayName,
 } from "@/lib/physio-linked-welcome";
+import { PhysioReportCompleteCard } from "@/components/physio-report-complete-card";
 import { bodyPartLabel, type BodyPartId } from "@/lib/body-parts";
 import {
   defaultGenericConsultaAnswers,
@@ -59,6 +65,7 @@ import {
   detectRedFlags,
   formatShoulderAdaptive,
   getVisibleShoulderSections,
+  resolveShoulderQuestionnaireFocus,
   validateShoulderAdaptive,
   validateShoulderSection,
   type ShoulderAdaptiveAnswers,
@@ -99,6 +106,15 @@ import {
   validateNeckSection,
   type NeckAdaptiveAnswers,
 } from "@/lib/consulta-neck-adaptive";
+import {
+  defaultHeadAdaptiveAnswers,
+  detectHeadRedFlags,
+  formatHeadAdaptive,
+  getVisibleHeadSections,
+  validateHeadAdaptive,
+  validateHeadSection,
+  type HeadAdaptiveAnswers,
+} from "@/lib/consulta-head-adaptive";
 import {
   defaultLowerLegAdaptiveAnswers,
   detectLowerLegRedFlags,
@@ -141,16 +157,27 @@ import {
   questionnaireForText,
   questionnaireIntroMessage,
   resolveAnkleFootFocus,
+  patientFacingPartLabel,
+  detectBodyPartsFromText,
 } from "@/lib/detect-body-part";
 import {
   bodyAreaLabelFromText,
+  betweenPartsChoiceContext,
   fallbackTriageFromText,
+  isClearStartNextPart,
+  isDeclineNextPart,
   isMetaOrClarificationQuery,
+  nextPartReadyMessage,
   parseTriageResult,
+  pendingPartsFromText,
   refineTriageBodyPart,
+  reportsFunctionalTestResults,
   shouldStartQuestionnaire,
+  wantsFunctionalTestsNow,
+  wantsToContinueToNextQuestionnaire,
   type AdaptiveQuestionnairePart,
 } from "@/lib/consulta-triage";
+import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import {
   PHOTO_ONLY_CAPTION,
   uploadConsultPhoto,
@@ -161,6 +188,7 @@ import {
 } from "@/lib/consult-language";
 import { AssistantMessageWithSources } from "@/components/assistant-message-with-sources";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Message = {
@@ -178,7 +206,7 @@ type Conversation = {
   physio_name?: string | null;
   clinic_name?: string | null;
 };
-type Phase = "intro" | "questionnaire" | "followup";
+type Phase = "intro" | "questionnaire" | "followup" | "complete";
 
 const SUPABASE_URL = "https://klxlzzgrymkexvuelzex.supabase.co";
 const WELCOME_MESSAGE =
@@ -247,10 +275,16 @@ function welcomeMessage(content: string = WELCOME_MESSAGE): Message {
   return { id: WELCOME_ID, role: "assistant", content };
 }
 
-function renderAssistantContent(content: string) {
-  const lines = content.split("\n");
+function stripMarkdownStars(text: string) {
+  return text
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2")
+    .replace(/\*/g, "");
+}
 
-  return lines.map((line, li) => {
+function renderAssistantContent(content: string) {
+  const shownTestIds = new Set<string>();
+
+  return content.split("\n").map((line, li) => {
     const trimmed = line.trim();
     const isInlineFuente =
       /^Fuente:/i.test(trimmed) ||
@@ -266,8 +300,86 @@ function renderAssistantContent(content: string) {
           className="mt-0.5 block text-xs text-blue-600/90 underline-offset-2 hover:underline"
         >
           {trimmed}
-          {li < lines.length - 1 ? "\n" : ""}
+          {li < content.split("\n").length - 1 ? "\n" : ""}
         </a>
+      );
+    }
+
+    const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+    const headingText = headingMatch?.[2] ?? null;
+    const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
+    const numberedText =
+      headingText && /^\d+\.\s+\S/.test(headingText)
+        ? headingText
+        : wholeBoldMatch && /^\d+\.\s+\S/.test(wholeBoldMatch[1])
+          ? wholeBoldMatch[1]
+          : /^\d+\.\s+\S/.test(stripMarkdownStars(trimmed))
+            ? stripMarkdownStars(trimmed)
+            : null;
+
+    const testImage = shouldShowClinicalTestImage({
+      numberedText,
+      headingText,
+      wholeBoldText: wholeBoldMatch?.[1] ?? null,
+    });
+    const showImage =
+      testImage && !shownTestIds.has(testImage.id) ? testImage : null;
+    if (showImage) shownTestIds.add(showImage.id);
+
+    const imageBlock = showImage ? (
+      <div className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+        <Image
+          src={showImage.src}
+          alt={showImage.title}
+          width={640}
+          height={480}
+          className="h-auto w-full max-w-md object-cover"
+          sizes="(max-width: 768px) 100vw, 28rem"
+        />
+      </div>
+    ) : null;
+
+    if (numberedText) {
+      const plain = stripMarkdownStars(trimmed);
+      const withBody = /^(\d+\.\s+[^:]+):\s+(.+)$/.exec(plain);
+      return (
+        <div key={li} className={li > 0 ? "mt-3" : undefined}>
+          <p className="text-neutral-900">
+            <strong className="font-bold text-blue-700">
+              {withBody ? `${withBody[1]}:` : plain}
+            </strong>
+            {withBody ? (
+              <span className="text-neutral-900"> {withBody[2]}</span>
+            ) : null}
+          </p>
+          {imageBlock}
+        </div>
+      );
+    }
+
+    if (wholeBoldMatch && !numberedText) {
+      return (
+        <div key={li} className={li > 0 ? "mt-3" : undefined}>
+          <p>
+            <strong className="font-bold text-blue-700">
+              {stripMarkdownStars(wholeBoldMatch[1])}
+            </strong>
+          </p>
+          {imageBlock}
+        </div>
+      );
+    }
+
+    if (headingText) {
+      return (
+        <div key={li} className={li > 0 ? "mt-3" : undefined}>
+          <p>
+            <strong className="font-bold text-blue-700">
+              {stripMarkdownStars(headingText)}
+            </strong>
+          </p>
+          {imageBlock}
+        </div>
       );
     }
 
@@ -281,10 +393,10 @@ function renderAssistantContent(content: string) {
       )
     );
     return (
-      <span key={li}>
-        {rendered}
-        {li < lines.length - 1 ? "\n" : ""}
-      </span>
+      <div key={li} className={li > 0 ? "mt-2" : undefined}>
+        <p className="text-neutral-900">{rendered}</p>
+        {imageBlock}
+      </div>
     );
   });
 }
@@ -348,6 +460,9 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
   const [neckAnswers, setNeckAnswers] = useState<NeckAdaptiveAnswers>(
     defaultNeckAdaptiveAnswers
   );
+  const [headAnswers, setHeadAnswers] = useState<HeadAdaptiveAnswers>(
+    defaultHeadAdaptiveAnswers
+  );
   const [lowerLegAnswers, setLowerLegAnswers] = useState<LowerLegAdaptiveAnswers>(
     defaultLowerLegAdaptiveAnswers
   );
@@ -368,12 +483,28 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
   const [wristSectionIndex, setWristSectionIndex] = useState(0);
   const [fingerSectionIndex, setFingerSectionIndex] = useState(0);
   const [neckSectionIndex, setNeckSectionIndex] = useState(0);
+  const [headSectionIndex, setHeadSectionIndex] = useState(0);
   const [lowerLegSectionIndex, setLowerLegSectionIndex] = useState(0);
   const [kneeSectionIndex, setKneeSectionIndex] = useState(0);
   const [backSectionIndex, setBackSectionIndex] = useState(0);
   const [hipSectionIndex, setHipSectionIndex] = useState(0);
   const [shoulderSectionError, setShoulderSectionError] = useState<string | null>(null);
   const [evaluatedParts, setEvaluatedParts] = useState<AdaptiveQuestionnairePart[]>([]);
+  /** Remaining zones to evaluate one-by-one after the current questionnaire. */
+  const [pendingParts, setPendingParts] = useState<AdaptiveQuestionnairePart[]>([]);
+  /** Next zone waiting for patient confirmation (sí / no). */
+  const [awaitingNextPart, setAwaitingNextPart] = useState<AdaptiveQuestionnairePart | null>(null);
+  /** Per-zone AI orientations for the final multi-part summary. */
+  const [partEvaluations, setPartEvaluations] = useState<
+    { part: AdaptiveQuestionnairePart | "generic"; label: string; summary: string }[]
+  >([]);
+  const partEvaluationsRef = useRef(partEvaluations);
+  partEvaluationsRef.current = partEvaluations;
+  /** Zones whose functional tests the patient already completed in this consult. */
+  const [functionalTestsCompletedParts, setFunctionalTestsCompletedParts] =
+    useState<AdaptiveQuestionnairePart[]>([]);
+  const functionalTestsCompletedRef = useRef(functionalTestsCompletedParts);
+  functionalTestsCompletedRef.current = functionalTestsCompletedParts;
   const [consultLanguage, setConsultLanguage] = useState<ConsultLanguage>("es");
 
   const [input, setInput] = useState("");
@@ -524,9 +655,14 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     setOpeningConversation(true);
     setMobileSidebarOpen(false);
     setPhysioIntro(false);
-    setPhase("followup");
     setRevealingMessageId(null);
     setEvaluatedParts([]);
+    setPendingParts([]);
+    setAwaitingNextPart(null);
+    setPartEvaluations([]);
+    partEvaluationsRef.current = [];
+    setFunctionalTestsCompletedParts([]);
+    functionalTestsCompletedRef.current = [];
     setCaseImageUrl(null);
     clearAttachment();
     setPhysioReportSentBanner(false);
@@ -537,7 +673,41 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
 
-    setMessages((data as Message[]) ?? []);
+    let msgs = (data as Message[]) ?? [];
+
+    if (linkedPhysio) {
+      const { data: report } = await supabase
+        .from("clinical_reports")
+        .select("id")
+        .eq("conversation_id", id)
+        .limit(1)
+        .maybeSingle();
+
+      // Patients must not see the clinical orientation — only the thank-you copy.
+      msgs = msgs.filter(
+        (m) =>
+          m.role !== "assistant" ||
+          !/\*\*Resumen de tu consulta\*\*|Estructuras que podrían estar afectadas|Posibles lesiones \(orientativas\)/i.test(
+            m.content
+          )
+      );
+
+      if (report) {
+        setPhase("complete");
+        setPhysioReportSentBanner(true);
+        setLinkedPhysioLabel(
+          [linkedPhysio.physio_name, linkedPhysio.clinic_name]
+            .filter(Boolean)
+            .join(" · ") || null
+        );
+      } else {
+        setPhase("followup");
+      }
+    } else {
+      setPhase("followup");
+    }
+
+    setMessages(msgs);
     setOpeningConversation(false);
     setHistoryLoaded(true);
   }
@@ -556,6 +726,12 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     setPhase("intro");
     setInitialMessage("");
     setEvaluatedParts([]);
+    setPendingParts([]);
+    setAwaitingNextPart(null);
+    setPartEvaluations([]);
+    partEvaluationsRef.current = [];
+    setFunctionalTestsCompletedParts([]);
+    functionalTestsCompletedRef.current = [];
     setInput("");
     setCaseImageUrl(null);
     clearAttachment();
@@ -657,9 +833,7 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
   }
 
   /**
-   * Best-effort, fire-and-forget: if this patient is linked to a physio,
-   * generate a clinician-oriented report and store it for their dashboard.
-   * Never throws — must not block or degrade the patient's own chat experience.
+   * Fisioterapia flow only: generate clinician report for the linked physio dashboard.
    */
   async function maybeGenerateAndSendPhysioReport(params: {
     patientId: string;
@@ -754,6 +928,7 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     setWristAnswers(defaultWristAdaptiveAnswers());
     setFingerAnswers(defaultFingerAdaptiveAnswers());
     setNeckAnswers(defaultNeckAdaptiveAnswers());
+    setHeadAnswers(defaultHeadAdaptiveAnswers());
     setLowerLegAnswers(defaultLowerLegAdaptiveAnswers());
     setKneeAnswers(defaultKneeAdaptiveAnswers());
     setBackAnswers(defaultBackAdaptiveAnswers());
@@ -764,6 +939,7 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     setWristSectionIndex(0);
     setFingerSectionIndex(0);
     setNeckSectionIndex(0);
+    setHeadSectionIndex(0);
     setLowerLegSectionIndex(0);
     setKneeSectionIndex(0);
     setBackSectionIndex(0);
@@ -784,24 +960,188 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
   function beginQuestionnaire(
     text: string,
     part: AdaptiveQuestionnairePart | "generic",
-    language: ConsultLanguage = consultLanguage
+    language: ConsultLanguage = consultLanguage,
+    remainingCount = 0
   ) {
     setInitialMessage(text);
     resetQuestionnaireState(part);
+    setAwaitingNextPart(null);
     if (part === "ankle_foot") {
       setLowerLegAnswers(
         withAnkleFootFocusFromText(text, resolveAnkleFootFocus(text))
       );
+    }
+    let intro = questionnaireIntroMessage(part, language, text);
+    if (remainingCount > 0) {
+      intro +=
+        language === "en"
+          ? `\n\nYou mentioned more than one area — we'll go one by one. After this, ${remainingCount} more questionnaire${remainingCount === 1 ? "" : "s"} remain.`
+          : `\n\nHas mencionado más de una zona: iremos **una a una**. Después de esta, quedan ${remainingCount} cuestionario${remainingCount === 1 ? "" : "s"} más.`;
     }
     setMessages((prev) => [
       ...prev,
       {
         id: `q-intro-${Date.now()}`,
         role: "assistant",
-        content: questionnaireIntroMessage(part, language, text),
+        content: intro,
       },
     ]);
     setPhase("questionnaire");
+  }
+
+  function startQuestionnaireQueue(
+    text: string,
+    language: ConsultLanguage,
+    preferredFirst?: AdaptiveQuestionnairePart | "generic"
+  ) {
+    const queue = pendingPartsFromText(text, evaluatedParts);
+    if (queue.length === 0 && preferredFirst && preferredFirst !== "generic") {
+      beginQuestionnaire(text, preferredFirst, language, 0);
+      setPendingParts([]);
+      return true;
+    }
+    if (queue.length === 0 && preferredFirst === "generic") {
+      beginQuestionnaire(text, "generic", language, 0);
+      setPendingParts([]);
+      return true;
+    }
+    if (queue.length === 0) return false;
+
+    // Always follow mention order in the patient's text (first written = first asked).
+    // Do not reorder by triage.bodyPart — that often picks the last zone named.
+    const first = queue[0];
+    const rest = queue.slice(1);
+    setPendingParts(rest);
+    beginQuestionnaire(text, first, language, rest.length);
+    return true;
+  }
+
+  async function appendMultiPartFinalSummary(
+    conversationId: string,
+    evaluations: {
+      part: AdaptiveQuestionnairePart | "generic";
+      label: string;
+      summary: string;
+    }[],
+    language: ConsultLanguage
+  ) {
+    if (linkedPhysio || evaluations.length < 2) return;
+    try {
+      const message = evaluations
+        .map((e) => `=== ${e.label} ===\n${e.summary}`)
+        .join("\n\n");
+      const bodyArea = evaluations.map((e) => e.label).join(", ");
+      const answer = await callAI(
+        {
+          mode: "multi_part_summary",
+          message,
+          bodyArea,
+        },
+        language
+      );
+      const { data: aiMsg } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: conversationId,
+          role: "assistant",
+          content: answer,
+        })
+        .select("id, role, content, created_at")
+        .single();
+      if (aiMsg) {
+        setRevealingMessageId((aiMsg as Message).id);
+        setMessages((prev) => [...prev, aiMsg as Message]);
+      }
+    } catch {
+      // Individual per-zone orientations already shown; summary is best-effort.
+    }
+  }
+
+  function recordPartEvaluation(
+    part: AdaptiveQuestionnairePart | "generic",
+    summary: string,
+    labelHint?: string
+  ) {
+    const label =
+      labelHint?.trim() ||
+      patientFacingPartLabel(
+        part === "generic" ? "generic" : part,
+        initialMessage,
+        consultLanguage
+      );
+    const entry = { part, label, summary: summary.trim() };
+    const next = [
+      ...partEvaluationsRef.current.filter((e) => e.part !== part),
+      entry,
+    ];
+    partEvaluationsRef.current = next;
+    setPartEvaluations(next);
+    return next;
+  }
+
+  function markFunctionalTestsDone(part: AdaptiveQuestionnairePart) {
+    setFunctionalTestsCompletedParts((prev) => {
+      if (prev.includes(part)) return prev;
+      const next = [...prev, part];
+      functionalTestsCompletedRef.current = next;
+      return next;
+    });
+  }
+
+  function isFunctionalTestsDoneForPart(
+    part: AdaptiveQuestionnairePart | "generic" | undefined
+  ): boolean {
+    if (!part || part === "generic") return false;
+    return functionalTestsCompletedRef.current.includes(part);
+  }
+
+  async function offerNextPendingPart(
+    conversationId: string,
+    completedPart: AdaptiveQuestionnairePart | "generic",
+    language: ConsultLanguage,
+    completedSummary?: string,
+    areaLabel?: string
+  ) {
+    const evaluations = completedSummary?.trim()
+      ? recordPartEvaluation(completedPart, completedSummary, areaLabel)
+      : partEvaluationsRef.current;
+
+    const nextFromQueue = pendingParts[0];
+    const rest = pendingParts.slice(1);
+    const recomputed = pendingPartsFromText(initialMessage, [
+      ...evaluatedParts,
+      ...(completedPart !== "generic" ? [completedPart as AdaptiveQuestionnairePart] : []),
+    ]);
+    const next = nextFromQueue ?? recomputed[0] ?? null;
+    const remaining = nextFromQueue
+      ? rest
+      : recomputed.filter((p) => p !== next);
+
+    if (!next || linkedPhysio) {
+      setPendingParts([]);
+      setAwaitingNextPart(null);
+      await appendMultiPartFinalSummary(conversationId, evaluations, language);
+      return;
+    }
+
+    setPendingParts(remaining);
+    setAwaitingNextPart(next);
+    const testsDone = isFunctionalTestsDoneForPart(completedPart);
+    const prompt = nextPartReadyMessage(
+      completedPart,
+      next,
+      language,
+      initialMessage,
+      { functionalTestsDone: testsDone }
+    );
+    const { data: aiMsg } = await supabase
+      .from("messages")
+      .insert({ conversation_id: conversationId, role: "assistant", content: prompt })
+      .select("id, role, content, created_at")
+      .single();
+    if (aiMsg) {
+      setMessages((prev) => [...prev, aiMsg as Message]);
+    }
   }
 
   async function respondToInitialMessage(
@@ -892,7 +1232,11 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
   function buildSymptomContext(): string {
     const introBlock = `Descripción inicial del paciente:\n${initialMessage}`;
     if (questionnairePart === "shoulder") {
-      return formatShoulderAdaptive(shoulderAnswers, introBlock);
+      return formatShoulderAdaptive(
+        shoulderAnswers,
+        introBlock,
+        resolveShoulderQuestionnaireFocus(initialMessage)
+      );
     }
     if (questionnairePart === "elbow") {
       return formatElbowAdaptive(elbowAnswers, introBlock);
@@ -902,6 +1246,9 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     }
     if (questionnairePart === "finger") {
       return formatFingerAdaptive(fingerAnswers, introBlock);
+    }
+    if (questionnairePart === "head") {
+      return formatHeadAdaptive(headAnswers, introBlock);
     }
     if (questionnairePart === "neck") {
       return formatNeckAdaptive(neckAnswers, introBlock);
@@ -953,13 +1300,20 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
       }
 
       if (triage.action === "questionnaire" && triage.bodyPart) {
-        beginQuestionnaire(text, triage.bodyPart, lang);
+        startQuestionnaireQueue(text, lang, triage.bodyPart);
         return;
       }
 
       if (triage.intent === "symptom_other") {
         const { part } = questionnaireForText(text);
-        beginQuestionnaire(text, part === "generic" ? "generic" : part, lang);
+        if (!startQuestionnaireQueue(text, lang, part === "generic" ? "generic" : part)) {
+          beginQuestionnaire(text, part === "generic" ? "generic" : part, lang);
+        }
+        return;
+      }
+
+      // Local multi-part detection even if triage returned respond
+      if (startQuestionnaireQueue(text, lang)) {
         return;
       }
 
@@ -976,17 +1330,22 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     if (loading) return;
 
     if (questionnairePart === "shoulder") {
-      const sections = getVisibleShoulderSections(shoulderAnswers);
+      const shoulderFocus = resolveShoulderQuestionnaireFocus(initialMessage);
+      const sections = getVisibleShoulderSections(shoulderAnswers, shoulderFocus);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateShoulderSection(lastSection, shoulderAnswers);
+        const sectionErr = validateShoulderSection(
+          lastSection,
+          shoulderAnswers,
+          shoulderFocus
+        );
         if (sectionErr) {
           setShoulderSectionError(sectionErr);
           setShoulderSectionIndex(sections.length - 1);
           return;
         }
       }
-      const err = validateShoulderAdaptive(shoulderAnswers);
+      const err = validateShoulderAdaptive(shoulderAnswers, shoulderFocus);
       if (err) {
         setShoulderSectionError(err);
         return;
@@ -1035,6 +1394,22 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
         }
       }
       const err = validateFingerAdaptive(fingerAnswers);
+      if (err) {
+        setShoulderSectionError(err);
+        return;
+      }
+    } else if (questionnairePart === "head") {
+      const sections = getVisibleHeadSections(headAnswers);
+      const lastSection = sections[sections.length - 1];
+      if (lastSection) {
+        const sectionErr = validateHeadSection(lastSection, headAnswers);
+        if (sectionErr) {
+          setShoulderSectionError(sectionErr);
+          setHeadSectionIndex(sections.length - 1);
+          return;
+        }
+      }
+      const err = validateHeadAdaptive(headAnswers);
       if (err) {
         setShoulderSectionError(err);
         return;
@@ -1131,37 +1506,19 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     setLoadingModal(true);
 
     const symptomContext = buildSymptomContext();
-    const { part, detected } = questionnaireForText(initialMessage);
+    const detectedZones = detectBodyPartsFromText(initialMessage);
     const areaLabel =
       questionnairePart === "hip"
         ? hipBodyAreaLabelForAi(hipAnswers, initialMessage)
-        : part === "shoulder"
-        ? "Hombro"
-        : part === "elbow"
-          ? "Codo"
-          : part === "wrist_hand"
-            ? "Muñeca / mano"
-          : part === "finger"
-            ? "Dedos"
-          : part === "neck"
-            ? "Cuello"
-          : part === "ankle_foot"
-            ? resolveAnkleFootFocus(initialMessage) === "foot"
-              ? "Pie"
-              : resolveAnkleFootFocus(initialMessage) === "ankle"
-                ? "Tobillo"
-                : resolveAnkleFootFocus(initialMessage) === "lower_leg"
-                  ? "Pierna baja"
-                  : "Tobillo / pie / pierna baja"
-          : part === "knee"
-            ? "Rodilla"
-          : part === "back"
-            ? "Espalda"
-          : part === "hip"
-            ? "Cadera"
-          : detected.length > 0
-            ? detected.map((p) => bodyPartLabel(p)).join(", ")
-            : conversationTitleFromText(initialMessage);
+        : questionnairePart === "generic"
+          ? patientFacingPartLabel("generic", initialMessage, consultLanguage)
+          : patientFacingPartLabel(questionnairePart, initialMessage, consultLanguage);
+    const multiZoneScopeNote =
+      detectedZones.length > 1
+        ? consultLanguage === "en"
+          ? `\n\nCRITICAL — MULTI-ZONE CASE: Evaluate ONLY «${areaLabel}» right now. The patient also mentioned other areas that will get their own questionnaires later. Do NOT reframe this as shoulder pain, invent a different primary zone, or write a summary centered on another region.`
+          : `\n\nCRÍTICO — CASO MULTI-ZONA: Evalúa ÚNICAMENTE «${areaLabel}» ahora. El paciente también mencionó otras zonas que tendrán su propio cuestionario después. NO digas que el problema principal es el hombro ni centres el resumen en otra región distinta a «${areaLabel}».`
+        : "";
     const painLevel =
       questionnairePart === "shoulder"
         ? shoulderAnswers.intensidad_dolor
@@ -1171,6 +1528,8 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
             ? wristAnswers.intensidad_dolor
           : questionnairePart === "finger"
             ? fingerAnswers.intensidad_dolor
+          : questionnairePart === "head"
+            ? headAnswers.intensidad_dolor
           : questionnairePart === "neck"
             ? neckAnswers.intensidad_dolor
           : questionnairePart === "ankle_foot"
@@ -1191,6 +1550,8 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
             ? `${wristAnswers.inicio} — ${wristAnswers.comienzo}. Actividad: ${wristAnswers.actividad_tipo} — ${wristAnswers.actividad_detalle}`
           : questionnairePart === "finger"
             ? `${fingerAnswers.cuando_empezo} — ${fingerAnswers.como_empezo}${fingerAnswers.detalle_otro ? ` (${fingerAnswers.detalle_otro})` : ""}`
+          : questionnairePart === "head"
+            ? `${headAnswers.inicio} — ${headAnswers.evolucion}. Mecanismo: ${headAnswers.mecanismo.join(", ")}`
           : questionnairePart === "neck"
             ? `${neckAnswers.inicio} — ${neckAnswers.evolucion}. Mecanismo: ${neckAnswers.mecanismo.join(", ")}`
           : questionnairePart === "ankle_foot"
@@ -1225,6 +1586,11 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
               fingerAnswers.como_empezo === "Lesión por torsión" ||
               fingerAnswers.como_empezo === "Corte o herida"
               ? `Sí: ${fingerAnswers.como_empezo}`
+              : "No"
+          : questionnairePart === "head"
+            ? headAnswers.mecanismo.includes("Golpe / traumatismo en la cabeza") ||
+              headAnswers.rf_trauma === "Sí"
+              ? `Sí: ${headAnswers.mecanismo.join(", ") || "trauma"}`
               : "No"
           : questionnairePart === "neck"
             ? neckAnswers.mecanismo.includes("Caída") ||
@@ -1267,6 +1633,8 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
             ? detectWristRedFlags(wristAnswers).urgent
           : questionnairePart === "finger"
             ? detectFingerRedFlags(fingerAnswers).urgent
+          : questionnairePart === "head"
+            ? detectHeadRedFlags(headAnswers).urgent
           : questionnairePart === "neck"
             ? detectNeckRedFlags(neckAnswers).urgent
           : questionnairePart === "ankle_foot"
@@ -1280,13 +1648,164 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
           : genericAnswers.rf_deformidad === "Sí" ||
             genericAnswers.rf_fiebre === "Sí" ||
             genericAnswers.rf_perdida_sensibilidad === "Sí";
-    const contextForAi = redFlagsUrgent
-      ? `⚠️ PRIORIDAD ALTA — BANDERAS ROJAS DETECTADAS\n\n${symptomContext}`
-      : symptomContext;
+    const contextForAi =
+      (redFlagsUrgent
+        ? `⚠️ PRIORIDAD ALTA — BANDERAS ROJAS DETECTADAS\n\n${symptomContext}`
+        : symptomContext) + multiZoneScopeNote;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
+
+      // Fisioterapia: clinical orientation is for the physio report only — patient sees a thank-you.
+      if (linkedPhysio) {
+        const clinicalForPhysio = await callAI({
+          bodyArea: areaLabel,
+          onsetType,
+          painLevel,
+          hadTrauma: hadTraumaVal,
+          description: initialMessage,
+          symptomContext: contextForAi,
+          conversationHistory: [],
+          ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
+        });
+
+        const ensureConversationId = async (): Promise<{
+          id: string;
+          title: string;
+          created_at?: string;
+          physio_id?: string | null;
+          physio_name?: string | null;
+          clinic_name?: string | null;
+          isNew: boolean;
+        }> => {
+          if (activeId) {
+            return {
+              id: activeId,
+              title: activeTitle,
+              isNew: false,
+            };
+          }
+          if (conversations.length > 0) {
+            throw new Error(
+              "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
+            );
+          }
+          const title = `${areaLabel} — ${new Date().toLocaleDateString("es-ES")}`;
+          const { data: conv, error: convErr } = await supabase
+            .from("conversations")
+            .insert({
+              title,
+              user_id: user.id,
+              kind: "fisioterapia",
+              physio_id: linkedPhysio.physio_id ?? null,
+              physio_name: linkedPhysio.physio_name ?? null,
+              clinic_name: linkedPhysio.clinic_name ?? null,
+            })
+            .select("id, title, created_at, physio_id, physio_name, clinic_name")
+            .single();
+          if (!conv) throw new Error(convErr?.message ?? "No se pudo crear la consulta.");
+
+          await supabase.from("messages").insert({
+            conversation_id: conv.id,
+            role: "assistant",
+            content: welcomeText,
+          });
+          for (const msg of messages) {
+            if (msg.id === WELCOME_ID) continue;
+            await supabase.from("messages").insert({
+              conversation_id: conv.id,
+              role: msg.role,
+              content: msg.content,
+              image_url: msg.image_url ?? null,
+            });
+          }
+          return { ...(conv as Conversation), isNew: true };
+        };
+
+        const conv = await ensureConversationId();
+
+        await supabase.from("consultas").insert({
+          body_area: areaLabel,
+          started_when: onsetType,
+          onset_type: onsetType,
+          pain_level: painLevel,
+          had_trauma: hadTraumaVal,
+          description: initialMessage,
+          symptom_details: {
+            questionnaireVersion: 4,
+            mode: "chat-then-questionnaire",
+            initialMessage,
+            questionnairePart,
+            shoulder: questionnairePart === "shoulder" ? shoulderAnswers : null,
+            elbow: questionnairePart === "elbow" ? elbowAnswers : null,
+            wrist_hand: questionnairePart === "wrist_hand" ? wristAnswers : null,
+            finger: questionnairePart === "finger" ? fingerAnswers : null,
+            head: questionnairePart === "head" ? headAnswers : null,
+            neck: questionnairePart === "neck" ? neckAnswers : null,
+            ankle_foot: questionnairePart === "ankle_foot" ? lowerLegAnswers : null,
+            knee: questionnairePart === "knee" ? kneeAnswers : null,
+            back: questionnairePart === "back" ? backAnswers : null,
+            hip: questionnairePart === "hip" ? hipAnswers : null,
+            generic:
+              questionnairePart === "generic" ||
+              !["shoulder", "elbow", "wrist_hand", "finger", "head", "neck", "ankle_foot", "knee", "back", "hip"].includes(
+                questionnairePart
+              )
+                ? genericAnswers
+                : null,
+            redFlagsUrgent,
+            patientFacingSummaryHidden: true,
+          },
+        });
+
+        const { sent, physioLabel } = await maybeGenerateAndSendPhysioReport({
+          patientId: user.id,
+          conversationId: conv.id,
+          bodyArea: areaLabel,
+          onsetType,
+          painLevel,
+          hadTrauma: hadTraumaVal,
+          description: initialMessage,
+          symptomContext: contextForAi,
+          patientSummary: clinicalForPhysio,
+          language: consultLanguage,
+        });
+
+        if (sent) {
+          setPhysioReportSentBanner(true);
+          setLinkedPhysioLabel(
+            physioLabel ||
+              [linkedPhysio.physio_name, linkedPhysio.clinic_name]
+                .filter(Boolean)
+                .join(" · ") ||
+              null
+          );
+        }
+
+        // Optional short confirmation in history (not the clinical report).
+        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name);
+        const { data: aiMsg } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: conv.id,
+            role: "assistant",
+            content: thanks,
+          })
+          .select("id, role, content, created_at")
+          .single();
+
+        if (conv.isNew) {
+          setActiveId(conv.id);
+          setActiveTitle(conv.title);
+          setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
+        }
+        if (aiMsg) setMessages((prev) => [...prev, aiMsg as Message]);
+        markPartEvaluated(questionnairePart);
+        setCaseImageUrl(null);
+        setPhase("complete");
+        return;
+      }
 
       const aiText = await callAI({
         bodyArea: areaLabel,
@@ -1322,32 +1841,15 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
             elbow: questionnairePart === "elbow" ? elbowAnswers : null,
             wrist_hand: questionnairePart === "wrist_hand" ? wristAnswers : null,
             finger: questionnairePart === "finger" ? fingerAnswers : null,
+            head: questionnairePart === "head" ? headAnswers : null,
             neck: questionnairePart === "neck" ? neckAnswers : null,
             ankle_foot: questionnairePart === "ankle_foot" ? lowerLegAnswers : null,
             knee: questionnairePart === "knee" ? kneeAnswers : null,
             back: questionnairePart === "back" ? backAnswers : null,
             hip: questionnairePart === "hip" ? hipAnswers : null,
-            generic: questionnairePart === "generic" || !["shoulder","elbow","wrist_hand","finger","neck","ankle_foot","knee","back","hip"].includes(questionnairePart) ? genericAnswers : null,
+            generic: questionnairePart === "generic" || !["shoulder","elbow","wrist_hand","finger","head","neck","ankle_foot","knee","back","hip"].includes(questionnairePart) ? genericAnswers : null,
             redFlagsUrgent,
           },
-        });
-
-        void maybeGenerateAndSendPhysioReport({
-          patientId: user.id,
-          conversationId: activeId,
-          bodyArea: areaLabel,
-          onsetType,
-          painLevel,
-          hadTrauma: hadTraumaVal,
-          description: initialMessage,
-          symptomContext: contextForAi,
-          patientSummary: aiText,
-          language: consultLanguage,
-        }).then(({ sent, physioLabel }) => {
-          if (sent) {
-            setPhysioReportSentBanner(true);
-            if (physioLabel) setLinkedPhysioLabel(physioLabel);
-          }
         });
 
         setRevealingMessageId((aiMsg as Message).id);
@@ -1355,24 +1857,26 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
         setPhase("followup");
+        await offerNextPendingPart(
+          activeId,
+          questionnairePart,
+          consultLanguage,
+          aiText,
+          areaLabel
+        );
         return;
       }
 
       const title = `${areaLabel} — ${new Date().toLocaleDateString("es-ES")}`;
-      if (linkedPhysio && conversations.length > 0) {
-        throw new Error(
-          "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
-        );
-      }
       const { data: conv, error: convErr } = await supabase
         .from("conversations")
         .insert({
           title,
           user_id: user.id,
-          kind: linkedPhysio ? "fisioterapia" : "consulta",
-          physio_id: linkedPhysio?.physio_id ?? null,
-          physio_name: linkedPhysio?.physio_name ?? null,
-          clinic_name: linkedPhysio?.clinic_name ?? null,
+          kind: "consulta",
+          physio_id: null,
+          physio_name: null,
+          clinic_name: null,
         })
         .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
@@ -1415,6 +1919,7 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
           elbow: questionnairePart === "elbow" ? elbowAnswers : null,
           wrist_hand: questionnairePart === "wrist_hand" ? wristAnswers : null,
           finger: questionnairePart === "finger" ? fingerAnswers : null,
+          head: questionnairePart === "head" ? headAnswers : null,
           neck: questionnairePart === "neck" ? neckAnswers : null,
           ankle_foot: questionnairePart === "ankle_foot" ? lowerLegAnswers : null,
           knee: questionnairePart === "knee" ? kneeAnswers : null,
@@ -1422,29 +1927,11 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
           hip: questionnairePart === "hip" ? hipAnswers : null,
           generic:
             questionnairePart === "generic" ||
-            !["shoulder", "elbow", "wrist_hand", "finger", "neck", "ankle_foot", "knee", "back", "hip"].includes(questionnairePart)
+            !["shoulder", "elbow", "wrist_hand", "finger", "head", "neck", "ankle_foot", "knee", "back", "hip"].includes(questionnairePart)
               ? genericAnswers
               : null,
           redFlagsUrgent,
         },
-      });
-
-      void maybeGenerateAndSendPhysioReport({
-        patientId: user.id,
-        conversationId: conv.id,
-        bodyArea: areaLabel,
-        onsetType,
-        painLevel,
-        hadTrauma: hadTraumaVal,
-        description: initialMessage,
-        symptomContext: contextForAi,
-        patientSummary: aiText,
-        language: consultLanguage,
-      }).then(({ sent, physioLabel }) => {
-        if (sent) {
-          setPhysioReportSentBanner(true);
-          if (physioLabel) setLinkedPhysioLabel(physioLabel);
-        }
       });
 
       setActiveId(conv.id);
@@ -1455,6 +1942,13 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
       markPartEvaluated(questionnairePart);
       setCaseImageUrl(null);
       setPhase("followup");
+      await offerNextPendingPart(
+        conv.id,
+        questionnairePart,
+        consultLanguage,
+        aiText,
+        areaLabel
+      );
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al analizar tu caso.");
     } finally {
@@ -1479,25 +1973,150 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
       ]);
 
       const triage = await triageMessage(text, imageUrl, consultLanguage);
+      let userSaved = false;
 
-      if (shouldStartQuestionnaire(triage, evaluatedParts)) {
+      async function saveUserMessage() {
+        if (userSaved) return;
         await supabase.from("messages").insert({
           conversation_id: activeId,
           role: "user",
           content: text,
           image_url: imageUrl,
         });
+        userSaved = true;
+      }
+
+      if (awaitingNextPart) {
+        await saveUserMessage();
+
+        const lastEval =
+          partEvaluationsRef.current[partEvaluationsRef.current.length - 1];
+        const completedPart = lastEval?.part;
+        if (
+          reportsFunctionalTestResults(text) &&
+          completedPart &&
+          completedPart !== "generic"
+        ) {
+          markFunctionalTestsDone(completedPart);
+        }
+        const functionalTestsDone = isFunctionalTestsDoneForPart(completedPart);
+
+        if (
+          isClearStartNextPart(text, awaitingNextPart, initialMessage) ||
+          (functionalTestsDone &&
+            wantsToContinueToNextQuestionnaire(text))
+        ) {
+          const next = awaitingNextPart;
+          const remaining = pendingParts.length;
+          setAwaitingNextPart(null);
+          beginQuestionnaire(
+            initialMessage || text,
+            next,
+            consultLanguage,
+            remaining
+          );
+          return;
+        }
+
+        if (isDeclineNextPart(text)) {
+          setAwaitingNextPart(null);
+          setPendingParts([]);
+          await appendMultiPartFinalSummary(
+            activeId,
+            partEvaluationsRef.current,
+            consultLanguage
+          );
+          return;
+        }
+
+        // Keep awaitingNextPart — answer the patient's actual message (choice, tests, questions).
+        // Do NOT start the next questionnaire just because they mentioned the zone name.
+        const doneLabel =
+          partEvaluationsRef.current.length > 0
+            ? partEvaluationsRef.current[partEvaluationsRef.current.length - 1]
+                .label
+            : patientFacingPartLabel(
+                questionnairePart === "generic" ? "generic" : questionnairePart,
+                initialMessage,
+                consultLanguage
+              );
+        const nextLabel = patientFacingPartLabel(
+          awaitingNextPart,
+          initialMessage,
+          consultLanguage
+        );
+        const choiceHint = betweenPartsChoiceContext(
+          doneLabel,
+          nextLabel,
+          consultLanguage,
+          { functionalTestsDone }
+        );
+        const testsHint =
+          !functionalTestsDone && wantsFunctionalTestsNow(text)
+            ? consultLanguage === "en"
+              ? "\nThe patient wants to do functional tests first — guide them using the tests from the last orientation; then remind them they can reply yes for the next questionnaire."
+              : "\nEl paciente quiere hacer primero las pruebas funcionales — guíalo con las pruebas de la última orientación; luego recuerda que puede responder sí para el siguiente cuestionario."
+            : functionalTestsDone
+              ? consultLanguage === "en"
+                ? "\nFunctional tests for the completed zone are DONE — do not offer them again."
+                : "\nLas pruebas funcionales de la zona completada YA están hechas — no las vuelvas a ofrecer."
+              : "";
+
+        const conversationHistory = [
+          ...messages
+            .filter(
+              (m) =>
+                m.id !== WELCOME_ID &&
+                !m.id.startsWith("q-intro") &&
+                m.id !== userMsgId
+            )
+            .map((m) => ({
+              role: m.role,
+              content: m.image_url
+                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                : m.content,
+            })),
+          {
+            role: "user" as const,
+            content: imageUrl
+              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+              : text,
+          },
+        ].slice(-10);
+
+        const aiText = await callAI({
+          bodyArea: "seguimiento",
+          onsetType: text,
+          painLevel: 0,
+          hadTrauma: "No especificado",
+          description: text,
+          symptomContext: `${choiceHint}${testsHint}`,
+          conversationHistory,
+          ...(imageUrl ? { imageUrl } : {}),
+        });
+
+        const { data: aiMsg } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: activeId,
+            role: "assistant",
+            content: aiText,
+          })
+          .select("id, role, content, created_at")
+          .single();
+        if (aiMsg) {
+          setRevealingMessageId((aiMsg as Message).id);
+          setMessages((prev) => [...prev, aiMsg as Message]);
+        }
+        return;
+      } else if (shouldStartQuestionnaire(triage, evaluatedParts)) {
+        await saveUserMessage();
         if (imageUrl) setCaseImageUrl(imageUrl);
-        beginQuestionnaire(text, triage.bodyPart, consultLanguage);
+        startQuestionnaireQueue(text, consultLanguage, triage.bodyPart);
         return;
       }
 
-      await supabase.from("messages").insert({
-        conversation_id: activeId,
-        role: "user",
-        content: text,
-        image_url: imageUrl,
-      });
+      await saveUserMessage();
 
       const conversationHistory = [
         ...messages
@@ -1563,13 +2182,23 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     setElbowAnswers(defaultElbowAdaptiveAnswers());
     setWristAnswers(defaultWristAdaptiveAnswers());
     setFingerAnswers(defaultFingerAdaptiveAnswers());
+    setHeadAnswers(defaultHeadAdaptiveAnswers());
+    setNeckAnswers(defaultNeckAdaptiveAnswers());
     setGenericAnswers(defaultGenericConsultaAnswers());
     setShoulderSectionIndex(0);
     setElbowSectionIndex(0);
     setWristSectionIndex(0);
     setFingerSectionIndex(0);
+    setHeadSectionIndex(0);
+    setNeckSectionIndex(0);
     setShoulderSectionError(null);
     setEvaluatedParts([]);
+    setPendingParts([]);
+    setAwaitingNextPart(null);
+    setPartEvaluations([]);
+    partEvaluationsRef.current = [];
+    setFunctionalTestsCompletedParts([]);
+    functionalTestsCompletedRef.current = [];
     setInput("");
     setConsultLanguage("es");
     setCaseImageUrl(null);
@@ -1644,7 +2273,7 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
           )}
           {groups.map((group) => (
             <div key={group.label}>
-              <p className="mb-1 px-2 text-[11px] font-semibold text-slate-400">{group.label}</p>
+              <p className="mb-1 px-2 text-[11px] font-semibold text-slate-900">{group.label}</p>
               <div className="space-y-0.5">
                 {group.items.map((c) => {
                   const isActive = activeId === c.id;
@@ -1713,6 +2342,7 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
     historyLoaded &&
     !openingConversation &&
     !physioIntro &&
+    phase !== "complete" &&
     (phase === "intro" || phase === "followup") &&
     (!linkedPhysio || Boolean(activeId) || conversations.length === 0);
   const showFisioPickExisting =
@@ -1724,7 +2354,11 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
   const showFisioBootstrap =
     Boolean(linkedPhysio) && (!historyLoaded || (openingConversation && messages.length === 0));
   const inputPlaceholder =
-    phase === "intro" ? "Cuéntanos qué te pasa…" : "Pregunta lo que quieras";
+    phase === "intro"
+      ? "Cuéntanos qué te pasa…"
+      : linkedPhysio
+        ? "Responde sobre tu caso (informe para tu fisio)…"
+        : "Pregunta lo que quieras";
   const onSend = phase === "intro" ? handleIntroSubmit : handleFollowupSubmit;
 
   return (
@@ -1799,7 +2433,7 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
           )}
         </div>
 
-        {physioReportSentBanner ? (
+        {linkedPhysio && phase === "complete" ? null : linkedPhysio && physioReportSentBanner ? (
           <div className="shrink-0 border-b border-emerald-200 bg-emerald-50 px-4 py-3">
             <div className="mx-auto flex max-w-3xl items-start justify-between gap-3">
               <div>
@@ -1937,6 +2571,13 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
               );
             })}
 
+            {linkedPhysio && phase === "complete" ? (
+              <PhysioReportCompleteCard
+                physioName={linkedPhysio.physio_name}
+                clinicName={linkedPhysio.clinic_name}
+              />
+            ) : null}
+
             {phase === "questionnaire" && (
               <div
                 ref={questionnaireRef}
@@ -1953,8 +2594,13 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
                       sectionError={shoulderSectionError}
                       onSectionError={setShoulderSectionError}
                       locale={consultLanguage}
+                      focus={resolveShoulderQuestionnaireFocus(initialMessage)}
                     />
-                    {isLastShoulderSection(shoulderAnswers, shoulderSectionIndex) && (
+                    {isLastShoulderSection(
+                      shoulderAnswers,
+                      shoulderSectionIndex,
+                      resolveShoulderQuestionnaireFocus(initialMessage)
+                    ) && (
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
@@ -2021,6 +2667,28 @@ export function ChatInterface({ linkedPhysio = null }: ChatInterfaceProps) {
                       locale={consultLanguage}
                     />
                     {isLastFingerSection(fingerAnswers, fingerSectionIndex) && (
+                      <button
+                        type="button"
+                        onClick={handleQuestionnaireSubmit}
+                        disabled={loading}
+                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                      >
+                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      </button>
+                    )}
+                  </>
+                ) : questionnairePart === "head" ? (
+                  <>
+                    <ConsultaAdaptiveHead
+                      value={headAnswers}
+                      onChange={setHeadAnswers}
+                      sectionIndex={headSectionIndex}
+                      onSectionIndexChange={withQuestionnaireScroll(setHeadSectionIndex)}
+                      sectionError={shoulderSectionError}
+                      onSectionError={setShoulderSectionError}
+                      locale={consultLanguage}
+                    />
+                    {isLastHeadSection(headAnswers, headSectionIndex) && (
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}

@@ -18,6 +18,7 @@ import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
 import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
+import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
 
 function ChipGroup({
   options,
@@ -349,8 +350,8 @@ export function ConsultaAdaptiveWrist({
       {urgent && currentSection !== "red_flags" && (
         <View style={styles.redBox}>
           <Text style={styles.redText}>
-            <Text style={{ fontWeight: "800" }}>Banderas rojas detectadas:</Text>{" "}
-            {triggered.join(", ")}. La IA priorizará recomendarte atención médica urgente.
+            <Text style={{ fontWeight: "800" }}>{redFlagsDetectedLabel(locale)}</Text>{" "}
+            {triggered.join(", ")}. {redFlagsUrgencyNote(locale)}
           </Text>
         </View>
       )}

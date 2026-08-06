@@ -3,6 +3,7 @@
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
+import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "@/lib/consulta-red-flags-copy";
 
 import { useEffect } from "react";
 import {
@@ -17,6 +18,7 @@ import {
   type ConsultLocale,
   type ShoulderAdaptiveAnswers,
   type ShoulderQuestionDef,
+  type ShoulderQuestionnaireFocus,
 } from "@/lib/consulta-shoulder-adaptive";
 
 const labelClass = "mb-2.5 block text-base font-semibold text-slate-800";
@@ -101,14 +103,16 @@ function QuestionField({
   answers,
   onPatch,
   locale,
+  focus,
 }: {
   q: ShoulderQuestionDef;
   answers: ShoulderAdaptiveAnswers;
   onPatch: (p: Partial<ShoulderAdaptiveAnswers>) => void;
   locale: ConsultLocale;
+  focus: ShoulderQuestionnaireFocus;
 }) {
   const val = answers[q.id];
-  const label = localizeShoulderLabel(q.id, q.label, locale);
+  const label = localizeShoulderLabel(q.id, q.label, locale, focus);
   const displayOption = (opt: string) => localizeShoulderOption(opt, locale);
 
   if (q.type === "slider") {
@@ -176,6 +180,7 @@ type Props = {
   sectionError: string | null;
   onSectionError: (msg: string | null) => void;
   locale?: ConsultLocale;
+  focus?: ShoulderQuestionnaireFocus;
 };
 
 export function ConsultaAdaptiveShoulder({
@@ -186,11 +191,12 @@ export function ConsultaAdaptiveShoulder({
   sectionError,
   onSectionError,
   locale = "es",
+  focus = "shoulder",
 }: Props) {
   const answers = value ?? defaultShoulderAdaptiveAnswers();
-  const sections = getVisibleShoulderSections(answers);
+  const sections = getVisibleShoulderSections(answers, focus);
   const currentSection = sections[sectionIndex] ?? sections[0];
-  const sectionQuestions = getVisibleShoulderQuestions(answers).filter(
+  const sectionQuestions = getVisibleShoulderQuestions(answers, focus).filter(
     (q) => q.section === currentSection
   );
   const { urgent, triggered } = detectRedFlags(answers);
@@ -208,7 +214,7 @@ export function ConsultaAdaptiveShoulder({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateShoulderSection(currentSection, answers);
+    const err = validateShoulderSection(currentSection, answers, focus);
     if (err) {
       onSectionError(err);
       return;
@@ -229,8 +235,8 @@ export function ConsultaAdaptiveShoulder({
 
       {urgent && currentSection !== "red_flags" && (
         <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-800 shadow-sm">
-          <strong>Banderas rojas detectadas:</strong> {triggered.join(", ")}.
-          La IA priorizará recomendarte atención médica urgente.
+          <strong>{redFlagsDetectedLabel(locale)}</strong> {triggered.join(", ")}.
+          {redFlagsUrgencyNote(locale)}
         </div>
       )}
 
@@ -239,7 +245,14 @@ export function ConsultaAdaptiveShoulder({
       </h2>
 
       {sectionQuestions.map((q) => (
-        <QuestionField key={q.id} q={q} answers={answers} onPatch={patch} locale={locale} />
+        <QuestionField
+          key={q.id}
+          q={q}
+          answers={answers}
+          onPatch={patch}
+          locale={locale}
+          focus={focus}
+        />
       ))}
 
       {sectionError && <p className="mb-4 text-sm text-red-600">{sectionError}</p>}
@@ -270,8 +283,9 @@ export function ConsultaAdaptiveShoulder({
 
 export function isLastShoulderSection(
   answers: ShoulderAdaptiveAnswers,
-  sectionIndex: number
+  sectionIndex: number,
+  focus: ShoulderQuestionnaireFocus = "shoulder"
 ): boolean {
-  const sections = getVisibleShoulderSections(answers);
+  const sections = getVisibleShoulderSections(answers, focus);
   return sectionIndex >= sections.length - 1;
 }

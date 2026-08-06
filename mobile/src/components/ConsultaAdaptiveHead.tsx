@@ -1,18 +1,18 @@
 import React, { useEffect } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import {
-  defaultHipAdaptiveAnswers,
-  detectHipRedFlags,
-  getVisibleHipQuestions,
-  getVisibleHipSections,
-  localizeHipLabel,
-  localizeHipOption,
-  localizeHipSection,
-  validateHipSection,
+  defaultHeadAdaptiveAnswers,
+  detectHeadRedFlags,
+  getVisibleHeadQuestions,
+  getVisibleHeadSections,
+  localizeHeadLabel,
+  localizeHeadOption,
+  localizeHeadSection,
+  validateHeadSection,
   type ConsultLocale,
-  type HipAdaptiveAnswers,
-  type HipQuestionDef,
-} from "../lib/consulta-hip-adaptive";
+  type HeadAdaptiveAnswers,
+  type HeadQuestionDef,
+} from "../lib/consulta-head-adaptive";
 import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
@@ -102,21 +102,21 @@ function QuestionField({
   onPatch,
   locale,
 }: {
-  q: HipQuestionDef;
-  answers: HipAdaptiveAnswers;
-  onPatch: (p: Partial<HipAdaptiveAnswers>) => void;
+  q: HeadQuestionDef;
+  answers: HeadAdaptiveAnswers;
+  onPatch: (p: Partial<HeadAdaptiveAnswers>) => void;
   locale: ConsultLocale;
 }) {
   const val = answers[q.id];
-  const label = localizeHipLabel(q.id, q.label, locale);
-  const displayOption = (opt: string) => localizeHipOption(opt, locale);
+  const label = localizeHeadLabel(q.id, q.label, locale);
+  const displayOption = (opt: string) => localizeHeadOption(opt, locale);
 
   if (q.type === "slider") {
     const num = typeof val === "number" ? val : 5;
     return (
       <PainScale
         value={num}
-        onChange={(v) => onPatch({ [q.id]: v } as Partial<HipAdaptiveAnswers>)}
+        onChange={(v) => onPatch({ [q.id]: v } as Partial<HeadAdaptiveAnswers>)}
         label={label}
         locale={locale}
       />
@@ -130,7 +130,7 @@ function QuestionField({
         <TextInput
           style={styles.input}
           value={typeof val === "string" ? val : ""}
-          onChangeText={(t) => onPatch({ [q.id]: t } as Partial<HipAdaptiveAnswers>)}
+          onChangeText={(t) => onPatch({ [q.id]: t } as Partial<HeadAdaptiveAnswers>)}
           multiline
         />
       </View>
@@ -144,7 +144,7 @@ function QuestionField({
         <MultiChipGroup
           options={q.options}
           value={Array.isArray(val) ? val : []}
-          onChange={(v) => onPatch({ [q.id]: v } as Partial<HipAdaptiveAnswers>)}
+          onChange={(v) => onPatch({ [q.id]: v } as Partial<HeadAdaptiveAnswers>)}
           displayOption={displayOption}
         />
       </View>
@@ -158,7 +158,7 @@ function QuestionField({
         <ChipGroup
           options={q.options}
           value={typeof val === "string" ? val : ""}
-          onChange={(v) => onPatch({ [q.id]: v } as Partial<HipAdaptiveAnswers>)}
+          onChange={(v) => onPatch({ [q.id]: v } as Partial<HeadAdaptiveAnswers>)}
           displayOption={displayOption}
         />
       </View>
@@ -169,8 +169,8 @@ function QuestionField({
 }
 
 type Props = {
-  value: HipAdaptiveAnswers;
-  onChange: (v: HipAdaptiveAnswers) => void;
+  value: HeadAdaptiveAnswers;
+  onChange: (v: HeadAdaptiveAnswers) => void;
   sectionIndex: number;
   onSectionIndexChange: (i: number) => void;
   sectionError: string | null;
@@ -178,7 +178,7 @@ type Props = {
   locale?: ConsultLocale;
 };
 
-export function ConsultaAdaptiveHip({
+export function ConsultaAdaptiveHead({
   value,
   onChange,
   sectionIndex,
@@ -187,13 +187,13 @@ export function ConsultaAdaptiveHip({
   onSectionError,
   locale = "es",
 }: Props) {
-  const answers = value ?? defaultHipAdaptiveAnswers();
-  const sections = getVisibleHipSections(answers);
+  const answers = value ?? defaultHeadAdaptiveAnswers();
+  const sections = getVisibleHeadSections(answers);
   const currentSection = sections[sectionIndex] ?? sections[0];
-  const sectionQuestions = getVisibleHipQuestions(answers).filter(
+  const sectionQuestions = getVisibleHeadQuestions(answers).filter(
     (q) => q.section === currentSection
   );
-  const { urgent, triggered } = detectHipRedFlags(answers);
+  const { urgent, triggered } = detectHeadRedFlags(answers);
   const isLastSection = sectionIndex >= sections.length - 1;
 
   useEffect(() => {
@@ -202,13 +202,13 @@ export function ConsultaAdaptiveHip({
     }
   }, [sectionIndex, sections.length, onSectionIndexChange]);
 
-  function patch(p: Partial<HipAdaptiveAnswers>) {
+  function patch(p: Partial<HeadAdaptiveAnswers>) {
     onChange({ ...answers, ...p });
   }
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateHipSection(currentSection, answers);
+    const err = validateHeadSection(currentSection, answers);
     if (err) {
       onSectionError(err);
       return;
@@ -237,7 +237,7 @@ export function ConsultaAdaptiveHip({
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>{localizeHipSection(currentSection, locale)}</Text>
+      <Text style={styles.sectionTitle}>{localizeHeadSection(currentSection, locale)}</Text>
 
       {sectionQuestions.map((q) => (
         <QuestionField key={q.id} q={q} answers={answers} onPatch={patch} locale={locale} />
@@ -261,11 +261,11 @@ export function ConsultaAdaptiveHip({
   );
 }
 
-export function isLastHipSection(
-  answers: HipAdaptiveAnswers,
+export function isLastHeadSection(
+  answers: HeadAdaptiveAnswers,
   sectionIndex: number
 ): boolean {
-  const sections = getVisibleHipSections(answers);
+  const sections = getVisibleHeadSections(answers);
   return sectionIndex >= sections.length - 1;
 }
 

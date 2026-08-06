@@ -3,6 +3,7 @@ export const BODY_PARTS = [
   { id: "elbow", label: "Codo" },
   { id: "wrist_hand", label: "Muñeca / Mano" },
   { id: "finger", label: "Dedos" },
+  { id: "head", label: "Cabeza" },
   { id: "neck", label: "Cuello" },
   { id: "back", label: "Espalda" },
   { id: "hip", label: "Cadera" },

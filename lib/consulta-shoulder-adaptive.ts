@@ -35,6 +35,28 @@ export const SHOULDER_ANATOMIC_LOCATION = [
   "No estoy seguro",
 ] as const;
 
+/** Pectoral/chest location chips — not glenohumeral “hombro” landmarks. */
+export const PECTORAL_ANATOMIC_LOCATION = [
+  "Parte interna del pecho (cerca del esternón)",
+  "Vientre muscular del pectoral (centro del pecho)",
+  "Inserción cercana a la axila",
+  "Borde inferior del pectoral",
+  "Axila",
+  "No estoy seguro",
+] as const;
+
+export type ShoulderQuestionnaireFocus = "shoulder" | "pectoral";
+
+export function resolveShoulderQuestionnaireFocus(
+  userText: string
+): ShoulderQuestionnaireFocus {
+  return /pectoral|p[eé]ctoral|\bpecho\b|\bchest\b|press\s*banca|bench\s*press/i.test(
+    userText.trim()
+  ) && !/\bhombro\b|\bshoulder\b|manguito|rotador|deltoides|om[oó]plato/i.test(userText.trim())
+    ? "pectoral"
+    : "shoulder";
+}
+
 export const PAIN_TYPE_OPTIONS = [
   "Punzante",
   "Quemazón",
@@ -82,6 +104,35 @@ export const AGGRAVATING_MOVEMENT_OPTIONS = [
   "Cruzar el brazo por delante del pecho",
   "Otro",
   "Ninguno en particular",
+] as const;
+
+export const PECTORAL_AGGRAVATING_MOVEMENT_OPTIONS = [
+  "Press de banca / press de pecho",
+  "Aperturas o cruces (flyes)",
+  "Flexiones",
+  "Llevar el brazo atrás con el codo estirado",
+  "Poner los brazos en cruz",
+  "Levantar peso",
+  "Dormir sobre ese lado",
+  "Otro",
+  "Ninguno en particular",
+] as const;
+
+export const PECTORAL_ASSOCIATED_SYMPTOM_OPTIONS = [
+  "Debilidad al juntar los brazos (aducción)",
+  "Hematoma en pecho o axila",
+  "Chasquidos o latigazo",
+  "Inflamación / hinchazón",
+  "Hormigueo o entumecimiento",
+  "Rigidez matutina",
+  "Ninguno",
+] as const;
+
+export const PECTORAL_FALL_HOW_OPTIONS = [
+  "Sobre el pecho",
+  "Sobre la mano (con el brazo extendido)",
+  "Sobre el codo",
+  "De otra forma",
 ] as const;
 
 export const PASSIVE_ROM_ASSIST_OPTIONS = [
@@ -281,7 +332,9 @@ export type ShoulderQuestionDef = {
 };
 
 function hasSymptom(a: ShoulderAdaptiveAnswers, name: string): boolean {
-  return a.sintomas_asociados.includes(name);
+  return a.sintomas_asociados.some(
+    (s) => s === name || s.toLowerCase().includes(name.toLowerCase())
+  );
 }
 
 function hasTingling(a: ShoulderAdaptiveAnswers): boolean {
@@ -292,7 +345,7 @@ function hasTingling(a: ShoulderAdaptiveAnswers): boolean {
 }
 
 function hasWeakness(a: ShoulderAdaptiveAnswers): boolean {
-  return hasSymptom(a, "Debilidad");
+  return a.sintomas_asociados.some((s) => /debilidad/i.test(s));
 }
 
 export const SHOULDER_QUESTIONS: ShoulderQuestionDef[] = [
@@ -403,21 +456,91 @@ export const SHOULDER_SECTION_ORDER: ShoulderQuestionSection[] = [
   "history",
 ];
 
+export function adaptShoulderQuestionForFocus(
+  q: ShoulderQuestionDef,
+  focus: ShoulderQuestionnaireFocus
+): ShoulderQuestionDef {
+  if (focus !== "pectoral") return q;
+
+  switch (q.id) {
+    case "rf_luxacion_actual":
+      return {
+        ...q,
+        label:
+          "¿Notas un hueco, deformación o asimetría clara en el pecho o la axila ahora mismo?",
+      };
+    case "localizacion_hombro":
+      return {
+        ...q,
+        label:
+          "¿Dónde sientes el dolor en el pectoral / pecho? (puedes marcar varias)",
+        options: PECTORAL_ANATOMIC_LOCATION,
+      };
+    case "cuello_empeora_brazo":
+      return {
+        ...q,
+        label:
+          "¿Al girar o inclinar la cabeza te empeora el dolor del pecho/pectoral o el hormigueo del brazo?",
+      };
+    case "sintomas_asociados":
+      return {
+        ...q,
+        options: PECTORAL_ASSOCIATED_SYMPTOM_OPTIONS,
+      };
+    case "movimientos_agravantes":
+      return {
+        ...q,
+        options: PECTORAL_AGGRAVATING_MOVEMENT_OPTIONS,
+      };
+    case "caida_como":
+      return {
+        ...q,
+        options: PECTORAL_FALL_HOW_OPTIONS,
+      };
+    case "entreno_ejercicio":
+      return {
+        ...q,
+        label:
+          "¿Qué ejercicio de pecho o gesto estabas realizando? (p. ej. press banca, aperturas, flexiones)",
+      };
+    case "lesion_previa":
+      return {
+        ...q,
+        label: "¿Has tenido lesiones previas en este pectoral / pecho?",
+      };
+    case "inestabilidad_salido":
+    case "inestabilidad_desplaza":
+    case "inestabilidad_cuando":
+    case "inestabilidad_direccion":
+      // Hidden in pectoral focus via filter below; keep type-safe default.
+      return q;
+    default:
+      return q;
+  }
+}
+
 export function getVisibleShoulderQuestions(
-  answers: ShoulderAdaptiveAnswers
+  answers: ShoulderAdaptiveAnswers,
+  focus: ShoulderQuestionnaireFocus = "shoulder"
 ): ShoulderQuestionDef[] {
-  return SHOULDER_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
-    if (!q.options?.length) return q;
-    const filtered = filterSleepDependentOptions(q.options, answers.evolucion);
-    if (filtered.length === q.options.length) return q;
-    return { ...q, options: filtered };
+  return SHOULDER_QUESTIONS.filter((q) => {
+    if (focus === "pectoral" && q.section === "instability") return false;
+    if (!q.showIf || q.showIf(answers)) return true;
+    return false;
+  }).map((q) => {
+    let next = adaptShoulderQuestionForFocus(q, focus);
+    if (!next.options?.length) return next;
+    const filtered = filterSleepDependentOptions(next.options, answers.evolucion);
+    if (filtered.length === next.options.length) return next;
+    return { ...next, options: filtered };
   });
 }
 
 export function getVisibleShoulderSections(
-  answers: ShoulderAdaptiveAnswers
+  answers: ShoulderAdaptiveAnswers,
+  focus: ShoulderQuestionnaireFocus = "shoulder"
 ): ShoulderQuestionSection[] {
-  const visible = getVisibleShoulderQuestions(answers);
+  const visible = getVisibleShoulderQuestions(answers, focus);
   return SHOULDER_SECTION_ORDER.filter((s) => visible.some((q) => q.section === s));
 }
 
@@ -461,8 +584,11 @@ function isAnswered(q: ShoulderQuestionDef, answers: ShoulderAdaptiveAnswers): b
   return typeof val === "string" && val.length > 0;
 }
 
-export function validateShoulderAdaptive(answers: ShoulderAdaptiveAnswers): string | null {
-  const visible = getVisibleShoulderQuestions(answers);
+export function validateShoulderAdaptive(
+  answers: ShoulderAdaptiveAnswers,
+  focus: ShoulderQuestionnaireFocus = "shoulder"
+): string | null {
+  const visible = getVisibleShoulderQuestions(answers, focus);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
       return `Responde: ${q.label.replace(/\?$/, "")}.`;
@@ -477,12 +603,18 @@ function formatMulti(arr: string[]): string {
 
 export function formatShoulderAdaptive(
   answers: ShoulderAdaptiveAnswers,
-  bodyMapText: string
+  bodyMapText: string,
+  focus: ShoulderQuestionnaireFocus = "shoulder"
 ): string {
   const { urgent, triggered } = detectRedFlags(answers);
   const lines: string[] = [
-    "=== CUESTIONARIO ADAPTATIVO — HOMBRO ===",
+    focus === "pectoral"
+      ? "=== CUESTIONARIO ADAPTATIVO — PECTORAL / PECHO ==="
+      : "=== CUESTIONARIO ADAPTATIVO — HOMBRO ===",
     "",
+    focus === "pectoral"
+      ? "IMPORTANTE: El paciente describe dolor de PECTORAL/PECHO, no de la articulación del hombro. Centra la orientación en pectoral mayor/menor; no asumas manguito rotador ni glenohumeral salvo datos claros."
+      : "",
     bodyMapText,
     "",
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
@@ -499,7 +631,9 @@ export function formatShoulderAdaptive(
     `Pérdida sensibilidad: ${answers.rf_perdida_sensibilidad || "—"}`,
     `Fiebre: ${answers.rf_fiebre || "—"}`,
     `Dificultad respiratoria/dolor torácico: ${answers.rf_respiracion_torax || "—"}`,
-    `Luxación actual: ${answers.rf_luxacion_actual || "—"}`,
+    focus === "pectoral"
+      ? `Hueco/deformación pecho-axila: ${answers.rf_luxacion_actual || "—"}`
+      : `Luxación actual: ${answers.rf_luxacion_actual || "—"}`,
     `Dolor nocturno sistémico con pérdida de peso: ${answers.rf_dolor_nocturno_sistemico || "—"}`,
     "",
     "— VARIABLES CLÍNICAS —",
@@ -507,14 +641,18 @@ export function formatShoulderAdaptive(
     `Forma de inicio: ${answers.inicio}`,
     `Mecanismo: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
-    `Localización anatómica hombro: ${formatMulti(answers.localizacion_hombro)}`,
+    focus === "pectoral"
+      ? `Localización anatómica pectoral/pecho: ${formatMulti(answers.localizacion_hombro)}`
+      : `Localización anatómica hombro: ${formatMulti(answers.localizacion_hombro)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
     `Síntomas de cuello: ${answers.cuello_sintomas || "—"}`,
     answers.cuello_empeora_brazo
-      ? `Cabeza empeora hombro/brazo: ${answers.cuello_empeora_brazo}`
+      ? focus === "pectoral"
+        ? `Cabeza empeora pecho/brazo: ${answers.cuello_empeora_brazo}`
+        : `Cabeza empeora hombro/brazo: ${answers.cuello_empeora_brazo}`
       : "",
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
     `Movimientos agravantes: ${formatMulti(answers.movimientos_agravantes)}${answers.movimientos_agravantes.includes("Otro") && answers.movimientos_agravantes_otro ? ` (otro: ${answers.movimientos_agravantes_otro})` : ""}`,
@@ -580,23 +718,35 @@ export function formatShoulderAdaptive(
   lines.push(
     "",
     "— ANTECEDENTES —",
-    `Lesión previa hombro: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
+    focus === "pectoral"
+      ? `Lesión previa pectoral/pecho: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`
+      : `Lesión previa hombro: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
     `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas, no para diagnosticar.",
     "",
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
-    "- Arco doloroso medio (60°–120°) + dolor al elevar por encima de la cabeza → pinzamiento subacromial.",
-    "- Debilidad en rotación externa/elevación + arco doloroso + edad >40 → tendinopatía / rotura del manguito rotador.",
-    "- Dolor en cara anterior + chasquido/dolor con flexión de codo contra resistencia o supinación → tendinopatía bicipital / lesión SLAP.",
-    "- Sensación de inestabilidad + episodios de luxación/subluxación + dirección definida → inestabilidad glenohumeral.",
-    "- Dolor localizado en la articulación AC + empeora al cruzar el brazo por delante del pecho → lesión acromioclavicular.",
-    "- Pérdida global y progresiva de movilidad activa Y pasiva (igual limitación con ayuda) + rigidez → capsulitis adhesiva (hombro congelado).",
-    "- Inicio progresivo + edad avanzada + rigidez y dolor profundo articular → artrosis glenohumeral (OA).",
-    "- Hormigueo/entumecimiento en mano + empeora con el brazo elevado o cargando peso → síndrome del desfiladero torácico (TOS).",
-    "- Dolor irradiado desde el cuello + hormigueo en dedos concretos + movimientos cervicales lo reproducen → radiculopatía cervical referida.",
-    "- Dolor/rigidez de cuello + empeora al girar/inclinar la cabeza + tests locales del hombro poco provocativos → dolor referido cervical (no forzar manguito/tendón local).",
-    "- Si el tiempo de evolución es 'Ha sido ahora' o 'Reciente (1-4 horas)': NO uses patrones de dolor nocturno / dormir / rigidez matutina (aún no ha dormido con la lesión)."
+    ...(focus === "pectoral"
+      ? [
+          "- Latigazo en press banca/aperturas + hematoma axilar + debilidad de aducción → sospecha rotura de pectoral mayor.",
+          "- Dolor en vientre/inserción del pectoral al juntar los brazos o en flexiones → distensión / tendinopatía de pectoral.",
+          "- Dolor torácico + dificultad respiratoria / sudor frío / náuseas → descartar urgencia cardiológica (no orientar solo como músculo).",
+          "- Dolor pecho + síntomas cervicales que empeoran al girar la cabeza → posible dolor referido; no forzar solo pectoral.",
+          "- Si el tiempo de evolución es 'Ha sido ahora' o 'Reciente (1-4 horas)': NO uses patrones de dolor nocturno / dormir / rigidez matutina.",
+        ]
+      : [
+          "- Arco doloroso medio (60°–120°) + dolor al elevar por encima de la cabeza → pinzamiento subacromial.",
+          "- Debilidad en rotación externa/elevación + arco doloroso + edad >40 → tendinopatía / rotura del manguito rotador.",
+          "- Dolor en cara anterior + chasquido/dolor con flexión de codo contra resistencia o supinación → tendinopatía bicipital / lesión SLAP.",
+          "- Sensación de inestabilidad + episodios de luxación/subluxación + dirección definida → inestabilidad glenohumeral.",
+          "- Dolor localizado en la articulación AC + empeora al cruzar el brazo por delante del pecho → lesión acromioclavicular.",
+          "- Pérdida global y progresiva de movilidad activa Y pasiva (igual limitación con ayuda) + rigidez → capsulitis adhesiva (hombro congelado).",
+          "- Inicio progresivo + edad avanzada + rigidez y dolor profundo articular → artrosis glenohumeral (OA).",
+          "- Hormigueo/entumecimiento en mano + empeora con el brazo elevado o cargando peso → síndrome del desfiladero torácico (TOS).",
+          "- Dolor irradiado desde el cuello + hormigueo en dedos concretos + movimientos cervicales lo reproducen → radiculopatía cervical referida.",
+          "- Dolor/rigidez de cuello + empeora al girar/inclinar la cabeza + tests locales del hombro poco provocativos → dolor referido cervical (no forzar manguito/tendón local).",
+          "- Si el tiempo de evolución es 'Ha sido ahora' o 'Reciente (1-4 horas)': NO uses patrones de dolor nocturno / dormir / rigidez matutina (aún no ha dormido con la lesión).",
+        ])
   );
 
   return lines.filter(Boolean).join("\n");
@@ -604,9 +754,12 @@ export function formatShoulderAdaptive(
 
 export function validateShoulderSection(
   section: ShoulderQuestionSection,
-  answers: ShoulderAdaptiveAnswers
+  answers: ShoulderAdaptiveAnswers,
+  focus: ShoulderQuestionnaireFocus = "shoulder"
 ): string | null {
-  const questions = getVisibleShoulderQuestions(answers).filter((q) => q.section === section);
+  const questions = getVisibleShoulderQuestions(answers, focus).filter(
+    (q) => q.section === section
+  );
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
       return `Responde: ${q.label.replace(/\?$/, "")}.`;
@@ -688,6 +841,20 @@ export const SHOULDER_OPTION_EN: Record<string, string> = {
   "Cerca de la clavícula / articulación AC": "Near the collarbone / AC joint",
   "Profundo dentro del hombro": "Deep inside the shoulder",
   "Zona escapular (omóplato)": "Scapular area (shoulder blade)",
+  "Parte interna del pecho (cerca del esternón)": "Inner chest (near the sternum)",
+  "Vientre muscular del pectoral (centro del pecho)": "Pectoral muscle belly (mid-chest)",
+  "Inserción cercana a la axila": "Insertion near the armpit",
+  "Borde inferior del pectoral": "Lower border of the pectoral",
+  Axila: "Armpit",
+  "Press de banca / press de pecho": "Bench press / chest press",
+  "Aperturas o cruces (flyes)": "Flyes / cable crosses",
+  Flexiones: "Push-ups",
+  "Llevar el brazo atrás con el codo estirado": "Arm back with elbow straight",
+  "Poner los brazos en cruz": "Arms out in a cross (T-pose)",
+  "Debilidad al juntar los brazos (aducción)": "Weakness bringing the arms together (adduction)",
+  "Hematoma en pecho o axila": "Bruising in the chest or armpit",
+  "Chasquidos o latigazo": "Clicking or whip-like snap",
+  "Sobre el pecho": "Onto the chest",
   "No estoy seguro": "I'm not sure",
   Punzante: "Sharp",
   Quemazón: "Burning",
@@ -778,8 +945,27 @@ export const SHOULDER_SECTION_LABELS_EN: Record<string, string> = {
 };
 
 export type ConsultLocale = "es" | "en";
-export function localizeShoulderLabel(id: string, fallback: string, locale: ConsultLocale): string {
+
+const PECTORAL_LABEL_EN: Partial<Record<string, string>> = {
+  rf_luxacion_actual:
+    "Do you notice a clear hollow, deformity, or asymmetry in the chest or armpit right now?",
+  localizacion_hombro:
+    "Where do you feel the pain in the pectoral / chest? (you can select several)",
+  cuello_empeora_brazo:
+    "When you turn or tilt your head, does the chest/pectoral pain or arm tingling get worse?",
+  entreno_ejercicio:
+    "Which chest exercise or movement were you doing? (e.g. bench press, flyes, push-ups)",
+  lesion_previa: "Have you had previous injuries in this pectoral / chest?",
+};
+
+export function localizeShoulderLabel(
+  id: string,
+  fallback: string,
+  locale: ConsultLocale,
+  focus: ShoulderQuestionnaireFocus = "shoulder"
+): string {
   if (locale !== "en") return fallback;
+  if (focus === "pectoral" && PECTORAL_LABEL_EN[id]) return PECTORAL_LABEL_EN[id]!;
   return SHOULDER_LABEL_EN[id] ?? fallback;
 }
 export function localizeShoulderOption(option: string, locale: ConsultLocale): string {

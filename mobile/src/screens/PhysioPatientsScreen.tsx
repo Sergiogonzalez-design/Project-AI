@@ -20,6 +20,7 @@ import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
 import { TypingIndicator } from "../components/TypingIndicator";
 import { Colors } from "../lib/colors";
+import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
 import { PHYSIO_EQUIPMENT_CATEGORIES } from "../lib/physio-equipment-options";
 import { supabase } from "../lib/supabase";
@@ -66,10 +67,24 @@ function stripMarkdownStars(text: string) {
     .replace(/\*/g, "");
 }
 
+function parseNumberedLine(
+  text: string
+): { title: string; body: string | null } | null {
+  const plain = stripMarkdownStars(text.trim().replace(/^\*\s+/, "• "));
+  if (!/^\d+\.\s+\S/.test(plain)) return null;
+  const withBody = /^(\d+\.\s+[^:]+):\s+(.+)$/.exec(plain);
+  if (withBody) {
+    return { title: `${withBody[1]}:`, body: withBody[2] };
+  }
+  return { title: plain, body: null };
+}
+
 function BoldText({ text }: { text: string }) {
   const lines = text.split("\n");
+  const shownTestIds = new Set<string>();
+
   return (
-    <Text style={styles.reportBody}>
+    <View>
       {lines.map((line, li) => {
         const trimmed = line.trim().replace(/^\*\s+/, "• ");
         const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
@@ -84,40 +99,81 @@ function BoldText({ text }: { text: string }) {
                 ? stripMarkdownStars(trimmed)
                 : null;
 
+        const testImage = shouldShowClinicalTestImage({
+          numberedText,
+          headingText,
+          wholeBoldText: wholeBoldMatch?.[1] ?? null,
+        });
+        const showImage =
+          testImage && !shownTestIds.has(testImage.id) ? testImage : null;
+        if (showImage) shownTestIds.add(showImage.id);
+
+        const imageBlock = showImage ? (
+          <Image
+            source={{ uri: showImage.src }}
+            style={styles.testImage}
+            resizeMode="cover"
+            accessibilityLabel={showImage.title}
+          />
+        ) : null;
+
         if (numberedText) {
+          const parsed = parseNumberedLine(trimmed) ?? {
+            title: stripMarkdownStars(numberedText),
+            body: null,
+          };
           return (
-            <Text key={li}>
-              <Text style={styles.headingBlue}>{stripMarkdownStars(numberedText)}</Text>
-              {li < lines.length - 1 ? "\n" : ""}
-            </Text>
+            <View key={li} style={li > 0 ? styles.lineGapLg : undefined}>
+              <Text style={styles.reportBody}>
+                <Text style={styles.headingBlue}>{parsed.title}</Text>
+                {parsed.body ? (
+                  <Text style={styles.reportBody}> {parsed.body}</Text>
+                ) : null}
+              </Text>
+              {imageBlock}
+            </View>
+          );
+        }
+
+        if (wholeBoldMatch && !numberedText) {
+          return (
+            <View key={li} style={li > 0 ? styles.lineGapLg : undefined}>
+              <Text style={styles.headingBlue}>
+                {stripMarkdownStars(wholeBoldMatch[1])}
+              </Text>
+              {imageBlock}
+            </View>
           );
         }
 
         if (headingText) {
           return (
-            <Text key={li}>
-              <Text style={styles.headingBlue}>{stripMarkdownStars(headingText)}</Text>
-              {li < lines.length - 1 ? "\n" : ""}
-            </Text>
+            <View key={li} style={li > 0 ? styles.lineGapLg : undefined}>
+              <Text style={styles.headingBlue}>
+                {stripMarkdownStars(headingText)}
+              </Text>
+              {imageBlock}
+            </View>
           );
         }
 
         return (
-          <Text key={li}>
-            {trimmed.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-              part.startsWith("**") && part.endsWith("**") ? (
-                <Text key={i} style={styles.subtitleBlack}>
-                  {stripMarkdownStars(part.slice(2, -2))}
-                </Text>
-              ) : (
-                <Text key={i}>{stripMarkdownStars(part)}</Text>
-              )
-            )}
-            {li < lines.length - 1 ? "\n" : ""}
-          </Text>
+          <View key={li} style={li > 0 ? styles.lineGap : undefined}>
+            <Text style={styles.reportBody}>
+              {trimmed.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+                part.startsWith("**") && part.endsWith("**") ? (
+                  <Text key={i} style={styles.subtitleBlack}>
+                    {stripMarkdownStars(part.slice(2, -2))}
+                  </Text>
+                ) : (
+                  <Text key={i}>{stripMarkdownStars(part)}</Text>
+                )
+              )}
+            </Text>
+          </View>
         );
       })}
-    </Text>
+    </View>
   );
 }
 
@@ -989,9 +1045,19 @@ const styles = StyleSheet.create({
   },
   reportBody: { fontSize: 14, lineHeight: 20, color: Colors.text },
   reportBodyBold: { fontWeight: "700", color: Colors.text },
-  headingBlue: { fontWeight: "700", color: Colors.primary },
+  headingBlue: { fontWeight: "700", color: Colors.primary, fontSize: 14, lineHeight: 20 },
   numberedTitle: { fontWeight: "700", color: Colors.primary },
   subtitleBlack: { fontWeight: "700", color: Colors.text },
+  lineGap: { marginTop: 8 },
+  lineGapLg: { marginTop: 12 },
+  testImage: {
+    marginTop: 8,
+    width: "100%",
+    maxWidth: 360,
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+  },
   loadingBubble: { paddingVertical: 14, paddingHorizontal: 16 },
   chatBubble: {
     borderRadius: 16,

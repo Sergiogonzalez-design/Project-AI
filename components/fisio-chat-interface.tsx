@@ -5,8 +5,10 @@ import { PhysioAvatar } from "@/components/physio-avatar";
 import { PhysioIntro } from "@/components/physio-intro";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { StreamingAssistantMessage } from "@/components/streaming-assistant-message";
+import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import { PHOTO_ONLY_CAPTION, uploadConsultPhoto } from "@/lib/consult-photo";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Message = {
@@ -49,6 +51,18 @@ function stripMarkdownStars(text: string) {
     .replace(/\*/g, "");
 }
 
+function parseNumberedLine(
+  text: string
+): { title: string; body: string | null } | null {
+  const plain = stripMarkdownStars(text.trim().replace(/^\*\s+/, "• "));
+  if (!/^\d+\.\s+\S/.test(plain)) return null;
+  const withBody = /^(\d+\.\s+[^:]+):\s+(.+)$/.exec(plain);
+  if (withBody) {
+    return { title: `${withBody[1]}:`, body: withBody[2] };
+  }
+  return { title: plain, body: null };
+}
+
 function renderInlineParts(text: string) {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
     part.startsWith("**") && part.endsWith("**") ? (
@@ -62,6 +76,8 @@ function renderInlineParts(text: string) {
 }
 
 function renderAssistantContent(content: string) {
+  const shownTestIds = new Set<string>();
+
   return content.split("\n").map((line, li) => {
     const trimmed = line.trim().replace(/^\*\s+/, "• ");
     const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
@@ -77,30 +93,77 @@ function renderAssistantContent(content: string) {
             ? stripMarkdownStars(trimmed)
             : null;
 
+    const testImage = shouldShowClinicalTestImage({
+      numberedText,
+      headingText,
+      wholeBoldText: wholeBoldMatch?.[1] ?? null,
+    });
+    const showImage =
+      testImage && !shownTestIds.has(testImage.id) ? testImage : null;
+    if (showImage) shownTestIds.add(showImage.id);
+
+    const imageBlock = showImage ? (
+      <div className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+        <Image
+          src={showImage.src}
+          alt={showImage.title}
+          width={640}
+          height={480}
+          className="h-auto w-full max-w-md object-cover"
+          sizes="(max-width: 768px) 100vw, 28rem"
+        />
+      </div>
+    ) : null;
+
     if (numberedText) {
+      const parsed = parseNumberedLine(trimmed) ?? {
+        title: stripMarkdownStars(numberedText),
+        body: null,
+      };
       return (
-        <p key={li} className={li > 0 ? "mt-3" : undefined}>
-          <strong className="font-bold text-blue-700">
-            {stripMarkdownStars(numberedText)}
-          </strong>
-        </p>
+        <div key={li} className={li > 0 ? "mt-3" : undefined}>
+          <p className="text-neutral-900">
+            <strong className="font-bold text-blue-700">{parsed.title}</strong>
+            {parsed.body ? (
+              <span className="text-neutral-900"> {parsed.body}</span>
+            ) : null}
+          </p>
+          {imageBlock}
+        </div>
+      );
+    }
+
+    if (wholeBoldMatch && !numberedText) {
+      return (
+        <div key={li} className={li > 0 ? "mt-3" : undefined}>
+          <p>
+            <strong className="font-bold text-blue-700">
+              {stripMarkdownStars(wholeBoldMatch[1])}
+            </strong>
+          </p>
+          {imageBlock}
+        </div>
       );
     }
 
     if (headingText) {
       return (
-        <p key={li} className={li > 0 ? "mt-3" : undefined}>
-          <strong className="font-bold text-blue-700">
-            {stripMarkdownStars(headingText)}
-          </strong>
-        </p>
+        <div key={li} className={li > 0 ? "mt-3" : undefined}>
+          <p>
+            <strong className="font-bold text-blue-700">
+              {stripMarkdownStars(headingText)}
+            </strong>
+          </p>
+          {imageBlock}
+        </div>
       );
     }
 
     return (
-      <p key={li} className={li > 0 ? "mt-2" : undefined}>
-        {renderInlineParts(trimmed)}
-      </p>
+      <div key={li} className={li > 0 ? "mt-2" : undefined}>
+        <p className="text-neutral-900">{renderInlineParts(trimmed)}</p>
+        {imageBlock}
+      </div>
     );
   });
 }
@@ -606,7 +669,7 @@ export function FisioChatInterface() {
                     }
                   }}
                   rows={1}
-                  placeholder="Pregunta clínica… (p. ej. diferencial hombro con Hawkins +)"
+                  placeholder="Pregunta clínica"
                   className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                   disabled={loading}
                 />

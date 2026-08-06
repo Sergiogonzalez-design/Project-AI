@@ -32,7 +32,8 @@ type RequestBody = {
     | "consult"
     | "reminders"
     | "physio_report"
-    | "physio_chat";
+    | "physio_chat"
+    | "multi_part_summary";
   message?: string;
   bodyArea?: string;
   onsetType?: string;
@@ -123,23 +124,65 @@ function withFisioterapiaFlow(
   const who = linkedPhysioLabel(body.linkedPhysioName, body.linkedClinicName);
   const block =
     language === "en"
-      ? `PHYSIOTHERAPY VISIT CONTEXT (CRITICAL):
-This patient redeemed an invite code from their physiotherapist **${who}**. ${who} sent them to Kinora so they can describe their problem, answer the questionnaire, and generate a clinical report that **${who}** will review on their dashboard BEFORE the appointment — to understand the case better and make treatment faster.
+      ? `PHYSIOTHERAPY TAB — REPORT FLOW ONLY (CRITICAL — NEVER IGNORE):
+This patient redeemed an invite code from physiotherapist **${who}**.
 
-If the patient asks why they are here, what to do, whether the physio will see anything, what the code was for, or similar:
-- Explain this process clearly and calmly; name **${who}** when it fits.
-- Encourage them to describe their complaint (where, when it started, how it affects them) so you can help and prepare the report.
-- Do not invent appointments or clinical findings; you do not replace the physiotherapist.
-- If they also describe a current symptom, still follow the normal triage/questionnaire/orientation rules.`
-      : `CONTEXTO DE ESTA CONSULTA (flujo Fisioterapia — CRÍTICO):
-El paciente ha introducido el código de su fisioterapeuta **${who}**. ${who} le ha enviado a Kinora para que cuente su molestia, complete el cuestionario y se genere un informe clínico que **${who}** verá en su panel ANTES de la cita, para entender mejor el caso y hacer el tratamiento más rápido.
+PURPOSE OF THIS CHAT (the ONLY purpose):
+- Collect the complaint + questionnaire answers needed to generate a clinical report for **${who}**.
+- That report goes to **${who}**'s dashboard before the appointment. You are NOT chatting with ${who}; you are an AI preparing their report.
 
-Si el paciente pregunta por qué está aquí, qué debe hacer, si el fisio verá algo, para qué sirve el código, o dudas similares:
-- Explícale el proceso con claridad y calma; nombra a **${who}** cuando encaje.
-- Anímale a describir su molestia (dónde, cuándo empezó, cómo le afecta) para poder ayudarle y preparar el informe.
-- No inventes citas ni hallazgos clínicos; no sustituyes al fisioterapeuta.
-- Si además describe un síntoma actual, aplica las reglas normales de triage/cuestionario/orientación.`;
+STRICT RULES:
+- Do NOT invite free-form chatting or "ask me anything" in this tab.
+- Do NOT say the patient can talk "directly" with **${who}** (or any physiotherapist) inside Kinora — neither this tab nor Consulta is a live chat with the clinician.
+- If they ask where to ask doubts / general questions / anything not needed for the report: tell them clearly to use the **Consulta** tab for free questions with the AI. This Fisioterapia chat is only to finish the case so the report for **${who}** can be prepared.
+- If they ask about the process/code/why they're here: explain briefly that this is for the pre-visit report for **${who}**, then steer them back to describing the complaint if the report is not done yet.
+- Keep answering clinical questions that help complete or clarify the report case. For unrelated chat, redirect to Consulta.`
+      : `PESTAÑA FISIOTERAPIA — SOLO INFORME PARA EL FISIO (CRÍTICO — NO IGNORAR NUNCA):
+El paciente ha introducido el código de su fisioterapeuta **${who}**.
+
+ÚNICO OBJETIVO DE ESTE CHAT:
+- Recoger la molestia + cuestionario necesarios para generar un **informe clínico** para **${who}**.
+- Ese informe va al panel de **${who}** antes de la cita. Tú NO eres ${who}; eres la IA que prepara su informe.
+
+REGLAS ESTRICTAS:
+- NO invites a chatear libremente ni digas "puedes preguntarme lo que quieras aquí".
+- NUNCA digas que puede hablar "directamente" con **${who}** (ni con ningún fisioterapeuta) dentro de Kinora: ni esta pestaña ni Consulta son un chat en vivo con el profesional.
+- Si pregunta dónde resolver dudas / preguntas generales / cosas que no hacen falta para el informe: dile con claridad que use la pestaña **Consulta** para hablar libremente con la IA. Este chat de Fisioterapia es SOLO para completar el caso y preparar el informe de **${who}**.
+- Si pregunta por el proceso/código/por qué está aquí: explica en breve que es para el informe previo a la cita de **${who}**, y vuelve a orientar a describir la molestia si el informe aún no está listo.
+- Sí puedes responder preguntas clínicas que ayuden a completar o aclarar el caso del informe. Para charla o dudas generales, redirige a Consulta.`;
   return `${prompt}\n\n${block}`;
+}
+
+/** Regular Consulta tab: no physio-linked report flow. */
+function withConsultaGeneralRules(
+  prompt: string,
+  body: RequestBody,
+  language: "es" | "en"
+): string {
+  if (body.fisioterapiaFlow) return prompt;
+  const block =
+    language === "en"
+      ? `GENERAL CONSULTA TAB (not the Fisioterapia code flow):
+- Do NOT say a clinical report was or will be sent to their physiotherapist or appears on any physio dashboard.
+- This tab is informational AI chat only; physio-linked reports exist ONLY in the separate Fisioterapia tab after they enter their physio's invite code.
+- The section **¿Necesitas contactar con nuestro fisioterapeuta?** is optional guidance to seek in-person care if needed — it does NOT mean Kinora sent anything to a linked physiotherapist.`
+      : `PESTAÑA CONSULTA GENERAL (NO es el flujo Fisioterapia con código):
+- NO digas que se ha generado, se enviará o verá un informe clínico en el panel de ningún fisioterapeuta.
+- Aquí solo hay orientación informativa con la IA; el informe para el fisio vinculado existe SOLO en la pestaña Fisioterapia tras introducir el código.
+- La sección **¿Necesitas contactar con nuestro fisioterapeuta?** es orientación para valoración presencial si la necesitan — NO significa que Kinora haya enviado nada a un fisio vinculado.`;
+  return `${prompt}\n\n${block}`;
+}
+
+function withPatientConsultContext(
+  prompt: string,
+  body: RequestBody,
+  language: "es" | "en"
+): string {
+  return withConsultaGeneralRules(
+    withFisioterapiaFlow(prompt, body, language),
+    body,
+    language
+  );
 }
 
 function buildAthleteContext(profile: Record<string, unknown> | null): string {
@@ -245,7 +288,7 @@ REGLAS DE CLASIFICACIÓN:
 
 2b) action = "respond" con intent = "general" si el usuario NO describe un problema actual sino que pregunta CÓMO usar la consulta, qué debe hacer, pide aclaraciones, o pregunta por el fisioterapeuta / el código / el informe / por qué le han enviado aquí.
    - Ejemplos: "hola qué hago", "¿te digo lo que me duele o cómo funciona esto?", "cómo funciona", "por dónde empiezo", "no sé qué contarte", "me ha enviado mi fisio", "¿mi fisio verá esto?", "para qué es el código"
-   - LEE el mensaje completo: si pregunta por el proceso, RESPONDE explicando (y, si hay contexto de Fisioterapia en el system prompt, úsalo: nombrar al fisio, informe previo a la cita). NO abras cuestionario.
+   - LEE el mensaje completo: si pregunta por el proceso, RESPONDE explicando. Si hay contexto de Fisioterapia en el system prompt: deja CLARO que este chat es SOLO para preparar el informe del fisio vinculado; para dudas generales debe ir a la pestaña Consulta; NUNCA digas que Consulta es hablar directamente con el fisioterapeuta. NO abras cuestionario.
    - Aunque diga "duele" de forma hipotética ("¿te digo lo que me duele?") NO es síntoma actual → respond, NO questionnaire.
 
 3) action = "respond" con intent = "general" — answer: respuesta útil en español (6-14 frases), empática, práctica, sin informe clínico largo. Indica que no es diagnóstico. Si procede, invita a describir molestias concretas para una valoración más detallada.
@@ -274,6 +317,38 @@ Responde en español:
 - Puedes sugerir ejercicios o consejos generales con precauciones
 - Si no hay una lesión descrita, no inventes síntomas ni mecanismos
 - Cierra invitando a contarte molestias concretas si quiere una orientación más personalizada`;
+
+const MULTI_PART_SUMMARY_PROMPT = `Eres Physio, asistente de Kinora. El paciente ha completado cuestionarios de VARIAS zonas corporales y ya recibió la orientación de cada una por separado.
+
+Tu trabajo: redactar un **informe final unificado** (en el idioma del paciente) que reúna todas las zonas afectadas y valore si están relacionadas.
+
+FORMATO OBLIGATORIO (usa negrita con **…** en los títulos):
+**Resumen final de tu consulta**
+- 2-4 frases: qué zonas se evaluaron y el cuadro global (sin inventar datos nuevos).
+
+Luego, por CADA zona evaluada (en el mismo orden que te las pasan):
+**[Nombre de la zona]**
+- Hallazgos / posibles estructuras o lesiones orientativas (breve)
+- Qué hacer ahora / recomendaciones clave (breve)
+- Si aplica: cuándo consultar presencialmente
+
+Al final (OBLIGATORIO — no omitas estas secciones):
+**¿Están relacionadas las molestias?**
+- Di claramente una de estas tres conclusiones: **relacionadas**, **posiblemente relacionadas**, o **independientes**.
+- Explica **por qué** (mecanismo compartido, dolor referido, compensación / cadena cinética, o coincidencia temporal) basándote SOLO en las orientaciones por zona; no fuerces una relación.
+
+**Hipótesis orientativas**
+- 2-5 bullets de lo que podría explicar el cuadro (o que no hay vínculo claro). No es un diagnóstico médico.
+
+**Qué debes hacer ahora (global)**
+- Lista corta priorizada (reposo relativo, pruebas, fisio, imagen, urgencias si procede)
+
+REGLAS:
+- Basa TODO en los textos de orientación ya generados por zona que te pasan; no inventes mecanismos ni síntomas nuevos.
+- Habla como **Physio** (nunca digas «la IA»).
+- Lenguaje sencillo para el paciente; no es diagnóstico médico.
+- Sé conciso: orientativo 350-700 palabras en total.
+- Destaca en negrita nombres de lesiones/cuadros y destinos clave (**fisioterapeuta**, **urgencias**, etc.).`;
 
 const REMINDERS_SYSTEM_PROMPT = `Eres Physio de Kinora. Generas recordatorios locales inteligentes para un paciente con una molestia musculoesquelética.
 
@@ -325,6 +400,7 @@ const FOLLOW_UP_SYSTEM_PROMPT = `Eres un asistente de fisioterapia para Kinora. 
 
 REGLAS ESTRICTAS PARA ESTE MENSAJE:
 - Es el MISMO caso. Usa el historial. NUNCA reinicies como si fuera una consulta nueva ni repitas todo el cuestionario o toda la batería de tests sin interpretar lo que ya respondió.
+- Si el bloque "Contexto de la conversación" indica ELECCIÓN ENTRE ZONAS / BETWEEN-ZONES: respóndelo al pie de la letra. NO digas que ya empezaste un cuestionario nuevo. NO ignores la pregunta del paciente. Ayúdale a elegir entre pruebas funcionales ahora o el siguiente cuestionario.
 - Si el paciente responde a tests funcionales (p. ej. "pude hacer los 3, pero me duele otra cosa / duele en otro sitio"): INTERPRETA eso primero. Baja hipótesis locales no reproducidas; abre alternativas (otra estructura local o causa a distancia, p. ej. cuello → codo). Haz 1–3 preguntas concretas de aclaración; no vuelvas a pedir "haz otra vez todos los tests" ni un informe completo.
 - Integra TODA la historia (mecanismo, neurológicos, agravantes, antecedentes) con las pruebas: las pruebas confirman/descartan, no borran hallazgos previos. Si hay neurológicos claros, no priorices solo musculotendinoso.
 - Tras interpretar: reordena hipótesis de mayor a menor probabilidad y di qué evidencia sube/baja cada una.
@@ -351,7 +427,15 @@ DESTINATARIO: profesional sanitario. Usa lenguaje técnico y nomenclatura clíni
 - FORMATO: NUNCA uses encabezados Markdown con # / ## / ###. Para títulos de sección usa solo negrita con **así** (p. ej. **Hipótesis diagnósticas**). El resto del texto en párrafos y listas normales.
 - MATERIAL DE LA CONSULTA: si el mensaje de usuario incluye el bloque de material disponible, ÚSALO. Prioriza lo que el fisio puede hacer en su consulta. Si recomiendas algo que no tiene (imagen, aparato, técnica), dilo claramente y sugiere dónde/cómo derivar (centro de imagen, otro profesional, etc.).
 - Sé conciso, estructurado y útil en consulta. Si falta información clínica, pide los datos que faltan.
-- No emitas diagnóstico definitivo; orienta el razonamiento clínico.`;
+- No emitas diagnóstico definitivo; orienta el razonamiento clínico.
+- MANIOBRAS CON NOMBRE ESTÁNDAR: cuando listes pruebas/maniobras, usa el nombre clínico canónico en la misma línea numerada (p. ej. "1. **Test de Lachman**: …", "2. **Hawkins-Kennedy**: …", "3. **Pivot Shift**: …"). No inventes nombres raros; preferir: Lachman, cajón anterior, Pivot Shift, McMurray, Neer, Hawkins-Kennedy, Jobe/Empty can, Spurling, Thompson, FABER, FADIR, Phalen, Trendelenburg, Speed, Apprehension.
+
+FIDELIDAD AL MENSAJE DEL FISIOTERAPEUTA (CRÍTICO — incumplir esto es un error grave):
+- NO inventes ni asumas síntomas, temporalidad, mecanismo, intensidad, cronicidad ni hallazgos que el fisioterapeuta NO haya dicho explícitamente.
+- Ejemplos PROHIBIDOS si no los dijo: “dolor agudo”, “dolor crónico”, “tras traumatismo”, “por sobreuso”, “inflamación”, “inestabilidad”, “irradiación”, “noche/sueño”, etc.
+- Si solo dice “evaluar un paciente de hombro” (o equivalente), trata el caso como evaluación genérica de hombro: describe el enfoque sistemático (anamnesis → exploración → tests especiales → imagen si procede) SIN presuponer el tipo de dolor ni el diagnóstico.
+- Cuando cites el caso en la respuesta, usa SOLO las palabras/hechos del fisio (p. ej. “paciente de hombro”), no reformules añadiendo cualificadores clínicos inventados.
+- Si necesitas temporalidad, mecanismo o síntomas para afinar, PREGÚNTALOS; no los rellenes tú.`;
 
 const PHYSIO_REPORT_SYSTEM_PROMPT = `Eres un asistente clínico de Kinora que redacta un informe PRE-VISITA para un fisioterapeuta, a partir del cuestionario que ya completó su paciente con la IA.
 
@@ -451,7 +535,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: withFisioterapiaFlow(
+            content: withPatientConsultContext(
               withLanguage(
                 withImageRules(TRIAGE_SYSTEM_PROMPT, Boolean(imageUrl)),
                 language
@@ -501,7 +585,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: withFisioterapiaFlow(
+            content: withPatientConsultContext(
               withLanguage(
                 withImageRules(GENERAL_CHAT_PROMPT, Boolean(imageUrl)),
                 language
@@ -566,6 +650,55 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (mode === "multi_part_summary") {
+      const message = body.message?.trim() ?? "";
+      const bodyArea = body.bodyArea ?? "Varias zonas";
+      if (!message) {
+        return new Response(JSON.stringify({ error: "message required" }), {
+          status: 400,
+          headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+
+      const { context, sources } = await fetchRagContext(
+        supabase,
+        `${bodyArea}\n${message}`,
+        bodyArea
+      );
+      const userMessage = [
+        `Zonas evaluadas: ${bodyArea}`,
+        `Orientaciones ya entregadas por zona (úsalas como única base de hechos):\n${message}`,
+        athleteContext ? athleteContext : "",
+        context
+          ? `Información de referencia:\n${context}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: withLanguage(MULTI_PART_SUMMARY_PROMPT, language),
+          },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.3,
+        max_tokens: 1600,
+      });
+
+      const answer = appendSourcesFooter(
+        completion.choices[0].message.content ?? "",
+        sources,
+        language
+      );
+      return new Response(JSON.stringify({ answer, sourcesUsed: sources.length }), {
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
     if (mode === "clinical_screen") {
       const message = body.message?.trim() ?? "";
       const imageUrl = sanitizeImageUrl(body.imageUrl);
@@ -595,7 +728,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: withFisioterapiaFlow(
+            content: withPatientConsultContext(
               withLanguage(
                 withImageRules(CLINICAL_SCREEN_PROMPT, Boolean(imageUrl)),
                 language
@@ -659,7 +792,7 @@ Deno.serve(async (req) => {
           ...history,
           { role: "user", content: buildUserContent(userMessage, imageUrl) },
         ],
-        temperature: 0.3,
+        temperature: 0.2,
         max_tokens: 1400,
       });
 
@@ -770,7 +903,7 @@ Deno.serve(async (req) => {
       queryText,
       isFollowUp ? "" : bodyArea
     );
-    const systemPrompt = withFisioterapiaFlow(
+    const systemPrompt = withPatientConsultContext(
       withLanguage(
         withImageRules(
           isFollowUp ? FOLLOW_UP_SYSTEM_PROMPT : INITIAL_SYSTEM_PROMPT,
@@ -787,6 +920,12 @@ Deno.serve(async (req) => {
       ? [
           athleteContext ? athleteContext : "",
           context ? `Información de referencia:\n${context}` : "",
+          symptomContext
+            ? `Contexto de la conversación (OBLIGATORIO respetar):\n${symptomContext}`
+            : "",
+          description && description !== onsetType
+            ? `Detalle adicional: ${description}`
+            : "",
           `Pregunta del paciente: ${onsetType || "(Foto de la lesión adjunta)"}`,
           imageUrl
             ? "Hay una foto adjunta en este mensaje: úsala para precisar la orientación."

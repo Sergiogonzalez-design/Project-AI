@@ -3,6 +3,7 @@
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
+import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "@/lib/consulta-red-flags-copy";
 
 import { useEffect } from "react";
 import {
@@ -318,8 +319,8 @@ export function ConsultaAdaptiveFinger({
 
       {urgent && currentSection !== "red_flags" && (
         <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-800 shadow-sm">
-          <strong>Banderas rojas detectadas:</strong> {triggered.join(", ")}. La IA priorizará
-          recomendarte evaluación médica urgente.
+          <strong>{redFlagsDetectedLabel(locale)}</strong> {triggered.join(", ")}.
+          {redFlagsUrgencyNote(locale)}
         </div>
       )}
 

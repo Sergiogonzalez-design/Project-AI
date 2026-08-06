@@ -20,9 +20,23 @@ export function buildPhysioLinkedWelcome(
   physioName: string | null | undefined
 ): string {
   const name = physioDisplayName(physioName);
-  return `Hola. Soy Physio, el asistente de Kinora. Tu fisioterapeuta **${name}** te ha enviado aquí para prepararos mejor la cita.
+  return `Hola. Soy Physio, el asistente de Kinora. Tu fisioterapeuta **${name}** te ha enviado aquí para preparar un **informe clínico** que verá en su panel antes de la cita.
 
-Cuéntame qué te molesta: dónde sientes dolor o limitación, cuándo empezó y cómo te afecta en el día a día. Te haré algunas preguntas y, al terminar, generaré un **informe clínico** que **${name}** verá en su panel antes de tu tratamiento, para llegar con más información y hacer el proceso más rápido y eficaz.
+Este chat es **solo para eso**: cuéntame qué te molesta (dónde, cuándo empezó y cómo te afecta), te haré preguntas y, al terminar, generaré el informe para **${name}**.
+
+Si tienes otras dudas generales o quieres hablar libremente con la IA, usa la pestaña **Consulta**.
 
 Cuando quieras, empieza describiendo tu molestia.`;
+}
+
+/** Short chat bubble saved after the physio report is sent (patient does not see clinical summary). */
+export function buildPhysioLinkedCompletionMessage(
+  physioName: string | null | undefined
+): string {
+  const name = physioDisplayName(physioName);
+  return `¡Gracias por tu tiempo!
+
+**${name}** ya ha recibido toda la información sobre tu molestia y podrá prepararse mejor para tu tratamiento.
+
+Si quieres seguir usando la IA, abre la pestaña **Consulta**.`;
 }
