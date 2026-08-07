@@ -82,7 +82,12 @@ export function PhysioLinkScreen() {
   }
 
   if (linked) {
-    return <AIInquiriesScreen linkedPhysio={linked} />;
+    return (
+      <AIInquiriesScreen
+        linkedPhysio={linked}
+        onLinkedPhysioChange={setLinked}
+      />
+    );
   }
 
   return (

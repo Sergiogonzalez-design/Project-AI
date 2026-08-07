@@ -60,7 +60,13 @@ export default function FisioterapiaPage() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
-      <ChatInterface linkedPhysio={linked} />
+      <ChatInterface
+        linkedPhysio={linked}
+        onLinkedPhysioChange={(physio) => {
+          linkedPhysioCache = physio;
+          setLinked(physio);
+        }}
+      />
     </div>
   );
 }

@@ -319,8 +319,7 @@ export function ConsultaAdaptiveFinger({
 
       {urgent && currentSection !== "red_flags" && (
         <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-800 shadow-sm">
-          <strong>{redFlagsDetectedLabel(locale)}</strong> {triggered.join(", ")}.
-          {redFlagsUrgencyNote(locale)}
+          <strong>{redFlagsDetectedLabel(locale)}</strong> {triggered.join(", ")}. {redFlagsUrgencyNote(locale)}
         </div>
       )}
 

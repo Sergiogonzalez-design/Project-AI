@@ -6,7 +6,8 @@ export function redFlagsDetectedLabel(locale: ConsultLocale = "es"): string {
 
 /** Shown when urgent red flags are triggered during a questionnaire. */
 export function redFlagsUrgencyNote(locale: ConsultLocale = "es"): string {
+  // Leading space: banners render as "{flags}.{note}" and must not look like "cuello.Physio"
   return locale === "en"
-    ? "Physio will prioritize recommending urgent medical care."
-    : "Physio priorizará recomendarte atención médica urgente.";
+    ? " Physio will prioritize recommending urgent medical care."
+    : " Physio priorizará recomendarte atención médica urgente.";
 }

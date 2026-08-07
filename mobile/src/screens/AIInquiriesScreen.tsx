@@ -57,6 +57,7 @@ import {
   resolveShoulderQuestionnaireFocus,
   validateShoulderAdaptive,
   validateShoulderSection,
+  withShoulderHintsFromText,
   type ShoulderAdaptiveAnswers,
 } from "../lib/consulta-shoulder-adaptive";
 import {
@@ -66,6 +67,7 @@ import {
   getVisibleElbowSections,
   validateElbowAdaptive,
   validateElbowSection,
+  withElbowHintsFromText,
   type ElbowAdaptiveAnswers,
 } from "../lib/consulta-elbow-adaptive";
 import {
@@ -108,6 +110,7 @@ import {
   defaultLowerLegAdaptiveAnswers,
   detectLowerLegRedFlags,
   formatLowerLegAdaptive,
+  bodyAreaLabelFromLowerLegAnswers,
   getVisibleLowerLegSections,
   validateLowerLegAdaptive,
   validateLowerLegSection,
@@ -172,15 +175,32 @@ import {
   resolveAnkleFootFocus,
   patientFacingPartLabel,
   detectBodyPartsFromText,
+  isVagueArmComplaint,
+  vagueArmClarifyMessage,
+  resolveBodyPartFromLocationReply,
 } from "../lib/detect-body-part";
 import {
   betweenPartsChoiceContext,
   isClearStartNextPart,
   isDeclineNextPart,
   isMetaOrClarificationQuery,
+  isInformationalOrEducationalQuery,
+  shouldOpenSymptomQuestionnaire,
   nextPartReadyMessage,
   pendingPartsFromText,
+  refineTriageBodyPart,
   reportsFunctionalTestResults,
+  functionalTestResultsFollowupContext,
+  consultaFinishedCloseMessage,
+  isConsultaFinishedCloseMessage,
+  declinesMoreRelatedQuestions,
+  affirmsMoreRelatedQuestions,
+  inviteRelatedQuestionMessage,
+  unrelatedConsultaRedirectMessage,
+  isUnrelatedConsultaQuestion,
+  relatedInjuryFollowupContext,
+  ensureAsksMoreRelatedQuestions,
+  askMoreRelatedQuestionsPrompt,
   respondToUserMessage,
   shouldStartQuestionnaire,
   triageMessage,
@@ -375,9 +395,13 @@ type LinkedPhysioInfo = {
 
 type AIInquiriesScreenProps = {
   linkedPhysio?: LinkedPhysioInfo | null;
+  onLinkedPhysioChange?: (physio: LinkedPhysioInfo) => void;
 };
 
-export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProps) {
+export function AIInquiriesScreen({
+  linkedPhysio = null,
+  onLinkedPhysioChange,
+}: AIInquiriesScreenProps) {
   const headerHeight = useHeaderHeight();
   const { t, locale } = useI18n();
   const welcomeText = linkedPhysio
@@ -437,6 +461,13 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     useState<AdaptiveQuestionnairePart[]>([]);
   const functionalTestsCompletedRef = useRef(functionalTestsCompletedParts);
   functionalTestsCompletedRef.current = functionalTestsCompletedParts;
+  const [relatedFollowupActive, setRelatedFollowupActive] = useState(false);
+  const [postGuidanceAsked, setPostGuidanceAsked] = useState(false);
+  const [showUnrelatedCta, setShowUnrelatedCta] = useState(false);
+  /** Original complaint while we ask where on the arm/leg it hurts. */
+  const [pendingComplaintText, setPendingComplaintText] = useState<string | null>(
+    null
+  );
   const [consultLanguage, setConsultLanguage] = useState<"es" | "en">(locale);
 
   const [chatInput, setChatInput] = useState("");
@@ -457,6 +488,12 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
   const [historySearch, setHistorySearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [physioReportSentBanner, setPhysioReportSentBanner] = useState(false);
+  const [fisioNewConsultDraft, setFisioNewConsultDraft] = useState(false);
+  const [showPhysioCodeEntry, setShowPhysioCodeEntry] = useState(false);
+  const [physioCodeInput, setPhysioCodeInput] = useState("");
+  const [physioCodeError, setPhysioCodeError] = useState<string | null>(null);
+  const [physioCodeBusy, setPhysioCodeBusy] = useState(false);
+  const pendingFisioCodeReload = useRef(false);
 
   const chatScrollRef = useRef<ScrollView>(null);
   const questionnaireScrollRef = useRef<ScrollView>(null);
@@ -467,6 +504,12 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
   useEffect(() => {
     loadConversations();
   }, []);
+
+  useEffect(() => {
+    if (!pendingFisioCodeReload.current || !linkedPhysio) return;
+    pendingFisioCodeReload.current = false;
+    void loadConversations({ skipAutoOpen: true });
+  }, [linkedPhysio]);
 
   function skipPhysioIntro() {
     if (!physioIntro || activeId) return;
@@ -525,7 +568,7 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     updateScrollDownVisibility();
   }, [messages, chatLoading, phase, physioIntro, updateScrollDownVisibility]);
 
-  async function loadConversations() {
+  async function loadConversations(opts?: { skipAutoOpen?: boolean }) {
     const { data } = await supabase
       .from("conversations")
       .select("id, title, created_at, physio_id, physio_name, clinic_name")
@@ -535,7 +578,7 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     const list = (data as Conversation[]) ?? [];
     setConversations(list);
 
-    if (linkedPhysio && list.length > 0) {
+    if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
       const preferred =
         (linkedPhysio.physio_id
           ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
@@ -564,6 +607,10 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     partEvaluationsRef.current = [];
     setFunctionalTestsCompletedParts([]);
     functionalTestsCompletedRef.current = [];
+    setRelatedFollowupActive(false);
+    setPostGuidanceAsked(false);
+    setShowUnrelatedCta(false);
+    setPendingComplaintText(null);
     setCaseImageUrl(null);
     setAttachedUri(null);
     setPhysioReportSentBanner(false);
@@ -595,7 +642,35 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
       setPhase(report ? "complete" : "followup");
       if (report) setPhysioReportSentBanner(true);
     } else {
-      setPhase("followup");
+      const finished = msgs.some(
+        (m) => m.role === "assistant" && isConsultaFinishedCloseMessage(m.content)
+      );
+      if (finished) {
+        setPhase("complete");
+      } else {
+        setPhase("followup");
+        const hasOrientation = msgs.some(
+          (m) =>
+            m.role === "assistant" &&
+            /\*\*Resumen de tu consulta\*\*|Summary of your consultation/i.test(
+              m.content
+            )
+        );
+        if (hasOrientation) {
+          setRelatedFollowupActive(true);
+          const lastAsst = [...msgs]
+            .reverse()
+            .find((m) => m.role === "assistant");
+          if (
+            lastAsst &&
+            /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
+              lastAsst.content
+            )
+          ) {
+            setPostGuidanceAsked(true);
+          }
+        }
+      }
     }
 
     setMessages(msgs);
@@ -623,6 +698,10 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     partEvaluationsRef.current = [];
     setFunctionalTestsCompletedParts([]);
     functionalTestsCompletedRef.current = [];
+    setRelatedFollowupActive(false);
+    setPostGuidanceAsked(false);
+    setShowUnrelatedCta(false);
+    setPendingComplaintText(null);
     setInput("");
     setCaseImageUrl(null);
     setAttachedUri(null);
@@ -666,6 +745,110 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     ]);
   }
 
+  function resetForNewFisioCodeLink() {
+    setActiveId(null);
+    setMessages([]);
+    setRevealingMessageId(null);
+    setShowScrollDown(false);
+    setPhysioIntro(true);
+    setPhase("intro");
+    setInitialMessage("");
+    setQuestionnairePart("shoulder");
+    setShoulderAnswers(defaultShoulderAdaptiveAnswers());
+    setElbowAnswers(defaultElbowAdaptiveAnswers());
+    setWristAnswers(defaultWristAdaptiveAnswers());
+    setFingerAnswers(defaultFingerAdaptiveAnswers());
+    setHeadAnswers(defaultHeadAdaptiveAnswers());
+    setNeckAnswers(defaultNeckAdaptiveAnswers());
+    setLowerLegAnswers(defaultLowerLegAdaptiveAnswers());
+    setKneeAnswers(defaultKneeAdaptiveAnswers());
+    setBackAnswers(defaultBackAdaptiveAnswers());
+    setHipAnswers(defaultHipAdaptiveAnswers());
+    setGenericAnswers(defaultGenericConsultaAnswers());
+    setShoulderSectionIndex(0);
+    setElbowSectionIndex(0);
+    setWristSectionIndex(0);
+    setFingerSectionIndex(0);
+    setHeadSectionIndex(0);
+    setNeckSectionIndex(0);
+    setLowerLegSectionIndex(0);
+    setKneeSectionIndex(0);
+    setBackSectionIndex(0);
+    setHipSectionIndex(0);
+    setFormError(null);
+    setEvaluatedParts([]);
+    setPendingParts([]);
+    setAwaitingNextPart(null);
+    setPartEvaluations([]);
+    partEvaluationsRef.current = [];
+    setFunctionalTestsCompletedParts([]);
+    functionalTestsCompletedRef.current = [];
+    setRelatedFollowupActive(false);
+    setPostGuidanceAsked(false);
+    setShowUnrelatedCta(false);
+    setPendingComplaintText(null);
+    setChatInput("");
+    setAttachedUri(null);
+    setCaseImageUrl(null);
+    setConsultLanguage(locale);
+    setHistoryOpen(false);
+    setPhysioReportSentBanner(false);
+    setFisioNewConsultDraft(true);
+    setHistoryLoaded(true);
+    setOpeningConversation(false);
+  }
+
+  function handleAnotherPhysioLinked(physio: LinkedPhysioInfo) {
+    onLinkedPhysioChange?.(physio);
+    setShowPhysioCodeEntry(false);
+    setPhysioCodeInput("");
+    setPhysioCodeError(null);
+    setActiveTitle(`Consulta con ${physioDisplayName(physio.physio_name)}`);
+    resetForNewFisioCodeLink();
+    pendingFisioCodeReload.current = true;
+  }
+
+  async function submitAnotherPhysioCode() {
+    setPhysioCodeError(null);
+    const normalized = physioCodeInput.trim().toUpperCase();
+    if (normalized.length < 6) {
+      setPhysioCodeError(
+        locale === "en"
+          ? "Enter the code your physiotherapist gave you."
+          : "Introduce el código que te ha dado tu fisioterapeuta."
+      );
+      return;
+    }
+    setPhysioCodeBusy(true);
+    const { data, error: rpcError } = await supabase.rpc("patient_link_physio_code", {
+      p_code: normalized,
+    });
+    setPhysioCodeBusy(false);
+    if (rpcError) {
+      const raw = rpcError.message ?? "";
+      setPhysioCodeError(
+        raw.includes("no encontrado")
+          ? locale === "en"
+            ? "Code not found. Check that you typed it correctly."
+            : "Código no encontrado. Comprueba que lo has escrito bien."
+          : raw
+      );
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.physio_id) {
+      setPhysioCodeError(
+        locale === "en" ? "Could not link with that code." : "No se pudo vincular con ese código."
+      );
+      return;
+    }
+    handleAnotherPhysioLinked({
+      physio_id: row.physio_id,
+      physio_name: row.physio_name ?? null,
+      clinic_name: row.clinic_name ?? null,
+    });
+  }
+
   function startNewConsultation() {
     if (linkedPhysio) return;
 
@@ -707,6 +890,10 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     partEvaluationsRef.current = [];
     setFunctionalTestsCompletedParts([]);
     functionalTestsCompletedRef.current = [];
+    setRelatedFollowupActive(false);
+    setPostGuidanceAsked(false);
+    setShowUnrelatedCta(false);
+    setPendingComplaintText(null);
     setChatInput("");
     setAttachedUri(null);
     setCaseImageUrl(null);
@@ -781,7 +968,7 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
-    if (linkedPhysio && conversations.length > 0) {
+    if (linkedPhysio && conversations.length > 0 && !fisioNewConsultDraft) {
       throw new Error(
         locale === "en"
           ? "You can't open new chats in Fisioterapia. Continue an existing one or use the Consulta tab."
@@ -818,6 +1005,7 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     setActiveId(conv.id);
     setActiveTitle(title);
     setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
+    setFisioNewConsultDraft(false);
     setInitialMessage(text);
     setCaseImageUrl(null);
     const aiMsgId = `ai-${Date.now()}`;
@@ -946,18 +1134,35 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     language: ConsultLanguage = consultLanguage,
     remainingCount = 0
   ) {
-    setInitialMessage(text);
+    const pending = pendingComplaintText?.trim();
+    const contextText =
+      pending && !text.toLowerCase().includes(pending.toLowerCase().slice(0, 40))
+        ? `${pending}\n${text}`.trim()
+        : text;
+    setPendingComplaintText(null);
+    setInitialMessage(contextText);
     setQuestionnairePart(part);
     setAwaitingNextPart(null);
-    setShoulderAnswers(defaultShoulderAdaptiveAnswers());
-    setElbowAnswers(defaultElbowAdaptiveAnswers());
+    setShoulderAnswers(
+      part === "shoulder"
+        ? withShoulderHintsFromText(contextText)
+        : defaultShoulderAdaptiveAnswers()
+    );
+    setElbowAnswers(
+      part === "elbow"
+        ? withElbowHintsFromText(contextText)
+        : defaultElbowAdaptiveAnswers()
+    );
     setWristAnswers(defaultWristAdaptiveAnswers());
     setFingerAnswers(defaultFingerAdaptiveAnswers());
     setHeadAnswers(defaultHeadAdaptiveAnswers());
     setNeckAnswers(defaultNeckAdaptiveAnswers());
     setLowerLegAnswers(
       part === "ankle_foot"
-        ? withAnkleFootFocusFromText(text, resolveAnkleFootFocus(text))
+        ? withAnkleFootFocusFromText(
+            contextText,
+            resolveAnkleFootFocus(contextText)
+          )
         : defaultLowerLegAdaptiveAnswers()
     );
     setKneeAnswers(defaultKneeAdaptiveAnswers());
@@ -976,7 +1181,7 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     setHipSectionIndex(0);
     setFormError(null);
 
-    let intro = questionnaireIntroMessage(part, language, text);
+    let intro = questionnaireIntroMessage(part, language, contextText);
     if (remainingCount > 0) {
       intro +=
         language === "en"
@@ -1022,6 +1227,105 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     return true;
   }
 
+  async function finishConsultaSession(
+    conversationId: string,
+    language: ConsultLanguage
+  ) {
+    if (linkedPhysio) return;
+    setAwaitingNextPart(null);
+    setPendingParts([]);
+    setShowUnrelatedCta(false);
+    setRelatedFollowupActive(false);
+    setPostGuidanceAsked(false);
+    const closing = consultaFinishedCloseMessage(language);
+    try {
+      const { data: aiMsg } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: conversationId,
+          role: "assistant",
+          content: closing,
+        })
+        .select("id, role, content")
+        .single();
+      if (aiMsg) {
+        setRevealingMessageId((aiMsg as Message).id);
+        setMessages((prev) => [...prev, aiMsg as Message]);
+      }
+    } catch {
+      // Still lock the session so the patient can open a new consulta.
+    }
+    setPhase("complete");
+  }
+
+  function hasMoreZonesPending(
+    completedPart?: AdaptiveQuestionnairePart | "generic"
+  ): boolean {
+    if (awaitingNextPart) return true;
+    if (pendingParts.length > 0) return true;
+    const evaluated = [
+      ...evaluatedParts,
+      ...(completedPart && completedPart !== "generic"
+        ? [completedPart as AdaptiveQuestionnairePart]
+        : []),
+    ];
+    return pendingPartsFromText(initialMessage, evaluated).length > 0;
+  }
+
+  function currentInjuryLabel(): string {
+    if (partEvaluationsRef.current.length > 0) {
+      return partEvaluationsRef.current.map((e) => e.label).join(", ");
+    }
+    return patientFacingPartLabel(
+      questionnairePart === "generic" ? "generic" : questionnairePart,
+      initialMessage,
+      consultLanguage
+    );
+  }
+
+  function casePartsForRelatedGate(): AdaptiveQuestionnairePart[] {
+    const fromEvals = partEvaluationsRef.current
+      .map((e) => e.part)
+      .filter((p): p is AdaptiveQuestionnairePart => p !== "generic");
+    return [...new Set([...evaluatedParts, ...fromEvals])];
+  }
+
+  async function appendAssistantMessage(
+    conversationId: string,
+    content: string
+  ) {
+    const { data: aiMsg } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        role: "assistant",
+        content,
+      })
+      .select("id, role, content")
+      .single();
+    if (aiMsg) {
+      setRevealingMessageId((aiMsg as Message).id);
+      setMessages((prev) => [...prev, aiMsg as Message]);
+    }
+    return aiMsg as Message | null;
+  }
+
+  async function activateRelatedFollowup(
+    conversationId: string,
+    language: ConsultLanguage,
+    options?: { askNow?: boolean; offeredTests?: boolean }
+  ) {
+    setRelatedFollowupActive(true);
+    setShowUnrelatedCta(false);
+    if (options?.askNow || options?.offeredTests === false) {
+      await appendAssistantMessage(
+        conversationId,
+        askMoreRelatedQuestionsPrompt(language)
+      );
+      setPostGuidanceAsked(true);
+    }
+  }
+
   async function appendMultiPartFinalSummary(
     conversationId: string,
     evaluations: {
@@ -1046,19 +1350,7 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
         },
         fisioEdgeExtras
       );
-      const { data: aiMsg } = await supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversationId,
-          role: "assistant",
-          content: answer,
-        })
-        .select("id, role, content")
-        .single();
-      if (aiMsg) {
-        setRevealingMessageId((aiMsg as Message).id);
-        setMessages((prev) => [...prev, aiMsg as Message]);
-      }
+      await appendAssistantMessage(conversationId, answer);
     } catch {
       // Individual per-zone orientations already shown; summary is best-effort.
     }
@@ -1127,7 +1419,19 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     if (!next || linkedPhysio) {
       setPendingParts([]);
       setAwaitingNextPart(null);
-      await appendMultiPartFinalSummary(conversationId, evaluations, language);
+      if (linkedPhysio) return;
+      if (evaluations.length >= 2) {
+        await appendMultiPartFinalSummary(conversationId, evaluations, language);
+      }
+      const offeredTests =
+        Boolean(completedSummary) &&
+        /\*\*Preguntas de valoración funcional\*\*|Functional assessment questions|\*\*Preguntas de valoraci[oó]n funcional\*\*/i.test(
+          completedSummary ?? ""
+        );
+      await activateRelatedFollowup(conversationId, language, {
+        offeredTests,
+        askNow: !offeredTests,
+      });
       return;
     }
 
@@ -1173,7 +1477,10 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
 
       const triage = await triageMessage(text, imageUrl, lang, fisioEdgeExtras);
 
-      if (isMetaOrClarificationQuery(text)) {
+      if (
+        isMetaOrClarificationQuery(text) ||
+        isInformationalOrEducationalQuery(text)
+      ) {
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
@@ -1183,12 +1490,36 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
         return;
       }
 
-      if (shouldStartQuestionnaire(triage, evaluatedParts)) {
+      // "brazo" / "arm" alone is too vague — ask where before any questionnaire
+      if (isVagueArmComplaint(text)) {
+        setPendingComplaintText(text);
+        await respondToInitialMessage(
+          text,
+          {
+            action: "respond",
+            intent: "general",
+            answer: vagueArmClarifyMessage(lang),
+          },
+          imageUrl,
+          lang
+        );
+        return;
+      }
+
+      // Only personal injury complaints open questionnaires — never keyword-only
+      if (
+        shouldOpenSymptomQuestionnaire(text) &&
+        triage.action === "questionnaire" &&
+        triage.bodyPart
+      ) {
         startQuestionnaireQueue(text, lang, triage.bodyPart);
         return;
       }
 
-      if (triage.intent === "symptom_other") {
+      if (
+        shouldOpenSymptomQuestionnaire(text) &&
+        triage.intent === "symptom_other"
+      ) {
         const { part } = questionnaireForText(text);
         if (!startQuestionnaireQueue(text, lang, part === "generic" ? "generic" : part)) {
           beginQuestionnaire(text, part === "generic" ? "generic" : part, lang);
@@ -1196,8 +1527,11 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
         return;
       }
 
-      // Local multi-part detection even if triage returned respond
-      if (startQuestionnaireQueue(text, lang)) {
+      // Local multi-part detection only for real personal complaints
+      if (
+        shouldOpenSymptomQuestionnaire(text) &&
+        startQuestionnaireQueue(text, lang)
+      ) {
         return;
       }
 
@@ -1396,9 +1730,11 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     const areaLabel =
       questionnairePart === "hip"
         ? hipBodyAreaLabelForAi(hipAnswers, initialMessage)
-        : questionnairePart === "generic"
-          ? patientFacingPartLabel("generic", initialMessage, consultLanguage)
-          : patientFacingPartLabel(questionnairePart, initialMessage, consultLanguage);
+        : questionnairePart === "ankle_foot"
+          ? bodyAreaLabelFromLowerLegAnswers(lowerLegAnswers, consultLanguage)
+          : questionnairePart === "generic"
+            ? patientFacingPartLabel("generic", initialMessage, consultLanguage)
+            : patientFacingPartLabel(questionnairePart, initialMessage, consultLanguage);
     const multiZoneScopeNote =
       detectedZones.length > 1
         ? consultLanguage === "en"
@@ -1850,20 +2186,168 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
         userSaved = true;
       }
 
+      if (
+        linkedPhysio &&
+        partEvaluationsRef.current.length === 0 &&
+        evaluatedParts.length === 0 &&
+        !awaitingNextPart &&
+        pendingParts.length === 0
+      ) {
+        const combinedText = [initialMessage, text].filter(Boolean).join("\n").trim();
+        const source = shouldOpenSymptomQuestionnaire(combinedText) ? combinedText : text;
+        if (shouldOpenSymptomQuestionnaire(source)) {
+          await saveUserMessage();
+          if (imageUrl) setCaseImageUrl(imageUrl);
+          const refined = refineTriageBodyPart(triage, source);
+          if (
+            refined.action === "questionnaire" &&
+            refined.bodyPart &&
+            startQuestionnaireQueue(source, consultLanguage, refined.bodyPart)
+          ) {
+            return;
+          }
+          if (refined.intent === "symptom_other") {
+            const { part } = questionnaireForText(source);
+            if (
+              !startQuestionnaireQueue(
+                source,
+                consultLanguage,
+                part === "generic" ? "generic" : part
+              )
+            ) {
+              beginQuestionnaire(
+                source,
+                part === "generic" ? "generic" : part,
+                consultLanguage
+              );
+            }
+            return;
+          }
+          if (startQuestionnaireQueue(source, consultLanguage)) {
+            return;
+          }
+        }
+      }
+
+      // After "dónde te duele del brazo?" — open the questionnaire for the zone they named
+      if (pendingComplaintText && !linkedPhysio) {
+        await saveUserMessage();
+        const resolved = resolveBodyPartFromLocationReply(text);
+        if (
+          resolved &&
+          [
+            "shoulder",
+            "elbow",
+            "wrist_hand",
+            "finger",
+            "neck",
+            "back",
+            "hip",
+            "knee",
+            "ankle_foot",
+            "head",
+          ].includes(resolved)
+        ) {
+          if (imageUrl) setCaseImageUrl(imageUrl);
+          startQuestionnaireQueue(
+            text,
+            consultLanguage,
+            resolved as AdaptiveQuestionnairePart
+          );
+          return;
+        }
+        await appendAssistantMessage(
+          activeId,
+          vagueArmClarifyMessage(consultLanguage)
+        );
+        return;
+      }
+
       if (awaitingNextPart) {
         await saveUserMessage();
 
         const lastEval =
           partEvaluationsRef.current[partEvaluationsRef.current.length - 1];
         const completedPart = lastEval?.part;
+        const reportingTests = reportsFunctionalTestResults(text);
         if (
-          reportsFunctionalTestResults(text) &&
+          reportingTests &&
           completedPart &&
           completedPart !== "generic"
         ) {
           markFunctionalTestsDone(completedPart);
         }
-        const functionalTestsDone = isFunctionalTestsDoneForPart(completedPart);
+        const functionalTestsDone =
+          reportingTests || isFunctionalTestsDoneForPart(completedPart);
+
+        // Answering functional tests → interpret them. Never open another questionnaire this turn.
+        if (reportingTests) {
+          const doneLabel =
+            lastEval?.label ||
+            patientFacingPartLabel(
+              questionnairePart === "generic" ? "generic" : questionnairePart,
+              initialMessage,
+              consultLanguage
+            );
+          const nextLabel = patientFacingPartLabel(
+            awaitingNextPart,
+            initialMessage,
+            consultLanguage
+          );
+          const history = [
+            ...messages
+              .filter(
+                (m) =>
+                  m.id !== WELCOME_ID &&
+                  !m.id.startsWith("q-intro") &&
+                  m.id !== userMsgId
+              )
+              .map((m) => ({
+                role: m.role,
+                content: m.image_url
+                  ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                  : m.content,
+              })),
+            {
+              role: "user" as const,
+              content: imageUrl
+                ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+                : text,
+            },
+          ].slice(-10);
+
+          const answer = await callEdgeText(
+            {
+              bodyArea: "seguimiento",
+              onsetType: text,
+              painLevel: 0,
+              hadTrauma: "No",
+              description: text,
+              symptomContext: `${functionalTestResultsFollowupContext(consultLanguage)}
+${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
+  functionalTestsDone: true,
+})}`,
+              conversationHistory: history,
+              language: consultLanguage,
+              ...(imageUrl ? { imageUrl } : {}),
+            },
+            fisioEdgeExtras
+          );
+
+          const { data: aiMsg } = await supabase
+            .from("messages")
+            .insert({
+              conversation_id: activeId,
+              role: "assistant",
+              content: answer,
+            })
+            .select("id, role, content")
+            .single();
+
+          setRevealingMessageId((aiMsg as Message).id);
+          setMessages((prev) => [...prev, aiMsg as Message]);
+          return;
+        }
 
         if (
           isClearStartNextPart(text, awaitingNextPart, initialMessage) ||
@@ -1889,6 +2373,10 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
             partEvaluationsRef.current,
             consultLanguage
           );
+          await activateRelatedFollowup(activeId, consultLanguage, {
+            offeredTests: true,
+            askNow: false,
+          });
           return;
         }
 
@@ -1974,11 +2462,174 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
         setRevealingMessageId((aiMsg as Message).id);
         setMessages((prev) => [...prev, aiMsg as Message]);
         return;
-      } else if (shouldStartQuestionnaire(triage, evaluatedParts)) {
+      }
+
+      // Functional test answers for the current case — interpret; never start a new questionnaire.
+      if (reportsFunctionalTestResults(text)) {
         await saveUserMessage();
-        if (imageUrl) setCaseImageUrl(imageUrl);
-        startQuestionnaireQueue(text, consultLanguage, triage.bodyPart);
+        const lastEval =
+          partEvaluationsRef.current[partEvaluationsRef.current.length - 1];
+        const completedPart =
+          lastEval?.part && lastEval.part !== "generic"
+            ? lastEval.part
+            : questionnairePart !== "generic"
+              ? (questionnairePart as AdaptiveQuestionnairePart)
+              : evaluatedParts[evaluatedParts.length - 1];
+        if (completedPart) markFunctionalTestsDone(completedPart);
+
+        const history = [
+          ...messages
+            .filter(
+              (m) =>
+                m.id !== WELCOME_ID &&
+                !m.id.startsWith("q-intro") &&
+                m.id !== userMsgId
+            )
+            .map((m) => ({
+              role: m.role,
+              content: m.image_url
+                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                : m.content,
+            })),
+          {
+            role: "user" as const,
+            content: imageUrl
+              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+              : text,
+          },
+        ].slice(-10);
+
+        const answer = ensureAsksMoreRelatedQuestions(
+          await callEdgeText(
+            {
+              bodyArea: "seguimiento",
+              onsetType: text,
+              painLevel: 0,
+              hadTrauma: "No",
+              description: text,
+              symptomContext: functionalTestResultsFollowupContext(consultLanguage),
+              conversationHistory: history,
+              language: consultLanguage,
+              ...(imageUrl ? { imageUrl } : {}),
+            },
+            fisioEdgeExtras
+          ),
+          consultLanguage
+        );
+
+        const { data: aiMsg } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: activeId,
+            role: "assistant",
+            content: answer,
+          })
+          .select("id, role, content")
+          .single();
+
+        setRevealingMessageId((aiMsg as Message).id);
+        setMessages((prev) => [...prev, aiMsg as Message]);
+
+        if (!hasMoreZonesPending(completedPart)) {
+          setRelatedFollowupActive(true);
+          setPostGuidanceAsked(true);
+          setShowUnrelatedCta(false);
+        }
         return;
+      }
+
+      if (relatedFollowupActive && !linkedPhysio) {
+        await saveUserMessage();
+        setShowUnrelatedCta(false);
+
+        if (postGuidanceAsked && declinesMoreRelatedQuestions(text)) {
+          await finishConsultaSession(activeId, consultLanguage);
+          return;
+        }
+
+        if (postGuidanceAsked && affirmsMoreRelatedQuestions(text)) {
+          await appendAssistantMessage(
+            activeId,
+            inviteRelatedQuestionMessage(consultLanguage)
+          );
+          return;
+        }
+
+        const injuryLabel = currentInjuryLabel();
+        const looksUnrelated =
+          isUnrelatedConsultaQuestion(
+            text,
+            initialMessage,
+            casePartsForRelatedGate()
+          ) || shouldStartQuestionnaire(triage, evaluatedParts);
+
+        if (looksUnrelated) {
+          await appendAssistantMessage(
+            activeId,
+            unrelatedConsultaRedirectMessage(injuryLabel, consultLanguage)
+          );
+          setShowUnrelatedCta(true);
+          return;
+        }
+
+        const history = [
+          ...messages
+            .filter(
+              (m) =>
+                m.id !== WELCOME_ID &&
+                !m.id.startsWith("q-intro") &&
+                m.id !== userMsgId
+            )
+            .map((m) => ({
+              role: m.role,
+              content: m.image_url
+                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                : m.content,
+            })),
+          {
+            role: "user" as const,
+            content: imageUrl
+              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+              : text,
+          },
+        ].slice(-10);
+
+        const rawAnswer = await callEdgeText(
+            {
+              bodyArea: "seguimiento",
+              onsetType: text,
+              painLevel: 0,
+              hadTrauma: "No",
+              description: "",
+              symptomContext: relatedInjuryFollowupContext(
+                injuryLabel,
+                consultLanguage,
+                { askMore: postGuidanceAsked }
+              ),
+              conversationHistory: history,
+              language: consultLanguage,
+              ...(imageUrl ? { imageUrl } : {}),
+            },
+            fisioEdgeExtras
+          );
+        const answer = postGuidanceAsked
+          ? ensureAsksMoreRelatedQuestions(rawAnswer, consultLanguage)
+          : rawAnswer;
+
+        await appendAssistantMessage(activeId, answer);
+        return;
+      }
+
+      if (shouldStartQuestionnaire(triage, evaluatedParts)) {
+        // Follow-up may mention a body part for info — don't open a form unless it's a personal complaint
+        if (!shouldOpenSymptomQuestionnaire(text) && !pendingComplaintText) {
+          // fall through to chat
+        } else {
+          await saveUserMessage();
+          if (imageUrl) setCaseImageUrl(imageUrl);
+          startQuestionnaireQueue(text, consultLanguage, triage.bodyPart);
+          return;
+        }
       }
 
       await saveUserMessage();
@@ -2041,9 +2692,10 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
     !physioIntro &&
     phase !== "complete" &&
     (phase === "intro" || phase === "followup") &&
-    (!linkedPhysio || Boolean(activeId) || conversations.length === 0);
+    (!linkedPhysio || Boolean(activeId) || conversations.length === 0 || fisioNewConsultDraft);
   const showFisioPickExisting =
     Boolean(linkedPhysio) &&
+    !fisioNewConsultDraft &&
     historyLoaded &&
     !openingConversation &&
     conversations.length > 0 &&
@@ -2125,6 +2777,25 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
                   ? "This chat is for what your physiotherapist asked. For other questions, use the Consulta tab."
                   : "Este chat es para lo que te ha pedido tu fisioterapeuta. Para otras preguntas, usa la pestaña Consulta."}
               </Text>
+            )}
+
+            {linkedPhysio && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.historyCodeBtn,
+                  pressed && styles.historyCodeBtnPressed,
+                ]}
+                onPress={() => {
+                  setPhysioCodeInput("");
+                  setPhysioCodeError(null);
+                  setShowPhysioCodeEntry(true);
+                }}
+              >
+                <Ionicons name="key-outline" size={16} color={Colors.primary} />
+                <Text style={styles.historyCodeBtnText}>
+                  {locale === "en" ? "Enter another code" : "Introducir otro código"}
+                </Text>
+              </Pressable>
             )}
 
             {conversations.length > 0 && (
@@ -2549,6 +3220,77 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
             </View>
           </View>
         </Modal>
+
+        <Modal
+          visible={showPhysioCodeEntry}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowPhysioCodeEntry(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalBox, { alignItems: "stretch", width: "100%", maxWidth: 360 }]}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                <Text style={[styles.modalTitle, { textAlign: "left", flex: 1 }]}>
+                  {locale === "en" ? "Physiotherapist code" : "Código de tu fisioterapeuta"}
+                </Text>
+                <Pressable onPress={() => setShowPhysioCodeEntry(false)} hitSlop={8}>
+                  <Ionicons name="close" size={22} color={Colors.textSecondary} />
+                </Pressable>
+              </View>
+              <Text style={[styles.modalSub, { textAlign: "left", marginTop: 8 }]}>
+                {locale === "en"
+                  ? "Enter a code to start a new assigned consultation with your physiotherapist."
+                  : "Introduce un código para empezar una nueva consulta asignada con tu fisioterapeuta."}
+              </Text>
+              <TextInput
+                value={physioCodeInput}
+                onChangeText={(v) => setPhysioCodeInput(v.toUpperCase())}
+                placeholder="Ej. K7M2P9QX"
+                placeholderTextColor={Colors.textLight}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                style={{
+                  marginTop: 14,
+                  borderWidth: 1,
+                  borderColor: Colors.borderStrong,
+                  borderRadius: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  fontSize: 16,
+                  letterSpacing: 2,
+                  color: Colors.text,
+                  backgroundColor: Colors.white,
+                }}
+              />
+              {physioCodeError ? (
+                <Text style={{ color: "#991B1B", marginTop: 10, fontSize: 13 }}>{physioCodeError}</Text>
+              ) : null}
+              <Pressable
+                onPress={() => void submitAnotherPhysioCode()}
+                disabled={physioCodeBusy}
+                style={{
+                  marginTop: 16,
+                  backgroundColor: Colors.primary,
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  opacity: physioCodeBusy ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: Colors.white, fontWeight: "700" }}>
+                  {physioCodeBusy
+                    ? locale === "en"
+                      ? "Linking…"
+                      : "Vinculando…"
+                    : locale === "en"
+                      ? "Continue to consultation"
+                      : "Continuar a la consulta"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
         {renderHistoryDrawer()}
       </KeyboardAvoidingView>
     );
@@ -2594,7 +3336,7 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
       ) : physioIntro &&
         phase === "intro" &&
         !activeId &&
-        (!linkedPhysio || conversations.length === 0) ? (
+        (!linkedPhysio || conversations.length === 0 || fisioNewConsultDraft) ? (
         <PhysioIntro onSkip={skipPhysioIntro} greeting={introGreeting} />
       ) : showFisioPickExisting ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 }}>
@@ -2775,6 +3517,105 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
                   : "Si quieres seguir usando la IA, abre la pestaña Consulta."}
               </Text>
             </View>
+          ) : !linkedPhysio && phase === "complete" ? (
+            <View
+              style={{
+                marginTop: 16,
+                marginHorizontal: 8,
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: "#BFDBFE",
+                backgroundColor: "#EFF6FF",
+                paddingHorizontal: 20,
+                paddingVertical: 24,
+                alignItems: "center",
+              }}
+            >
+              <View
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: "#2563EB",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="checkmark" size={28} color="#fff" />
+              </View>
+              <Text
+                style={{
+                  marginTop: 14,
+                  fontSize: 20,
+                  fontWeight: "800",
+                  color: Colors.text,
+                  textAlign: "center",
+                }}
+              >
+                {locale === "en" ? "Consultation finished" : "Consulta terminada"}
+              </Text>
+              <Text
+                style={{
+                  marginTop: 10,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  color: Colors.textSecondary,
+                  textAlign: "center",
+                }}
+              >
+                {locale === "en"
+                  ? "Above you have Physio’s guidance and what it recommends you do next. If another issue comes up or you want to ask something else, open a new consultation."
+                  : "Arriba tienes la orientación de Physio y lo que te recomienda hacer ahora. Si aparece otra molestia o quieres preguntar algo distinto, abre una nueva consulta."}
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  {
+                    marginTop: 18,
+                    width: "100%",
+                    borderRadius: 16,
+                    backgroundColor: "#2563EB",
+                    paddingVertical: 14,
+                    paddingHorizontal: 20,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  },
+                  pressed && { opacity: 0.9 },
+                ]}
+                onPress={startNewConsultation}
+              >
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
+                  {locale === "en" ? "New consultation" : "Nueva consulta"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : !linkedPhysio && showUnrelatedCta ? (
+            <View style={{ marginTop: 8, marginHorizontal: 8, alignItems: "center" }}>
+              <Pressable
+                style={({ pressed }) => [
+                  {
+                    width: "100%",
+                    borderRadius: 16,
+                    backgroundColor: "#2563EB",
+                    paddingVertical: 14,
+                    paddingHorizontal: 20,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  },
+                  pressed && { opacity: 0.9 },
+                ]}
+                onPress={startNewConsultation}
+              >
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
+                  {locale === "en" ? "New consultation" : "Nueva consulta"}
+                </Text>
+              </Pressable>
+            </View>
           ) : null}
           {chatLoading && !loadingModal && !openingConversation ? (
             <View style={[styles.bubbleRow, styles.bubbleRowAI]}>
@@ -2858,6 +3699,77 @@ export function AIInquiriesScreen({ linkedPhysio = null }: AIInquiriesScreenProp
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={showPhysioCodeEntry}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPhysioCodeEntry(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { alignItems: "stretch", width: "100%", maxWidth: 360 }]}>
+            <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <Text style={[styles.modalTitle, { textAlign: "left", flex: 1 }]}>
+                {locale === "en" ? "Physiotherapist code" : "Código de tu fisioterapeuta"}
+              </Text>
+              <Pressable onPress={() => setShowPhysioCodeEntry(false)} hitSlop={8}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={[styles.modalSub, { textAlign: "left", marginTop: 8 }]}>
+              {locale === "en"
+                ? "Enter a code to start a new assigned consultation with your physiotherapist."
+                : "Introduce un código para empezar una nueva consulta asignada con tu fisioterapeuta."}
+            </Text>
+            <TextInput
+              value={physioCodeInput}
+              onChangeText={(v) => setPhysioCodeInput(v.toUpperCase())}
+              placeholder="Ej. K7M2P9QX"
+              placeholderTextColor={Colors.textLight}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              style={{
+                marginTop: 14,
+                borderWidth: 1,
+                borderColor: Colors.borderStrong,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 16,
+                letterSpacing: 2,
+                color: Colors.text,
+                backgroundColor: Colors.white,
+              }}
+            />
+            {physioCodeError ? (
+              <Text style={{ color: "#991B1B", marginTop: 10, fontSize: 13 }}>{physioCodeError}</Text>
+            ) : null}
+            <Pressable
+              onPress={() => void submitAnotherPhysioCode()}
+              disabled={physioCodeBusy}
+              style={{
+                marginTop: 16,
+                backgroundColor: Colors.primary,
+                borderRadius: 12,
+                paddingVertical: 14,
+                alignItems: "center",
+                opacity: physioCodeBusy ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: Colors.white, fontWeight: "700" }}>
+                {physioCodeBusy
+                  ? locale === "en"
+                    ? "Linking…"
+                    : "Vinculando…"
+                  : locale === "en"
+                    ? "Continue to consultation"
+                    : "Continuar a la consulta"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       {renderHistoryDrawer()}
     </KeyboardAvoidingView>
   );
@@ -3027,6 +3939,26 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  historyCodeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginHorizontal: 12,
+    marginBottom: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: Colors.white,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+  },
+  historyCodeBtnPressed: { backgroundColor: '#EFF6FF' },
+  historyCodeBtnText: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
   historyNewBtnText: {
     color: Colors.white,

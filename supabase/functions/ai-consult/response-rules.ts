@@ -338,7 +338,7 @@ const FUNCTIONAL_BY_HINT: { match: RegExp; questions: string[] }[] = [
     ],
   },
   {
-    match: /cuadr[ií]ceps|cu[aá]driceps|quad|muslo\s*anterior|recto\s*femoral/i,
+    match: /cuadr[ií]ceps|cu[aá]driceps|quad|muslo(\s*anterior)?|thigh|recto\s*femoral/i,
     questions: [
       "¿Duele al correr? / Does it hurt when running?",
       "¿Duele al pegar una patada o chutar un balón? / Does it hurt when kicking a ball?",
@@ -487,7 +487,7 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
     !isAchilles &&
     !isCalf &&
     !isAdductor &&
-    /cuadr[ií]ceps|cu[aá]driceps|quad|muslo\s*anterior|recto\s*femoral|anterior\s*thigh/i.test(
+    /cuadr[ií]ceps|cu[aá]driceps|quad|muslo(\s*anterior)?|recto\s*femoral|anterior\s*thigh|\bthigh\b/i.test(
       area
     );
   const isFoot =
@@ -761,4 +761,42 @@ export function buildPhysioEquipmentContext(profile: {
     .filter(Boolean)
     .join("\n");
 }
+
+/** Closed illustrated-maneuver catalog for Fisioterapia numbered lists. Keep in sync with lib/clinical-test-images.ts. */
+export const AI_ILLUSTRATED_CLINICAL_TESTS_RULES = `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
+Cuando listes pruebas/maniobras numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene imagen en Kinora; si inventas otro nombre, la imagen NO aparece.
+- Test de Lachman
+- Cajón anterior (rodilla)
+- Pivot Shift
+- Test de McMurray
+- Test de Thessaly
+- Test de Neer
+- Hawkins-Kennedy
+- Jobe / Empty can
+- Apprehension / Relocation
+- Test de Speed
+- Test de Yergason
+- Drop arm
+- Painful arc
+- Test de Spurling
+- ULTT / ULNT
+- Test de Thompson
+- Test de Matles
+- Cajón anterior (tobillo)
+- Test de Windlass
+- Heel raise / elevación de talones
+- Hop test
+- FABER / Patrick
+- FADIR
+- Test de Trendelenburg
+- Test de Phalen
+- Signo de Tinel
+- Test de Cozen
+- Test de Mill
+- Test de Schober
+- SLR / Lasègue
+- Test de Kemp / cuadrante lumbar
+- Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
+- Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.
+- Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;
 

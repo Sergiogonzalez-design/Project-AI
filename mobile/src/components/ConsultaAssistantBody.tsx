@@ -57,11 +57,11 @@ export function ConsultaAssistantBody({ text, style, boldStyle }: Props) {
         const headingText = headingMatch?.[2] ?? null;
         const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
         const numberedText =
-          headingText && /^\d+\.\s+\S/.test(headingText)
+          headingText && /^\d+[.)]\s+\S/.test(headingText)
             ? headingText
-            : wholeBoldMatch && /^\d+\.\s+\S/.test(wholeBoldMatch[1])
+            : wholeBoldMatch && /^\d+[.)]\s+\S/.test(wholeBoldMatch[1])
               ? wholeBoldMatch[1]
-              : /^\d+\.\s+\S/.test(stripMarkdownStars(trimmed))
+              : /^\d+[.)]\s+\S/.test(stripMarkdownStars(trimmed))
                 ? stripMarkdownStars(trimmed)
                 : null;
 
@@ -85,7 +85,7 @@ export function ConsultaAssistantBody({ text, style, boldStyle }: Props) {
 
         if (numberedText) {
           const plain = stripMarkdownStars(trimmed);
-          const withBody = /^(\d+\.\s+[^:]+):\s+(.+)$/.exec(plain);
+          const withBody = /^(\d+[.)]\s+[^:]+):\s+(.+)$/.exec(plain);
           return (
             <View key={li} style={li > 0 ? styles.lineGapLg : undefined}>
               <Text style={style}>

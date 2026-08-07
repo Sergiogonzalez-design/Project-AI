@@ -72,6 +72,19 @@ export const MIXED_LOCATION_OPTIONS = [
   "No estoy seguro",
 ] as const;
 
+/** Whole leg — used when patient only said "pierna" (could be thigh, knee, or below). */
+export const WHOLE_LEG_LOCATION_OPTIONS = [
+  "Muslo / encima de la rodilla",
+  "Rodilla",
+  "Justo debajo de la rodilla / tuberosidad tibial",
+  "Espinilla anterior",
+  "Pantorrilla",
+  "Tendón de Aquiles",
+  "Tobillo",
+  "Pie / planta",
+  "No estoy seguro",
+] as const;
+
 export const PAIN_TYPE_OPTIONS = [
   "Punzante",
   "Quemazón",
@@ -292,7 +305,87 @@ export function withAnkleFootFocusFromText(
       return { ...base, localizacion_pierna: ["Talón (debajo / inserción)"] };
     }
   }
-  return base;
+
+  const mecanismo: string[] = [...base.mecanismo];
+  const movimientos: string[] = [...(base.movimientos_agravantes ?? [])];
+  let evolucion = base.evolucion;
+  let inicio = base.inicio;
+
+  if (/ahora mismo|acaba de|ha sido ahora|just\s+now/i.test(t)) {
+    evolucion = "Ha sido ahora";
+  } else if (/hace\s*(unas?\s*)?(pocas\s+)?horas|1-4\s*h/i.test(t)) {
+    evolucion = "Reciente (1-4 horas)";
+  } else if (/ayer|48\s*h|menos de (dos|2)\s*d[ií]as/i.test(t)) {
+    evolucion = "Menos de 48 horas";
+  } else if (/hace\s*(\d+|varios|unas)\s*d[ií]as|esta semana/i.test(t)) {
+    evolucion = "Entre 2 y 7 días";
+  } else if (/semana|semanas/i.test(t) && !/mes/i.test(t)) {
+    evolucion = "Entre 1 y 4 semanas";
+  } else if (/mes|meses|cr[oó]nic/i.test(t)) {
+    evolucion = "Más de 1 mes";
+  }
+
+  if (/de\s+golpe|repentin|s[uú]bit|chasquido|pop\b/i.test(t)) inicio = "Repentino";
+  else if (/poco a poco|progresiv|gradual/i.test(t)) inicio = "Progresivo";
+
+  if (/ca[ií]da|caer|fall/i.test(t) && !mecanismo.includes("Caída")) {
+    mecanismo.push("Caída");
+  }
+  if (/golpe|trauma/i.test(t) && !mecanismo.includes("Golpe directo")) {
+    mecanismo.push("Golpe directo");
+  }
+  if (
+    /correr|running|entrenamiento|ejercicio|gimnasio/i.test(t) &&
+    !mecanismo.includes("Entrenamiento o ejercicio") &&
+    !mecanismo.includes("Movimiento repetitivo / correr")
+  ) {
+    if (/correr|running|footing/i.test(t)) {
+      mecanismo.push("Movimiento repetitivo / correr");
+    } else {
+      mecanismo.push("Entrenamiento o ejercicio");
+    }
+  }
+
+  if (/correr|running/i.test(t)) movimientos.push("Correr");
+  if (/saltar|jump/i.test(t)) movimientos.push("Saltar");
+  if (/escalera|stairs/i.test(t)) movimientos.push("Subir / bajar escaleras");
+
+  if (focus === "lower_leg" || focus === "leg") {
+    if (/espinilla|shin|tibial/i.test(t)) {
+      return {
+        ...base,
+        evolucion: evolucion || base.evolucion,
+        inicio: inicio || base.inicio,
+        mecanismo,
+        movimientos_agravantes: [...new Set(movimientos)],
+        localizacion_pierna:
+          base.localizacion_pierna.length > 0
+            ? base.localizacion_pierna
+            : ["Espinilla anterior"],
+      };
+    }
+    if (/gemelo|pantorrilla|calf/i.test(t)) {
+      return {
+        ...base,
+        evolucion: evolucion || base.evolucion,
+        inicio: inicio || base.inicio,
+        mecanismo,
+        movimientos_agravantes: [...new Set(movimientos)],
+        localizacion_pierna:
+          base.localizacion_pierna.length > 0
+            ? base.localizacion_pierna
+            : ["Pantorrilla"],
+      };
+    }
+  }
+
+  return {
+    ...base,
+    ...(evolucion ? { evolucion } : {}),
+    ...(inicio ? { inicio } : {}),
+    mecanismo,
+    movimientos_agravantes: [...new Set(movimientos)],
+  };
 }
 
 export type LowerLegQuestionSection =
@@ -783,6 +876,7 @@ function locationOptionsForFocus(focus: AnkleFootFocus): readonly string[] {
   if (focus === "foot") return FOOT_LOCATION_OPTIONS;
   if (focus === "ankle") return ANKLE_LOCATION_OPTIONS;
   if (focus === "lower_leg") return LOWER_LEG_LOCATION_OPTIONS;
+  if (focus === "leg") return WHOLE_LEG_LOCATION_OPTIONS;
   return MIXED_LOCATION_OPTIONS;
 }
 
@@ -799,7 +893,9 @@ function focusAwareQuestion(
           ? "¿Dónde sientes el dolor en el tobillo? (puedes marcar varias)"
           : focus === "lower_leg"
             ? "¿Dónde sientes el dolor en la pierna baja? (puedes marcar varias)"
-            : "¿Dónde sientes el dolor (pierna baja, tobillo o pie)? (puedes marcar varias)";
+            : focus === "leg"
+              ? "¿Dónde sientes el dolor en la pierna? (muslo, rodilla, debajo de la rodilla, pantorrilla, tobillo o pie — puedes marcar varias)"
+              : "¿Dónde sientes el dolor (pierna baja, tobillo o pie)? (puedes marcar varias)";
     return { ...q, label, options: locationOptionsForFocus(focus) };
   }
   if (q.id === "irradiacion") {
@@ -928,15 +1024,171 @@ function formatMulti(arr: string[]): string {
   return arr.length ? arr.join(", ") : "No especificado";
 }
 
+function locs(a: LowerLegAdaptiveAnswers): string[] {
+  return a.localizacion_pierna ?? [];
+}
+
+function hasLoc(a: LowerLegAdaptiveAnswers, ...needles: string[]): boolean {
+  const L = locs(a);
+  return needles.some((n) =>
+    L.some((x) => x.toLowerCase().includes(n.toLowerCase()))
+  );
+}
+
+/** Exact option match (avoids "encima de la rodilla" counting as Rodilla). */
+function hasExactLoc(a: LowerLegAdaptiveAnswers, ...options: string[]): boolean {
+  const L = locs(a);
+  return options.some((o) => L.includes(o));
+}
+
+/**
+ * Precise zone for the AI from questionnaire location answers.
+ * Bare "Pierna" is not enough — must reflect muslo / rodilla / pantorrilla / etc.
+ */
+export function bodyAreaLabelFromLowerLegAnswers(
+  answers: LowerLegAdaptiveAnswers,
+  locale: "es" | "en" = "es"
+): string {
+  const parts: string[] = [];
+  const push = (es: string, en: string) => {
+    const v = locale === "en" ? en : es;
+    if (!parts.includes(v)) parts.push(v);
+  };
+
+  if (hasExactLoc(answers, "Muslo / encima de la rodilla") || hasLoc(answers, "Thigh")) {
+    push("Muslo / cuádriceps", "Thigh / quadriceps");
+  }
+  if (hasExactLoc(answers, "Rodilla")) {
+    push("Rodilla", "Knee");
+  }
+  if (
+    hasExactLoc(answers, "Justo debajo de la rodilla / tuberosidad tibial") ||
+    hasLoc(answers, "tuberosidad")
+  ) {
+    push(
+      "Tuberosidad tibial / debajo de rodilla",
+      "Tibial tuberosity / below knee"
+    );
+  }
+  if (hasLoc(answers, "Espinilla", "Cara interna", "Cara externa")) {
+    push("Espinilla / periostio tibial", "Shin / tibial periosteum");
+  }
+  if (hasLoc(answers, "Pantorrilla")) {
+    push("Pantorrilla / gemelos", "Calf / gastrocnemius");
+  }
+  if (hasLoc(answers, "Aquiles")) {
+    push("Tendón de Aquiles", "Achilles tendon");
+  }
+  if (hasLoc(answers, "Tobillo") || hasLoc(answers, "Transición al tobillo")) {
+    push("Tobillo", "Ankle");
+  }
+  if (
+    hasLoc(
+      answers,
+      "Pie",
+      "Planta",
+      "Talón",
+      "Dorso",
+      "Dedos",
+      "Antepié",
+      "Mediopié"
+    )
+  ) {
+    push("Pie", "Foot");
+  }
+
+  if (parts.length > 0) return parts.join(", ");
+
+  if (answers.region_focus === "foot") return locale === "en" ? "Foot" : "Pie";
+  if (answers.region_focus === "ankle")
+    return locale === "en" ? "Ankle" : "Tobillo";
+  if (answers.region_focus === "lower_leg") {
+    return locale === "en" ? "Lower leg" : "Pierna baja";
+  }
+  if (answers.region_focus === "leg") {
+    return locale === "en"
+      ? "Leg (location still vague)"
+      : "Pierna (localización aún vaga)";
+  }
+  return locale === "en"
+    ? "Lower leg / ankle / foot"
+    : "Pierna baja / tobillo / pie";
+}
+
+function differentialGuidanceForLocations(
+  answers: LowerLegAdaptiveAnswers
+): string[] {
+  const lines: string[] = [
+    "ORIENTACIÓN DIFERENCIAL (OBLIGATORIO — solo zonas marcadas en localización; NO inventar gemelos/Aquiles/espinilla si el paciente NO las marcó):",
+    `Localización marcada por el paciente: ${formatMulti(locs(answers))}`,
+  ];
+
+  if (hasExactLoc(answers, "Muslo / encima de la rodilla") || hasLoc(answers, "Thigh")) {
+    lines.push(
+      "- Muslo / encima de la rodilla + correr o movimiento repetitivo → sobrecarga / distensión de **cuádriceps** (recto femoral) o **isquiotibiales** (si es posterior). Hipótesis locales del MUSLO.",
+      "- Muslo anterior + dolor al chutar, sentadilla o extensión resistida → cuádriceps / tendón cuadricipital.",
+      "- Muslo posterior + pedrada al correr o dolor al estirar con rodilla estirada → isquiotibiales.",
+      "- PROHIBIDO proponer gemelos, Aquiles, periostitis tibial o fractura por estrés de tibia: el paciente localizó el **muslo**."
+    );
+  }
+  if (hasExactLoc(answers, "Rodilla")) {
+    lines.push(
+      "- Rodilla → diferenciales de **rodilla** (patelofemoral, menisco, tendón rotuliano, LCA/LCL según mecanismo). NO pantorrilla ni Aquiles salvo irradiación explícita."
+    );
+  }
+  if (hasExactLoc(answers, "Justo debajo de la rodilla / tuberosidad tibial")) {
+    lines.push(
+      "- Justo debajo de rodilla / tuberosidad tibial + salto/carga → Osgood-Schlatter / tendón rotuliano distal."
+    );
+  }
+  if (hasLoc(answers, "Espinilla", "Cara interna")) {
+    lines.push(
+      "- Espinilla anterior o cara interna + dolor DIFUSO a lo largo del hueso + mejora al parar de correr → periostitis tibial / MTSS.",
+      "- Espinilla + dolor PUNTUAL en un solo punto + persiste en reposo o empeora semana a semana → sospecha FRACTURA POR ESTRÉS.",
+      "- Cara interna/espinilla + patrón que aparece con esfuerzo y CEDE al parar → considerar CECS vs MTSS."
+    );
+  }
+  if (hasLoc(answers, "Pantorrilla")) {
+    lines.push(
+      "- Pantorrilla + inicio súbito + chasquido/'pedrada' → rotura/desgarro de gemelos (tennis leg).",
+      "- Hinchazón súbita unilateral pantorrilla + rf_vascular → priorizar urgencia vascular (TVP)."
+    );
+  }
+  if (hasLoc(answers, "Aquiles")) {
+    lines.push(
+      "- Aquiles + pedrada + NO puntillas + hueco palpable → sospecha ROTURA COMPLETA DE AQUILES (urgencia).",
+      "- Aquiles + dolor progresivo, SÍ puede punta de pie, SIN hueco → tendinopatía aquílea."
+    );
+  }
+  if (hasLoc(answers, "Tobillo", "Pie", "Planta", "Talón")) {
+    lines.push(
+      "- Tobillo/pie → esguince, fascitis, tendinopatías locales según subzona marcada; no inventar lesión de gemelos o muslo."
+    );
+  }
+
+  lines.push(
+    "- Dolor desproporcionado al estirar pasivamente dedos/tobillo + tensión extrema (rf_compartimental) → sospecha SÍNDROME COMPARTIMENTAL AGUDO (urgencia).",
+    "- Hormigueo pie + zona neuro → atrapamiento nervioso periférico vs radicular."
+  );
+
+  return lines;
+}
+
 export function formatLowerLegAdaptive(
   answers: LowerLegAdaptiveAnswers,
   bodyMapText: string
 ): string {
   const { urgent, triggered } = detectLowerLegRedFlags(answers);
+  const zoneLabel = bodyAreaLabelFromLowerLegAnswers(answers, "es");
   const lines: string[] = [
-    "=== CUESTIONARIO ADAPTATIVO — PIERNA BAJA / ESPINILLA / PANTORRILLA ===",
+    `=== CUESTIONARIO ADAPTATIVO — ${zoneLabel.toUpperCase()} ===`,
     "",
     bodyMapText,
+    "",
+    `CRÍTICO — FIDELIDAD A LA LOCALIZACIÓN: El paciente localizó el dolor en: ${formatMulti(locs(answers)) || "(sin marcar)"}.`,
+    `La zona clínica a orientar es «${zoneLabel}».`,
+    "NO enumeres estructuras de OTRA zona de la pierna (p. ej. gemelos/Aquiles/espinilla si marcó muslo; muslo si marcó pantorrilla).",
+    "En **Estructuras que podrían estar afectadas** y **Posibles lesiones** usa SOLO estructuras coherentes con esa localización.",
     "",
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
@@ -962,15 +1214,7 @@ export function formatLowerLegAdaptive(
       ? `Chasquido/'pedrada' repentina durante el gesto: ${answers.inicio_chasquido}`
       : "",
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
-    `Localización (${
-      answers.region_focus === "foot"
-        ? "pie"
-        : answers.region_focus === "ankle"
-          ? "tobillo"
-          : answers.region_focus === "lower_leg"
-            ? "pierna baja"
-            : "pierna/tobillo/pie"
-    }): ${formatMulti(answers.localizacion_pierna)}`,
+    `Localización (${zoneLabel}): ${formatMulti(answers.localizacion_pierna)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional (caminar/apoyo): ${answers.limitacion_funcional.join(", ") || "—"}`,
@@ -1049,19 +1293,9 @@ export function formatLowerLegAdaptive(
     `Lesión previa pierna baja: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
     `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
-    "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (hueso, periostio, músculo, tendón de Aquiles, nervio, vascular), no para diagnosticar.",
+    "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas de la ZONA LOCALIZADA, no para diagnosticar.",
     "",
-    "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
-    "- Dolor desproporcionado que empeora al estirar pasivamente dedos/tobillo + tensión extrema pantorrilla/espinilla (rf_compartimental) → sospecha SÍNDROME COMPARTIMENTAL AGUDO (URGENCIA QUIRÚRGICA — priorizar sobre cualquier otra causa).",
-    "- Espinilla anterior o cara interna + dolor DIFUSO a lo largo del hueso + mejora al parar de correr → periostitis tibial / MTSS (shin splints, síndrome de estrés tibial medial).",
-    "- Espinilla anterior o cara interna + dolor PUNTUAL en un solo punto del hueso + persiste en reposo o empeora semana a semana sin mejorar al parar → sospecha FRACTURA POR ESTRÉS (priorizar valoración, evitar carga).",
-    "- Cara interna o espinilla + dolor difuso que aparece con el esfuerzo, aumenta durante la actividad y CEDE con el reposo tras parar (patrón recurrente, no focal, no progresivo en semanas) + posible tensión/hinchazón muscular → considerar síndrome compartimental crónico de esfuerzo (CECS) como diagnóstico diferencial de MTSS, especialmente si aparece siempre a una distancia/tiempo predecible de ejercicio y cede rápido al parar.",
-    "- Justo debajo de rodilla / tuberosidad tibial + salto/carga → Osgood-Schlatter / tendón rotuliano distal.",
-    "- Pantorrilla + inicio súbito + chasquido/'pedrada' durante entrenamiento, ejercicio o movimiento repetitivo (no solo trauma directo) → rotura/desgarro de gemelos (tennis leg).",
-    "- Aquiles + sensación de golpe/disparo (pedrada) + NO puede ponerse de puntillas con esa pierna + hueco/escalón palpable en el tendón → sospecha ROTURA COMPLETA DE AQUILES (URGENCIA — derivar de inmediato, no forzar carga).",
-    "- Aquiles + dolor progresivo con primeros pasos o al ponerse de puntillas, SIN hueco palpable y SÍ puede hacer punta de pie → tendinopatía aquílea (no rotura).",
-    "- Hormigueo pie + zona neuro → atrapamiento nervioso periférico vs radicular.",
-    "- Hinchazón súbita unilateral pantorrilla + rf_vascular → priorizar urgencia vascular (TVP) sobre músculo."
+    ...differentialGuidanceForLocations(answers)
   );
 
   return lines.filter(Boolean).join("\n");
@@ -1150,6 +1384,10 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   Otro: "Other",
   "Justo debajo de la rodilla / tuberosidad tibial":
     "Just below the knee / tibial tuberosity",
+  "Muslo / encima de la rodilla": "Thigh / above the knee",
+  Rodilla: "Knee",
+  Tobillo: "Ankle",
+  "Pie / planta": "Foot / sole",
   "Espinilla anterior": "Anterior shin",
   "Cara interna": "Inner side (medial)",
   "Cara externa": "Outer side (lateral)",

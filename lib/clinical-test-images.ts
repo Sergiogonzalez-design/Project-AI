@@ -27,25 +27,19 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     id: "lachman",
     title: "Test de Lachman",
     src: "/clinical-tests/lachman.webp",
-    aliases: [
-      "lachman",
-      "test de lachman",
-      "flexionar y extender la rodilla",
-      "flex and extend the knee",
-    ],
+    aliases: ["lachman", "test de lachman"],
   },
   {
     id: "anterior-drawer-knee",
     title: "Cajón anterior (rodilla)",
     src: "/clinical-tests/anterior-drawer-knee.webp",
     aliases: [
-      "cajon anterior",
-      "cajón anterior",
+      "cajon anterior de la rodilla",
+      "cajon anterior rodilla",
       "test del cajon anterior",
       "test de cajon anterior",
-      "anterior drawer",
+      "anterior drawer knee",
       "slocum",
-      "drawer test of the knee",
     ],
   },
   {
@@ -58,53 +52,31 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     id: "mcmurray",
     title: "Test de McMurray",
     src: "/clinical-tests/mcmurray.webp",
-    aliases: [
-      "mcmurray",
-      "mc murray",
-      "test de mcmurray",
-      "bajar un escalon",
-      "bajar un escalón",
-    ],
+    aliases: ["mcmurray", "mc murray", "test de mcmurray"],
+  },
+  {
+    id: "thessaly",
+    title: "Test de Thessaly",
+    src: "/clinical-tests/thessaly.webp",
+    aliases: ["thessaly", "test de thessaly"],
   },
   {
     id: "neer",
     title: "Test de Neer",
     src: "/clinical-tests/neer.webp",
-    aliases: [
-      "neer",
-      "test de neer",
-      "neer's",
-      "elevar el brazo por encima de la cabeza",
-      "levantar el brazo por encima de la cabeza",
-      "elevar los brazos",
-      "raise the arm overhead",
-    ],
+    aliases: ["neer", "test de neer", "neer's"],
   },
   {
     id: "hawkins-kennedy",
     title: "Hawkins-Kennedy",
     src: "/clinical-tests/hawkins-kennedy.webp",
-    aliases: [
-      "hawkins",
-      "hawkins-kennedy",
-      "hawkins kennedy",
-      "alcanzar la espalda",
-      "reach behind your back",
-    ],
+    aliases: ["hawkins", "hawkins-kennedy", "hawkins kennedy"],
   },
   {
     id: "jobe-empty-can",
     title: "Jobe / Empty can",
     src: "/clinical-tests/jobe-empty-can.webp",
-    aliases: [
-      "jobe",
-      "empty can",
-      "empty-can",
-      "lata vacia",
-      "lata vacía",
-      "aguantar un objeto",
-      "hold a light object",
-    ],
+    aliases: ["jobe", "empty can", "empty-can", "lata vacia", "lata vacía"],
   },
   {
     id: "apprehension",
@@ -117,37 +89,48 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "relocation",
       "relocacion",
       "reubicación",
-      "rotar sin miedo",
-      "brazo a 90",
     ],
   },
   {
     id: "speed",
     title: "Test de Speed",
     src: "/clinical-tests/speed.webp",
-    aliases: [
-      "speed",
-      "test de speed",
-      "palms up",
-      "cerrar el puno",
-      "girar un pomo",
-      "levantar la muneca",
-    ],
+    aliases: ["speed", "test de speed"],
+  },
+  {
+    id: "yergason",
+    title: "Test de Yergason",
+    src: "/clinical-tests/yergason.webp",
+    aliases: ["yergason", "test de yergason"],
+  },
+  {
+    id: "drop-arm",
+    title: "Drop arm",
+    src: "/clinical-tests/drop-arm.webp",
+    aliases: ["drop arm", "drop-arm", "caida del brazo", "caída del brazo"],
+  },
+  {
+    id: "painful-arc",
+    title: "Painful arc",
+    src: "/clinical-tests/painful-arc.webp",
+    aliases: ["painful arc", "arco doloroso", "arco doloroso de abduccion"],
   },
   {
     id: "spurling",
     title: "Test de Spurling",
     src: "/clinical-tests/spurling.webp",
+    aliases: ["spurling", "test de spurling"],
+  },
+  {
+    id: "ultt",
+    title: "ULTT / ULNT",
+    src: "/clinical-tests/ultt.webp",
     aliases: [
-      "spurling",
-      "test de spurling",
-      "girar la cabeza",
-      "turn the head",
-      "mirar al techo",
-      "mirar al ombligo",
-      "mirar arriba",
-      "inclinar la cabeza",
-      "mirar un poco hacia arriba",
+      "ultt",
+      "ulnt",
+      "upper limb tension",
+      "test de tension neural",
+      "tension neural del miembro superior",
     ],
   },
   {
@@ -155,6 +138,12 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     title: "Test de Thompson",
     src: "/clinical-tests/thompson.webp",
     aliases: ["thompson", "test de thompson", "squeeze test", "simmonds"],
+  },
+  {
+    id: "matles",
+    title: "Test de Matles",
+    src: "/clinical-tests/matles.webp",
+    aliases: ["matles", "test de matles"],
   },
   {
     id: "anterior-drawer-ankle",
@@ -169,42 +158,42 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     ],
   },
   {
+    id: "windlass",
+    title: "Test de Windlass",
+    src: "/clinical-tests/windlass.webp",
+    aliases: ["windlass", "test de windlass"],
+  },
+  {
+    id: "heel-raise",
+    title: "Heel raise / elevación de talones",
+    src: "/clinical-tests/heel-raise.webp",
+    aliases: [
+      "heel raise",
+      "heel-rise",
+      "elevacion de talones",
+      "elevación de talones",
+      "elevacion del talon",
+      "elevación del talón",
+      "puntillas",
+    ],
+  },
+  {
+    id: "hop-test",
+    title: "Hop test",
+    src: "/clinical-tests/hop-test.webp",
+    aliases: ["hop test", "hop-test", "salto monopodal", "single leg hop"],
+  },
+  {
     id: "faber",
     title: "FABER / Patrick",
     src: "/clinical-tests/faber.webp",
-    aliases: [
-      "faber",
-      "patrick",
-      "figure 4",
-      "figura 4",
-      "sentadilla parcial",
-      "cruzar piernas",
-      "cross your legs",
-    ],
+    aliases: ["faber", "patrick", "figure 4", "figura 4"],
   },
   {
     id: "fadir",
     title: "FADIR",
     src: "/clinical-tests/fadir.webp",
-    aliases: [
-      "fadir",
-      "faddir",
-      "impingement de cadera",
-      "levantar la pierna de arriba",
-    ],
-  },
-  {
-    id: "phalen",
-    title: "Test de Phalen",
-    src: "/clinical-tests/phalen.webp",
-    aliases: [
-      "phalen",
-      "test de phalen",
-      "posicion de rezo",
-      "posición de rezo",
-      "apoyar la palma",
-      "hacer un puno",
-    ],
+    aliases: ["fadir", "faddir", "impingement de cadera"],
   },
   {
     id: "trendelenburg",
@@ -214,19 +203,90 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "trendelenburg",
       "test de trendelenburg",
       "pata coja",
-      "single leg",
-      "una pierna",
+      "apoyo monopodal",
+      "single-leg stance",
+    ],
+  },
+  {
+    id: "phalen",
+    title: "Test de Phalen",
+    src: "/clinical-tests/phalen.webp",
+    aliases: ["phalen", "test de phalen", "posicion de rezo", "posición de rezo"],
+  },
+  {
+    id: "tinel",
+    title: "Signo de Tinel",
+    src: "/clinical-tests/tinel.webp",
+    aliases: ["tinel", "signo de tinel", "test de tinel"],
+  },
+  {
+    id: "cozen",
+    title: "Test de Cozen",
+    src: "/clinical-tests/cozen.webp",
+    aliases: ["cozen", "test de cozen"],
+  },
+  {
+    id: "mill",
+    title: "Test de Mill",
+    src: "/clinical-tests/mill.webp",
+    aliases: ["mill", "test de mill", "mills", "test de mills"],
+  },
+  {
+    id: "schober",
+    title: "Test de Schober",
+    src: "/clinical-tests/schober.webp",
+    aliases: ["schober", "test de schober"],
+  },
+  {
+    id: "slr-lasegue",
+    title: "SLR / Lasègue",
+    src: "/clinical-tests/slr-lasegue.webp",
+    aliases: [
+      "lasegue",
+      "lasègue",
+      "straight leg raise",
+      "elevacion de pierna recta",
+      "elevación de pierna recta",
+      "elevacion de piernas rectas",
+      "slr",
+    ],
+  },
+  {
+    id: "kemp",
+    title: "Test de Kemp / cuadrante lumbar",
+    src: "/clinical-tests/kemp.webp",
+    aliases: [
+      "kemp",
+      "test de kemp",
+      "cuadrante lumbar",
+      "extension lumbar",
+      "extensión lumbar",
+      "prueba de extension lumbar",
     ],
   },
 ] as const;
 
 /** Prefer longer aliases first so "cajon anterior del tobillo" beats "cajon anterior". */
-const ALIAS_INDEX: { alias: string; test: ClinicalTestImage }[] = CLINICAL_TEST_IMAGES.flatMap(
-  (test) =>
+const ALIAS_INDEX: { alias: string; test: ClinicalTestImage }[] =
+  CLINICAL_TEST_IMAGES.flatMap((test) =>
     [...test.aliases]
       .map((alias) => ({ alias: normalizeForMatch(alias), test }))
       .sort((a, b) => b.alias.length - a.alias.length)
-).sort((a, b) => b.alias.length - a.alias.length);
+  ).sort((a, b) => b.alias.length - a.alias.length);
+
+/**
+ * Closed list injected into Fisioterapia prompts so numbered maneuvers always
+ * match an illustration in the app.
+ */
+export function illustratedClinicalTestsPromptBlock(): string {
+  const lines = CLINICAL_TEST_IMAGES.map((t) => `- ${t.title}`).join("\n");
+  return `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
+Cuando listes pruebas/maniobras numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene imagen en Kinora; si inventas otro nombre, la imagen NO aparece.
+${lines}
+- Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
+- Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.
+- Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;
+}
 
 /**
  * Find the best matching clinical-test illustration for a line of assistant text.
@@ -239,10 +299,24 @@ export function findClinicalTestImage(line: string): ClinicalTestImage | null {
 
   // Prefer ankle drawer when the line mentions ankle/tobillo together with drawer.
   if (
-    (normalized.includes("tobillo") || normalized.includes("ankle") || normalized.includes("atfl")) &&
+    (normalized.includes("tobillo") ||
+      normalized.includes("ankle") ||
+      normalized.includes("atfl")) &&
     (normalized.includes("cajon") || normalized.includes("drawer"))
   ) {
-    return CLINICAL_TEST_IMAGES.find((t) => t.id === "anterior-drawer-ankle") ?? null;
+    return (
+      CLINICAL_TEST_IMAGES.find((t) => t.id === "anterior-drawer-ankle") ?? null
+    );
+  }
+
+  // Prefer knee drawer when rodilla/knee + cajon without ankle cues.
+  if (
+    (normalized.includes("rodilla") || normalized.includes("knee")) &&
+    (normalized.includes("cajon") || normalized.includes("drawer"))
+  ) {
+    return (
+      CLINICAL_TEST_IMAGES.find((t) => t.id === "anterior-drawer-knee") ?? null
+    );
   }
 
   const hits: ClinicalTestImage[] = [];

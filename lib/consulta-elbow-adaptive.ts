@@ -283,6 +283,116 @@ export function defaultElbowAdaptiveAnswers(): ElbowAdaptiveAnswers {
   };
 }
 
+/** Prefill elbow answers from the patient's free-text complaint. */
+export function withElbowHintsFromText(text: string): ElbowAdaptiveAnswers {
+  const base = defaultElbowAdaptiveAnswers();
+  const t = text.trim();
+  if (!t) return base;
+
+  const movimientos: string[] = [];
+  const localizacion: string[] = [];
+  const patron: string[] = [];
+  const sintomas: string[] = [];
+  let inicio = "";
+  let evolucion = "";
+  let mecanismo = "";
+  let irradiacion = "";
+
+  if (/ahora mismo|acaba de|justo ahora|ha sido ahora|just\s+now/i.test(t)) {
+    evolucion = "Ha sido ahora";
+  } else if (/hace\s*(unas?\s*)?(pocas\s+)?horas|1-4\s*h|reciente/i.test(t)) {
+    evolucion = "Reciente (1-4 horas)";
+  } else if (/ayer|menos de (dos|2)\s*d[ií]as|48\s*h/i.test(t)) {
+    evolucion = "Menos de 48 horas";
+  } else if (/hace\s*(\d+|varios|unas)\s*d[ií]as|esta semana/i.test(t)) {
+    evolucion = "Entre 2 y 7 días";
+  } else if (/semana|semanas/i.test(t) && !/mes/i.test(t)) {
+    evolucion = "Entre 1 y 4 semanas";
+  } else if (/mes|meses|cr[oó]nic/i.test(t)) {
+    evolucion = "Más de 1 mes";
+  }
+
+  if (/de\s+golpe|repentin|s[uú]bit|chasquido|crack|pop\b/i.test(t)) {
+    inicio = "Repentino";
+  } else if (/poco a poco|progresiv|gradual|fue apareciendo/i.test(t)) {
+    inicio = "Progresivo";
+  } else if (/va y viene|intermitente/i.test(t)) {
+    inicio = "Va y viene";
+  }
+
+  if (/pesas|curl|press|gimnasio|gym/i.test(t)) mecanismo = "Tras levantar pesas";
+  else if (/lanzar|throw|pitch/i.test(t)) mecanismo = "Tras lanzar";
+  else if (/ca[ií]da|caer|fall/i.test(t)) mecanismo = "Tras una caída";
+  else if (/golpe|trauma|blow/i.test(t)) mecanismo = "Tras golpe directo";
+  else if (/torcer|brusco|twist/i.test(t)) mecanismo = "Tras torcer / movimiento brusco";
+  else if (/entrenamiento|ejercicio|tenis|p[aá]del|golf/i.test(t)) {
+    mecanismo = "Tras entrenamiento o ejercicio";
+  } else if (/progresiv|poco a poco|sin causa/i.test(t)) {
+    mecanismo = "Inicio progresivo sin causa clara";
+  }
+
+  if (/flexionar|doblar|bend/i.test(t)) movimientos.push("Flexionar el codo");
+  if (/estirar|extender|straighten/i.test(t)) movimientos.push("Estirar el codo");
+  if (/rotar|girar|antebrazo|pronaci|supinaci/i.test(t)) {
+    movimientos.push("Rotar el antebrazo");
+  }
+  if (/pomo|llave|door|jar/i.test(t)) movimientos.push("Girar un pomo o llave");
+  if (/agarrar|grip|coger/i.test(t)) movimientos.push("Agarrar objetos");
+  if (/levantar|peso|cargar/i.test(t)) movimientos.push("Levantar objetos");
+  if (/empujar|push/i.test(t)) movimientos.push("Empujar");
+  if (/tirar|pull/i.test(t)) movimientos.push("Tirar");
+  if (/lanzar|throw/i.test(t)) movimientos.push("Lanzar");
+  if (/escribir|teclear|typing|mouse/i.test(t)) {
+    movimientos.push("Escribir o teclear");
+  }
+
+  if (/extern|lateral|tenista|tennis\s*elbow/i.test(t)) {
+    localizacion.push("Parte externa del codo");
+  }
+  if (/intern|medial|golfista|golfer/i.test(t)) {
+    localizacion.push("Parte interna del codo");
+  }
+  if (/detr[aá]s|posterior|olecranon/i.test(t)) {
+    localizacion.push("Parte posterior del codo");
+  }
+  if (/delante|anterior|b[ií]ceps/i.test(t)) {
+    localizacion.push("Parte anterior del codo");
+  }
+  if (/antebrazo|forearm/i.test(t) && localizacion.length === 0) {
+    localizacion.push("Parte anterior del codo");
+  }
+
+  if (/noche|nocturn|dormir/i.test(t)) patron.push("Por la noche");
+  if (/reposo/i.test(t)) patron.push("En reposo");
+  if (/al mover|solo al/i.test(t)) patron.push("Solo al mover");
+  if (/esfuerzo|carga/i.test(t)) patron.push("Con esfuerzo o carga");
+
+  if (/hormigueo|entumec/i.test(t)) {
+    sintomas.push("Hormigueo");
+    sintomas.push("Entumecimiento");
+    irradiacion = "Hacia la mano";
+  }
+  if (/hinchaz|inflam/i.test(t)) sintomas.push("Inflamación / hinchazón");
+  if (/moret[oó]n|hematoma|bruise/i.test(t)) sintomas.push("Moretón");
+  if (/chasquido|crujido/i.test(t)) sintomas.push("Chasquidos");
+  if (/debilidad|flojo/i.test(t)) sintomas.push("Debilidad");
+  if (/bloqueo|traba/i.test(t)) sintomas.push("Bloqueo");
+  if (/inestabil/i.test(t)) sintomas.push("Inestabilidad");
+  if (/rigidez/i.test(t)) sintomas.push("Rigidez");
+
+  return {
+    ...base,
+    ...(evolucion ? { evolucion } : {}),
+    ...(inicio ? { inicio } : {}),
+    ...(mecanismo ? { mecanismo } : {}),
+    movimientos_agravantes: [...new Set(movimientos)],
+    localizacion_codo: [...new Set(localizacion)],
+    patron_dolor: [...new Set(patron)],
+    sintomas_asociados: [...new Set(sintomas.filter((s) => s))],
+    ...(irradiacion ? { irradiacion } : {}),
+  };
+}
+
 export type ElbowQuestionSection =
   | "red_flags"
   | "core"

@@ -309,6 +309,154 @@ export function defaultShoulderAdaptiveAnswers(): ShoulderAdaptiveAnswers {
   };
 }
 
+/**
+ * Prefill shoulder answers from what the patient already said (mechanism, movements, timing…).
+ * Empty fields stay for the patient to complete; filled chips adapt which follow-up sections appear.
+ */
+export function withShoulderHintsFromText(text: string): ShoulderAdaptiveAnswers {
+  const base = defaultShoulderAdaptiveAnswers();
+  const t = text.trim();
+  if (!t) return base;
+
+  const focus = resolveShoulderQuestionnaireFocus(t);
+  const mecanismo: string[] = [];
+  const movimientos: string[] = [];
+  const localizacion: string[] = [];
+  const patron: string[] = [];
+  const sintomas: string[] = [];
+  let inicio = "";
+  let evolucion = "";
+  let irradiacion = "";
+  let entreno_ejercicio = "";
+
+  if (/ahora mismo|acaba de|justo ahora|ha sido ahora|just\s+now|happened\s+now/i.test(t)) {
+    evolucion = "Ha sido ahora";
+  } else if (/hace\s*(unas?\s*)?(pocas\s+)?horas|1-4\s*h|reciente/i.test(t)) {
+    evolucion = "Reciente (1-4 horas)";
+  } else if (/ayer|menos de (dos|2)\s*d[ií]as|48\s*h/i.test(t)) {
+    evolucion = "Menos de 48 horas";
+  } else if (/hace\s*(\d+|varios|unas)\s*d[ií]as|esta semana/i.test(t)) {
+    evolucion = "Entre 2 y 7 días";
+  } else if (/semana|semanas/i.test(t) && !/mes/i.test(t)) {
+    evolucion = "Entre 1 y 4 semanas";
+  } else if (/mes|meses|cr[oó]nic/i.test(t)) {
+    evolucion = "Más de 1 mes";
+  }
+
+  if (/de\s+golpe|repentin|s[uú]bit|chasquido|crack|pop\b/i.test(t)) {
+    inicio = "Repentino";
+  } else if (/poco a poco|progresiv|gradual|fue apareciendo/i.test(t)) {
+    inicio = "Progresivo";
+  }
+
+  if (/ca[ií]da|caer[ií]?|me ca[ií]|fall(ing|ed)?\b/i.test(t)) mecanismo.push("Caída");
+  if (/golpe|trauma|choque|direct\s+blow/i.test(t)) mecanismo.push("Golpe directo");
+  if (
+    /gimnasio|pesas|entrenamiento|ejercicio|press|remo|dominada|curl|bench|crossfit|nadar|nataci[oó]n|lanzar|tenis|p[aá]del|voleibol/i.test(
+      t
+    )
+  ) {
+    mecanismo.push("Entrenamiento o ejercicio");
+  }
+  if (/repetitiv|siempre que|cada vez que|trabajo (de|con)|overhead\s+mucho/i.test(t)) {
+    mecanismo.push("Movimiento repetitivo");
+  }
+
+  if (/elev(ar|o|ando)|por encima|overhead|arriba de la cabeza/i.test(t)) {
+    movimientos.push(
+      focus === "pectoral"
+        ? "Press de banca / press de pecho"
+        : "Elevar el brazo por encima de la cabeza"
+    );
+  }
+  if (/atr[aá]s|espalda|behind|reach\s+back/i.test(t)) {
+    movimientos.push(
+      focus === "pectoral"
+        ? "Llevar el brazo atrás con el codo estirado"
+        : "Llevar el brazo hacia atrás"
+    );
+  }
+  if (/rotar|rotaci[oó]n|rotation/i.test(t) && focus !== "pectoral") {
+    movimientos.push("Rotación interna o externa");
+  }
+  if (/peso|cargar|levantar|heavy/i.test(t)) {
+    movimientos.push("Levantar peso");
+  }
+  if (/cruzar|delante del pecho|across|fly/i.test(t)) {
+    movimientos.push(
+      focus === "pectoral"
+        ? "Aperturas o cruces (flyes)"
+        : "Cruzar el brazo por delante del pecho"
+    );
+  }
+  if (/flexiones|push-?ups?/i.test(t) && focus === "pectoral") {
+    movimientos.push("Flexiones");
+  }
+
+  if (focus === "pectoral") {
+    if (/estern[oó]n|interno/i.test(t)) {
+      localizacion.push("Parte interna del pecho (cerca del esternón)");
+    }
+    if (/axila|axillary/i.test(t)) localizacion.push("Axila");
+    if (/vientre|centro|medio/i.test(t)) {
+      localizacion.push("Vientre muscular del pectoral (centro del pecho)");
+    }
+  } else {
+    if (/delante|frontal|anterior/i.test(t)) {
+      localizacion.push("Parte frontal (deltoides/anterior)");
+    }
+    if (/lateral|lado/i.test(t)) localizacion.push("Parte lateral");
+    if (/detr[aá]s|posterior|om[oó]plato|escapul/i.test(t)) {
+      localizacion.push("Zona escapular (omóplato)");
+    }
+    if (/clav[ií]cula|\bac\b/i.test(t)) {
+      localizacion.push("Cerca de la clavícula / articulación AC");
+    }
+    if (/parte\s+alta\s+del\s+brazo|upper\s+arm/i.test(t)) {
+      localizacion.push("Parte frontal (deltoides/anterior)");
+    }
+  }
+
+  if (/noche|nocturn|dormir|sleep/i.test(t)) patron.push("Por la noche");
+  if (/reposo|rest/i.test(t)) patron.push("En reposo");
+  if (/al mover|al movimiento|when\s+i\s+move|al elevar/i.test(t)) {
+    patron.push("Al mover");
+  }
+  if (/esfuerzo|carga|effort|load/i.test(t)) patron.push("Con esfuerzo o carga");
+
+  if (/hormigueo|entumec|tingling|numb/i.test(t)) {
+    sintomas.push("Hormigueo o entumecimiento");
+    irradiacion = "Sí";
+  }
+  if (/hinchaz|inflam|swell/i.test(t)) sintomas.push("Inflamación / hinchazón");
+  if (/chasquido|crujido|click|pop\b/i.test(t)) sintomas.push("Chasquidos");
+  if (/debilidad|flojo|weak/i.test(t)) sintomas.push("Debilidad");
+  if (/inestabil|se (me )?sale|lux/i.test(t)) {
+    sintomas.push("Sensación de inestabilidad");
+  }
+  if (/rigidez|stiff/i.test(t)) sintomas.push("Rigidez matutina");
+
+  if (mecanismo.includes("Entrenamiento o ejercicio")) {
+    if (/press\s*banca|bench/i.test(t)) entreno_ejercicio = "Press de banca / press";
+    else if (/lanzar|throw/i.test(t)) entreno_ejercicio = "Lanzamientos";
+    else if (/nataci[oó]n|nadar|swim/i.test(t)) entreno_ejercicio = "Natación";
+    else if (/remo|row/i.test(t)) entreno_ejercicio = "Remo / jalones";
+  }
+
+  return {
+    ...base,
+    ...(evolucion ? { evolucion } : {}),
+    ...(inicio ? { inicio } : {}),
+    mecanismo: [...new Set(mecanismo)],
+    movimientos_agravantes: [...new Set(movimientos)],
+    localizacion_hombro: [...new Set(localizacion)],
+    patron_dolor: [...new Set(patron)],
+    sintomas_asociados: [...new Set(sintomas)],
+    ...(irradiacion ? { irradiacion } : {}),
+    ...(entreno_ejercicio ? { entreno_ejercicio } : {}),
+  };
+}
+
 export type ShoulderQuestionSection =
   | "red_flags"
   | "core"

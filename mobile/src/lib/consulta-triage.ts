@@ -3,7 +3,10 @@ import {
   detectBodyPartsFromText,
   isBelowKneeOrLowerLeg,
   isFootOrPlantarComplaint,
+  isVagueArmComplaint,
+  isVagueLegComplaint,
   patientFacingPartLabel,
+  vagueArmClarifyMessage,
 } from "./detect-body-part";
 import { callEdgeJson } from "./consulta-api";
 
@@ -64,13 +67,72 @@ export function parseTriageResult(raw: unknown): ConsultaTriageResult {
 }
 
 const EDUCATIONAL_QUERY =
-  /ejercicio|estiramiento|movilidad|rutina|c[óo]mo\s+(funciona|hacer|estirar|mejorar)|qu[eé]\s+es|prevenci[oó]n|consejo|informaci[oó]n|gu[ií]a|tutorial|explic/i;
+  /ejercicio|estiramiento|movilidad|rutina|c[óo]mo\s+(funciona|hacer|estirar|mejorar)|qu[eé]\s+es|prevenci[oó]n|consejo|informaci[oó]n|gu[ií]a|tutorial|explic|pruebas?\s+funcionales|special\s+tests?|tests?\s+funcionales|valoraci[oó]n\s+funcional|maniobras?\s+cl[ií]nicas|protocolo|dime\b|cu[eé]ntame\b|expl[ií]came\b|ind[ií]came\b|recomi[eé]ndame\b|cu[aá]les\s+son|what\s+(?:are|functional)|how\s+(?:do|can)\s+i\s+(?:test|assess)/i;
 
 const META_CLARIFICATION_QUERY =
   /qu[eé]\s+hago|qu[eé]\s+debo|qu[eé]\s+tengo\s+que\s+hacer|c[oó]mo\s+funciona|how\s+does\s+(?:this|it)\s+work|what\s+(?:do|should)\s+i\s+do|how\s+do\s+i\s+(?:use|start)|por\s+d[oó]nde\s+empiezo|no\s+s[eé]\s+(?:qu[eé]|c[oó]mo)|explic(?:a|ame)\s+c[oó]mo|c[oó]mo\s+(?:se\s+)?usa|what\s+is\s+this|por\s+qu[eé]\s+(?:estoy|me\s+(?:han|has)\s+env)|(?:mi\s+)?fisio(?:terapeuta)?|c[oó]digo|informe|antes\s+de\s+(?:la\s+)?cita|why\s+(?:am\s+i|did)|physio\s+sent/i;
 
 const HYPOTHETICAL_SYMPTOM_QUESTION =
   /(?:te\s+)?(?:digo|cuento|explico|escribo)\s+(?:lo\s+que\s+)?(?:me\s+)?duele\s+o|(?:debo|tengo\s+que)\s+(?:decirte|contarte|escribir).*(?:duele|dolor)/i;
+
+const PROFESSIONAL_OR_THIRD_PERSON =
+  /\b(?:un|el|al|para\s+(?:un|el)|hacerle\s+a\s+(?:un|el)|a\s+(?:un|el))\s+pacientes?\b|\b(?:a\s+)?(?:mi\s+)?paciente\b|for\s+(?:a|the|my)\s+patient|en\s+(?:un|el)\s+paciente/i;
+
+/** True personal current symptom (first person), not teaching / hypothetical. */
+export function describesCurrentPersonalSymptom(text: string): boolean {
+  const hasSymptom =
+    /\b(?:me\s+duele|tengo\s+dolor|me\s+molesta|me\s+ha\s+dolido|me\s+doli[oó]|me\s+he\s+hecho\s+da[ñn]o|me\s+hice\s+da[ñn]o|me\s+he\s+lesionado|me\s+lesion[eé]|me\s+he\s+lastimado|me\s+lastim[eé]|siento\s+dolor|tengo\s+(?:una?\s+)?(?:lesi[oó]n|molestia|hinchaz[oó]n)|(?:tengo|siento|noto)\s+(?:una?\s+)?molestia|notado\s+una?\s+molestia|(?:dolor|molestia|hinchaz[oó]n)\s+en\s+(?:la|el|mi|mis)|it\s+hurts|my\s+.+\s+hurts|i\s+(?:hurt|injured)|i\s+have\s+pain)\b/i.test(
+      text
+    );
+  const hypothetical =
+    /(?:te\s+)?(?:digo|cuento|si\s+me\s+duele|should\s+i\s+tell|do\s+i\s+tell)/i.test(text);
+  return hasSymptom && !hypothetical;
+}
+
+/**
+ * Asking for information / tests / exercises — NOT reporting “I am injured”.
+ * Must NOT open a symptom questionnaire just because a body part word appears.
+ */
+export function isInformationalOrEducationalQuery(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+
+  // Explicitly about another patient / professional use
+  if (PROFESSIONAL_OR_THIRD_PERSON.test(t)) return true;
+
+  // Asking for functional tests / assessment content without a personal injury report
+  if (
+    /pruebas?\s+funcionales|special\s+tests?|tests?\s+funcionales|valoraci[oó]n\s+funcional|maniobras?\s+cl[ií]nicas|qu[eé]\s+pruebas|what\s+tests|how\s+to\s+(?:test|assess)/i.test(
+      t
+    )
+  ) {
+    if (!describesCurrentPersonalSymptom(t)) return true;
+  }
+
+  // “dime / explícame / cuáles son …” without personal symptom
+  if (
+    /\b(?:dime|expl[ií]came|ind[ií]came|recomi[eé]ndame|cu[eé]ntame|lista|enumera|cu[aá]les\s+son)\b/i.test(
+      t
+    ) &&
+    !describesCurrentPersonalSymptom(t)
+  ) {
+    return true;
+  }
+
+  if (EDUCATIONAL_QUERY.test(t) && !describesCurrentPersonalSymptom(t)) {
+    return true;
+  }
+
+  return false;
+}
+
+/** Only open adaptive questionnaires for a real personal injury complaint. */
+export function shouldOpenSymptomQuestionnaire(text: string): boolean {
+  if (!text.trim()) return false;
+  if (isInformationalOrEducationalQuery(text)) return false;
+  if (isMetaOrClarificationQuery(text)) return false;
+  return describesCurrentPersonalSymptom(text);
+}
 
 /** User asks how the chat works or what to do — not reporting a current symptom. */
 export function isMetaOrClarificationQuery(text: string): boolean {
@@ -87,19 +149,15 @@ export function isMetaOrClarificationQuery(text: string): boolean {
   return true;
 }
 
-function describesCurrentPersonalSymptom(text: string): boolean {
-  const hasSymptom =
-    /\b(?:me\s+duele|tengo\s+dolor|me\s+molesta|me\s+ha\s+dolido|me\s+doli[oó]|siento\s+dolor|tengo\s+una?\s+(?:lesi[oó]n|molestia|hinchaz[oó]n)|it\s+hurts|my\s+.+\s+hurts|i\s+have\s+pain)\b/i.test(
-      text
-    );
-  const hypothetical =
-    /(?:te\s+)?(?:digo|cuento|si\s+me\s+duele|should\s+i\s+tell|do\s+i\s+tell)/i.test(text);
-  return hasSymptom && !hypothetical;
-}
-
 const PART_PATTERNS: { part: AdaptiveQuestionnairePart; re: RegExp }[] = [
-  { part: "shoulder", re: /hombro|shoulder|manguito|rotador|pectoral|p[eé]ctoral|pecho|chest|press\s*banca/i },
-  { part: "elbow", re: /codo|elbow|epicond|b[ií]ceps(?!\s*femoral)|tr[ií]ceps(?!\s*sural)|popeye/i },
+  {
+    part: "shoulder",
+    re: /hombro|shoulder|manguito|rotador|pectoral|p[eé]ctoral|pecho|chest|press\s*banca|parte\s+alta\s+del\s+brazo|cerca\s+del\s+hombro|upper\s+arm|elev(ar|o|ando)\s+(el\s+)?brazo|por\s+encima\s+de\s+la\s+cabeza|overhead/i,
+  },
+  {
+    part: "elbow",
+    re: /codo|elbow|epicond|b[ií]ceps(?!\s*femoral)|tr[ií]ceps(?!\s*sural)|popeye|antebrazo|parte\s+baja\s+del\s+brazo|cerca\s+del\s+codo/i,
+  },
   { part: "finger", re: /dedo|dedos|finger|pulgar|índice|indice|anular|meñique|falange|mallet|resorte/i },
   { part: "head", re: /cefalea|migra[nñ]a|headache|dolor\s+(?:de\s+)?(?:la\s+)?cabeza|me\s+duele\s+(?:la\s+)?cabeza|\bla\s+cabeza\b/i },
   { part: "wrist_hand", re: /mu[ñn]eca|mano|wrist|hand/i },
@@ -116,15 +174,11 @@ const PART_PATTERNS: { part: AdaptiveQuestionnairePart; re: RegExp }[] = [
 
 /** Fallback when triage API fails: questionnaire on clear complaint + known part. */
 export function fallbackTriageFromText(text: string): ConsultaTriageResult {
-  if (isMetaOrClarificationQuery(text) || EDUCATIONAL_QUERY.test(text)) {
-    return { action: "respond", intent: "general" };
-  }
-
-  const complaint =
-    /duele|dolor|molestia|lesi[oó]n|hinch|inflam|trauma|golpe|esguince|no puedo mover|limitaci|pinch|rotura|artrosc|rigidez|contractura|hurt|hurts|pain|painful|sore|injury|injured|sprain|swollen|swelling|can't move|cannot move/i.test(
-      text
-    );
-  if (!complaint) {
+  if (
+    isMetaOrClarificationQuery(text) ||
+    isInformationalOrEducationalQuery(text) ||
+    !shouldOpenSymptomQuestionnaire(text)
+  ) {
     return { action: "respond", intent: "general" };
   }
 
@@ -136,9 +190,22 @@ export function fallbackTriageFromText(text: string): ConsultaTriageResult {
     return { action: "questionnaire", bodyPart: multiDetected[0] };
   }
 
-  // Explicit: foot/plantar OR leg below the knee → ankle_foot (UI adapts to foot vs shin)
-  if (isFootOrPlantarComplaint(text) || isBelowKneeOrLowerLeg(text)) {
+  // Explicit: vague "pierna", foot/plantar, OR leg below the knee → ankle_foot (UI adapts)
+  if (
+    isVagueLegComplaint(text) ||
+    isFootOrPlantarComplaint(text) ||
+    isBelowKneeOrLowerLeg(text)
+  ) {
     return { action: "questionnaire", bodyPart: "ankle_foot" };
+  }
+
+  // Vague "brazo" / "arm" — do NOT open shoulder/elbow; ask where first
+  if (isVagueArmComplaint(text)) {
+    return {
+      action: "respond",
+      intent: "general",
+      answer: vagueArmClarifyMessage("es"),
+    };
   }
 
   for (const { part, re } of PART_PATTERNS) {
@@ -257,11 +324,27 @@ export function reportsFunctionalTestResults(text: string): boolean {
   const yesNoCount = (t.match(/\b(s[ií]|no)\b/gi) ?? []).length;
   if (yesNoCount >= 2) return true;
   if (/\b\d+[.)]\s*(s[ií]|no)\b/i.test(t) && yesNoCount >= 1) return true;
+  // Numbered answers like "1. sí" "2. duele un poco"
+  if (/\b\d+[.)]\s+\S+/i.test(t) && (yesNoCount >= 1 || /\bduele|dolor|puedo|pude|sin dolor/i.test(t))) {
+    return true;
+  }
+  // "no puedo correr / chutar / sentadilla…" = answering movement tests
+  const noPuedoCount = (t.match(/\bno\s+puedo\b/gi) ?? []).length;
   if (
-    /\b(prueba|test|movimiento|girar|elevar|inclinar|flexionar|sentadilla|pata coja)\b/i.test(
+    noPuedoCount >= 2 ||
+    (noPuedoCount >= 1 &&
+      /\b(correr|chutar|bal[oó]n|sentadilla|extensi[oó]n|squat|hematoma)\b/i.test(t))
+  ) {
+    return true;
+  }
+  if (/\bhematoma\b/i.test(t) && /\b(visible|puedo|correr|sentadilla|chutar)\b/i.test(t)) {
+    return true;
+  }
+  if (
+    /\b(prueba|test|movimiento|girar|elevar|inclinar|flexionar|sentadilla|pata coja|extensi[oó]n|chutar|correr|squat)\b/i.test(
       t
     ) &&
-    /\b(duele|dolor|pude|puedo|sin dolor|hormigueo|positiv|negativ|empeora|mejor|bloqueo|mareo)\b/i.test(
+    /\b(duele|dolor|pude|puedo|sin dolor|hormigueo|positiv|negativ|empeora|mejor|bloqueo|mareo|hematoma)\b/i.test(
       t
     )
   ) {
@@ -270,8 +353,167 @@ export function reportsFunctionalTestResults(text: string): boolean {
   return false;
 }
 
+/** Closing copy when the patient confirms they have no more related questions. */
+export function consultaFinishedCloseMessage(
+  language: "es" | "en" = "es"
+): string {
+  if (language === "en") {
+    return `Perfect. We'll close this consultation here. Follow Physio's recommendations above.
+
+If something else comes up later, open a **new consultation**.`;
+  }
+  return `Perfecto. Damos por terminada esta consulta. Sigue las recomendaciones de Physio de arriba.
+
+Si más adelante te duele otra cosa o tienes una duda distinta, abre una **nueva consulta**.`;
+}
+
+export function isConsultaFinishedCloseMessage(content: string): boolean {
+  return (
+    /damos por terminada esta consulta|we'll close this consultation here|queda cerrada la orientación de esta consulta|full orientation for this consultation/i.test(
+      content
+    )
+  );
+}
+
+/** Ask after the post-tests (or post-orientation) recommendations. */
+export function askMoreRelatedQuestionsPrompt(
+  language: "es" | "en" = "es"
+): string {
+  if (language === "en") {
+    return "Do you have any other question related to this injury?";
+  }
+  return "¿Tienes alguna otra pregunta relacionada con esta lesión?";
+}
+
+export function ensureAsksMoreRelatedQuestions(
+  answer: string,
+  language: "es" | "en" = "es"
+): string {
+  const t = answer.trim();
+  if (
+    /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
+      t
+    )
+  ) {
+    return t;
+  }
+  return `${t}\n\n${askMoreRelatedQuestionsPrompt(language)}`;
+}
+
+/** Patient says they have no more questions about this injury. */
+export function declinesMoreRelatedQuestions(text: string): boolean {
+  const t = stripSoftConfirmPunctuation(text).toLowerCase();
+  if (!t) return false;
+  if (reportsFunctionalTestResults(text)) return false;
+  if (
+    /^(no|nope|nada|ninguna|no\s+gracias|gracias)[\s!.]*$/i.test(t) ||
+    /\b(no\s+tengo(\s+m[aá]s|\s+otra)?|nada\s+m[aá]s|ninguna\s+(otra\s+)?(pregunta|duda)|eso\s+es\s+todo|ya\s+est[aá]|ya\s+no|no\s+gracias|sin\s+m[aá]s\s+preguntas|that'?s\s+all|no\s+more\s+questions|nothing\s+else)\b/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Patient says yes to "any other related question?" without asking yet. */
+export function affirmsMoreRelatedQuestions(text: string): boolean {
+  const t = stripSoftConfirmPunctuation(text).toLowerCase();
+  if (!t) return false;
+  if (declinesMoreRelatedQuestions(text)) return false;
+  if (reportsFunctionalTestResults(text)) return false;
+  return /^(s[ií]|sip|yes|yeah|ok|vale|claro|afirmativo)[\s!.]*$/i.test(t);
+}
+
+export function inviteRelatedQuestionMessage(
+  language: "es" | "en" = "es"
+): string {
+  if (language === "en") {
+    return "Sure — go ahead and ask whatever you need about this injury.";
+  }
+  return "Claro — pregunta lo que necesites sobre esta lesión.";
+}
+
+export function unrelatedConsultaRedirectMessage(
+  injuryLabel: string,
+  language: "es" | "en" = "es"
+): string {
+  const label = injuryLabel.trim() || (language === "en" ? "this injury" : "esta lesión");
+  if (language === "en") {
+    return `This chat is only about **${label}**. If you want to ask about a different issue, open a **new consultation** with the button below.`;
+  }
+  return `Este chat es solo sobre **${label}**. Si quieres preguntar por otra molestia o un tema distinto, abre una **nueva consulta** con el botón de abajo.`;
+}
+
+/**
+ * Rough gate: a message that looks like a different body region / new injury
+ * than the current consulta case.
+ */
+export function isUnrelatedConsultaQuestion(
+  text: string,
+  caseText: string,
+  caseParts: AdaptiveQuestionnairePart[]
+): boolean {
+  if (!text.trim()) return false;
+  if (reportsFunctionalTestResults(text)) return false;
+  if (declinesMoreRelatedQuestions(text)) return false;
+  if (affirmsMoreRelatedQuestions(text)) return false;
+  if (isMetaOrClarificationQuery(text)) return false;
+
+  const mentioned = detectBodyPartsFromText(text);
+  if (mentioned.length === 0) return false;
+
+  const allowed = new Set<AdaptiveQuestionnairePart>([
+    ...caseParts,
+    ...detectBodyPartsFromText(caseText),
+  ]);
+  const foreign = mentioned.filter((p) => !allowed.has(p));
+  return foreign.length > 0 && mentioned.every((p) => !allowed.has(p));
+}
+
+export function relatedInjuryFollowupContext(
+  injuryLabel: string,
+  language: "es" | "en" = "es",
+  options?: { askMore?: boolean }
+): string {
+  const label = injuryLabel.trim() || (language === "en" ? "this injury" : "esta lesión");
+  const askMore = options?.askMore !== false;
+  if (language === "en") {
+    return `RELATED FOLLOW-UP (CRITICAL): The patient is still in the SAME consultation about **${label}**.
+Answer only if the question is about this injury / zone / recovery.
+If it is clearly a DIFFERENT injury or topic, do NOT answer clinically — tell them to open a new consultation.
+${askMore ? "End your reply by asking if they have any other question related to this injury." : "Do NOT close the consultation. Functional tests may still be pending."}`;
+  }
+  return `SEGUIMIENTO DE LA MISMA LESIÓN (CRÍTICO): El paciente sigue en la MISMA consulta sobre **${label}**.
+Responde solo si la pregunta es sobre esta lesión / zona / recuperación.
+Si es claramente OTRA lesión u otro tema, NO respondas clínicamente — indícale que abra una nueva consulta.
+${askMore ? "Termina preguntando si tiene alguna otra pregunta relacionada con esta lesión." : "NO cierres la consulta. Las pruebas funcionales pueden seguir pendientes."}`;
+}
+
+/** Context when the patient is answering the functional tests from the last orientation. */
+export function functionalTestResultsFollowupContext(
+  language: "es" | "en" = "es"
+): string {
+  if (language === "en") {
+    return `FUNCTIONAL TEST RESULTS (CRITICAL): The patient is answering the **functional tests** you already asked for in this same consultation.
+READ their answers carefully. INTERPRET them against the prior orientation and questionnaire.
+Give a clearer conclusion about the likely injury / structures involved and concrete recommendations (what to do now / in the meantime).
+Do NOT start a new questionnaire. Do NOT pretend this is a new body region. Do NOT ask them to fill another form.
+Do NOT ignore what they wrote.
+End with: "${askMoreRelatedQuestionsPrompt("en")}"`;
+  }
+  return `RESULTADOS DE PRUEBAS FUNCIONALES (CRÍTICO): El paciente está respondiendo a las **pruebas funcionales** que ya le pediste en ESTA misma consulta.
+LEE con atención lo que responde. INTERPRETA los resultados junto con la orientación y el cuestionario previos.
+Da una conclusión más clara sobre la lesión / estructuras afectadas y recomendaciones concretas (qué hacer ahora / mientras tanto).
+NO empieces un cuestionario nuevo. NO trates esto como otra zona corporal nueva. NO pidas otro formulario.
+NO ignores lo que ha escrito el paciente.
+Termina con: "${askMoreRelatedQuestionsPrompt("es")}"`;
+}
+
 /** After tests are done, patient wants to move on to the next questionnaire. */
 export function wantsToContinueToNextQuestionnaire(text: string): boolean {
+  // Answering tests is NOT "start the next questionnaire"
+  if (reportsFunctionalTestResults(text)) return false;
   const t = stripSoftConfirmPunctuation(text);
   if (!t || isChoosingOrAskingNextStep(text)) return false;
   if (isAffirmativeNextPart(text)) return true;
@@ -421,6 +663,7 @@ export function isClearStartNextPart(
 ): boolean {
   const t = stripSoftConfirmPunctuation(text);
   if (!t) return false;
+  if (reportsFunctionalTestResults(text)) return false;
   if (isDeclineNextPart(text)) return false;
   // Questionnaire now + tests later = start the real questionnaire UI
   if (wantsQuestionnaireThenTests(text)) return true;
@@ -506,12 +749,26 @@ Responde DIRECTAMENTE a lo que pregunta el paciente. Si duda, explica ambas opci
 
 /**
  * Fix LLM/local misclassification: foot/plantar or "pierna debajo de rodilla" must not become knee.
+ * Vague "brazo"/"arm" must not become elbow or shoulder.
  * When several zones are named, do not force ankle_foot over the first-mentioned zone.
  */
 export function refineTriageBodyPart(
   triage: ConsultaTriageResult,
   text: string
 ): ConsultaTriageResult {
+  // Educational / “dime pruebas…” / third-person — never force a questionnaire
+  if (
+    isInformationalOrEducationalQuery(text) ||
+    isMetaOrClarificationQuery(text) ||
+    (triage.action === "questionnaire" && !shouldOpenSymptomQuestionnaire(text))
+  ) {
+    return {
+      action: "respond",
+      intent: "general",
+      answer: triage.answer ?? undefined,
+    };
+  }
+
   const multi = detectBodyPartsFromText(text).length > 1;
   if (multi) {
     const first = detectBodyPartsFromText(text)[0];
@@ -523,7 +780,18 @@ export function refineTriageBodyPart(
     }
     return triage;
   }
-  if (isFootOrPlantarComplaint(text) || isBelowKneeOrLowerLeg(text)) {
+  if (isVagueArmComplaint(text)) {
+    return {
+      action: "respond",
+      intent: "general",
+      answer: vagueArmClarifyMessage("es"),
+    };
+  }
+  if (
+    isVagueLegComplaint(text) ||
+    isFootOrPlantarComplaint(text) ||
+    isBelowKneeOrLowerLeg(text)
+  ) {
     if (triage.action === "questionnaire") {
       return { ...triage, bodyPart: "ankle_foot" };
     }

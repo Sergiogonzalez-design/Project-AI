@@ -318,7 +318,7 @@ export function ConsultaAdaptiveFinger({
         <View style={styles.redBox}>
           <Text style={styles.redText}>
             <Text style={{ fontWeight: "800" }}>{redFlagsDetectedLabel(locale)}</Text>{" "}
-            {triggered.join(", ")}. {redFlagsUrgencyNote(locale)}
+            {triggered.join(", ")}.{redFlagsUrgencyNote(locale)}
           </Text>
         </View>
       )}

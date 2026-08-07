@@ -5,6 +5,7 @@ import {
   AI_DATA_FIDELITY_RULES,
   AI_EVIDENCE_AND_SEVERITY_RULES,
   AI_FOLLOW_UP_EVIDENCE_RULES,
+  AI_ILLUSTRATED_CLINICAL_TESTS_RULES,
   AI_IMAGE_CONTEXT_RULES,
   appendSourcesFooter,
   buildFunctionalQuestionsPromptBlock,
@@ -79,6 +80,27 @@ function sanitizeImageUrl(imageUrl?: string | null): string | null {
   if (!imageUrl || typeof imageUrl !== "string") return null;
   const trimmed = imageUrl.trim();
   return isAllowedConsultImageUrl(trimmed) ? trimmed : null;
+}
+
+/** Split dense "1) … 2) …" paragraphs into Fisioterapia-style numbered lines with bold titles. */
+function formatEducationalNumberedList(text: string): string {
+  let out = text.replace(/\s+(\d+[.)]\s+)/g, "\n$1");
+  out = out
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trimEnd();
+      const m = /^(\d+[.)]\s+)(\*\*[^*]+\*\*|[^*:\n]+?)(:\s*)(.*)$/.exec(
+        trimmed.trim()
+      );
+      if (!m) return trimmed;
+      const [, num, titleRaw, colon, body] = m;
+      const title = titleRaw.startsWith("**")
+        ? titleRaw
+        : `**${titleRaw.trim()}**`;
+      return `${num}${title}${colon}${body}`;
+    })
+    .join("\n");
+  return out.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function buildUserContent(text: string, imageUrl?: string | null): UserContent {
@@ -280,18 +302,30 @@ REGLAS DE CLASIFICACIÓN:
      * Si menciona "rodilla" solo como referencia de ubicación ("debajo de la rodilla"), NO es knee.
    - CRÍTICO — pie / planta NO es "pierna":
      * "me duele la planta del pie" / "fascitis" / "talón" / "me duele el pie" → bodyPart = "ankle_foot" (el cuestionario se adapta al PIE). No trates el relato como dolor de pantorrilla/espinilla.
+   - CRÍTICO — "brazo" / "arm" es DEMASIADO VAGO (igual que "pierna"):
+     * "me duele el brazo" / "my arm hurts" SIN nombrar hombro, codo, antebrazo, muñeca, mano, bíceps, tríceps → action = "respond", intent = "general", bodyPart = null.
+     * En answer: pregunta DÓNDE exactamente duele del brazo (hombro / parte alta / codo / antebrazo / muñeca / mano). NUNCA asumas "elbow" ni "shoulder".
+     * Solo usa questionnaire + shoulder/elbow/wrist_hand/finger cuando el paciente nombre esa zona concreta.
+   - CRÍTICO — contexto de ENTRENO ≠ zona lesionada:
+     * "entreno de pierna" / "día de pecho" / "leg day" / "haciendo entrenamiento de espalda" describe la ACTIVIDAD, NO la lesión.
+     * "he estado haciendo entreno de pierna y tengo molestia en la espalda" → bodyPart = "back" (espalda). NUNCA abras cuestionario de pierna solo por "entreno de pierna".
+     * bodyPart = la zona donde dice que LE DUELE / tiene la molestia, no la zona que entrenó.
    - intent = null, answer = null
    - NUNCA saltes el cuestionario para dar ya un informe clínico: primero se recogen datos.
 
 2) action = "respond" con intent = "general" si pregunta por ejercicios, movilidad, estiramientos, prevención, información educativa, rutinas, ergonomía, o dudas generales — AUNQUE mencione una zona corporal.
    - Ejemplos: "ejercicios de movilidad para hombro", "cómo estirar la muñeca", "qué es la epicondilitis"
+   - CRÍTICO — pedir **pruebas funcionales / tests / protocolo** de una zona NO es una lesión personal:
+     * "dime pruebas funcionales para el pie" / "pruebas funcionales para hacerle a un paciente en el pie" / "qué tests hago en rodilla" → action = "respond", intent = "general". Responde listando las pruebas. NUNCA abras questionnaire solo porque aparece "pie"/"rodilla"/etc.
+     * Solo questionnaire si el usuario describe SU molestia actual en primera persona ("me duele…", "tengo dolor…").
 
 2b) action = "respond" con intent = "general" si el usuario NO describe un problema actual sino que pregunta CÓMO usar la consulta, qué debe hacer, pide aclaraciones, o pregunta por el fisioterapeuta / el código / el informe / por qué le han enviado aquí.
    - Ejemplos: "hola qué hago", "¿te digo lo que me duele o cómo funciona esto?", "cómo funciona", "por dónde empiezo", "no sé qué contarte", "me ha enviado mi fisio", "¿mi fisio verá esto?", "para qué es el código"
    - LEE el mensaje completo: si pregunta por el proceso, RESPONDE explicando. Si hay contexto de Fisioterapia en el system prompt: deja CLARO que este chat es SOLO para preparar el informe del fisio vinculado; para dudas generales debe ir a la pestaña Consulta; NUNCA digas que Consulta es hablar directamente con el fisioterapeuta. NO abras cuestionario.
    - Aunque diga "duele" de forma hipotética ("¿te digo lo que me duele?") NO es síntoma actual → respond, NO questionnaire.
 
-3) action = "respond" con intent = "general" — answer: respuesta útil en español (6-14 frases), empática, práctica, sin informe clínico largo. Indica que no es diagnóstico. Si procede, invita a describir molestias concretas para una valoración más detallada.
+3) action = "respond" con intent = "general" — answer: respuesta útil en español, empática, práctica, sin informe clínico largo. Indica que no es diagnóstico. Si procede, invita a describir molestias concretas para una valoración más detallada.
+   - Si listas pruebas funcionales / tests / ejercicios: UNA por línea, formato "1. **Nombre**: instrucción…", títulos en negrita. Si hay varias zonas, un título de sección **Zona** por cada una antes de su lista. NUNCA un párrafo continuo con "1) … 2) …".
 
 4) action = "respond" con intent = "symptom_other" SOLO si describe síntomas personales ACTUALES pero NO se puede asignar una zona concreta (muy vago) o varias zonas a la vez sin zona principal clara.
    - bodyPart = null, answer = null (el cliente abrirá cuestionario genérico)
@@ -301,7 +335,7 @@ NO uses clinical screen / respuesta larga de lesiones sin cuestionario cuando ha
 
 const GENERAL_CHAT_PROMPT = `Eres Physio, asistente de fisioterapia y medicina deportiva de Kinora.
 
-El usuario hace una consulta general (ejercicios, movilidad, prevención, información) o pregunta cómo funciona la consulta / qué debe hacer.
+El usuario hace una consulta general (ejercicios, movilidad, prevención, información, pruebas funcionales educativas) o pregunta cómo funciona la consulta / qué debe hacer.
 
 LEE SIEMPRE el mensaje del usuario y responde a lo que pregunta. No ignores su pregunta ni saltes directo a un cuestionario.
 
@@ -311,12 +345,32 @@ Si pregunta cómo funciona o qué debe hacer (ej. "hola qué hago", "¿te digo l
 - La orientación no sustituye una valoración presencial ni es un diagnóstico
 - Invítale a escribir su molestia cuando quiera
 
+Si pide **pruebas funcionales**, tests, maniobras o un listado similar de una zona (aunque diga "para un paciente"):
+FORMATO OBLIGATORIO (como en Fisioterapia — incumplir esto es un error):
+- 1–2 frases de introducción.
+- Si pide pruebas de UNA zona: pon un título de sección en negrita en su propia línea (ej. **Pie**, **Espalda**, **Rodilla**) y debajo la lista.
+- Si pide pruebas de VARIAS zonas (ej. espalda y pie): un título de sección en negrita por cada zona, en su propia línea, y debajo SOLO las pruebas de esa zona. Ejemplo:
+**Espalda**
+1. **Nombre de la prueba**: instrucción…
+2. **Otra prueba**: …
+**Pie**
+1. **Nombre de la prueba**: instrucción…
+- Después del título, UNA prueba por línea (nunca varias en el mismo párrafo), numeradas así:
+1. **Nombre de la prueba**: instrucción clara de qué hacer y qué observar.
+2. **Otra prueba**: …
+- El título de sección Y el nombre de cada prueba van SIEMPRE en negrita con **…**.
+- Usa el punto tras el número (1. 2. 3.), no "1)".
+- Reinicia la numeración en cada zona (1. 2. 3. por sección).
+- Por zona: el número que pida el usuario, o 3–6 si no especifica; lenguaje cotidiano (si citas nombre clínico, en negrita y explica en simple).
+- Cierra con 1 frase: no sustituye una valoración presencial.
+
+Para ejercicios / rutinas: mismo criterio — título de sección por zona si hay varias, un ítem por línea, títulos en **negrita**.
+
 Responde en español:
-- Empático, claro y práctico (normalmente 6-14 frases; más si hace falta para una mini-rutina)
+- Empático, claro y práctico
 - NO emitas diagnóstico definitivo
-- Puedes sugerir ejercicios o consejos generales con precauciones
-- Si no hay una lesión descrita, no inventes síntomas ni mecanismos
-- Cierra invitando a contarte molestias concretas si quiere una orientación más personalizada`;
+- Si no hay una lesión personal descrita, no inventes síntomas ni mecanismos
+- Si la pregunta era educativa, NO invites a rellenar un cuestionario de lesión`;
 
 const MULTI_PART_SUMMARY_PROMPT = `Eres Physio, asistente de Kinora. El paciente ha completado cuestionarios de VARIAS zonas corporales y ya recibió la orientación de cada una por separado.
 
@@ -401,6 +455,7 @@ const FOLLOW_UP_SYSTEM_PROMPT = `Eres un asistente de fisioterapia para Kinora. 
 REGLAS ESTRICTAS PARA ESTE MENSAJE:
 - Es el MISMO caso. Usa el historial. NUNCA reinicies como si fuera una consulta nueva ni repitas todo el cuestionario o toda la batería de tests sin interpretar lo que ya respondió.
 - Si el bloque "Contexto de la conversación" indica ELECCIÓN ENTRE ZONAS / BETWEEN-ZONES: respóndelo al pie de la letra. NO digas que ya empezaste un cuestionario nuevo. NO ignores la pregunta del paciente. Ayúdale a elegir entre pruebas funcionales ahora o el siguiente cuestionario.
+- Si el bloque indica RESULTADOS DE PRUEBAS FUNCIONALES / FUNCTIONAL TEST RESULTS: el paciente está respondiendo a las pruebas que YA pediste. LEE sus respuestas, INTERPRÉTALAS y da una conclusión más clara. NO abras ni inventes un cuestionario nuevo.
 - Si el paciente responde a tests funcionales (p. ej. "pude hacer los 3, pero me duele otra cosa / duele en otro sitio"): INTERPRETA eso primero. Baja hipótesis locales no reproducidas; abre alternativas (otra estructura local o causa a distancia, p. ej. cuello → codo). Haz 1–3 preguntas concretas de aclaración; no vuelvas a pedir "haz otra vez todos los tests" ni un informe completo.
 - Integra TODA la historia (mecanismo, neurológicos, agravantes, antecedentes) con las pruebas: las pruebas confirman/descartan, no borran hallazgos previos. Si hay neurológicos claros, no priorices solo musculotendinoso.
 - Tras interpretar: reordena hipótesis de mayor a menor probabilidad y di qué evidencia sube/baja cada una.
@@ -428,7 +483,9 @@ DESTINATARIO: profesional sanitario. Usa lenguaje técnico y nomenclatura clíni
 - MATERIAL DE LA CONSULTA: si el mensaje de usuario incluye el bloque de material disponible, ÚSALO. Prioriza lo que el fisio puede hacer en su consulta. Si recomiendas algo que no tiene (imagen, aparato, técnica), dilo claramente y sugiere dónde/cómo derivar (centro de imagen, otro profesional, etc.).
 - Sé conciso, estructurado y útil en consulta. Si falta información clínica, pide los datos que faltan.
 - No emitas diagnóstico definitivo; orienta el razonamiento clínico.
-- MANIOBRAS CON NOMBRE ESTÁNDAR: cuando listes pruebas/maniobras, usa el nombre clínico canónico en la misma línea numerada (p. ej. "1. **Test de Lachman**: …", "2. **Hawkins-Kennedy**: …", "3. **Pivot Shift**: …"). No inventes nombres raros; preferir: Lachman, cajón anterior, Pivot Shift, McMurray, Neer, Hawkins-Kennedy, Jobe/Empty can, Spurling, Thompson, FABER, FADIR, Phalen, Trendelenburg, Speed, Apprehension.
+- MANIOBRAS CON NOMBRE ESTÁNDAR: cuando listes pruebas/maniobras, usa el nombre clínico canónico en la misma línea numerada (p. ej. "1. **Test de Lachman**: …", "2. **Hawkins-Kennedy**: …", "3. **Pivot Shift**: …").
+
+${AI_ILLUSTRATED_CLINICAL_TESTS_RULES}
 
 FIDELIDAD AL MENSAJE DEL FISIOTERAPEUTA (CRÍTICO — incumplir esto es un error grave):
 - NO inventes ni asumas síntomas, temporalidad, mecanismo, intensidad, cronicidad ni hallazgos que el fisioterapeuta NO haya dicho explícitamente.
@@ -442,11 +499,13 @@ const PHYSIO_REPORT_SYSTEM_PROMPT = `Eres un asistente clínico de Kinora que re
 DESTINATARIO: un profesional sanitario (fisioterapeuta), no el paciente. Usa lenguaje técnico/clínico (nombres de estructuras, maniobras, hipótesis diagnósticas). NO simplifiques el texto como si fuera para el paciente.
 
 TERMINOLOGÍA TÉCNICA (CRÍTICO):
-- En **Resultados de las pruebas funcionales ya realizadas** y en **Pruebas/maniobras a realizar en la cita**, usa SIEMPRE los nombres clínicos reales de las maniobras (p. ej. Neer, Hawkins-Kennedy, Jobe/Empty can, Speed, Yergason, Spurling, ULTT, Phalen, Tinel, Cozen, Mill, Lachman, Pivot shift, McMurray, Thessaly, FABER, FADIR, Trendelenburg, Thompson, Ottawa ankle/foot, Windlass, Matles, etc.).
-- El paciente recibió las pruebas en lenguaje cotidiano (“elevar el brazo por encima de la cabeza”, “apoyar el pie…”, “girar la cabeza…”). TRADÚCELAS al nombre técnico equivalente cuando sea razonable, y entre paréntesis puedes citar brevemente lo que se le pidió al paciente.
+- En **Resultados de las pruebas funcionales ya realizadas** y en **Pruebas/maniobras a realizar en la cita**, usa SIEMPRE los nombres clínicos reales de las maniobras del catálogo ilustrado.
+- El paciente recibió las pruebas en lenguaje cotidiano (“elevar el brazo por encima de la cabeza”, “apoyar el pie…”, “girar la cabeza…”). TRADÚCELAS al nombre técnico equivalente del catálogo cuando sea razonable, y entre paréntesis puedes citar brevemente lo que se le pidió al paciente.
   Ejemplo: “**Neer / elevación activa dolorosa** (paciente: elevar el brazo por encima de la cabeza) — positivo / negativo / no realizado”.
-- En **Pruebas/maniobras a realizar en la cita**, prioriza maniobras con nombre técnico estándar; no digas solo “hacer que levante el brazo”.
+- En **Pruebas/maniobras a realizar en la cita**, lista numerada SOLO con maniobras del catálogo ilustrado; no digas solo “hacer que levante el brazo”.
 - Hipótesis y estructuras: usa nomenclatura clínica habitual (p. ej. tendinopatía del supraespinoso, radiculopatía C7, esguince ATFL, fascitis plantar, síndrome del túnel cubital).
+
+${AI_ILLUSTRATED_CLINICAL_TESTS_RULES}
 
 IMPORTANTE: no contradigas el informe que ya recibió el paciente (te lo paso como "Informe ya entregado al paciente"); constrúyelo, amplíalo y añade la lectura clínica que le falta a un texto pensado para el paciente. Si detectas una discrepancia relevante, señálala explícitamente como "punto a verificar en consulta" en vez de simplemente cambiar la conclusión.
 
@@ -558,6 +617,10 @@ Deno.serve(async (req) => {
         parsed = { action: "respond", intent: "general" };
       }
 
+      if (typeof parsed.answer === "string" && parsed.answer.trim()) {
+        parsed.answer = formatEducationalNumberedList(parsed.answer);
+      }
+
       return new Response(JSON.stringify(parsed), {
         headers: { ...CORS, "Content-Type": "application/json" },
       });
@@ -600,7 +663,9 @@ Deno.serve(async (req) => {
         max_tokens: 800,
       });
 
-      const answer = completion.choices[0].message.content ?? "";
+      const answer = formatEducationalNumberedList(
+        completion.choices[0].message.content ?? ""
+      );
       return new Response(JSON.stringify({ answer }), {
         headers: { ...CORS, "Content-Type": "application/json" },
       });

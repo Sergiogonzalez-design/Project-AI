@@ -11,9 +11,12 @@ type LinkedPhysio = {
 
 type Props = {
   onLinked: (physio: LinkedPhysio) => void;
+  /** When set, renders without full-page centering (e.g. modal). */
+  embedded?: boolean;
+  onCancel?: () => void;
 };
 
-export function PhysioCodeGate({ onLinked }: Props) {
+export function PhysioCodeGate({ onLinked, embedded = false, onCancel }: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,14 +59,40 @@ export function PhysioCodeGate({ onLinked }: Props) {
   }
 
   return (
-    <div className="flex h-full min-h-[420px] items-center justify-center p-6">
+    <div
+      className={
+        embedded
+          ? "p-1"
+          : "flex h-full min-h-[420px] items-center justify-center p-6"
+      }
+    >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className={`w-full rounded-2xl border border-slate-200 bg-white shadow-sm ${
+          embedded ? "p-5" : "max-w-md p-6"
+        }`}
       >
-        <h2 className="text-lg font-semibold text-slate-900">
-          Código de tu fisioterapeuta
-        </h2>
+        {embedded && onCancel ? (
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <h2 className="text-base font-semibold text-slate-900">
+              Código de tu fisioterapeuta
+            </h2>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Cerrar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 6l12 12M6 18L18 6" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <h2 className="text-lg font-semibold text-slate-900">
+            Código de tu fisioterapeuta
+          </h2>
+        )}
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Introduce el código que te ha compartido tu fisioterapeuta para
           empezar la consulta con la IA. Al terminar, el informe clínico se

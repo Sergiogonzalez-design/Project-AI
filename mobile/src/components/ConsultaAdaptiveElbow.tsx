@@ -235,7 +235,7 @@ export function ConsultaAdaptiveElbow({
       {urgent && currentSection !== "red_flags" && (
         <View style={styles.redBox}>
           <Text style={styles.redText}>
-            {redFlagsDetectedLabel(locale)} {triggered.join(", ")}. {redFlagsUrgencyNote(locale)}
+            {redFlagsDetectedLabel(locale)} {triggered.join(", ")}.{redFlagsUrgencyNote(locale)}
           </Text>
         </View>
       )}

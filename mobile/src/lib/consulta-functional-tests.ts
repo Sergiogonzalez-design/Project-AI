@@ -203,7 +203,7 @@ const REGION_ALIASES: { match: RegExp; id: FunctionalRegionId }[] = [
   { match: /gl[uú]teo|piriforme|buttock/i, id: "hamstring" },
   { match: /aductor|adductor|pubalgia|muslo\s*interno|inner\s*thigh|copenhague|copenhagen|mariposa|ingle/i, id: "adductor" },
   { match: /isquiotibial|isquio|hamstring|muslo\s*posterior|b[ií]ceps\s*femoral|corva/i, id: "hamstring" },
-  { match: /cuadr[ií]ceps|cu[aá]driceps|quad(?:riceps)?|muslo\s*anterior|recto\s*femoral/i, id: "quad" },
+  { match: /cuadr[ií]ceps|cu[aá]driceps|quad(?:riceps)?|muslo(\s*anterior)?|thigh|recto\s*femoral/i, id: "quad" },
   { match: /hombro|shoulder|manguito/i, id: "shoulder" },
   { match: /codo|elbow|epicóndil/i, id: "elbow" },
   { match: /muñeca|muneca|wrist/i, id: "wrist_hand" },

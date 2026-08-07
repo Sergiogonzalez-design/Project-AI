@@ -71,8 +71,8 @@ function parseNumberedLine(
   text: string
 ): { title: string; body: string | null } | null {
   const plain = stripMarkdownStars(text.trim().replace(/^\*\s+/, "• "));
-  if (!/^\d+\.\s+\S/.test(plain)) return null;
-  const withBody = /^(\d+\.\s+[^:]+):\s+(.+)$/.exec(plain);
+  if (!/^\d+[.)]\s+\S/.test(plain)) return null;
+  const withBody = /^(\d+[.)]\s+[^:]+):\s+(.+)$/.exec(plain);
   if (withBody) {
     return { title: `${withBody[1]}:`, body: withBody[2] };
   }
@@ -91,11 +91,11 @@ function BoldText({ text }: { text: string }) {
         const headingText = headingMatch?.[2] ?? null;
         const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
         const numberedText =
-          headingText && /^\d+\.\s+\S/.test(headingText)
+          headingText && /^\d+[.)]\s+\S/.test(headingText)
             ? headingText
-            : wholeBoldMatch && /^\d+\.\s+\S/.test(wholeBoldMatch[1])
+            : wholeBoldMatch && /^\d+[.)]\s+\S/.test(wholeBoldMatch[1])
               ? wholeBoldMatch[1]
-              : /^\d+\.\s+\S/.test(stripMarkdownStars(trimmed))
+              : /^\d+[.)]\s+\S/.test(stripMarkdownStars(trimmed))
                 ? stripMarkdownStars(trimmed)
                 : null;
 
