@@ -287,9 +287,9 @@ export function ConsultaAdaptiveFinger({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateFingerSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateFingerSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

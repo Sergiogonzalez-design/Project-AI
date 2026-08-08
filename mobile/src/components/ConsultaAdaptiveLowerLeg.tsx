@@ -208,9 +208,9 @@ export function ConsultaAdaptiveLowerLeg({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateLowerLegSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateLowerLegSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

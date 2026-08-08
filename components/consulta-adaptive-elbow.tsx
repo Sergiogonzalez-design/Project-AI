@@ -1,5 +1,7 @@
 "use client";
 
+import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
+
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
@@ -135,7 +137,7 @@ function QuestionField({
           value={typeof val === "string" ? val : ""}
           onChange={(e) => onPatch({ [q.id]: e.target.value } as Partial<ElbowAdaptiveAnswers>)}
           rows={2}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-50"
+          className="w-full rounded-[16px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-50"
         />
       </div>
     );
@@ -212,9 +214,10 @@ export function ConsultaAdaptiveElbow({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateElbowSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateElbowSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
+      scrollToQuestionnaireQuestion(issue.questionId);
       return;
     }
     onSectionError(null);
@@ -242,7 +245,9 @@ export function ConsultaAdaptiveElbow({
       </h2>
 
       {sectionQuestions.map((q) => (
-        <QuestionField key={q.id} q={q} answers={answers} onPatch={patch} locale={locale} />
+        <div key={q.id} data-question-id={q.id}>
+          <QuestionField q={q} answers={answers} onPatch={patch} locale={locale} />
+        </div>
       ))}
 
       {sectionError && <p className="mb-4 text-sm text-red-600">{sectionError}</p>}
@@ -252,7 +257,7 @@ export function ConsultaAdaptiveElbow({
           <button
             type="button"
             onClick={() => onSectionIndexChange(sectionIndex - 1)}
-            className="flex-1 rounded-2xl border-2 border-slate-200 py-3.5 text-sm font-semibold text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+            className="btn-secondary flex-1"
           >
             Anterior
           </button>
@@ -261,7 +266,7 @@ export function ConsultaAdaptiveElbow({
           <button
             type="button"
             onClick={handleNext}
-            className="flex-1 rounded-2xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
+            className="btn-primary flex-1"
           >
             Siguiente
           </button>

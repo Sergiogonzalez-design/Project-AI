@@ -80,13 +80,13 @@ function fallbackReminders(
         dayOffset: 5,
         hour: 11,
         title: "Progress check",
-        body: `Compare today with day one. If night pain, swelling, or weakness is rising, reopen Kinora or see a clinician.`,
+        body: `Compare today with day one. If night pain, swelling, or weakness is rising, reopen AIKinora or see a clinician.`,
       },
       {
         dayOffset: 7,
         hour: 10,
         title: "Weekly follow-up",
-        body: `Time for a Kinora check-in about your ${area}. Share what improved and what still limits you.`,
+        body: `Time for a AIKinora check-in about your ${area}. Share what improved and what still limits you.`,
       },
     ];
   }
@@ -122,13 +122,13 @@ function fallbackReminders(
       dayOffset: 5,
       hour: 11,
       title: "Chequeo de progreso",
-      body: `Compara con el primer día. Si sube el dolor nocturno, la inflamación o la debilidad, vuelve a Kinora o consulta a un profesional.`,
+      body: `Compara con el primer día. Si sube el dolor nocturno, la inflamación o la debilidad, vuelve a AIKinora o consulta a un profesional.`,
     },
     {
       dayOffset: 7,
       hour: 10,
       title: "Seguimiento semanal",
-      body: `Momento de un check-in en Kinora sobre ${area}. Cuenta qué mejoró y qué aún te limita.`,
+      body: `Momento de un check-in en AIKinora sobre ${area}. Cuenta qué mejoró y qué aún te limita.`,
     },
   ];
 }

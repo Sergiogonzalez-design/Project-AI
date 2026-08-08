@@ -333,7 +333,7 @@ export function reportsFunctionalTestResults(text: string): boolean {
   if (
     noPuedoCount >= 2 ||
     (noPuedoCount >= 1 &&
-      /\b(correr|chutar|bal[oó]n|sentadilla|extensi[oó]n|squat|hematoma)\b/i.test(t))
+      /\b(correr|chutar|bal[oó]n|sentadilla|extensi[oó]n|squat|hematoma|correr)\b/i.test(t))
   ) {
     return true;
   }
@@ -467,7 +467,14 @@ export function isUnrelatedConsultaQuestion(
     ...caseParts,
     ...detectBodyPartsFromText(caseText),
   ]);
-  const foreign = mentioned.filter((p) => !allowed.has(p));
+  // Vague "leg" / pierna often overlaps shin/quad/knee — don't treat as foreign.
+  const foreign = mentioned.filter((p) => {
+    if (allowed.has(p)) return false;
+    if (p === "ankle_foot" && (allowed.has("knee") || allowed.has("hip"))) {
+      // still foreign if only talking ankle while case is knee? keep foreign
+    }
+    return true;
+  });
   return foreign.length > 0 && mentioned.every((p) => !allowed.has(p));
 }
 
@@ -490,7 +497,6 @@ Si es claramente OTRA lesión u otro tema, NO respondas clínicamente — indíc
 ${askMore ? "Termina preguntando si tiene alguna otra pregunta relacionada con esta lesión." : "NO cierres la consulta. Las pruebas funcionales pueden seguir pendientes."}`;
 }
 
-/** Context when the patient is answering the functional tests from the last orientation. */
 export function functionalTestResultsFollowupContext(
   language: "es" | "en" = "es"
 ): string {
@@ -765,7 +771,7 @@ export function refineTriageBodyPart(
     return {
       action: "respond",
       intent: "general",
-      answer: triage.answer ?? undefined,
+      answer: triage.answer ?? null,
     };
   }
 
@@ -875,4 +881,3 @@ export async function respondToUserMessage(
   }
   return "No he podido generar una respuesta. Inténtalo de nuevo.";
 }
-

@@ -113,45 +113,61 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
       </div>
 
       <h2 className="mb-4 text-xl font-bold tracking-tight text-slate-900">{en ? L.urgency : "Comprobación de urgencia"}</h2>
-      <label className={labelClass}>{en ? L.rf_deformidad : "¿Deformidad evidente?"}</label>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_deformidad} onChange={(rf_deformidad) => patch({ rf_deformidad })} displayOption={displayOption} />
-      <label className={labelClass}>{en ? L.rf_fiebre : "¿Fiebre asociada?"}</label>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_fiebre} onChange={(rf_fiebre) => patch({ rf_fiebre })} displayOption={displayOption} />
-      <label className={labelClass}>{en ? L.rf_perdida_sensibilidad : "¿Pérdida de sensibilidad?"}</label>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_perdida_sensibilidad} onChange={(rf_perdida_sensibilidad) => patch({ rf_perdida_sensibilidad })} displayOption={displayOption} />
+      <div data-question-id="rf_deformidad">
+        <label className={labelClass}>{en ? L.rf_deformidad : "¿Deformidad evidente?"}</label>
+        <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_deformidad} onChange={(rf_deformidad) => patch({ rf_deformidad })} displayOption={displayOption} />
+      </div>
+      <div data-question-id="rf_fiebre">
+        <label className={labelClass}>{en ? L.rf_fiebre : "¿Tienes fiebre junto con el dolor?"}</label>
+        <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_fiebre} onChange={(rf_fiebre) => patch({ rf_fiebre })} displayOption={displayOption} />
+      </div>
+      <div data-question-id="rf_perdida_sensibilidad">
+        <label className={labelClass}>{en ? L.rf_perdida_sensibilidad : "¿Pérdida de sensibilidad?"}</label>
+        <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_perdida_sensibilidad} onChange={(rf_perdida_sensibilidad) => patch({ rf_perdida_sensibilidad })} displayOption={displayOption} />
+      </div>
 
       <h2 className="mb-4 mt-2 text-xl font-bold tracking-tight text-slate-900">{en ? L.problem : "Tu problema"}</h2>
-      <label className={labelClass}>{en ? L.evolucion : "¿Cuánto tiempo llevas con esto?"}</label>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.evolution} value={a.evolucion} onChange={(evolucion) => patch({ evolucion })} displayOption={displayOption} />
-      <label className={labelClass}>{en ? L.inicio : "¿Cómo fue el inicio?"}</label>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.onset} value={a.inicio} onChange={(inicio) => patch({ inicio })} displayOption={displayOption} />
-      <label className={labelClass}>{en ? L.mecanismo : "¿Qué pudo provocarlo? (puedes marcar varias)"}</label>
-      <MultiChipGroup options={GENERIC_FIELD_OPTIONS.mechanism} value={a.mecanismo} onChange={(mecanismo) => patch({ mecanismo })} displayOption={displayOption} />
+      <div data-question-id="evolucion">
+        <label className={labelClass}>{en ? L.evolucion : "¿Cuánto tiempo llevas con esto?"}</label>
+        <ChipGroup options={GENERIC_FIELD_OPTIONS.evolution} value={a.evolucion} onChange={(evolucion) => patch({ evolucion })} displayOption={displayOption} />
+      </div>
+      <div data-question-id="inicio">
+        <label className={labelClass}>{en ? L.inicio : "¿Cómo fue el inicio?"}</label>
+        <ChipGroup options={GENERIC_FIELD_OPTIONS.onset} value={a.inicio} onChange={(inicio) => patch({ inicio })} displayOption={displayOption} />
+      </div>
+      <div data-question-id="mecanismo">
+        <label className={labelClass}>{en ? L.mecanismo : "¿Qué pudo provocarlo? (puedes marcar varias)"}</label>
+        <MultiChipGroup options={GENERIC_FIELD_OPTIONS.mechanism} value={a.mecanismo} onChange={(mecanismo) => patch({ mecanismo })} displayOption={displayOption} />
+      </div>
       {a.mecanismo.includes("Otro") && (
-        <>
-          <label className={labelClass}>{en ? L.mecanismo_otro : "Describe el mecanismo"}</label>
+        <div data-question-id="mecanismo_otro">
+          <label className={labelClass}>{en ? L.mecanismo_otro : "Cuéntanos qué pasó o cómo empezó"}</label>
           <textarea
             value={a.mecanismo_otro}
             onChange={(e) => patch({ mecanismo_otro: e.target.value })}
             rows={2}
             className={textareaClass}
           />
-        </>
+        </div>
       )}
-      <PainScale
-        value={a.intensidad_dolor}
-        onChange={(v) => patch({ intensidad_dolor: v })}
-        label={en ? L.intensidad : "Intensidad del dolor"}
-        locale={locale}
-      />
-      <label className={labelClass}>{en ? L.descripcion : "Detalles adicionales (opcional)"}</label>
-      <textarea
-        value={a.descripcion}
-        onChange={(e) => patch({ descripcion: e.target.value })}
-        rows={3}
-        placeholder={en ? L.descripcion_ph : "Cualquier información que quieras añadir…"}
-        className={textareaClass}
-      />
+      <div data-question-id="intensidad_dolor">
+        <PainScale
+          value={a.intensidad_dolor}
+          onChange={(v) => patch({ intensidad_dolor: v })}
+          label={en ? L.intensidad : "Intensidad del dolor"}
+          locale={locale}
+        />
+      </div>
+      <div data-question-id="descripcion">
+        <label className={labelClass}>{en ? L.descripcion : "Detalles adicionales (opcional)"}</label>
+        <textarea
+          value={a.descripcion}
+          onChange={(e) => patch({ descripcion: e.target.value })}
+          rows={3}
+          placeholder={en ? L.descripcion_ph : "Cualquier información que quieras añadir…"}
+          className={textareaClass}
+        />
+      </div>
     </div>
   );
 }

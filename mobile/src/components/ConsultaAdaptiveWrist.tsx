@@ -132,11 +132,11 @@ function WristLocationMap({
           { opt: "Lado del pulgar", hotStyle: styles.hotThumbSide },
           { opt: "Base del pulgar", hotStyle: styles.hotThumbBase },
           { opt: "Lado del meñique", hotStyle: styles.hotUlnarSide },
-          { opt: "Cara dorsal (parte externa)", hotStyle: styles.hotBack },
+          { opt: "Dorso de la mano (parte de atrás)", hotStyle: styles.hotBack },
           { opt: "Toda la muñeca", hotStyle: styles.hotEntire },
           { opt: "Centro de la muñeca", hotStyle: styles.hotCenter },
           { opt: "Hacia la mano", hotStyle: styles.hotIntoHand },
-          { opt: "Cara palmar (parte interna)", hotStyle: styles.hotPalm },
+          { opt: "Palma de la mano (parte de dentro)", hotStyle: styles.hotPalm },
         ].map(({ opt, hotStyle }) => (
           <Pressable
             key={opt}
@@ -326,9 +326,9 @@ export function ConsultaAdaptiveWrist({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateWristSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateWristSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

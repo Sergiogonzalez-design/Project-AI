@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Error de acceso · Kinora",
+  title: "Error de acceso · AIKinora",
 };
 
 export default function AuthCodeErrorPage() {

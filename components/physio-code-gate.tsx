@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type LinkedPhysio = {
@@ -14,17 +14,29 @@ type Props = {
   /** When set, renders without full-page centering (e.g. modal). */
   embedded?: boolean;
   onCancel?: () => void;
+  /** Prefill from invite URL (?code=). */
+  initialCode?: string | null;
+  /** Auto-submit once when initialCode is valid. */
+  autoSubmit?: boolean;
 };
 
-export function PhysioCodeGate({ onLinked, embedded = false, onCancel }: Props) {
-  const [code, setCode] = useState("");
+export function PhysioCodeGate({
+  onLinked,
+  embedded = false,
+  onCancel,
+  initialCode = null,
+  autoSubmit = false,
+}: Props) {
+  const [code, setCode] = useState(() =>
+    (initialCode ?? "").trim().toUpperCase().replace(/\s+/g, "")
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const autoSubmitted = useRef(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function linkWithCode(rawCode: string) {
     setError(null);
-    const normalized = code.trim().toUpperCase();
+    const normalized = rawCode.trim().toUpperCase().replace(/\s+/g, "");
     if (normalized.length < 6) {
       setError("Introduce el código que te ha dado tu fisioterapeuta.");
       return;
@@ -41,7 +53,7 @@ export function PhysioCodeGate({ onLinked, embedded = false, onCancel }: Props) 
         raw.includes("no encontrado")
           ? "Código no encontrado. Comprueba que lo has escrito bien."
           : raw.includes("fisioterapeutas no pueden")
-            ? "Estás en una cuenta de fisioterapeuta. Cierra sesión e inicia sesión con una cuenta de paciente (Persona) para introducir el código."
+            ? "Estás en una cuenta de fisioterapeuta. Usa «Modo paciente» solo para Consulta, o inicia sesión con una cuenta de paciente para vincularte."
             : raw
       );
       return;
@@ -56,6 +68,20 @@ export function PhysioCodeGate({ onLinked, embedded = false, onCancel }: Props) 
       physio_name: row.physio_name ?? null,
       clinic_name: row.clinic_name ?? null,
     });
+  }
+
+  useEffect(() => {
+    if (!autoSubmit || autoSubmitted.current) return;
+    const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+    if (normalized.length < 6) return;
+    autoSubmitted.current = true;
+    void linkWithCode(normalized);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once for invite deep link
+  }, [autoSubmit, code]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await linkWithCode(code);
   }
 
   return (
@@ -119,7 +145,7 @@ export function PhysioCodeGate({ onLinked, embedded = false, onCancel }: Props) 
         <button
           type="submit"
           disabled={loading}
-          className="mt-5 w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60"
+          className="mt-5 btn-primary w-full"
         >
           {loading ? "Vinculando…" : "Continuar a la consulta"}
         </button>

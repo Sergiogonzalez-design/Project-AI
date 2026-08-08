@@ -10,6 +10,8 @@ export function FisioSignOutButton() {
 
   async function handleSignOut() {
     setSigningOut(true);
+    document.cookie =
+      "aikinora_patient_mode=; path=/; max-age=0; SameSite=Lax";
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/login");

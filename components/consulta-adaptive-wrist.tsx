@@ -1,5 +1,7 @@
 "use client";
 
+import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
+
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
@@ -135,8 +137,8 @@ function WristLocationMap({
             { opt: "Lado del pulgar", cls: "left-1 top-[86px]" },
             { opt: "Base del pulgar", cls: "left-6 top-[130px]" },
             { opt: "Lado del meñique", cls: "right-1 top-[86px]" },
-            { opt: "Cara dorsal (parte externa)", cls: "left-1/2 top-4 -translate-x-1/2" },
-            { opt: "Cara palmar (parte interna)", cls: "left-1/2 top-[182px] -translate-x-1/2" },
+            { opt: "Dorso de la mano (parte de atrás)", cls: "left-1/2 top-4 -translate-x-1/2" },
+            { opt: "Palma de la mano (parte de dentro)", cls: "left-1/2 top-[182px] -translate-x-1/2" },
             { opt: "Centro de la muñeca", cls: "left-1/2 top-[104px] -translate-x-1/2" },
             { opt: "Toda la muñeca", cls: "left-1/2 top-[58px] -translate-x-1/2" },
             { opt: "Hacia la mano", cls: "left-1/2 top-[150px] -translate-x-1/2" },
@@ -233,7 +235,7 @@ function QuestionField({
           value={typeof val === "string" ? val : ""}
           onChange={(e) => onPatch({ [q.id]: e.target.value } as Partial<WristAdaptiveAnswers>)}
           rows={2}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-50"
+          className="w-full rounded-[16px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-50"
         />
       </div>
     );
@@ -323,9 +325,10 @@ export function ConsultaAdaptiveWrist({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateWristSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateWristSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
+      scrollToQuestionnaireQuestion(issue.questionId);
       return;
     }
     onSectionError(null);
@@ -353,7 +356,9 @@ export function ConsultaAdaptiveWrist({
       </h2>
 
       {sectionQuestions.map((q) => (
-        <QuestionField key={q.id} q={q} answers={answers} onPatch={patch} locale={locale} />
+        <div key={q.id} data-question-id={q.id}>
+          <QuestionField q={q} answers={answers} onPatch={patch} locale={locale} />
+        </div>
       ))}
 
       {sectionError && <p className="mb-4 text-sm text-red-600">{sectionError}</p>}
@@ -363,7 +368,7 @@ export function ConsultaAdaptiveWrist({
           <button
             type="button"
             onClick={() => onSectionIndexChange(sectionIndex - 1)}
-            className="rounded-2xl border-2 border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+            className="btn-secondary"
           >
             Atrás
           </button>
@@ -372,7 +377,7 @@ export function ConsultaAdaptiveWrist({
           <button
             type="button"
             onClick={handleNext}
-            className="flex-1 rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
+            className="btn-primary flex-1"
           >
             Siguiente
           </button>

@@ -144,6 +144,8 @@ ORDEN POR PROBABILIDAD (OBLIGATORIO):
 IMPORTANTE SOBRE **Pruebas funcionales**:
 - Obligatoria en la primera valoración si el caso NO es urgente/hospital.
 - Si el caso ES urgente: omite **Pruebas funcionales** (ve a hospital/imagen).
+- SOLO la zona lesionada/afectada de ESTE caso (p. ej. tobillo → solo tobillo/pie; NO rodilla, cadera, lumbar, Windlass o SLR “por conexión”).
+- NO incluyas pruebas de regiones adyacentes o cinéticas “por si acaso”, aunque puedan referir dolor. Hipótesis a distancia se explican en texto; las pruebas del paciente son solo locales.
 - En seguimientos: no repitas toda la batería si el paciente ya respondió; interpreta y solo añade pruebas nuevas si hace falta aclarar.
 - Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas.
 
@@ -683,9 +685,9 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
 
   return [
     protocol,
-    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/obvio → HOSPITAL → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 tests concretos; el paciente debe hacerlas y responder; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
+    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/obvio → HOSPITAL → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 tests concretos SOLO de la zona lesionada; el paciente debe hacerlas y responder; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
     `Banco de tests de valoración funcional (MÍNIMO de referencia, no lista cerrada) para la zona "${area || "general"}".`,
-    "CRÍTICO — DIFERENCIACIÓN KINORA: usa estas pruebas como base para la sección **Pruebas funcionales** y pide: «Haz estas pruebas y responde aquí qué pasa en cada una» (salvo urgencia hospitalaria). NO te limites a copiarlas literalmente: razona sobre las hipótesis más probables de ESTE caso concreto (mecanismo, zona exacta, agravantes) y, si una prueba clínica más específica y con mejor evidencia discrimina mejor entre esas hipótesis, sustitúyela o añádela (traducida a instrucción cotidiana). El objetivo es una valoración de calidad profesional, no una lista genérica.",
+    "CRÍTICO — DIFERENCIACIÓN KINORA: usa estas pruebas como base para la sección **Pruebas funcionales** y pide: «Haz estas pruebas y responde aquí qué pasa en cada una» (salvo urgencia hospitalaria). SOLO pruebas de la zona lesionada/afectada de ESTE caso — NO de regiones adyacentes o “conectadas” (p. ej. tobillo → no rodilla/lumbar/Windlass/SLR). NO te limites a copiarlas literalmente: razona sobre las hipótesis locales más probables y, si una prueba LOCAL más específica discrimina mejor, sustitúyela o añádela (traducida a instrucción cotidiana).",
     "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como instrucción cotidiana de movimiento (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco o una prueba clínica más específica trae jerga, tradúcela sin perder lo que realmente evalúa.",
     "PRIORIDAD: protocolo estructurado > RAG Functional Assessment / Special Tests / Assessment Dossier > tu propio razonamiento clínico para este caso > banco local genérico:",
     ...questions.map((q, i) => `${i + 1}. ${q}`),

@@ -213,9 +213,9 @@ export function ConsultaAdaptiveShoulder({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateShoulderSection(currentSection, answers, focus);
-    if (err) {
-      onSectionError(err);
+    const issue = validateShoulderSection(currentSection, answers, focus);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

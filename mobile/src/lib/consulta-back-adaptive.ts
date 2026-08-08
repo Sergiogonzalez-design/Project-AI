@@ -1,11 +1,12 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 /**
  * Adaptive questionnaire for back / lumbar-thoracic pain — same structure as knee / shoulder
  * (urgency → core → mechanism branches → neuro / sciatica pattern → history).
  */
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -18,7 +19,7 @@ export const EVOLUTION_OPTIONS = [
   "Más de 1 mes",
 ] as const;
 
-export const ONSET_FORM_OPTIONS = ["Repentino", "Progresivo"] as const;
+export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
   "Caída",
@@ -26,20 +27,20 @@ export const MECHANISM_OPTIONS = [
   "Levantamiento / esfuerzo",
   "Entrenamiento o ejercicio",
   "Movimiento repetitivo / postura",
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Otro",
 ] as const;
 
 export const BACK_LOCATION_OPTIONS = [
-  "Zona cervical baja / transición",
-  "Zona torácica / entre omóplatos",
-  "Zona lumbar alta",
-  "Zona lumbar baja",
-  "Sacro / articulación sacroilíaca",
+  "Parte baja del cuello / inicio de la espalda",
+  "Espalda media / entre omóplatos",
+  "Espalda baja (parte alta)",
+  "Espalda baja (parte baja)",
+  "Parte final de la espalda / junto al coxis (sacro)",
   "Coxis (final de la columna)",
-  "Unilateral izquierda",
-  "Unilateral derecha",
-  "Bilateral / centro",
+  "Solo lado izquierdo",
+  "Solo lado derecho",
+  "Ambos lados / en el centro",
   "No estoy seguro",
 ] as const;
 
@@ -51,16 +52,6 @@ export const PAIN_TYPE_OPTIONS = [
   "Hormigueo",
   "Eléctrico / descarga",
   "Malestar difuso",
-] as const;
-
-export const PAIN_SITUATION_OPTIONS = [
-  "En reposo",
-  "Al caminar",
-  "Con esfuerzo o carga",
-  "Por la noche",
-  "Al despertar / rigidez matutina",
-  "Al estar sentado",
-  "Constante",
 ] as const;
 
 export const FUNCTIONAL_LIMIT_OPTIONS = [
@@ -76,16 +67,16 @@ export const ASSOCIATED_SYMPTOM_OPTIONS = [
   "Hormigueo / entumecimiento en pierna",
   "Debilidad en pierna",
   "Dolor hacia glúteo",
-  "Dolor hacia pierna (ciática)",
+  "Dolor que baja por la pierna (ciática)",
   "Espasmo muscular",
   "Bloqueo / no puedo enderezarme",
   "Ninguno",
 ] as const;
 
 export const AGGRAVATING_MOVEMENT_OPTIONS = [
-  "Flexión (agacharse)",
-  "Extensión (echarse atrás)",
-  "Sedestación prolongada",
+  "Agacharse (doblar la espalda)",
+  "Echarse hacia atrás",
+  "Estar sentado mucho rato",
   "Estar de pie",
   "Caminar",
   "Tos / estornudo",
@@ -111,7 +102,7 @@ export const TRAINING_LOAD_OPTIONS = [
   "Carga elevada",
   "Carga moderada",
   "Peso corporal",
-  "Resistencia / endurance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)",
 ] as const;
 
 export const NEURO_LEG_OPTIONS = [
@@ -129,12 +120,6 @@ export const NEURO_ZONE_OPTIONS = [
   "Planta del pie",
   "Zona lumbar",
   "Zona sacra",
-] as const;
-
-export const TRAINING_IMPACT_OPTIONS = [
-  "No afecta",
-  "Parcialmente",
-  "No puedo entrenar o competir",
 ] as const;
 
 export const MORNING_STIFFNESS_DURATION_OPTIONS = [
@@ -158,7 +143,7 @@ export const NEUROGENIC_CLAUDICATION_OPTIONS = [
 
 export const LIFT_POSTURE_OPTIONS = [
   "Espalda recta, doblando rodillas",
-  "Espalda flexionada/curvada",
+  "Espalda doblada/curvada",
   "Con giro o rotación del tronco",
   "No lo recuerdo",
 ] as const;
@@ -181,7 +166,6 @@ export type BackAdaptiveAnswers = {
   intensidad_dolor: number;
   localizacion_espalda: string[];
   tipo_dolor: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
@@ -209,17 +193,14 @@ export type BackAdaptiveAnswers = {
   // Neuro branch
   neuro_pierna: string;
   neuro_zona: string[];
-  neuro_constante: string;
   neuro_tos_estornudo: string;
   // Sciatica pattern branch
   ciatica_debajo_rodilla: string;
   ciatica_peor_sentado: string;
   ciatica_mejor_caminar: string;
-  claudicacion_neurogena: string;
   // History
   lesion_previa: string;
   lesion_previa_detalle: string;
-  deporte_impacto: string;
 };
 
 export function defaultBackAdaptiveAnswers(): BackAdaptiveAnswers {
@@ -239,7 +220,6 @@ export function defaultBackAdaptiveAnswers(): BackAdaptiveAnswers {
     intensidad_dolor: 5,
     localizacion_espalda: [],
     tipo_dolor: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
@@ -262,15 +242,12 @@ export function defaultBackAdaptiveAnswers(): BackAdaptiveAnswers {
     repetitivo_frecuencia: "",
     neuro_pierna: "",
     neuro_zona: [],
-    neuro_constante: "",
     neuro_tos_estornudo: "",
     ciatica_debajo_rodilla: "",
     ciatica_peor_sentado: "",
     ciatica_mejor_caminar: "",
-    claudicacion_neurogena: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
-    deporte_impacto: "",
   };
 }
 
@@ -314,7 +291,7 @@ function isRepetitive(a: BackAdaptiveAnswers): boolean {
 function hasNeuro(a: BackAdaptiveAnswers): boolean {
   return (
     hasSymptom(a, "Hormigueo / entumecimiento en pierna") ||
-    hasSymptom(a, "Dolor hacia pierna (ciática)") ||
+    hasSymptom(a, "Dolor que baja por la pierna (ciática)") ||
     a.tipo_dolor.includes("Hormigueo")
   );
 }
@@ -322,7 +299,7 @@ function hasNeuro(a: BackAdaptiveAnswers): boolean {
 function hasSciaticaPattern(a: BackAdaptiveAnswers): boolean {
   return (
     a.irradiacion === "Sí" ||
-    hasSymptom(a, "Dolor hacia pierna (ciática)") ||
+    hasSymptom(a, "Dolor que baja por la pierna (ciática)") ||
     hasSymptom(a, "Dolor hacia glúteo")
   );
 }
@@ -351,7 +328,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
   {
     id: "rf_anestesia_silla",
     section: "red_flags",
-    label: "¿Entumecimiento en zona perineal / sensación de silla de montar?",
+    label: "¿Entumecimiento entre las piernas o en la zona del asiento (como si montaras a caballo)?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -360,7 +337,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     id: "rf_esfinteres",
     section: "red_flags",
     label:
-      "¿Alteración reciente del control de vejiga o intestino (incontinencia o retención)?",
+      "¿Problemas nuevos para controlar la orina o las heces (se escapan o no puedes ir)?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -378,7 +355,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     id: "rf_trauma_grave",
     section: "red_flags",
     label:
-      "¿Traumatismo reciente con imposibilidad de moverse o dolor nocturno severo tras caída?",
+      "¿Golpe o caída reciente y no pudiste moverte, o dolor nocturno muy fuerte tras la caída?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -387,7 +364,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     id: "rf_dolor_toracico_respiracion",
     section: "red_flags",
     label:
-      "¿Dolor torácico con dificultad para respirar o falta de aire junto al dolor de espalda?",
+      "¿Dolor en el pecho con dificultad para respirar o falta de aire junto al dolor de espalda?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -404,7 +381,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     id: "rf_riesgo_fractura_fragil",
     section: "red_flags",
     label:
-      "¿Osteoporosis, corticoides prolongados o mujer posmenopáusica, y el dolor apareció con esfuerzo mínimo (agacharte, estornudar)?",
+      "¿Te han dicho que tienes huesos frágiles (osteoporosis), tomas corticoides mucho tiempo, o eres mujer tras la menopausia, y el dolor empezó con un esfuerzo mínimo (agacharte, estornudar)?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -431,7 +408,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
   {
     id: "mecanismo_otro",
     section: "core",
-    label: "Describe el mecanismo",
+    label: "Cuéntanos qué pasó o cómo empezó",
     type: "text",
     required: true,
     showIf: (a) => a.mecanismo.includes("Otro"),
@@ -458,16 +435,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     type: "multi",
     options: PAIN_TYPE_OPTIONS,
     required: true,
-  },
-  {
-    id: "patron_dolor",
-    section: "core",
-    label: "¿En qué situaciones aparece o empeora? (puedes marcar varias)",
-    type: "multi",
-    options: PAIN_SITUATION_OPTIONS,
-    required: true,
-  },
-  {
+  },  {
     id: "limitacion_funcional",
     section: "core",
     label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)",
@@ -478,7 +446,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
   {
     id: "irradiacion",
     section: "core",
-    label: "¿El dolor se irradia hacia el glúteo o la pierna?",
+    label: "¿El dolor se extiende hacia el glúteo o la pierna?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -486,7 +454,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
   {
     id: "irradiacion_detalle",
     section: "core",
-    label: "¿Hasta dónde llega la irradiación?",
+    label: "¿Hasta dónde llega ese dolor?",
     type: "text",
     required: true,
     showIf: (a) => a.irradiacion === "Sí",
@@ -555,7 +523,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
   {
     id: "trauma_movilidad",
     section: "trauma",
-    label: "¿Pudiste moverte o enderezarte después del traumatismo?",
+    label: "¿Pudiste moverte o enderezarte después del golpe o la caída?",
     type: "single",
     options: ["Sí, con normalidad", "Parcialmente / con mucho dolor", "No, no pude"],
     required: true,
@@ -650,7 +618,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
   {
     id: "neuro_pierna",
     section: "neuro",
-    label: "¿En qué pierna notas el hormigueo, entumecimiento o ciática?",
+    label: "¿En qué pierna notas el hormigueo, entumecimiento o el dolor que baja (ciática)?",
     type: "single",
     options: NEURO_LEG_OPTIONS,
     required: true,
@@ -664,17 +632,7 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     options: NEURO_ZONE_OPTIONS,
     required: true,
     showIf: hasNeuro,
-  },
-  {
-    id: "neuro_constante",
-    section: "neuro",
-    label: "¿El hormigueo o entumecimiento es constante?",
-    type: "single",
-    options: ["No, intermitente", "Sí, constante"],
-    required: true,
-    showIf: hasNeuro,
-  },
-  {
+  },  {
     id: "neuro_tos_estornudo",
     section: "neuro",
     label: "¿Empeora con toser o estornudar?",
@@ -712,16 +670,6 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     required: true,
     showIf: hasSciaticaPattern,
   },
-  {
-    id: "claudicacion_neurogena",
-    section: "sciatica_pattern",
-    label: "¿Cómo se comporta el dolor de pierna al estar de pie o caminar?",
-    type: "single",
-    options: NEUROGENIC_CLAUDICATION_OPTIONS,
-    required: true,
-    showIf: hasSciaticaPattern,
-  },
-
   // History
   {
     id: "lesion_previa",
@@ -738,21 +686,12 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     type: "text",
     required: true,
     showIf: (a) => a.lesion_previa === "Sí",
-  },
-  {
-    id: "deporte_impacto",
-    section: "history",
-    label: "¿Cómo afecta a tu entrenamiento o deporte?",
-    type: "single",
-    options: TRAINING_IMPACT_OPTIONS,
-    required: true,
-  },
-];
+  },];
 
 export const BACK_SECTION_LABELS: Record<BackQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
   core: "Caracterización del problema",
-  trauma: "Detalles del traumatismo",
+  trauma: "Detalles del golpe o la caída",
   lift: "Detalles del levantamiento / esfuerzo",
   training: "Detalles del entrenamiento",
   repetitive: "Movimiento repetitivo / postura prolongada",
@@ -809,17 +748,17 @@ export function detectBackRedFlags(answers: BackAdaptiveAnswers): {
   const labels: Record<string, string> = {
     rf_debilidad_bilateral_pie_caido:
       "Debilidad bilateral progresiva / pie caído",
-    rf_anestesia_silla: "Anestesia en silla de montar / zona perineal",
-    rf_esfinteres: "Alteración vejiga/intestino (incontinencia/retención)",
+    rf_anestesia_silla: "Entumecimiento entre las piernas / zona del asiento",
+    rf_esfinteres: "Problemas para controlar orina o heces",
     rf_fiebre_perdida_peso:
       "Dolor nocturno con fiebre o pérdida de peso inexplicada",
     rf_trauma_grave:
-      "Trauma con imposibilidad de moverse o dolor nocturno severo",
+      "Golpe o caída con imposibilidad de moverse o dolor nocturno muy fuerte",
     rf_dolor_toracico_respiracion:
-      "Dolor torácico con disnea (sospecha cardiopulmonar)",
+      "Dolor en el pecho con dificultad para respirar",
     rf_antecedente_cancer: "Antecedente de cáncer (activo o en remisión)",
     rf_riesgo_fractura_fragil:
-      "Riesgo de fractura por fragilidad (osteoporosis/corticoides/posmenopausia) con esfuerzo mínimo",
+      "Huesos frágiles / osteoporosis / corticoides / postmenopausia y dolor con esfuerzo mínimo",
   };
   const triggered: string[] = [];
   for (const id of RED_FLAG_IDS) {
@@ -836,11 +775,11 @@ function isAnswered(q: BackQuestionDef, answers: BackAdaptiveAnswers): boolean {
   return typeof val === "string" && val.length > 0;
 }
 
-export function validateBackAdaptive(answers: BackAdaptiveAnswers): string | null {
+export function validateBackAdaptive(answers: BackAdaptiveAnswers): AdaptiveValidationIssue | null {
   const visible = getVisibleBackQuestions(answers);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -849,13 +788,13 @@ export function validateBackAdaptive(answers: BackAdaptiveAnswers): string | nul
 export function validateBackSection(
   section: BackQuestionSection,
   answers: BackAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleBackQuestions(answers).filter(
     (q) => q.section === section
   );
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -899,7 +838,6 @@ export function formatBackAdaptive(
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización espalda: ${formatMulti(answers.localizacion_espalda)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
-    `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación glúteo/pierna: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
@@ -951,7 +889,6 @@ export function formatBackAdaptive(
       "— HORMIGUEO / ENTUMECIMIENTO / CIÁTICA —",
       `Pierna afectada: ${answers.neuro_pierna}`,
       `Zonas: ${formatMulti(answers.neuro_zona)}`,
-      `Constante: ${answers.neuro_constante}`,
       `Empeora con tos/estornudo: ${answers.neuro_tos_estornudo}`
     );
   }
@@ -962,7 +899,6 @@ export function formatBackAdaptive(
       `Llega debajo de rodilla: ${answers.ciatica_debajo_rodilla}`,
       `Peor sentado: ${answers.ciatica_peor_sentado}`,
       `Mejor al caminar: ${answers.ciatica_mejor_caminar}`,
-      `Claudicación neurogénica (de pie vs caminando): ${answers.claudicacion_neurogena}`
     );
   }
 
@@ -970,7 +906,6 @@ export function formatBackAdaptive(
     "",
     "— ANTECEDENTES —",
     `Lesión/cirugía previa espalda: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
-    `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (discos, facetas, músculos, nervios, ligamentos), no para diagnosticar.",
     "",
@@ -1006,7 +941,7 @@ export function isLastBackSection(
 export const BACK_LABEL_EN: Partial<Record<string, string>> = {
   rf_debilidad_bilateral_pie_caido:
     "Progressive weakness in both legs or foot drop (difficulty lifting the foot)?",
-  rf_anestesia_silla: "Numbness in the perineal / saddle area?",
+  rf_anestesia_silla: "Numbness between the legs or in the seat area (saddle area)?",
   rf_esfinteres:
     "Recent bladder or bowel control changes (incontinence or retention)?",
   rf_fiebre_perdida_peso:
@@ -1021,14 +956,13 @@ export const BACK_LABEL_EN: Partial<Record<string, string>> = {
   evolucion: "How long have you had this problem?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
-  mecanismo_otro: "Describe the mechanism",
+  mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_espalda: "Where do you feel the pain in your back? (you can select several)",
   tipo_dolor: "How would you describe the pain? (you can select several)",
-  patron_dolor: "In which situations does it appear or worsen? (you can select several)",
   limitacion_funcional: "How much does it limit your daily activities?",
-  irradiacion: "Does the pain radiate to the buttock or leg?",
-  irradiacion_detalle: "How far does the radiation go?",
+  irradiacion: "Does the pain spread to the buttock or leg?",
+  irradiacion_detalle: "How far does that pain go?",
   sintomas_asociados: "What other symptoms do you notice? (you can select several)",
   movimientos_agravantes: "Which movements provoke or worsen it? (you can select several)",
   patron_sacroiliaco:
@@ -1049,15 +983,12 @@ export const BACK_LABEL_EN: Partial<Record<string, string>> = {
   repetitivo_frecuencia: "How often do you do that activity or posture?",
   neuro_pierna: "In which leg do you notice tingling, numbness, or sciatica?",
   neuro_zona: "Which areas are affected? (you can select several)",
-  neuro_constante: "Is the tingling or numbness constant?",
   neuro_tos_estornudo: "Does it worsen when coughing or sneezing?",
   ciatica_debajo_rodilla: "Does the pain go below the knee?",
   ciatica_peor_sentado: "Does it worsen when sitting for long periods?",
   ciatica_mejor_caminar: "Does it improve when walking a little?",
-  claudicacion_neurogena: "How does the leg pain behave when standing or walking?",
   lesion_previa: "Have you had previous back injuries or surgery?",
   lesion_previa_detalle: "Describe previous injuries, surgeries, or treatments",
-  deporte_impacto: "How does it affect your training or sport?",
 };
 
 export const BACK_OPTION_EN: Record<string, string> = {
@@ -1070,23 +1001,23 @@ export const BACK_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
+  "Poco a poco": "Gradual",
   Caída: "Fall",
   "Golpe directo": "Direct blow",
   "Levantamiento / esfuerzo": "Lifting / exertion",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Movimiento repetitivo / postura": "Repetitive movement / prolonged posture",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   Otro: "Other",
-  "Zona cervical baja / transición": "Lower cervical / transition zone",
-  "Zona torácica / entre omóplatos": "Thoracic / between shoulder blades",
-  "Zona lumbar alta": "Upper lumbar zone",
-  "Zona lumbar baja": "Lower lumbar zone",
-  "Sacro / articulación sacroilíaca": "Sacrum / sacroiliac joint",
+  "Parte baja del cuello / inicio de la espalda": "Lower neck / start of the back",
+  "Espalda media / entre omóplatos": "Mid-back / between shoulder blades",
+  "Espalda baja (parte alta)": "Upper part of the low back",
+  "Espalda baja (parte baja)": "Lower part of the low back",
+  "Parte final de la espalda / junto al coxis (sacro)": "Bottom of the spine / near the tailbone (sacrum)",
   "Coxis (final de la columna)": "Coccyx (end of the spine)",
-  "Unilateral izquierda": "Left side",
-  "Unilateral derecha": "Right side",
-  "Bilateral / centro": "Bilateral / center",
+  "Solo lado izquierdo": "Left side",
+  "Solo lado derecho": "Right side",
+  "Ambos lados / en el centro": "Bilateral / center",
   "No estoy seguro": "I'm not sure",
   Punzante: "Sharp",
   Quemazón: "Burning",
@@ -1114,13 +1045,13 @@ export const BACK_OPTION_EN: Record<string, string> = {
   "Hormigueo / entumecimiento en pierna": "Tingling / numbness in the leg",
   "Debilidad en pierna": "Weakness in the leg",
   "Dolor hacia glúteo": "Pain toward the buttock",
-  "Dolor hacia pierna (ciática)": "Pain toward the leg (sciatica)",
+  "Dolor que baja por la pierna (ciática)": "Pain toward the leg (sciatica)",
   "Espasmo muscular": "Muscle spasm",
   "Bloqueo / no puedo enderezarme": "Locking / can't straighten up",
   Ninguno: "None",
-  "Flexión (agacharse)": "Flexion (bending / squatting)",
-  "Extensión (echarse atrás)": "Extension (leaning back)",
-  "Sedestación prolongada": "Prolonged sitting",
+  "Agacharse (doblar la espalda)": "Flexion (bending / squatting)",
+  "Echarse hacia atrás": "Extension (leaning back)",
+  "Estar sentado mucho rato": "Prolonged sitting",
   "Estar de pie": "Standing",
   Caminar: "Walking",
   "Tos / estornudo": "Coughing / sneezing",
@@ -1139,7 +1070,7 @@ export const BACK_OPTION_EN: Record<string, string> = {
   "Carga elevada": "Heavy load",
   "Carga moderada": "Moderate load",
   "Peso corporal": "Bodyweight",
-  "Resistencia / endurance": "Endurance / resistance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)": "Endurance / resistance",
   Izquierda: "Left",
   Derecha: "Right",
   Ambas: "Both",
@@ -1148,8 +1079,8 @@ export const BACK_OPTION_EN: Record<string, string> = {
   "Parte posterior de la pantorrilla": "Back of the calf",
   "Pie / dedos": "Foot / toes",
   "Planta del pie": "Sole of the foot",
-  "Zona lumbar": "Lumbar zone",
-  "Zona sacra": "Sacral zone",
+  "Zona lumbar": "Lower back",
+  "Zona sacra": "Bottom of the spine / sacrum",
   "No afecta": "Does not affect",
   Parcialmente: "Partially",
   "No puedo entrenar o competir": "I can't train or compete",
@@ -1170,7 +1101,7 @@ export const BACK_OPTION_EN: Record<string, string> = {
     "I can walk for a while and then it worsens, it improves if I lean forward/sit down",
   "No noto relación con caminar": "I don't notice a relation with walking",
   "Espalda recta, doblando rodillas": "Straight back, bending the knees",
-  "Espalda flexionada/curvada": "Bent/rounded back",
+  "Espalda doblada/curvada": "Bent/rounded back",
   "Con giro o rotación del tronco": "With trunk twisting or rotation",
   "No lo recuerdo": "I don't remember",
 };

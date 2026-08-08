@@ -17,11 +17,13 @@ export function ConsultaNewConsultaPrompt({
       <button
         type="button"
         onClick={onNewConsulta}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] sm:w-auto sm:min-w-[220px]"
+        className="new-chat-btn sm:mx-auto sm:max-w-[280px]"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
-          <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-        </svg>
+        <span className="new-chat-btn__icon" aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+          </svg>
+        </span>
         {es ? "Nueva consulta" : "New consultation"}
       </button>
     </div>

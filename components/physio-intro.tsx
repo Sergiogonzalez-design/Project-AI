@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 const DEFAULT_GREETING =
-  "¡Hola! Soy Physio, tu asistente de Kinora. ¿En qué puedo ayudarte hoy?";
+  "¡Hola! Soy Physio, tu asistente de AIKinora. ¿En qué puedo ayudarte hoy?";
 
 type Props = {
   onSkip?: () => void;

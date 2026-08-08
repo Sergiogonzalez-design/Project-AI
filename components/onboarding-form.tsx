@@ -149,7 +149,7 @@ export function OnboardingForm() {
   return (
     <div className="w-full max-w-lg rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8">
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo-icon.png" alt="Kinora" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="AIKinora" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">
             {step === 1 ? "Información básica" : "Perfil deportivo"}
@@ -254,7 +254,7 @@ export function OnboardingForm() {
               setError(null);
               setStep(2);
             }}
-            className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow transition hover:bg-blue-700"
+            className="btn-primary w-full"
           >
             Continuar
           </button>
@@ -373,7 +373,7 @@ export function OnboardingForm() {
               type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className="flex-1 rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
+              className="btn-primary flex-1"
             >
               {loading ? "Guardando…" : "Finalizar"}
             </button>

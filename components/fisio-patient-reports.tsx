@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import {
+  AiOrientationDisclaimer,
+  PhysioReportView,
+} from "@/components/physio-report-view";
 import { createClient } from "@/lib/supabase/client";
 
 type ClinicalReport = {
@@ -23,26 +27,6 @@ function formatDate(value: string) {
   });
 }
 
-function renderReportBody(content: string) {
-  return content.split("\n").map((line, li) => {
-    const parts = line.split(/(\*\*[^*]+\*\*)/);
-    return (
-      <span key={li}>
-        {parts.map((part, i) =>
-          part.startsWith("**") && part.endsWith("**") ? (
-            <strong key={i} className="font-bold text-neutral-900">
-              {part.slice(2, -2)}
-            </strong>
-          ) : (
-            <span key={i}>{part}</span>
-          )
-        )}
-        {"\n"}
-      </span>
-    );
-  });
-}
-
 export function FisioPatientReports({
   patientId,
   patientLabel,
@@ -56,41 +40,58 @@ export function FisioPatientReports({
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const supabase = createClient();
     setLoading(true);
     setError(null);
-    const { data, error: queryError } = await supabase
-      .from("clinical_reports")
-      .select("id, created_at, body_area, patient_summary, physio_report, status")
-      .eq("patient_id", patientId)
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = createClient();
+      const { data, error: queryError } = await supabase
+        .from("clinical_reports")
+        .select(
+          "id, created_at, body_area, patient_summary, physio_report, status"
+        )
+        .eq("patient_id", patientId)
+        .order("created_at", { ascending: false });
 
-    if (queryError) {
-      setError(queryError.message);
-      setReports([]);
-      setLoading(false);
-      return;
-    }
+      if (queryError) {
+        setError(queryError.message);
+        setReports([]);
+        return;
+      }
 
-    const list = (data as ClinicalReport[]) ?? [];
-    setReports(list);
-    if (list.length > 0) setExpandedId((prev) => prev ?? list[0].id);
-    setLoading(false);
+      const list = (data as ClinicalReport[]) ?? [];
+      setReports(list);
+      if (list.length > 0) setExpandedId((prev) => prev ?? list[0].id);
 
-    // Opening this page = accessing the informes → clear "nuevo" badges.
-    const newIds = list.filter((r) => r.status === "new").map((r) => r.id);
-    if (newIds.length === 0) return;
+      // Opening this page = accessing the informes → clear "nuevo" badges.
+      const newIds = list.filter((r) => r.status === "new").map((r) => r.id);
+      if (newIds.length === 0) return;
 
-    const { error: updateError } = await supabase
-      .from("clinical_reports")
-      .update({ status: "viewed", viewed_at: new Date().toISOString() })
-      .in("id", newIds)
-      .eq("status", "new");
+      const { error: updateError } = await supabase
+        .from("clinical_reports")
+        .update({ status: "viewed", viewed_at: new Date().toISOString() })
+        .in("id", newIds)
+        .eq("status", "new");
 
-    if (!updateError) {
-      setReports((prev) =>
-        prev.map((r) => (newIds.includes(r.id) ? { ...r, status: "viewed" } : r))
+      if (!updateError) {
+        setReports((prev) =>
+          prev.map((r) =>
+            newIds.includes(r.id) ? { ...r, status: "viewed" } : r
+          )
+        );
+      }
+    } catch (e) {
+      const message =
+        e instanceof Error && e.message
+          ? e.message
+          : "No se pudo conectar con el servidor. Recarga la página.";
+      setError(
+        message === "Failed to fetch"
+          ? "No se pudo conectar con Supabase. Comprueba tu conexión y recarga."
+          : message
       );
+      setReports([]);
+    } finally {
+      setLoading(false);
     }
   }, [patientId]);
 
@@ -126,9 +127,10 @@ export function FisioPatientReports({
         {patientLabel || "Informes del paciente"}
       </h1>
       <p className="mt-2 text-sm text-neutral-600">
-        Informes clínicos generados automáticamente por Kinora tras cada
+        Informes clínicos generados automáticamente por AIKinora tras cada
         consulta de este paciente con la IA, para orientarte antes de la cita.
       </p>
+      <AiOrientationDisclaimer className="mt-2" />
 
       {error && (
         <div className="mt-6 rounded-xl bg-red-50 px-5 py-4 text-sm text-red-800">
@@ -175,20 +177,29 @@ export function FisioPatientReports({
                 </button>
                 {isOpen && (
                   <div className="border-t border-neutral-100 px-5 py-5">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-600">
                       Informe para el fisioterapeuta
                     </h3>
-                    <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
-                      {renderReportBody(report.physio_report)}
-                    </div>
+                    <PhysioReportView
+                      content={report.physio_report}
+                      clinicalReasoningLink={{
+                        patientId,
+                        reportId: report.id,
+                        bodyArea: report.body_area,
+                        patientName: patientLabel,
+                      }}
+                    />
 
                     {report.patient_summary && (
                       <details className="mt-6 rounded-xl bg-neutral-50 px-4 py-3">
                         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                          Ver informe entregado al paciente
+                          Ver orientación mostrada al paciente
                         </summary>
                         <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
-                          {renderReportBody(report.patient_summary)}
+                          {report.patient_summary.replace(
+                            /Syndesmosis/gi,
+                            "Sindesmosis"
+                          )}
                         </div>
                       </details>
                     )}

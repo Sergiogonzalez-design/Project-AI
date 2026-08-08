@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { ContactInquiryForm } from "@/components/contact-inquiry-form";
 import { Bot, ClipboardList, MessagesSquare, Newspaper } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,18 +15,26 @@ type NewsPost = {
 const TEAM = [
   {
     name: "David Ramirez Moreno",
-    role: "Entrenador Atlético",
+    role: "Fisioterapeuta",
     initials: "DR",
-    bio: "Especialista en medicina deportiva y prevención de lesiones. Acompaña a atletas en su proceso de recuperación con un enfoque integral y personalizado.",
-    credentials: ["Certificado NATA", "Especialista en rehabilitación deportiva", "Medicina preventiva"],
+    bio: "Fisioterapeuta especializado en medicina deportiva y prevención de lesiones. Acompaña a pacientes y atletas en su recuperación con un enfoque clínico integral y personalizado.",
+    credentials: [
+      "Grado en Fisioterapia",
+      "Especialista en rehabilitación deportiva",
+      "Prevención y readaptación de lesiones",
+    ],
     color: "from-blue-600 to-blue-400",
   },
   {
     name: "Sergio Gonzalez Fernandez",
-    role: "Fisioterapeuta & Desarrollador de Kinora",
+    role: "Desarrollador",
     initials: "SG",
-    bio: "Fisioterapeuta apasionado por la tecnología aplicada a la salud. Lidera el desarrollo de Kinora para democratizar el acceso a la orientación en fisioterapia.",
-    credentials: ["Grado en Fisioterapia", "Especialista en tecnología médica", "Desarrollo de herramientas IA en salud"],
+    bio: "Desarrollador de AIKinora. Diseña y construye la plataforma para que la orientación en fisioterapia sea clara, accesible y segura gracias a la tecnología y la inteligencia artificial.",
+    credentials: [
+      "Desarrollo de producto y software",
+      "Especialista en tecnología aplicada a la salud",
+      "Herramientas de IA para orientación clínica",
+    ],
     color: "from-blue-500 to-cyan-400",
   },
 ];
@@ -62,7 +71,7 @@ export default async function SobreNosotrosPage() {
           <div className="mb-5 inline-flex items-center justify-center rounded-2xl bg-white p-3 shadow-lg">
             <Image
               src="/logo-icon.png"
-              alt="Kinora"
+              alt="AIKinora"
               width={90}
               height={90}
               className="object-contain sm:h-[120px] sm:w-[120px]"
@@ -70,7 +79,7 @@ export default async function SobreNosotrosPage() {
             />
           </div>
           <h1 className="mb-3 text-3xl font-bold tracking-tight sm:mb-4 sm:text-5xl">
-            Kinora
+            AIKinora
           </h1>
           <p className="text-base leading-relaxed text-blue-100 sm:text-xl">
             Orientación inteligente en fisioterapia y medicina deportiva.
@@ -166,7 +175,7 @@ export default async function SobreNosotrosPage() {
       <section className="bg-amber-50 px-6 py-6">
         <div className="mx-auto flex max-w-3xl items-center justify-center gap-2 rounded-xl border border-amber-200 px-5 py-4 text-center text-sm text-amber-800">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Kinora proporciona orientación informativa, no diagnósticos médicos. Ante síntomas graves acude a urgencias o a tu médico.
+          AIKinora proporciona orientación informativa, no diagnósticos médicos. Ante síntomas graves acude a urgencias o a tu médico.
         </div>
       </section>
 
@@ -232,9 +241,9 @@ export default async function SobreNosotrosPage() {
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="mb-4 text-xl font-bold text-slate-800 sm:text-2xl">Nuestra misión</h2>
           <p className="text-base leading-relaxed text-slate-500 sm:text-lg">
-            Kinora nació con la idea de que cualquier persona debería poder
+            AIKinora nació con la idea de que cualquier persona debería poder
             recibir una primera orientación de calidad sobre sus síntomas musculoesqueléticos,
-            sin importar dónde se encuentre o qué hora es. Combinamos la experiencia clínica
+            sin importar dónde se encuentre o qué hora sea. Combinamos la experiencia clínica
             de profesionales con el poder de la inteligencia artificial para ofrecerte
             información clara, precisa y segura.
           </p>
@@ -300,12 +309,7 @@ export default async function SobreNosotrosPage() {
           <p className="mb-6 text-blue-100">
             Si eres profesional y quieres colaborar, o simplemente tienes una pregunta, escríbenos.
           </p>
-          <a
-            href="mailto:sergiogonzalez.usa@icloud.com"
-            className="inline-block rounded-xl bg-white px-6 py-3 text-sm font-bold text-blue-700 shadow transition hover:bg-blue-50"
-          >
-            Contactar al equipo
-          </a>
+          <ContactInquiryForm />
         </div>
       </section>
     </div>

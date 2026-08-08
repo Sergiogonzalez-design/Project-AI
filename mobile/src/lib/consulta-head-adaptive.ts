@@ -1,7 +1,8 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 
 /**
  * Adaptive questionnaire for head / headache — separate from neck so multi-part
@@ -19,10 +20,10 @@ export const EVOLUTION_OPTIONS = [
   "Más de 1 mes",
 ] as const;
 
-export const ONSET_FORM_OPTIONS = ["Repentino", "Progresivo"] as const;
+export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
-  "Golpe / traumatismo en la cabeza",
+  "Golpe fuerte en la cabeza",
   "Estrés o tensión",
   "Tras pantallas / esfuerzo visual",
   "Relacionado con el cuello o postura",
@@ -48,16 +49,6 @@ export const PAIN_TYPE_OPTIONS = [
   "Malestar difuso",
 ] as const;
 
-export const PAIN_SITUATION_OPTIONS = [
-  "En reposo",
-  "Con luz o ruido",
-  "Al mover el cuello",
-  "Por la mañana al despertar",
-  "Por la noche",
-  "Tras pantallas o concentración",
-  "Constante",
-] as const;
-
 export const FUNCTIONAL_LIMIT_OPTIONS = [
   "Ninguna",
   "Leve",
@@ -76,12 +67,6 @@ export const ASSOCIATED_SYMPTOM_OPTIONS = [
   "Ninguno",
 ] as const;
 
-export const TRAINING_IMPACT_OPTIONS = [
-  "No afecta",
-  "Parcialmente",
-  "No puedo entrenar o competir",
-] as const;
-
 export type HeadQuestionSection = "red_flags" | "core" | "neck_link" | "history";
 
 export type HeadAdaptiveAnswers = {
@@ -91,7 +76,6 @@ export type HeadAdaptiveAnswers = {
   rf_trauma: string;
   rf_fiebre_rigidez: string;
   rf_vomitos_progresivos: string;
-  rf_confusion: string;
   rf_dolor_nocturno_sistemico: string;
   inicio: string;
   mecanismo: string[];
@@ -99,14 +83,12 @@ export type HeadAdaptiveAnswers = {
   intensidad_dolor: number;
   localizacion_cabeza: string[];
   tipo_dolor: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   sintomas_asociados: string[];
   cuello_relacion: string;
   cuello_empeora: string;
   lesion_previa: string;
   lesion_previa_detalle: string;
-  deporte_impacto: string;
 };
 
 export function defaultHeadAdaptiveAnswers(): HeadAdaptiveAnswers {
@@ -117,7 +99,6 @@ export function defaultHeadAdaptiveAnswers(): HeadAdaptiveAnswers {
     rf_trauma: "",
     rf_fiebre_rigidez: "",
     rf_vomitos_progresivos: "",
-    rf_confusion: "",
     rf_dolor_nocturno_sistemico: "",
     inicio: "",
     mecanismo: [],
@@ -125,14 +106,12 @@ export function defaultHeadAdaptiveAnswers(): HeadAdaptiveAnswers {
     intensidad_dolor: 5,
     localizacion_cabeza: [],
     tipo_dolor: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     sintomas_asociados: [],
     cuello_relacion: "",
     cuello_empeora: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
-    deporte_impacto: "",
   };
 }
 
@@ -149,8 +128,7 @@ export type HeadQuestionDef = {
 function hasNeckLink(a: HeadAdaptiveAnswers): boolean {
   return (
     a.sintomas_asociados.includes("Dolor o rigidez de cuello") ||
-    a.mecanismo.includes("Relacionado con el cuello o postura") ||
-    a.patron_dolor.includes("Al mover el cuello")
+    a.mecanismo.includes("Relacionado con el cuello o postura")
   );
 }
 
@@ -204,16 +182,7 @@ export const HEAD_QUESTIONS: HeadQuestionDef[] = [
     type: "single",
     options: YES_NO,
     required: true,
-  },
-  {
-    id: "rf_confusion",
-    section: "red_flags",
-    label: "¿Te cuesta pensar con claridad, te desorientas o te sientes «como en otra realidad»?",
-    type: "single",
-    options: YES_NO,
-    required: true,
-  },
-  {
+  },  {
     id: "rf_dolor_nocturno_sistemico",
     section: "red_flags",
     label: "¿Dolor nocturno constante que no mejora con reposo, con pérdida de peso no explicada?",
@@ -242,7 +211,7 @@ export const HEAD_QUESTIONS: HeadQuestionDef[] = [
   {
     id: "mecanismo_otro",
     section: "core",
-    label: "Describe el mecanismo",
+    label: "Cuéntanos qué pasó o cómo empezó",
     type: "text",
     required: true,
     showIf: (a) => a.mecanismo.includes("Otro"),
@@ -269,16 +238,7 @@ export const HEAD_QUESTIONS: HeadQuestionDef[] = [
     type: "multi",
     options: PAIN_TYPE_OPTIONS,
     required: true,
-  },
-  {
-    id: "patron_dolor",
-    section: "core",
-    label: "¿En qué situaciones aparece o empeora?",
-    type: "multi",
-    options: PAIN_SITUATION_OPTIONS,
-    required: true,
-  },
-  {
+  },  {
     id: "limitacion_funcional",
     section: "core",
     label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)",
@@ -329,16 +289,7 @@ export const HEAD_QUESTIONS: HeadQuestionDef[] = [
     type: "text",
     required: true,
     showIf: (a) => a.lesion_previa === "Sí",
-  },
-  {
-    id: "deporte_impacto",
-    section: "history",
-    label: "¿Cómo afecta a tu entrenamiento, trabajo o deporte?",
-    type: "single",
-    options: TRAINING_IMPACT_OPTIONS,
-    required: true,
-  },
-];
+  },];
 
 export const HEAD_SECTION_LABELS: Record<HeadQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
@@ -374,7 +325,6 @@ const RED_FLAG_IDS: (keyof HeadAdaptiveAnswers)[] = [
   "rf_trauma",
   "rf_fiebre_rigidez",
   "rf_vomitos_progresivos",
-  "rf_confusion",
   "rf_dolor_nocturno_sistemico",
 ];
 
@@ -385,10 +335,9 @@ export function detectHeadRedFlags(answers: HeadAdaptiveAnswers): {
   const labels: Record<string, string> = {
     rf_peor_dolor: "Peor dolor de cabeza / inicio súbito distinto",
     rf_neuro: "Síntomas neurológicos (visión, habla, debilidad, confusión)",
-    rf_trauma: "Traumatismo craneal reciente",
+    rf_trauma: "Golpe fuerte en la cabeza reciente",
     rf_fiebre_rigidez: "Fiebre con rigidez de cuello",
     rf_vomitos_progresivos: "Vómitos progresivos / empeora al tumbarse o toser",
-    rf_confusion: "Confusión o desorientación",
     rf_dolor_nocturno_sistemico: "Dolor nocturno sistémico con pérdida de peso",
   };
   const triggered: string[] = [];
@@ -406,11 +355,11 @@ function isAnswered(q: HeadQuestionDef, answers: HeadAdaptiveAnswers): boolean {
   return typeof val === "string" && val.length > 0;
 }
 
-export function validateHeadAdaptive(answers: HeadAdaptiveAnswers): string | null {
+export function validateHeadAdaptive(answers: HeadAdaptiveAnswers): AdaptiveValidationIssue | null {
   const visible = getVisibleHeadQuestions(answers);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -419,11 +368,11 @@ export function validateHeadAdaptive(answers: HeadAdaptiveAnswers): string | nul
 export function validateHeadSection(
   section: HeadQuestionSection,
   answers: HeadAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleHeadQuestions(answers).filter((q) => q.section === section);
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -457,7 +406,6 @@ export function formatHeadAdaptive(answers: HeadAdaptiveAnswers, bodyMapText: st
     `Trauma craneal: ${answers.rf_trauma || "—"}`,
     `Fiebre/rigidez cuello: ${answers.rf_fiebre_rigidez || "—"}`,
     `Vómitos progresivos: ${answers.rf_vomitos_progresivos || "—"}`,
-    `Confusión: ${answers.rf_confusion || "—"}`,
     `Dolor nocturno sistémico: ${answers.rf_dolor_nocturno_sistemico || "—"}`,
     "",
     "— VARIABLES CLÍNICAS —",
@@ -466,7 +414,6 @@ export function formatHeadAdaptive(answers: HeadAdaptiveAnswers, bodyMapText: st
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización: ${formatMulti(answers.localizacion_cabeza)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
-    `Situaciones: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
   ];
@@ -488,7 +435,6 @@ export function formatHeadAdaptive(answers: HeadAdaptiveAnswers, bodyMapText: st
         ? ` — ${answers.lesion_previa_detalle}`
         : ""
     }`,
-    `Impacto deporte/trabajo: ${answers.deporte_impacto}`,
     "",
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
     "- Cefalea súbita «la peor de la vida» + neuro → urgencias (descartar hemorragia / evento vascular).",
@@ -515,23 +461,20 @@ export const HEAD_LABEL_EN: Partial<Record<string, string>> = {
   rf_fiebre_rigidez: "Fever with intense neck stiffness or very strong general illness?",
   rf_vomitos_progresivos:
     "Repeated vomiting that worsens, or pain that increases when lying down or coughing?",
-  rf_confusion: "Trouble thinking clearly, disorientation, or feeling «out of it»?",
   rf_dolor_nocturno_sistemico:
     "Constant night pain that doesn't improve with rest, with unexplained weight loss?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
-  mecanismo_otro: "Describe the mechanism",
+  mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_cabeza: "Where do you feel the pain in the head? (you can select several)",
   tipo_dolor: "How would you describe the pain?",
-  patron_dolor: "In which situations does it appear or worsen?",
   limitacion_funcional: "How much does it limit you day to day?",
   sintomas_asociados: "What other symptoms do you notice?",
   cuello_relacion: "Do you also notice pain, stiffness, or tension in the neck?",
   cuello_empeora: "Does turning or tilting the neck worsen the headache?",
   lesion_previa: "Have you had similar headaches or migraines before?",
   lesion_previa_detalle: "Describe previous episodes or diagnoses you were told",
-  deporte_impacto: "How does it affect your training, work, or sport?",
 };
 
 export const HEAD_OPTION_EN: Record<string, string> = {
@@ -544,8 +487,8 @@ export const HEAD_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
-  "Golpe / traumatismo en la cabeza": "Blow / head trauma",
+  "Poco a poco": "Gradual",
+  "Golpe fuerte en la cabeza": "Hard blow to the head",
   "Estrés o tensión": "Stress or tension",
   "Tras pantallas / esfuerzo visual": "After screens / visual strain",
   "Relacionado con el cuello o postura": "Related to neck or posture",

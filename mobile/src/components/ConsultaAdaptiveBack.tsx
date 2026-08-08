@@ -208,9 +208,9 @@ export function ConsultaAdaptiveBack({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateBackSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateBackSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

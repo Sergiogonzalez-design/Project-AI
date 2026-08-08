@@ -18,8 +18,16 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://klxlzzgrymkexvuelzex.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtseGx6emdyeW1rZXh2dWVsemV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTIyODEsImV4cCI6MjA5MDM4ODI4MX0.5hzENXbdJYndGlGIi4QnnV-g3EW7K5vh_TYEsQsnVPU",
+        "EXPO_PUBLIC_WEB_URL": "https://project-ai-swart.vercel.app",
+        "EXPO_PUBLIC_ADMIN_EMAIL": "sergiogonzalez.usa@icloud.com"
+      }
     }
   },
-  "submit": {}
+  "submit": {
+    "production": {}
+  }
 }

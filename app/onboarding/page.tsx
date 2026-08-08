@@ -5,7 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Completa tu perfil · Kinora",
+  title: "Completa tu perfil · AIKinora",
   description: "Información básica y perfil deportivo",
 };
 

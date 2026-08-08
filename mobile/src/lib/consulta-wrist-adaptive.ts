@@ -1,11 +1,12 @@
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 export const YES_NO = ["No", "Sí"] as const;
 
 export const WRIST_ONSET_OPTIONS = [
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Tras entrenamiento",
   "Tras levantar pesas",
   "Tras movimientos repetitivos",
@@ -13,7 +14,7 @@ export const WRIST_ONSET_OPTIONS = [
   "Tras un golpe directo",
   "Tras torcer la muñeca",
   "Al apoyarme con la mano",
-  "Apoyo repetido de peso (flexiones, plancha, pesas con muñeca extendida)",
+  "Apoyo repetido de peso (flexiones, plancha, pesas con muñeca estirada hacia atrás)",
   "No lo sé",
 ] as const;
 
@@ -27,13 +28,11 @@ export const WRIST_BEGIN_OPTIONS = [
   "Hace varios meses",
 ] as const;
 
-export const WRIST_APPEAR_OPTIONS = ["De repente", "Progresivamente", "Va y viene"] as const;
-
 export const WRIST_LOCATION_OPTIONS = [
   "Lado del pulgar",
   "Lado del meñique",
-  "Cara palmar (parte interna)",
-  "Cara dorsal (parte externa)",
+  "Palma de la mano (parte de dentro)",
+  "Dorso de la mano (parte de atrás)",
   "Centro de la muñeca",
   "Toda la muñeca",
   "Base del pulgar",
@@ -52,8 +51,8 @@ export const WRIST_PAIN_QUALITY_OPTIONS = [
 ] as const;
 
 export const WRIST_AGGRAVATING_MOVEMENTS = [
-  "Flexionar la muñeca (hacia delante)",
-  "Extender la muñeca (hacia atrás)",
+  "Doblar la muñeca hacia delante",
+  "Estirar la muñeca hacia atrás",
   "Mover la muñeca de lado a lado",
   "Rotar el antebrazo",
   "Agarrar objetos",
@@ -64,14 +63,6 @@ export const WRIST_AGGRAVATING_MOVEMENTS = [
   "Escribir",
   "Girar / retorcer (abrir tarros, llaves)",
   "Ninguno",
-] as const;
-
-export const WRIST_PAIN_TIMING = [
-  "Solo al mover",
-  "Con agarre o al levantar",
-  "En reposo",
-  "Por la noche",
-  "Constantemente",
 ] as const;
 
 export const WRIST_FUNCTIONAL_LIMIT = [
@@ -110,30 +101,9 @@ export const WRIST_RADIATION = [
 
 export const WRIST_PREVIOUS_EPISODE = ["Nunca", "Una vez", "Varias veces"] as const;
 
-export const WRIST_RELIEF = [
-  "Reposo",
-  "Hielo",
-  "Calor",
-  "Antiinflamatorios",
-  "Muñequera / férula",
-  "Movimiento",
-  "Nada",
-] as const;
-
-export const WRIST_TREATMENT = [
-  "No",
-  "Fisioterapia",
-  "Radiografía",
-  "Ecografía",
-  "Resonancia (RM)",
-  "TAC",
-  "Infiltración",
-  "Cirugía",
-] as const;
-
 export const FALL_WRIST_POSITION = [
-  "Hacia atrás (extendida)",
-  "Hacia delante (flexionada)",
+  "Hacia atrás (estirada)",
+  "Hacia delante (doblada)",
   "No lo sé",
 ] as const;
 
@@ -155,21 +125,16 @@ export type WristAdaptiveAnswers = {
   // Core
   inicio: string;
   comienzo: string;
-  aparicion: string;
   intensidad_dolor: number;
-  intensidad_peor: number;
   localizacion_muneca: string[];
   calidad_dolor: string[];
   movimientos_agravantes: string[];
-  cuando_duele: string[];
   limitacion_funcional: string[];
   sintomas_asociados: string[];
   irradiacion: string;
   episodio_previo: string;
   actividad_tipo: string;
   actividad_detalle: string;
-  mejora_con: string[];
-  tratamiento: string[];
 
   // Fall branch
   caida_mano_extendida: string;
@@ -230,21 +195,16 @@ export function defaultWristAdaptiveAnswers(): WristAdaptiveAnswers {
     rf_perdida_sensibilidad: "",
     inicio: "",
     comienzo: "",
-    aparicion: "",
     intensidad_dolor: 5,
-    intensidad_peor: 7,
     localizacion_muneca: [],
     calidad_dolor: [],
     movimientos_agravantes: [],
-    cuando_duele: [],
     limitacion_funcional: [],
     sintomas_asociados: [],
     irradiacion: "",
     episodio_previo: "",
     actividad_tipo: "",
     actividad_detalle: "",
-    mejora_con: [],
-    tratamiento: [],
     caida_mano_extendida: "",
     caida_posicion_muneca: "",
     caida_crack_pop: "",
@@ -325,7 +285,7 @@ function hasAnyLocation(a: WristAdaptiveAnswers, loc: string) {
 
 export const WRIST_QUESTIONS: WristQuestionDef[] = [
   // Red flags (always)
-  { id: "rf_deformidad", section: "red_flags", label: "¿Deformidad evidente tras la lesión?", type: "single", options: YES_NO, required: true },
+  { id: "rf_deformidad", section: "red_flags", label: "¿Tras la lesión, se ve torcido, deformado o muy distinto de lo normal?", type: "single", options: YES_NO, required: true },
   { id: "rf_no_movimiento", section: "red_flags", label: "¿No puedes mover la muñeca?", type: "single", options: YES_NO, required: true },
   { id: "rf_inflamacion_severa", section: "red_flags", label: "¿Hinchazón severa inmediatamente tras el golpe/caída?", type: "single", options: YES_NO, required: true },
   { id: "rf_herida_abierta", section: "red_flags", label: "¿Herida abierta?", type: "single", options: YES_NO, required: true },
@@ -337,23 +297,20 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
   // Core
   { id: "inicio", section: "core", label: "1. ¿Cómo empezó el problema?", type: "single", options: WRIST_ONSET_OPTIONS, required: true },
   { id: "comienzo", section: "core", label: "2. ¿Cuándo comenzó?", type: "single", options: WRIST_BEGIN_OPTIONS, required: true },
-  { id: "aparicion", section: "core", label: "3. ¿Cómo apareció el dolor?", type: "single", options: WRIST_APPEAR_OPTIONS, required: true },
-  { id: "intensidad_dolor", section: "core", label: "4. Intensidad de dolor actual", type: "slider", required: true, min: 0, max: 10 },
-  { id: "intensidad_peor", section: "core", label: "¿Cuál ha sido el peor dolor que has sentido?", type: "slider", required: true, min: 0, max: 10 },
-  { id: "localizacion_muneca", section: "core", label: "5. ¿Dónde duele? (puedes seleccionar varias zonas)", type: "wrist_map", options: WRIST_LOCATION_OPTIONS, required: true },
-  { id: "calidad_dolor", section: "core", label: "6. ¿Cómo es el dolor?", type: "multi", options: WRIST_PAIN_QUALITY_OPTIONS, required: true },
-  { id: "movimientos_agravantes", section: "core", label: "7. ¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: WRIST_AGGRAVATING_MOVEMENTS, required: true },
-  { id: "cuando_duele", section: "core", label: "8. ¿Cuándo duele?", type: "multi", options: WRIST_PAIN_TIMING, required: true },
-  { id: "limitacion_funcional", section: "core", label: "9. Limitación funcional (puedes marcar varias)", type: "multi", options: WRIST_FUNCTIONAL_LIMIT, required: true },
-  { id: "sintomas_asociados", section: "core", label: "10. Síntomas asociados", type: "multi", options: WRIST_ASSOCIATED_SYMPTOMS, required: true },
-  { id: "irradiacion", section: "core", label: "11. ¿Se irradia?", type: "single", options: WRIST_RADIATION, required: true },
-  { id: "episodio_previo", section: "core", label: "12. ¿Te ha pasado antes?", type: "single", options: WRIST_PREVIOUS_EPISODE, required: true },
+  { id: "intensidad_dolor", section: "core", label: "3. Intensidad de dolor actual", type: "slider", required: true, min: 0, max: 10 },
+  { id: "localizacion_muneca", section: "core", label: "4. ¿Dónde duele? (puedes seleccionar varias zonas)", type: "wrist_map", options: WRIST_LOCATION_OPTIONS, required: true },
+  { id: "calidad_dolor", section: "core", label: "5. ¿Cómo es el dolor?", type: "multi", options: WRIST_PAIN_QUALITY_OPTIONS, required: true },
+  { id: "movimientos_agravantes", section: "core", label: "6. ¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: WRIST_AGGRAVATING_MOVEMENTS, required: true },
+  { id: "limitacion_funcional", section: "core", label: "7. ¿Qué te cuesta hacer? (puedes marcar varias)", type: "multi", options: WRIST_FUNCTIONAL_LIMIT, required: true },
+  { id: "sintomas_asociados", section: "core", label: "8. ¿Qué más notas?", type: "multi", options: WRIST_ASSOCIATED_SYMPTOMS, required: true },
+  { id: "irradiacion", section: "core", label: "9. ¿El dolor se extiende a otra zona?", type: "single", options: WRIST_RADIATION, required: true },
+  { id: "episodio_previo", section: "core", label: "10. ¿Te ha pasado antes?", type: "single", options: WRIST_PREVIOUS_EPISODE, required: true },
 
   // No preguntamos deporte: pedimos actividad tipo + detalle (dinámico)
   {
     id: "actividad_tipo",
     section: "core",
-    label: "13. ¿Qué actividad estabas realizando cuando empezó o empeoró?",
+    label: "11. ¿Qué actividad estabas realizando cuando empezó o empeoró?",
     type: "single",
     options: ["Pesas / gimnasio", "Deporte", "Escalada", "Trabajo de oficina (teclado/ratón)", "Otra"] as const,
     required: true,
@@ -361,16 +318,14 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
   {
     id: "actividad_detalle",
     section: "core",
-    label: "14. Detalla la actividad",
+    label: "12. Detalla la actividad",
     type: "text",
     required: true,
   },
 
-  { id: "mejora_con", section: "core", label: "15. ¿Qué mejora el dolor?", type: "multi", options: WRIST_RELIEF, required: true },
-
   // Fall branch
-  { id: "caida_mano_extendida", section: "fall", label: "¿Aterrizaste con la mano extendida?", type: "single", options: YES_NO, required: true, showIf: (a) => a.inicio === "Tras una caída" || a.inicio === "Al apoyarme con la mano" },
-  { id: "caida_posicion_muneca", section: "fall", label: "¿La muñeca estaba flexionada o extendida?", type: "single", options: FALL_WRIST_POSITION, required: true, showIf: (a) => a.inicio === "Tras una caída" || a.inicio === "Al apoyarme con la mano" },
+  { id: "caida_mano_extendida", section: "fall", label: "¿Aterrizaste con la mano estirada hacia atrás?", type: "single", options: YES_NO, required: true, showIf: (a) => a.inicio === "Tras una caída" || a.inicio === "Al apoyarme con la mano" },
+  { id: "caida_posicion_muneca", section: "fall", label: "¿La muñeca estaba doblada hacia delante o hacia atrás?", type: "single", options: FALL_WRIST_POSITION, required: true, showIf: (a) => a.inicio === "Tras una caída" || a.inicio === "Al apoyarme con la mano" },
   { id: "caida_crack_pop", section: "fall", label: "¿Oíste un crack o pop?", type: "single", options: YES_NO, required: true, showIf: (a) => a.inicio === "Tras una caída" || a.inicio === "Al apoyarme con la mano" },
   { id: "caida_pudo_usar", section: "fall", label: "¿Pudiste seguir usando la mano?", type: "single", options: ["Sí", "Parcialmente", "No"] as const, required: true, showIf: (a) => a.inicio === "Tras una caída" || a.inicio === "Al apoyarme con la mano" },
   { id: "caida_hinchazon_inmediata", section: "fall", label: "¿La hinchazón apareció inmediatamente?", type: "single", options: YES_NO, required: true, showIf: (a) => a.inicio === "Tras una caída" || a.inicio === "Al apoyarme con la mano" },
@@ -421,7 +376,7 @@ export function detectWristRedFlags(answers: WristAdaptiveAnswers): {
 } {
   const triggered: string[] = [];
   const pairs: Array<[keyof WristAdaptiveAnswers, string]> = [
-    ["rf_deformidad", "deformidad evidente"],
+    ["rf_deformidad", "se ve torcido, deformado o muy distinto"],
     ["rf_no_movimiento", "incapacidad para mover la muñeca"],
     ["rf_inflamacion_severa", "hinchazón severa inmediata"],
     ["rf_herida_abierta", "herida abierta"],
@@ -479,17 +434,17 @@ function isAnswered(q: WristQuestionDef, answers: WristAdaptiveAnswers): boolean
   return typeof v === "string" ? v.trim().length > 0 : false;
 }
 
-export function validateWristSection(section: WristQuestionSection, answers: WristAdaptiveAnswers): string | null {
+export function validateWristSection(section: WristQuestionSection, answers: WristAdaptiveAnswers): AdaptiveValidationIssue | null {
   const questions = getVisibleWristQuestions(answers).filter((q) => q.section === section);
   for (const q of questions) {
     if (q.required && !isAnswered(q, answers)) {
-      return "Por favor, completa todas las preguntas antes de continuar.";
+      return missingQuestionIssue(q);
     }
   }
   return null;
 }
 
-export function validateWristAdaptive(answers: WristAdaptiveAnswers): string | null {
+export function validateWristAdaptive(answers: WristAdaptiveAnswers): AdaptiveValidationIssue | null {
   const sections = getVisibleWristSections(answers);
   for (const s of sections) {
     const err = validateWristSection(s, answers);
@@ -519,19 +474,15 @@ export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: s
   const core = [
     `Inicio: ${answers.inicio}`,
     `Cuándo empezó: ${answers.comienzo}`,
-    `Aparición: ${answers.aparicion}`,
     `Dolor actual: ${answers.intensidad_dolor}/10`,
-    `Peor dolor: ${answers.intensidad_peor}/10`,
     `Localización: ${fmtList(answers.localizacion_muneca)}`,
     `Calidad: ${fmtList(answers.calidad_dolor)}`,
     `Empeora con: ${fmtList(answers.movimientos_agravantes)}`,
-    `Cuándo duele: ${fmtList(answers.cuando_duele)}`,
     `Limitación: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Síntomas: ${fmtList(answers.sintomas_asociados)}`,
     `Irradiación: ${answers.irradiacion || "—"}`,
     `Episodios previos: ${answers.episodio_previo || "—"}`,
     `Actividad: ${answers.actividad_tipo || "—"} — ${answers.actividad_detalle || "—"}`,
-    `Mejora con: ${fmtList(answers.mejora_con)}`,
   ].join("\n");
 
   const fall =
@@ -662,20 +613,16 @@ export const WRIST_LABEL_EN: Partial<Record<string, string>> = {
   rf_perdida_sensibilidad: "Marked loss of sensation?",
   inicio: "1. How did the problem start?",
   comienzo: "2. When did it begin?",
-  aparicion: "3. How did the pain appear?",
-  intensidad_dolor: "4. Current pain intensity",
-  intensidad_peor: "What is the worst pain you have felt?",
-  localizacion_muneca: "5. Where does it hurt? (you can select several areas)",
-  calidad_dolor: "6. What is the pain like?",
-  movimientos_agravantes: "7. Which movements make it worse? (you can select several)",
-  cuando_duele: "8. When does it hurt?",
-  limitacion_funcional: "9. Functional limitation",
-  sintomas_asociados: "10. Associated symptoms",
-  irradiacion: "11. Does it radiate?",
-  episodio_previo: "12. Has this happened before?",
-  actividad_tipo: "13. What activity were you doing when it started or worsened?",
-  actividad_detalle: "14. Describe the activity",
-  mejora_con: "15. What improves the pain?",
+  intensidad_dolor: "3. Current pain intensity",
+  localizacion_muneca: "4. Where does it hurt? (you can select several areas)",
+  calidad_dolor: "5. What is the pain like?",
+  movimientos_agravantes: "6. Which movements make it worse? (you can select several)",
+  limitacion_funcional: "7. Functional limitation",
+  sintomas_asociados: "8. Do you notice anything else?",
+  irradiacion: "9. Does the pain spread to another area?",
+  episodio_previo: "10. Has this happened before?",
+  actividad_tipo: "11. What activity were you doing when it started or worsened?",
+  actividad_detalle: "12. Describe the activity",
   caida_mano_extendida: "Did you land with the hand outstretched?",
   caida_posicion_muneca: "Was the wrist flexed or extended?",
   caida_crack_pop: "Did you hear a crack or pop?",
@@ -711,7 +658,7 @@ export const WRIST_LABEL_EN: Partial<Record<string, string>> = {
 export const WRIST_OPTION_EN: Record<string, string> = {
   No: "No",
   Sí: "Yes",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   "Tras entrenamiento": "After training",
   "Tras levantar pesas": "After lifting weights",
   "Tras movimientos repetitivos": "After repetitive movements",
@@ -719,7 +666,7 @@ export const WRIST_OPTION_EN: Record<string, string> = {
   "Tras un golpe directo": "After a direct blow",
   "Tras torcer la muñeca": "After twisting the wrist",
   "Al apoyarme con la mano": "When bracing myself with the hand",
-  "Apoyo repetido de peso (flexiones, plancha, pesas con muñeca extendida)": "Repeated weight-bearing (push-ups, planks, weights with the wrist extended)",
+  "Apoyo repetido de peso (flexiones, plancha, pesas con muñeca estirada hacia atrás)": "Repeated weight-bearing (push-ups, planks, weights with the wrist extended)",
   "No lo sé": "I don't know",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
@@ -733,8 +680,8 @@ export const WRIST_OPTION_EN: Record<string, string> = {
   "Va y viene": "Comes and goes",
   "Lado del pulgar": "Thumb side",
   "Lado del meñique": "Little-finger side",
-  "Cara palmar (parte interna)": "Palm side (volar)",
-  "Cara dorsal (parte externa)": "Back of the hand (dorsal)",
+  "Palma de la mano (parte de dentro)": "Palm side (inside)",
+  "Dorso de la mano (parte de atrás)": "Back of the hand (dorsal)",
   "Centro de la muñeca": "Center of the wrist",
   "Toda la muñeca": "Whole wrist",
   "Base del pulgar": "Base of the thumb",
@@ -747,8 +694,8 @@ export const WRIST_OPTION_EN: Record<string, string> = {
   "Descarga eléctrica": "Electric shock",
   Palpitante: "Throbbing",
   "Punzadas / pinchazos": "Stabbing / pinching",
-  "Flexionar la muñeca (hacia delante)": "Flexing the wrist (forward)",
-  "Extender la muñeca (hacia atrás)": "Extending the wrist (backward)",
+  "Doblar la muñeca hacia delante": "Flexing the wrist (forward)",
+  "Estirar la muñeca hacia atrás": "Extending the wrist (backward)",
   "Mover la muñeca de lado a lado": "Moving the wrist side to side",
   "Rotar el antebrazo": "Rotating the forearm",
   "Agarrar objetos": "Gripping objects",
@@ -803,8 +750,8 @@ export const WRIST_OPTION_EN: Record<string, string> = {
   TAC: "CT scan",
   Infiltración: "Injection",
   Cirugía: "Surgery",
-  "Hacia atrás (extendida)": "Backward (extended)",
-  "Hacia delante (flexionada)": "Forward (flexed)",
+  "Hacia atrás (estirada)": "Backward (extended)",
+  "Hacia delante (doblada)": "Forward (flexed)",
   "Durante el levantamiento": "During the lift",
   Después: "Afterwards",
   "Horas más tarde / al día siguiente": "Hours later / the next day",

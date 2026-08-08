@@ -19,9 +19,14 @@ export function SiteSidebar() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email ?? null);
-    });
+    void supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        setUserEmail(data.user?.email ?? null);
+      })
+      .catch(() => {
+        setUserEmail(null);
+      });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user?.email ?? null);
     });
@@ -53,7 +58,7 @@ export function SiteSidebar() {
         href="/"
         className="mb-10 text-lg font-semibold tracking-tight text-neutral-900"
       >
-        Kinora
+        AIKinora
       </Link>
       <nav className="flex flex-1 flex-col gap-1">
         {links.map(({ href, label }) => {

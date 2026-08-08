@@ -111,7 +111,7 @@ export function PhysioOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={clinicName}
                 onChangeText={setClinicName}
-                placeholder="Ej: Clínica Kinora"
+                placeholder="Ej: Clínica AIKinora"
                 placeholderTextColor={Colors.textLight}
               />
 

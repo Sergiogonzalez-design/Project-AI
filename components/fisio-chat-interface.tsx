@@ -5,11 +5,16 @@ import { PhysioAvatar } from "@/components/physio-avatar";
 import { PhysioIntro } from "@/components/physio-intro";
 import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { StreamingAssistantMessage } from "@/components/streaming-assistant-message";
+import { VoiceConversationButton } from "@/components/voice-conversation-button";
+import { VoiceSpeakButton } from "@/components/voice-speak-button";
+import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
+import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import { PHOTO_ONLY_CAPTION, uploadConsultPhoto } from "@/lib/consult-photo";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 type Message = {
   id: string;
@@ -27,7 +32,7 @@ type Conversation = {
 
 const WELCOME_ID = "welcome";
 const WELCOME_MESSAGE =
-  "Hola. Soy Physio, el asistente clínico de Kinora para fisioterapeutas. Pregúntame por diferenciales, maniobras (Neer, Hawkins, Lachman, Spurling…), interpretación de hallazgos o criterio de imagen.";
+  "Hola. Soy Physio, el asistente clínico de AIKinora para fisioterapeutas. Pregúntame por diferenciales, maniobras (Neer, Hawkins, Lachman, Spurling…), interpretación de hallazgos o criterio de imagen.";
 
 const INTRO_GREETING =
   "¡Hola! Soy Physio. Esta consulta es técnica, pensada para fisioterapeutas. ¿En qué puedo ayudarte?";
@@ -192,6 +197,119 @@ export function FisioChatInterface() {
   const messagesRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const autoSpokenIdsRef = useRef<Set<string>>(new Set());
+  const [conversationMode, setConversationMode] = useState(false);
+  const conversationModeRef = useRef(false);
+  const conversationBusyRef = useRef(false);
+  const startMicRef = useRef<() => void>(() => {});
+  const stopMicRef = useRef<() => void>(() => {});
+  const sendVoiceTurnRef = useRef<() => void>(() => {});
+  const pendingVoiceTextRef = useRef<string | null>(null);
+  const hearingTextRef = useRef("");
+  const silenceTimerRef = useRef<number | null>(null);
+  const SILENCE_MS = 3000;
+
+  const {
+    supported: ttsSupported,
+    speakingId,
+    speak,
+    cancel: cancelSpeech,
+    toggle: toggleSpeak,
+  } = useSpeechSynthesis({ language: "es" });
+
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }, []);
+
+  const resumeConversationListening = useCallback(() => {
+    conversationBusyRef.current = false;
+    hearingTextRef.current = "";
+    clearSilenceTimer();
+    if (!conversationModeRef.current) return;
+    window.setTimeout(() => {
+      if (conversationModeRef.current && !conversationBusyRef.current) {
+        startMicRef.current();
+      }
+    }, 500);
+  }, [clearSilenceTimer]);
+
+  const {
+    supported: sttSupported,
+    listening,
+    error: sttError,
+    start: startMic,
+    stop: stopMic,
+  } = useSpeechToText({
+    language: "es",
+    keepAlive: conversationMode,
+    onHearing: (heard) => {
+      if (!conversationModeRef.current || conversationBusyRef.current) return;
+      hearingTextRef.current = heard;
+      setInput(heard);
+      clearSilenceTimer();
+      silenceTimerRef.current = window.setTimeout(() => {
+        if (!conversationModeRef.current || conversationBusyRef.current) return;
+        const text = hearingTextRef.current.trim();
+        if (text.length < 2) return;
+        conversationBusyRef.current = true;
+        clearSilenceTimer();
+        stopMicRef.current();
+        pendingVoiceTextRef.current = text;
+        flushSync(() => setInput(text));
+        sendVoiceTurnRef.current();
+      }, SILENCE_MS);
+    },
+  });
+
+  startMicRef.current = startMic;
+  stopMicRef.current = stopMic;
+
+  function toggleConversationMode() {
+    clearSilenceTimer();
+    hearingTextRef.current = "";
+    if (conversationMode) {
+      conversationModeRef.current = false;
+      setConversationMode(false);
+      conversationBusyRef.current = false;
+      stopMic();
+      cancelSpeech();
+      return;
+    }
+    for (const m of messages) {
+      if (m.role === "assistant") autoSpokenIdsRef.current.add(m.id);
+    }
+    conversationModeRef.current = true;
+    setConversationMode(true);
+    conversationBusyRef.current = false;
+    cancelSpeech();
+    startMic();
+  }
+
+  useEffect(() => {
+    if (!conversationMode) return;
+    if (revealingMessageId) return;
+
+    const last = [...messages]
+      .reverse()
+      .find((m) => m.role === "assistant" && m.id !== WELCOME_ID);
+    if (!last || autoSpokenIdsRef.current.has(last.id)) return;
+
+    autoSpokenIdsRef.current.add(last.id);
+    stopMicRef.current();
+    conversationBusyRef.current = true;
+    speak(last.content, last.id, {
+      onEnd: () => resumeConversationListening(),
+    });
+  }, [
+    messages,
+    revealingMessageId,
+    conversationMode,
+    speak,
+    resumeConversationListening,
+  ]);
 
   function clearAttachment() {
     setAttachedFile(null);
@@ -308,8 +426,14 @@ export function FisioChatInterface() {
 
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
-    const text = input.trim() || (attachedFile ? PHOTO_ONLY_CAPTION : "");
-    if ((!text && !attachedFile) || loading) return;
+    const text =
+      (pendingVoiceTextRef.current ?? input).trim() ||
+      (attachedFile ? PHOTO_ONLY_CAPTION : "");
+    pendingVoiceTextRef.current = null;
+    if ((!text && !attachedFile) || loading) {
+      if (conversationModeRef.current) resumeConversationListening();
+      return;
+    }
     setInput("");
     setLoading(true);
 
@@ -402,10 +526,31 @@ export function FisioChatInterface() {
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al consultar la IA.");
+      if (conversationModeRef.current) resumeConversationListening();
     } finally {
       setLoading(false);
     }
   }
+
+  sendVoiceTurnRef.current = () => {
+    void handleSend();
+  };
+
+  useEffect(() => {
+    if (!conversationMode || !conversationBusyRef.current) return;
+    if (loading || revealingMessageId) return;
+    const t = window.setTimeout(() => {
+      if (
+        conversationModeRef.current &&
+        conversationBusyRef.current &&
+        !loading &&
+        !revealingMessageId
+      ) {
+        resumeConversationListening();
+      }
+    }, 2800);
+    return () => window.clearTimeout(t);
+  }, [conversationMode, loading, revealingMessageId, resumeConversationListening]);
 
   const showChatInput = !physioIntro;
 
@@ -419,32 +564,37 @@ export function FisioChatInterface() {
             className="absolute inset-0 bg-black/40"
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <aside className="relative z-10 flex w-72 flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <span className="text-sm font-bold text-slate-900">Consultas clínicas</span>
+          <aside className="relative z-10 flex w-72 flex-col sidebar-panel shadow-[var(--shadow-elevated)]">
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3.5">
+              <span className="text-sm font-semibold text-slate-900">Consultas clínicas</span>
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                className="btn-icon !h-9 !w-9"
               >
                 ✕
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3">
+            <div className="flex-1 overflow-y-auto p-4">
               <button
                 type="button"
                 onClick={() => void startNewConsultation()}
-                className="mb-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white"
+                className="new-chat-btn mb-4"
               >
-                + Nueva consulta
+                <span className="new-chat-btn__icon" aria-hidden>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                  </svg>
+                </span>
+                Nueva consulta
               </button>
               {conversations.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => void openConversation(c.id)}
-                  className={`mb-1 w-full rounded-xl px-3 py-2 text-left text-sm ${
-                    activeId === c.id ? "bg-blue-50 text-blue-700" : "hover:bg-slate-50"
+                  className={`sidebar-item mb-1 w-full px-3 py-2.5 text-left text-[13px] font-semibold ${
+                    activeId === c.id ? "sidebar-item--active text-slate-900" : "text-slate-700"
                   }`}
                 >
                   {c.title}
@@ -456,27 +606,28 @@ export function FisioChatInterface() {
       )}
 
       <aside
-        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-all`}
+        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200/80 sidebar-panel transition-all`}
       >
-        <div className="flex w-72 flex-col p-3">
+        <div className="flex w-72 flex-col p-4">
           <button
             type="button"
             onClick={() => void startNewConsultation()}
-            className="mb-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+            className="new-chat-btn mb-4"
           >
-            + Nueva consulta
+            <span className="new-chat-btn__icon" aria-hidden>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+              </svg>
+            </span>
+            Nueva consulta
           </button>
           <div className="flex-1 space-y-1 overflow-y-auto">
             {conversations.map((c) => (
-              <div key={c.id} className="group flex items-center gap-1">
+              <div key={c.id} className={`sidebar-item group ${activeId === c.id ? "sidebar-item--active" : ""}`}>
                 <button
                   type="button"
                   onClick={() => void openConversation(c.id)}
-                  className={`min-w-0 flex-1 rounded-xl px-3 py-2 text-left text-sm ${
-                    activeId === c.id
-                      ? "bg-blue-50 font-semibold text-blue-700"
-                      : "text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className="min-w-0 flex-1 rounded-[14px] px-3 py-2.5 text-left text-[13px] font-semibold text-slate-700"
                 >
                   <span className="block truncate">{c.title}</span>
                 </button>
@@ -484,7 +635,7 @@ export function FisioChatInterface() {
                   type="button"
                   disabled={deletingId === c.id}
                   onClick={() => void deleteConversation(c.id)}
-                  className="rounded-lg p-1.5 text-slate-300 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+                  className="rounded-xl px-2.5 text-slate-400 opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
                   aria-label="Eliminar"
                 >
                   🗑
@@ -607,9 +758,18 @@ export function FisioChatInterface() {
                             </StreamingAssistantMessage>
                           )}
                         </div>
-                        {time ? (
-                          <span className="mt-1 text-[10px] text-slate-400">{time}</span>
-                        ) : null}
+                        <div className="mt-1 flex items-center gap-2 px-1">
+                          {msg.role === "assistant" && msg.id !== WELCOME_ID ? (
+                            <VoiceSpeakButton
+                              supported={ttsSupported}
+                              speaking={speakingId === msg.id}
+                              onToggle={() => toggleSpeak(msg.content, msg.id)}
+                            />
+                          ) : null}
+                          {time ? (
+                            <span className="text-[10px] text-slate-400">{time}</span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   );
@@ -637,16 +797,16 @@ export function FisioChatInterface() {
         {showChatInput ? (
           <form
             onSubmit={(e) => void handleSend(e)}
-            className="shrink-0 border-t border-slate-200 bg-white px-3 py-3 sm:px-4"
+            className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-6"
           >
-            <div className="mx-auto max-w-3xl">
+            <div className="mx-auto w-full max-w-3xl">
               {attachedPreview ? (
                 <div className="mb-2 flex items-center gap-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={attachedPreview}
                     alt="Vista previa"
-                    className="h-14 w-14 rounded-xl object-cover ring-1 ring-slate-200"
+                    className="h-14 w-14 rounded-[16px] object-cover ring-1 ring-slate-200"
                   />
                   <button
                     type="button"
@@ -658,20 +818,45 @@ export function FisioChatInterface() {
                   </button>
                 </div>
               ) : null}
-              <div className="flex items-end gap-2">
+              <div
+                className={`chat-composer flex w-full flex-row flex-nowrap items-end gap-1.5 ${
+                  conversationMode ? "chat-composer--active" : ""
+                }`}
+              >
+                {!conversationMode ? (
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={loading}
+                    title="Adjuntar foto"
+                    aria-label="Adjuntar foto"
+                    className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                ) : null}
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
+                      if (conversationMode) return;
                       void handleSend();
                     }
                   }}
                   rows={1}
-                  placeholder="Pregunta clínica"
-                  className="max-h-32 min-h-[44px] flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  disabled={loading}
+                  placeholder={
+                    conversationMode
+                      ? listening
+                        ? "Te escucho… (3 s de silencio = turno de la IA)"
+                        : "Conversación activa — la IA está respondiendo…"
+                      : "Pregunta clínica"
+                  }
+                  className="chat-composer__input min-w-0 flex-1 basis-0"
+                  disabled={loading || conversationMode}
                 />
                 <input
                   ref={photoInputRef}
@@ -681,30 +866,39 @@ export function FisioChatInterface() {
                   className="hidden"
                   onChange={onPhotoSelected}
                 />
-                <button
-                  type="button"
-                  onClick={() => photoInputRef.current?.click()}
-                  disabled={loading}
-                  title="Adjuntar foto"
-                  aria-label="Adjuntar foto"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || (!input.trim() && !attachedFile)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
-                  aria-label="Enviar"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                <div className="mb-0.5 flex shrink-0 items-center gap-0.5">
+                  <VoiceConversationButton
+                    supported={sttSupported}
+                    active={conversationMode}
+                    disabled={loading && !conversationMode}
+                    onToggle={toggleConversationMode}
+                  />
+                  {!conversationMode && (input.trim() || attachedFile) ? (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      onClick={() => {
+                        stopMic();
+                        cancelSpeech();
+                      }}
+                      className="btn-send"
+                      aria-label="Enviar"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+                        <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
               </div>
+              {(conversationMode || sttError) && (
+                <p className="mt-1.5 text-center text-xs text-slate-500">
+                  {sttError ??
+                    (listening
+                      ? "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
+                      : "La IA está respondiendo…")}
+                </p>
+              )}
             </div>
           </form>
         ) : null}

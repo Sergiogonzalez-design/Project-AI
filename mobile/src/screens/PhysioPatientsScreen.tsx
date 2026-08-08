@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -18,7 +19,13 @@ import {
 import { DismissKeyboard } from "../components/DismissKeyboard";
 import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
+import {
+  AiOrientationDisclaimer,
+  PhysioReportView,
+} from "../components/PhysioReportView";
+import { ClinicalReasoningFlow } from "../components/ClinicalReasoningFlow";
 import { TypingIndicator } from "../components/TypingIndicator";
+import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
@@ -193,13 +200,16 @@ export function PhysioPatientsScreen() {
   const [reports, setReports] = useState<ClinicalReport[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+  const [reasoningReport, setReasoningReport] = useState<ClinicalReport | null>(
+    null
+  );
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "Hola. Soy Physio, el asistente clínico de Kinora para fisioterapeutas. Pregúntame por diferenciales, maniobras (Neer, Hawkins, Lachman, Spurling…), interpretación de hallazgos o criterio de imagen.",
+        "Hola. Soy Physio, el asistente clínico de AIKinora para fisioterapeutas. Pregúntame por diferenciales, maniobras (Neer, Hawkins, Lachman, Spurling…), interpretación de hallazgos o criterio de imagen.",
     },
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -588,6 +598,20 @@ export function PhysioPatientsScreen() {
     );
   }
 
+  if (selectedPatient && reasoningReport) {
+    return (
+      <ClinicalReasoningFlow
+        reportId={reasoningReport.id}
+        bodyArea={reasoningReport.body_area}
+        physioReport={reasoningReport.physio_report}
+        patientName={
+          selectedPatient.display_name || selectedPatient.email || null
+        }
+        onClose={() => setReasoningReport(null)}
+      />
+    );
+  }
+
   if (selectedPatient) {
     return (
       <View style={styles.root}>
@@ -645,7 +669,13 @@ export function PhysioPatientsScreen() {
                       <Text style={styles.reportSectionLabel}>
                         Informe clínico pre-visita
                       </Text>
-                      <BoldText text={report.physio_report} />
+                      <PhysioReportView
+                        content={report.physio_report}
+                        bodyArea={report.body_area}
+                        onStartClinicalReasoning={() =>
+                          setReasoningReport(report)
+                        }
+                      />
                     </View>
                   )}
                 </View>
@@ -669,12 +699,34 @@ export function PhysioPatientsScreen() {
         <Text style={styles.title}>Panel fisio</Text>
         <Text style={styles.subtitle}>
           Comparte tu código. El paciente crea su cuenta, lo introduce y al
-          terminar la consulta recibes el informe clínico aquí.
+          terminar la consulta (incluido las pruebas funcionales) recibes el
+          informe clínico aquí.
         </Text>
+        <AiOrientationDisclaimer style={{ marginBottom: 12 }} />
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Tu código de vinculación</Text>
           <Text style={styles.codeDisplay}>{inviteCode ?? (loading ? "…" : "—")}</Text>
+          <Pressable
+            onPress={() => {
+              if (!inviteCode) return;
+              const link = `${WEB_APP_URL}/fisioterapia?code=${encodeURIComponent(inviteCode)}`;
+              void Share.share({
+                message: `Únete a mi consulta en AIKinora con este enlace:\n${link}`,
+                url: link,
+                title: "AIKinora",
+              }).catch(() => undefined);
+            }}
+            disabled={!inviteCode}
+            style={({ pressed }) => [
+              styles.secondaryBtn,
+              { marginBottom: 10 },
+              pressed && { opacity: 0.9 },
+              !inviteCode && { opacity: 0.5 },
+            ]}
+          >
+            <Text style={styles.secondaryBtnText}>Compartir enlace</Text>
+          </Pressable>
           <Pressable
             onPress={() => void regenerateCode()}
             disabled={codeBusy}
@@ -947,6 +999,19 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     color: Colors.white,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  secondaryBtn: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+  },
+  secondaryBtnText: {
+    color: Colors.text,
     fontWeight: "700",
     fontSize: 14,
   },

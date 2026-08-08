@@ -49,11 +49,16 @@ import { StreamingAssistantMessage } from "@/components/streaming-assistant-mess
 import { TrustPanel } from "@/components/ui/trust-panel";
 import {
   buildPhysioLinkedCompletionMessage,
+  buildPhysioLinkedFunctionalTestsPrompt,
   buildPhysioLinkedIntroGreeting,
   buildPhysioLinkedWelcome,
   physioDisplayName,
 } from "@/lib/physio-linked-welcome";
 import { PhysioReportCompleteCard } from "@/components/physio-report-complete-card";
+import { VoiceConversationButton } from "@/components/voice-conversation-button";
+import { VoiceSpeakButton } from "@/components/voice-speak-button";
+import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
+import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { bodyPartLabel, type BodyPartId } from "@/lib/body-parts";
 import {
   defaultGenericConsultaAnswers,
@@ -61,6 +66,10 @@ import {
   validateGenericConsulta,
   type GenericConsultaAnswers,
 } from "@/lib/consulta-generic";
+import {
+  scrollToQuestionnaireQuestion,
+  type AdaptiveValidationIssue,
+} from "@/lib/consulta-validation";
 import {
   defaultShoulderAdaptiveAnswers,
   detectRedFlags,
@@ -212,6 +221,7 @@ import { AssistantMessageWithSources } from "@/components/assistant-message-with
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 type Message = {
   id: string;
@@ -432,6 +442,12 @@ function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string 
   );
 }
 
+/** Long clinical summaries should open at their top; short replies can stay at the bottom. */
+function isLongAssistantReply(content: string) {
+  const lines = content.split("\n").filter((l) => l.trim().length > 0);
+  return content.length >= 480 || lines.length >= 8;
+}
+
 type LinkedPhysioInfo = {
   physio_id?: string | null;
   physio_name: string | null;
@@ -553,6 +569,8 @@ export function ChatInterface({
   const [loadingModal, setLoadingModal] = useState(false);
   const [revealingMessageId, setRevealingMessageId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  /** When true, keep the viewport pinned to the start of the revealing AI message. */
+  const pinRevealToStartRef = useRef(false);
 
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -564,6 +582,184 @@ export function ChatInterface({
   const [fisioNewConsultDraft, setFisioNewConsultDraft] = useState(false);
   const [showPhysioCodeEntry, setShowPhysioCodeEntry] = useState(false);
   const pendingFisioCodeReload = useRef(false);
+  /** Fisioterapia: wait for functional-test answers before generating the physio report. */
+  const pendingPhysioReportRef = useRef<{
+    patientId: string;
+    conversationId: string;
+    bodyArea: string;
+    onsetType: string;
+    painLevel: number;
+    hadTrauma: string;
+    description: string;
+    symptomContext: string;
+    patientSummary: string;
+    language: ConsultLanguage;
+  } | null>(null);
+  const autoSpokenIdsRef = useRef<Set<string>>(new Set());
+  const [conversationMode, setConversationMode] = useState(false);
+  const conversationModeRef = useRef(false);
+  const conversationBusyRef = useRef(false);
+  const startMicRef = useRef<() => void>(() => {});
+  const stopMicRef = useRef<() => void>(() => {});
+  const sendVoiceTurnRef = useRef<(text: string) => void>(() => {});
+  const pendingVoiceTextRef = useRef<string | null>(null);
+  const hearingTextRef = useRef("");
+  const silenceTimerRef = useRef<number | null>(null);
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const SILENCE_MS = 3000;
+
+  const {
+    supported: ttsSupported,
+    speakingId,
+    speak,
+    cancel: cancelSpeech,
+    toggle: toggleSpeak,
+  } = useSpeechSynthesis({ language: consultLanguage });
+  const speakRef = useRef(speak);
+  speakRef.current = speak;
+
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }, []);
+
+  const resumeConversationListening = useCallback(() => {
+    conversationBusyRef.current = false;
+    hearingTextRef.current = "";
+    clearSilenceTimer();
+    if (!conversationModeRef.current) return;
+    if (phaseRef.current === "questionnaire") return;
+    window.setTimeout(() => {
+      if (
+        conversationModeRef.current &&
+        !conversationBusyRef.current &&
+        phaseRef.current !== "questionnaire"
+      ) {
+        startMicRef.current();
+      }
+    }, 500);
+  }, [clearSilenceTimer]);
+
+  const {
+    supported: sttSupported,
+    listening,
+    error: sttError,
+    start: startMic,
+    stop: stopMic,
+  } = useSpeechToText({
+    language: consultLanguage,
+    keepAlive: conversationMode,
+    onHearing: (heard) => {
+      if (!conversationModeRef.current || conversationBusyRef.current) return;
+      hearingTextRef.current = heard;
+      setInput(heard);
+      clearSilenceTimer();
+      silenceTimerRef.current = window.setTimeout(() => {
+        if (!conversationModeRef.current || conversationBusyRef.current) return;
+        const text = hearingTextRef.current.trim();
+        if (text.length < 2) return;
+        conversationBusyRef.current = true;
+        clearSilenceTimer();
+        stopMicRef.current();
+        sendVoiceTurnRef.current(text);
+      }, SILENCE_MS);
+    },
+  });
+
+  startMicRef.current = startMic;
+  stopMicRef.current = stopMic;
+
+  function toggleConversationMode() {
+    clearSilenceTimer();
+    hearingTextRef.current = "";
+    if (conversationMode) {
+      conversationModeRef.current = false;
+      setConversationMode(false);
+      conversationBusyRef.current = false;
+      stopMic();
+      cancelSpeech();
+      return;
+    }
+    // Don't auto-speak older history when conversation starts.
+    for (const m of messages) {
+      if (m.role === "assistant") autoSpokenIdsRef.current.add(m.id);
+    }
+    conversationModeRef.current = true;
+    setConversationMode(true);
+    conversationBusyRef.current = false;
+    cancelSpeech();
+    if (phase !== "questionnaire") startMic();
+  }
+
+  // Speak each new assistant reply in conversation mode (doesn't rely only on reveal animation).
+  useEffect(() => {
+    if (!conversationMode) return;
+    if (revealingMessageId) return;
+    if (phase === "questionnaire") return;
+
+    const last = [...messages]
+      .reverse()
+      .find(
+        (m) =>
+          m.role === "assistant" &&
+          m.id !== WELCOME_ID &&
+          !m.id.startsWith("q-intro")
+      );
+    if (!last || autoSpokenIdsRef.current.has(last.id)) return;
+
+    autoSpokenIdsRef.current.add(last.id);
+    stopMicRef.current();
+    conversationBusyRef.current = true;
+    speakRef.current(last.content, last.id, {
+      onEnd: () => {
+        if (phaseRef.current === "questionnaire") return;
+        resumeConversationListening();
+      },
+    });
+  }, [messages, revealingMessageId, conversationMode, phase, resumeConversationListening]);
+
+  // Pause mic during questionnaire; keep conversation mode so voice resumes after.
+  useEffect(() => {
+    if (!conversationModeRef.current) return;
+    if (phase === "questionnaire") {
+      clearSilenceTimer();
+      stopMic();
+      conversationBusyRef.current = true;
+      return;
+    }
+    // After questionnaire → followup, wait for AI reveal/speak to resume (busy stays true
+    // until orientation is spoken). If already idle on followup/intro, resume.
+    if (
+      (phase === "followup" || phase === "intro") &&
+      conversationBusyRef.current &&
+      !loading &&
+      !revealingMessageId
+    ) {
+      // Orientation may still be arriving; the reveal/speak path resumes.
+      // Fallback if nothing is coming:
+      const t = window.setTimeout(() => {
+        if (
+          conversationModeRef.current &&
+          conversationBusyRef.current &&
+          !loading &&
+          !revealingMessageId
+        ) {
+          resumeConversationListening();
+        }
+      }, 4000);
+      return () => window.clearTimeout(t);
+    }
+  }, [
+    phase,
+    loading,
+    revealingMessageId,
+    stopMic,
+    clearSilenceTimer,
+    resumeConversationListening,
+  ]);
 
   function clearAttachment() {
     setAttachedFile(null);
@@ -610,16 +806,38 @@ export function ChatInterface({
     setShowScrollDown(distance > 96);
   }, []);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const el = messagesRef.current;
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    el.scrollTo({ top: el.scrollHeight, behavior });
   }, []);
 
-  const scrollToMessageStart = useCallback((id: string) => {
+  const scrollToBottomAfterPaint = useCallback(() => {
     requestAnimationFrame(() => {
-      messageRefs.current.get(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
+      requestAnimationFrame(() => {
+        scrollToBottom("smooth");
+      });
     });
+  }, [scrollToBottom]);
+
+  const scrollToMessageStart = useCallback((id: string, behavior: ScrollBehavior = "smooth") => {
+    const run = () => {
+      const scrollEl = messagesRef.current;
+      const msgEl = messageRefs.current.get(id);
+      if (!scrollEl || !msgEl) return;
+      const top =
+        msgEl.getBoundingClientRect().top -
+        scrollEl.getBoundingClientRect().top +
+        scrollEl.scrollTop -
+        12;
+      scrollEl.scrollTo({ top: Math.max(0, top), behavior });
+    };
+    requestAnimationFrame(() => requestAnimationFrame(run));
+  }, []);
+
+  const beginAssistantReveal = useCallback((id: string, content: string) => {
+    pinRevealToStartRef.current = isLongAssistantReply(content);
+    setRevealingMessageId(id);
   }, []);
 
   const scrollQuestionnaireToTop = useCallback(() => {
@@ -645,10 +863,24 @@ export function ChatInterface({
   );
 
   useEffect(() => {
-    if (revealingMessageId) {
-      scrollToMessageStart(revealingMessageId);
+    if (!revealingMessageId) return;
+    if (pinRevealToStartRef.current) {
+      scrollToMessageStart(revealingMessageId, "auto");
+      const t1 = window.setTimeout(
+        () => scrollToMessageStart(revealingMessageId, "auto"),
+        80
+      );
+      const t2 = window.setTimeout(
+        () => scrollToMessageStart(revealingMessageId, "smooth"),
+        220
+      );
+      return () => {
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+      };
     }
-  }, [revealingMessageId, scrollToMessageStart]);
+    scrollToBottom("smooth");
+  }, [revealingMessageId, scrollToMessageStart, scrollToBottom]);
 
   useEffect(() => {
     updateScrollDownVisibility();
@@ -1134,7 +1366,7 @@ export function ChatInterface({
         .select("id, role, content, created_at")
         .single();
       if (aiMsg) {
-        setRevealingMessageId((aiMsg as Message).id);
+        beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
       }
     } catch {
@@ -1189,7 +1421,7 @@ export function ChatInterface({
       .select("id, role, content, created_at")
       .single();
     if (aiMsg) {
-      setRevealingMessageId((aiMsg as Message).id);
+      beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
     }
     return aiMsg as Message | null;
@@ -1413,7 +1645,7 @@ export function ChatInterface({
     setInitialMessage(text);
     setCaseImageUrl(null);
     const aiMsgId = `ai-${Date.now()}`;
-    setRevealingMessageId(aiMsgId);
+    beginAssistantReveal(aiMsgId, answer);
     setMessages((prev) => [
       ...prev,
       { id: aiMsgId, role: "assistant", content: answer },
@@ -1466,8 +1698,14 @@ export function ChatInterface({
   }
 
   async function handleIntroSubmit() {
-    const text = input.trim() || (attachedFile ? PHOTO_ONLY_CAPTION : "");
-    if ((!text && !attachedFile) || loading || phase !== "intro" || physioIntro) return;
+    const text =
+      (pendingVoiceTextRef.current ?? input).trim() ||
+      (attachedFile ? PHOTO_ONLY_CAPTION : "");
+    pendingVoiceTextRef.current = null;
+    if ((!text && !attachedFile) || loading || phase !== "intro" || physioIntro) {
+      if (conversationModeRef.current) resumeConversationListening();
+      return;
+    }
     const userMsgId = `user-${Date.now()}`;
     setInput("");
     setLoading(true);
@@ -1483,6 +1721,7 @@ export function ChatInterface({
         ...prev,
         { id: userMsgId, role: "user", content: text, image_url: imageUrl },
       ]);
+      scrollToBottomAfterPaint();
 
       const triage = await triageMessage(text, imageUrl, lang);
 
@@ -1548,6 +1787,7 @@ export function ChatInterface({
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       alert(err instanceof Error ? err.message : "Error al procesar tu mensaje.");
+      if (conversationModeRef.current) resumeConversationListening();
     } finally {
       setLoading(false);
     }
@@ -1556,175 +1796,179 @@ export function ChatInterface({
   async function handleQuestionnaireSubmit() {
     if (loading) return;
 
+    const focusIssue = (
+      issue: AdaptiveValidationIssue,
+      sections: readonly string[],
+      setIndex: (i: number) => void
+    ) => {
+      setShoulderSectionError(issue.message);
+      const idx = sections.findIndex((s) => s === issue.section);
+      if (idx >= 0) {
+        setIndex(idx);
+      }
+      window.setTimeout(() => scrollToQuestionnaireQuestion(issue.questionId), 80);
+    };
+
     if (questionnairePart === "shoulder") {
       const shoulderFocus = resolveShoulderQuestionnaireFocus(initialMessage);
       const sections = getVisibleShoulderSections(shoulderAnswers, shoulderFocus);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateShoulderSection(
+        const sectionIssue = validateShoulderSection(
           lastSection,
           shoulderAnswers,
           shoulderFocus
         );
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setShoulderSectionIndex(sections.length - 1);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setShoulderSectionIndex));
           return;
         }
       }
-      const err = validateShoulderAdaptive(shoulderAnswers, shoulderFocus);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateShoulderAdaptive(shoulderAnswers, shoulderFocus);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setShoulderSectionIndex));
         return;
       }
     } else if (questionnairePart === "elbow") {
       const sections = getVisibleElbowSections(elbowAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateElbowSection(lastSection, elbowAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setElbowSectionIndex(sections.length - 1);
+        const sectionIssue = validateElbowSection(lastSection, elbowAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setElbowSectionIndex));
           return;
         }
       }
-      const err = validateElbowAdaptive(elbowAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateElbowAdaptive(elbowAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setElbowSectionIndex));
         return;
       }
     } else if (questionnairePart === "wrist_hand") {
       const sections = getVisibleWristSections(wristAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateWristSection(lastSection, wristAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setWristSectionIndex(sections.length - 1);
+        const sectionIssue = validateWristSection(lastSection, wristAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setWristSectionIndex));
           return;
         }
       }
-      const err = validateWristAdaptive(wristAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateWristAdaptive(wristAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setWristSectionIndex));
         return;
       }
     } else if (questionnairePart === "finger") {
       const sections = getVisibleFingerSections(fingerAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateFingerSection(lastSection, fingerAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setFingerSectionIndex(sections.length - 1);
+        const sectionIssue = validateFingerSection(lastSection, fingerAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setFingerSectionIndex));
           return;
         }
       }
-      const err = validateFingerAdaptive(fingerAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateFingerAdaptive(fingerAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setFingerSectionIndex));
         return;
       }
     } else if (questionnairePart === "head") {
       const sections = getVisibleHeadSections(headAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateHeadSection(lastSection, headAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setHeadSectionIndex(sections.length - 1);
+        const sectionIssue = validateHeadSection(lastSection, headAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setHeadSectionIndex));
           return;
         }
       }
-      const err = validateHeadAdaptive(headAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateHeadAdaptive(headAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setHeadSectionIndex));
         return;
       }
     } else if (questionnairePart === "neck") {
       const sections = getVisibleNeckSections(neckAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateNeckSection(lastSection, neckAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setNeckSectionIndex(sections.length - 1);
+        const sectionIssue = validateNeckSection(lastSection, neckAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setNeckSectionIndex));
           return;
         }
       }
-      const err = validateNeckAdaptive(neckAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateNeckAdaptive(neckAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setNeckSectionIndex));
         return;
       }
     } else if (questionnairePart === "ankle_foot") {
       const sections = getVisibleLowerLegSections(lowerLegAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateLowerLegSection(lastSection, lowerLegAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setLowerLegSectionIndex(sections.length - 1);
+        const sectionIssue = validateLowerLegSection(lastSection, lowerLegAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setLowerLegSectionIndex));
           return;
         }
       }
-      const err = validateLowerLegAdaptive(lowerLegAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateLowerLegAdaptive(lowerLegAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setLowerLegSectionIndex));
         return;
       }
     } else if (questionnairePart === "knee") {
       const sections = getVisibleKneeSections(kneeAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateKneeSection(lastSection, kneeAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setKneeSectionIndex(sections.length - 1);
+        const sectionIssue = validateKneeSection(lastSection, kneeAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setKneeSectionIndex));
           return;
         }
       }
-      const err = validateKneeAdaptive(kneeAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateKneeAdaptive(kneeAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setKneeSectionIndex));
         return;
       }
     } else if (questionnairePart === "back") {
       const sections = getVisibleBackSections(backAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateBackSection(lastSection, backAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setBackSectionIndex(sections.length - 1);
+        const sectionIssue = validateBackSection(lastSection, backAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setBackSectionIndex));
           return;
         }
       }
-      const err = validateBackAdaptive(backAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateBackAdaptive(backAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setBackSectionIndex));
         return;
       }
     } else if (questionnairePart === "hip") {
       const sections = getVisibleHipSections(hipAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateHipSection(lastSection, hipAnswers);
-        if (sectionErr) {
-          setShoulderSectionError(sectionErr);
-          setHipSectionIndex(sections.length - 1);
+        const sectionIssue = validateHipSection(lastSection, hipAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, withQuestionnaireScroll(setHipSectionIndex));
           return;
         }
       }
-      const err = validateHipAdaptive(hipAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateHipAdaptive(hipAnswers);
+      if (issue) {
+        focusIssue(issue, sections, withQuestionnaireScroll(setHipSectionIndex));
         return;
       }
     } else {
-      const err = validateGenericConsulta(genericAnswers);
-      if (err) {
-        setShoulderSectionError(err);
+      const issue = validateGenericConsulta(genericAnswers);
+      if (issue) {
+        setShoulderSectionError(issue.message);
+        window.setTimeout(() => scrollToQuestionnaireQuestion(issue.questionId), 80);
         return;
       }
     }
@@ -1817,13 +2061,13 @@ export function ChatInterface({
               ? `Sí: ${fingerAnswers.como_empezo}`
               : "No"
           : questionnairePart === "head"
-            ? headAnswers.mecanismo.includes("Golpe / traumatismo en la cabeza") ||
+            ? headAnswers.mecanismo.includes("Golpe fuerte en la cabeza") ||
               headAnswers.rf_trauma === "Sí"
               ? `Sí: ${headAnswers.mecanismo.join(", ") || "trauma"}`
               : "No"
           : questionnairePart === "neck"
             ? neckAnswers.mecanismo.includes("Caída") ||
-              neckAnswers.mecanismo.includes("Golpe directo / traumatismo") ||
+              neckAnswers.mecanismo.includes("Golpe directo / lesión fuerte") ||
               neckAnswers.rf_trauma_grave === "Sí"
               ? `Sí: ${neckAnswers.mecanismo.join(", ") || "trauma"}`
               : "No"
@@ -1886,15 +2130,17 @@ export function ChatInterface({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
-      // Fisioterapia: clinical orientation is for the physio report only — patient sees a thank-you.
+      // Fisioterapia: show patient orientation + functional tests first; send report after answers.
       if (linkedPhysio) {
-        const clinicalForPhysio = await callAI({
+        const patientFacingAi = await callAI({
           bodyArea: areaLabel,
           onsetType,
           painLevel,
           hadTrauma: hadTraumaVal,
           description: initialMessage,
-          symptomContext: contextForAi,
+          symptomContext:
+            contextForAi +
+            `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`,
           conversationHistory: [],
           ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
         });
@@ -1984,11 +2230,14 @@ export function ChatInterface({
                 ? genericAnswers
                 : null,
             redFlagsUrgent,
-            patientFacingSummaryHidden: true,
+            awaitingFunctionalTestsForPhysioReport: true,
           },
         });
 
-        const { sent, physioLabel } = await maybeGenerateAndSendPhysioReport({
+        const nudge = buildPhysioLinkedFunctionalTestsPrompt(linkedPhysio.physio_name);
+        const combined = `${patientFacingAi.trim()}\n\n${nudge}`;
+
+        pendingPhysioReportRef.current = {
           patientId: user.id,
           conversationId: conv.id,
           bodyArea: areaLabel,
@@ -1997,29 +2246,16 @@ export function ChatInterface({
           hadTrauma: hadTraumaVal,
           description: initialMessage,
           symptomContext: contextForAi,
-          patientSummary: clinicalForPhysio,
+          patientSummary: patientFacingAi,
           language: consultLanguage,
-        });
+        };
 
-        if (sent) {
-          setPhysioReportSentBanner(true);
-          setLinkedPhysioLabel(
-            physioLabel ||
-              [linkedPhysio.physio_name, linkedPhysio.clinic_name]
-                .filter(Boolean)
-                .join(" · ") ||
-              null
-          );
-        }
-
-        // Optional short confirmation in history (not the clinical report).
-        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name);
         const { data: aiMsg } = await supabase
           .from("messages")
           .insert({
             conversation_id: conv.id,
             role: "assistant",
-            content: thanks,
+            content: combined,
           })
           .select("id, role, content, created_at")
           .single();
@@ -2029,10 +2265,13 @@ export function ChatInterface({
           setActiveTitle(conv.title);
           setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
         }
-        if (aiMsg) setMessages((prev) => [...prev, aiMsg as Message]);
+        if (aiMsg) {
+          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
+          setMessages((prev) => [...prev, aiMsg as Message]);
+        }
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
-        setPhase("complete");
+        setPhase("followup");
         return;
       }
 
@@ -2081,7 +2320,7 @@ export function ChatInterface({
           },
         });
 
-        setRevealingMessageId((aiMsg as Message).id);
+        beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
@@ -2166,7 +2405,7 @@ export function ChatInterface({
       setActiveId(conv.id);
       setActiveTitle(title);
       setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
-      setRevealingMessageId((aiMsg as Message).id);
+      beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
       markPartEvaluated(questionnairePart);
       setCaseImageUrl(null);
@@ -2187,8 +2426,14 @@ export function ChatInterface({
   }
 
   async function handleFollowupSubmit() {
-    const text = input.trim() || (attachedFile ? PHOTO_ONLY_CAPTION : "");
-    if ((!text && !attachedFile) || loading || phase !== "followup" || !activeId) return;
+    const text =
+      (pendingVoiceTextRef.current ?? input).trim() ||
+      (attachedFile ? PHOTO_ONLY_CAPTION : "");
+    pendingVoiceTextRef.current = null;
+    if ((!text && !attachedFile) || loading || phase !== "followup" || !activeId) {
+      if (conversationModeRef.current) resumeConversationListening();
+      return;
+    }
     const userMsgId = `user-${Date.now()}`;
     setInput("");
     setLoading(true);
@@ -2200,6 +2445,7 @@ export function ChatInterface({
         ...prev,
         { id: userMsgId, role: "user", content: text, image_url: imageUrl },
       ]);
+      scrollToBottomAfterPaint();
 
       const triage = await triageMessage(text, imageUrl, consultLanguage);
       let userSaved = false;
@@ -2370,7 +2616,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .select("id, role, content, created_at")
             .single();
           if (aiMsg) {
-            setRevealingMessageId((aiMsg as Message).id);
+            beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
             setMessages((prev) => [...prev, aiMsg as Message]);
           }
           // Still awaiting the next zone questionnaire — do not finish yet.
@@ -2485,9 +2731,72 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           .select("id, role, content, created_at")
           .single();
         if (aiMsg) {
-          setRevealingMessageId((aiMsg as Message).id);
+          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
           setMessages((prev) => [...prev, aiMsg as Message]);
         }
+        return;
+      }
+
+      // Fisioterapia: after functional-test answers, generate report + completion (not before).
+      const pendingPhysio = pendingPhysioReportRef.current;
+      const answeringPendingPhysioTests =
+        Boolean(linkedPhysio && pendingPhysio) &&
+        (reportsFunctionalTestResults(text) || text.trim().length >= 25);
+
+      if (linkedPhysio && pendingPhysio && answeringPendingPhysioTests) {
+        await saveUserMessage();
+        const lastEval =
+          partEvaluationsRef.current[partEvaluationsRef.current.length - 1];
+        const completedPart =
+          lastEval?.part && lastEval.part !== "generic"
+            ? lastEval.part
+            : questionnairePart !== "generic"
+              ? (questionnairePart as AdaptiveQuestionnairePart)
+              : evaluatedParts[evaluatedParts.length - 1];
+        if (completedPart) markFunctionalTestsDone(completedPart);
+
+        const functionalBlock = `\n\nResultados de pruebas funcionales reportados por el paciente:\n${text}`;
+        pendingPhysioReportRef.current = null;
+
+        const { sent, physioLabel } = await maybeGenerateAndSendPhysioReport({
+          ...pendingPhysio,
+          symptomContext: pendingPhysio.symptomContext + functionalBlock,
+          patientSummary: pendingPhysio.patientSummary + functionalBlock,
+        });
+
+        if (sent) {
+          setPhysioReportSentBanner(true);
+          setLinkedPhysioLabel(
+            physioLabel ||
+              [linkedPhysio.physio_name, linkedPhysio.clinic_name]
+                .filter(Boolean)
+                .join(" · ") ||
+              null
+          );
+        }
+
+        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name);
+        const { data: aiMsg } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: activeId,
+            role: "assistant",
+            content: thanks,
+          })
+          .select("id, role, content, created_at")
+          .single();
+        if (aiMsg) {
+          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
+          setMessages((prev) => [...prev, aiMsg as Message]);
+        }
+        setPhase("complete");
+        return;
+      }
+
+      if (linkedPhysio && pendingPhysio) {
+        await saveUserMessage();
+        const nudge = buildPhysioLinkedFunctionalTestsPrompt(linkedPhysio.physio_name);
+        await appendAssistantMessage(activeId, nudge);
         return;
       }
 
@@ -2550,7 +2859,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           .select("id, role, content")
           .single();
 
-        setRevealingMessageId((aiMsg as Message).id);
+        beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
 
         if (!hasMoreZonesPending(completedPart)) {
@@ -2692,10 +3001,11 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         .select("id, role, content")
         .single();
 
-      setRevealingMessageId((aiMsg as Message).id);
+      beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
+      if (conversationModeRef.current) resumeConversationListening();
     } finally {
       setLoading(false);
     }
@@ -2810,21 +3120,23 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       : groupConversationsByDate(filtered);
 
     return (
-      <div className="flex h-full flex-col p-3">
+      <div className="flex h-full flex-col p-4">
         {!linkedPhysio && (
           <button
             type="button"
             onClick={startNewConsultation}
-            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
+            className="new-chat-btn mb-4"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-            </svg>
+            <span className="new-chat-btn__icon" aria-hidden>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+              </svg>
+            </span>
             Nueva consulta
           </button>
         )}
         {linkedPhysio && (
-          <p className="mb-3 rounded-xl bg-blue-50 px-3 py-2.5 text-[11px] leading-snug text-blue-700">
+          <p className="mb-4 rounded-[16px] border border-blue-100 bg-blue-50/80 px-3.5 py-3 text-[12px] leading-snug text-blue-800">
             Este chat es para lo que te ha pedido tu fisioterapeuta. Para otras preguntas, usa la pestaña{" "}
             <span className="font-semibold">Consulta</span>.
           </p>
@@ -2834,7 +3146,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           <button
             type="button"
             onClick={() => setShowPhysioCodeEntry(true)}
-            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition-all duration-150 hover:border-blue-300 hover:bg-blue-50 active:scale-[0.98]"
+            className="btn-secondary mb-4 !min-h-[48px] w-full text-sm"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 5v14M5 12h14" strokeLinecap="round" />
@@ -2843,7 +3155,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           </button>
         )}
 
-        <div className="relative mb-3">
+        <div className="relative mb-4">
           <svg
             width="15"
             height="15"
@@ -2851,7 +3163,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
           >
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-4.3-4.3" strokeLinecap="round" />
@@ -2861,15 +3173,15 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             value={sidebarSearch}
             onChange={(e) => setSidebarSearch(e.target.value)}
             placeholder="Buscar consultas…"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-700 placeholder:text-slate-400 transition-colors focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-50"
+            className="sidebar-search"
           />
         </div>
 
-        <p className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
           {linkedPhysio ? "Mis fisioterapeutas" : "Mis consultas"}
         </p>
 
-        <div className="scrollbar-thin flex-1 space-y-3 overflow-y-auto">
+        <div className="scrollbar-thin flex-1 space-y-3 overflow-y-auto pr-0.5">
           {filtered.length === 0 && (
             <p className="px-1 py-3 text-xs text-slate-400">
               {sidebarSearch.trim()
@@ -2879,26 +3191,36 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           )}
           {groups.map((group) => (
             <div key={group.label}>
-              <p className="mb-1 px-2 text-[11px] font-semibold text-slate-900">{group.label}</p>
-              <div className="space-y-0.5">
+              <p className="mb-1.5 px-2 text-[12px] font-semibold text-slate-900">
+                {group.label}
+              </p>
+              <div className="space-y-1">
                 {group.items.map((c) => {
                   const isActive = activeId === c.id;
                   return (
                     <div
                       key={c.id}
-                      className={`group flex items-stretch gap-0.5 rounded-xl transition-colors duration-150 ${
-                        isActive ? "bg-blue-600" : "hover:bg-slate-100"
+                      className={`sidebar-item group ${
+                        isActive ? "sidebar-item--active" : ""
                       }`}
                     >
                       <button
                         type="button"
                         onClick={() => loadConversation(c.id, c.title)}
-                        className={`min-w-0 flex-1 rounded-xl px-3 py-2.5 text-left text-xs transition-colors ${
-                          isActive ? "text-white" : "text-slate-600"
-                        }`}
+                        className="min-w-0 flex-1 rounded-[14px] px-3 py-2.5 text-left text-[13px]"
                       >
-                        <p className="truncate font-medium">{c.title}</p>
-                        <p className={`mt-0.5 ${isActive ? "text-blue-200" : "text-slate-400"}`}>
+                        <p
+                          className={`truncate font-semibold ${
+                            isActive ? "text-slate-900" : "text-slate-700"
+                          }`}
+                        >
+                          {c.title}
+                        </p>
+                        <p
+                          className={`mt-0.5 text-[11px] ${
+                            isActive ? "text-blue-600/80" : "text-slate-400"
+                          }`}
+                        >
                           {formatDate(c.created_at)}
                         </p>
                       </button>
@@ -2907,11 +3229,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         onClick={() => deleteConversation(c.id)}
                         disabled={deletingId === c.id}
                         aria-label={`Eliminar consulta: ${c.title}`}
-                        className={`flex shrink-0 items-center justify-center rounded-xl px-2 transition-colors disabled:opacity-50 ${
-                          isActive
-                            ? "text-blue-200 hover:bg-blue-700 hover:text-white"
-                            : "text-slate-400 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
-                        }`}
+                        className="flex shrink-0 items-center justify-center rounded-xl px-2.5 text-slate-400 opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 disabled:opacity-50"
                       >
                         {deletingId === c.id ? (
                           <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -2933,7 +3251,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           ))}
         </div>
 
-        <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 px-1 pt-3 text-[11px] text-slate-400">
+        <div className="mt-3 flex items-center gap-1.5 border-t border-slate-200/80 px-1 pt-3 text-[11px] text-slate-400">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-emerald-500">
             <rect x="5" y="11" width="14" height="9" rx="2" />
             <path d="M8 11V7a4 4 0 018 0v4" strokeLinecap="round" />
@@ -2967,24 +3285,53 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         ? "Responde sobre tu caso (informe para tu fisio)…"
         : "Pregunta lo que quieras";
   const onSend = phase === "intro" ? handleIntroSubmit : handleFollowupSubmit;
+  sendVoiceTurnRef.current = (text: string) => {
+    pendingVoiceTextRef.current = text;
+    flushSync(() => {
+      setInput(text);
+    });
+    if (phase === "intro") {
+      void handleIntroSubmit();
+    } else if (phase === "followup") {
+      void handleFollowupSubmit();
+    } else {
+      resumeConversationListening();
+    }
+  };
+
+  useEffect(() => {
+    if (!conversationMode || !conversationBusyRef.current) return;
+    if (loading || revealingMessageId) return;
+    const t = window.setTimeout(() => {
+      if (
+        conversationModeRef.current &&
+        conversationBusyRef.current &&
+        !loading &&
+        !revealingMessageId
+      ) {
+        resumeConversationListening();
+      }
+    }, 2800);
+    return () => window.clearTimeout(t);
+  }, [conversationMode, loading, revealingMessageId, resumeConversationListening]);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-slate-50">
+    <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-[var(--background)]">
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
           <button
             type="button"
             aria-label="Cerrar menú"
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <aside className="animate-fade-in-up relative z-10 flex w-72 flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <span className="text-sm font-bold text-slate-900">Consultas</span>
+          <aside className="animate-fade-in-up relative z-10 flex w-72 flex-col sidebar-panel shadow-[var(--shadow-elevated)]">
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3.5">
+              <span className="text-sm font-semibold text-slate-900">Consultas</span>
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                className="btn-icon !h-9 !w-9"
                 aria-label="Cerrar"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2998,7 +3345,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       )}
 
       <aside
-        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-all duration-200 ease-out`}
+        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200/80 sidebar-panel transition-all duration-200 ease-out`}
       >
         <div className="w-72">
           <SidebarContent />
@@ -3008,7 +3355,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       <button
         type="button"
         onClick={() => setDesktopSidebarOpen((o) => !o)}
-        className="hidden md:flex shrink-0 items-center border-r border-slate-200 bg-white px-1 text-slate-400 transition-colors duration-150 hover:bg-slate-50 hover:text-blue-600"
+        className="hidden md:flex shrink-0 items-center border-r border-slate-200/80 bg-white px-1.5 text-slate-400 transition-all duration-200 hover:bg-slate-50 hover:text-blue-600"
         title={desktopSidebarOpen ? "Ocultar" : "Mostrar consultas"}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3017,23 +3364,23 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       </button>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-slate-200 bg-white/95 px-4 py-2.5 shrink-0 backdrop-blur-sm">
+        <div className="flex items-center gap-3 border-b border-slate-200/70 bg-white/90 px-4 py-3.5 shrink-0 backdrop-blur-md">
           <button
             type="button"
             onClick={() => setMobileSidebarOpen(true)}
-            className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 md:hidden"
+            className="btn-icon !h-10 !w-10 md:!hidden"
             aria-label="Mis consultas"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
             </svg>
           </button>
-          <p className="flex-1 truncate text-sm font-semibold text-slate-800">{activeTitle}</p>
+          <p className="flex-1 truncate text-[15px] font-semibold tracking-tight text-slate-900">{activeTitle}</p>
           {!linkedPhysio && (
             <button
               type="button"
               onClick={startNewConsultation}
-              className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors duration-150 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+              className="btn-secondary !min-h-[36px] shrink-0 !px-3 !text-xs"
             >
               + Nueva
             </button>
@@ -3067,8 +3414,27 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         <div className="relative min-h-0 flex-1">
         <div
           ref={messagesRef}
-          onScroll={updateScrollDownVisibility}
-          className="scrollbar-thin h-full min-h-0 overflow-y-auto overscroll-contain"
+          onScroll={() => {
+            // If the patient scrolls manually during a long reveal, stop pinning to the top.
+            if (pinRevealToStartRef.current) {
+              const el = messagesRef.current;
+              const msgEl = revealingMessageId
+                ? messageRefs.current.get(revealingMessageId)
+                : null;
+              if (el && msgEl) {
+                const expected =
+                  msgEl.getBoundingClientRect().top -
+                  el.getBoundingClientRect().top +
+                  el.scrollTop -
+                  12;
+                if (Math.abs(el.scrollTop - Math.max(0, expected)) > 64) {
+                  pinRevealToStartRef.current = false;
+                }
+              }
+            }
+            updateScrollDownVisibility();
+          }}
+          className="scrollbar-thin h-full min-h-0 overflow-y-auto overscroll-contain [overflow-anchor:none]"
         >
           {showFisioBootstrap ? (
             <div className="flex h-full items-center justify-center">
@@ -3143,6 +3509,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                             if (revealingMessageId === msg.id) {
                               setRevealingMessageId(null);
                             }
+                            pinRevealToStartRef.current = false;
                             updateScrollDownVisibility();
                           }}
                           onRevealTick={updateScrollDownVisibility}
@@ -3170,9 +3537,18 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         </StreamingAssistantMessage>
                       )}
                     </div>
-                    {time && (
-                      <span className="mt-1 px-1 text-[11px] text-slate-400">{time}</span>
-                    )}
+                    <div className="mt-1 flex items-center gap-2 px-1">
+                      {msg.role === "assistant" && msg.id !== WELCOME_ID ? (
+                        <VoiceSpeakButton
+                          supported={ttsSupported}
+                          speaking={speakingId === msg.id}
+                          onToggle={() => toggleSpeak(msg.content, msg.id)}
+                        />
+                      ) : null}
+                      {time ? (
+                        <span className="text-[11px] text-slate-400">{time}</span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               );
@@ -3222,7 +3598,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3244,7 +3620,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3266,7 +3642,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3288,7 +3664,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3310,7 +3686,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3332,7 +3708,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3354,7 +3730,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3376,7 +3752,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3398,7 +3774,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3420,7 +3796,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                         type="button"
                         onClick={handleQuestionnaireSubmit}
                         disabled={loading}
-                        className="mt-4 w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                        className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3436,7 +3812,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                       type="button"
                       onClick={handleQuestionnaireSubmit}
                       disabled={loading}
-                      className="w-full rounded-2xl bg-blue-600 py-4 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                      className="btn-primary w-full"
                     >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                       </button>
@@ -3465,8 +3841,24 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         <ScrollToBottomButton visible={showScrollDown} onClick={scrollToBottom} />
         </div>
 
+        {conversationMode && phase === "questionnaire" ? (
+          <div className="shrink-0 border-t border-blue-100 bg-blue-50 px-4 py-3 sm:px-6">
+            <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+              <p className="text-xs text-blue-800">
+                Conversación en pausa: completa el cuestionario. Luego la IA te
+                hablará y podréis seguir.
+              </p>
+              <VoiceConversationButton
+                supported={sttSupported}
+                active={conversationMode}
+                onToggle={toggleConversationMode}
+              />
+            </div>
+          </div>
+        ) : null}
+
         {showChatInput && (
-          <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-4 lg:px-8">
+          <div className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-3xl">
             {attachedPreview ? (
               <div className="animate-fade-in-up mb-2 flex items-center gap-2">
@@ -3474,7 +3866,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 <img
                   src={attachedPreview}
                   alt="Vista previa"
-                  className="h-14 w-14 rounded-xl object-cover ring-1 ring-slate-200"
+                  className="h-14 w-14 rounded-[16px] object-cover ring-1 ring-slate-200"
                 />
                 <button
                   type="button"
@@ -3486,20 +3878,48 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 </button>
               </div>
             ) : null}
-            <div className="flex w-full items-end gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-[var(--shadow-card)] transition-shadow duration-150 focus-within:border-blue-300 focus-within:shadow-[var(--shadow-elevated)]">
+            <div
+              className={`chat-composer flex w-full flex-row flex-nowrap items-end gap-1.5 ${
+                conversationMode ? "chat-composer--active" : ""
+              }`}
+            >
+              {!conversationMode ? (
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={loading}
+                  title="Adjuntar foto de la lesión"
+                  aria-label="Adjuntar foto de la lesión"
+                  className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                  </svg>
+                </button>
+              ) : null}
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
+                    if (conversationMode) return;
+                    stopMic();
                     onSend();
                   }
                 }}
-                placeholder={inputPlaceholder}
+                placeholder={
+                  conversationMode
+                    ? listening
+                      ? "Te escucho… (3 s de silencio = turno de la IA)"
+                      : phase === "questionnaire"
+                        ? "Completa el cuestionario en pantalla…"
+                        : "Conversación activa — la IA está respondiendo…"
+                    : inputPlaceholder
+                }
                 rows={1}
-                disabled={loading}
-                className="flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                disabled={loading || conversationMode}
+                className="chat-composer__input min-w-0 flex-1 basis-0"
               />
               <input
                 ref={photoInputRef}
@@ -3509,30 +3929,42 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 className="hidden"
                 onChange={onPhotoSelected}
               />
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                disabled={loading}
-                title="Adjuntar foto de la lesión"
-                aria-label="Adjuntar foto de la lesión"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={onSend}
-                disabled={(!input.trim() && !attachedFile) || loading}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white transition-all duration-150 hover:bg-blue-700 active:scale-[0.94] disabled:opacity-40 disabled:hover:bg-blue-600"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                </svg>
-              </button>
+              <div className="mb-0.5 flex shrink-0 items-center gap-0.5">
+                <VoiceConversationButton
+                  supported={sttSupported}
+                  active={conversationMode}
+                  disabled={loading && !conversationMode}
+                  onToggle={toggleConversationMode}
+                />
+                {!conversationMode && (input.trim() || attachedFile) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopMic();
+                      cancelSpeech();
+                      onSend();
+                    }}
+                    disabled={loading}
+                    className="btn-send"
+                    aria-label="Enviar"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+                      <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
             </div>
+            {(conversationMode || sttError) && (
+              <p className="mt-1.5 text-center text-xs text-slate-500">
+                {sttError ??
+                  (phase === "questionnaire"
+                    ? "Modo conversación en pausa: responde el cuestionario. Luego la IA hablará y seguiráis hablando."
+                    : listening
+                      ? "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
+                      : "La IA está respondiendo…")}
+              </p>
+            )}
             <p className="mt-2 w-full text-center text-xs text-slate-400">
               La IA puede cometer errores. Considera verificar la información importante.
             </p>

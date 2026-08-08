@@ -208,9 +208,9 @@ export function ConsultaAdaptiveKnee({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateKneeSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateKneeSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

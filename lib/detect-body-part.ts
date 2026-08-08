@@ -558,7 +558,7 @@ export function patientFacingPartLabel(
     if (peri) {
       return locale === "en"
         ? "Buttock / hamstring / groin"
-        : "Glúteo / isquiotibial / ingle";
+        : "Glúteo / parte de atrás del muslo / ingle";
     }
   }
   if (part === "generic") {
@@ -657,7 +657,7 @@ export function questionnaireIntroMessage(
     neck: "tu cuello",
     back: "tu espalda",
     hip: periHipSoftTissue
-      ? "la zona que describes (glúteo / isquiotibial / ingle)"
+      ? "la zona que describes (glúteo / parte de atrás del muslo / ingle)"
       : "tu zona de glúteo, ingle o cadera",
     knee: "tu rodilla",
     ankle_foot: ankleFootZoneEs,

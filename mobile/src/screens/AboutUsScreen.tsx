@@ -4,11 +4,11 @@ import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import React, { useEffect, useState } from "react";
 import {
   Image,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { BeneficiosCarousel } from "../components/BeneficiosCarousel";
@@ -26,13 +26,18 @@ type NewsPost = {
   image_url: string | null;
 };
 
-const CONTACT_EMAIL = "sergiogonzalez.usa@icloud.com";
-
 export function AboutUsScreen() {
   const { t, locale } = useI18n();
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const [news, setNews] = useState<NewsPost[]>([]);
   const [selectedNews, setSelectedNews] = useState<NewsPost | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [age, setAge] = useState("");
+  const [inquiry, setInquiry] = useState("");
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
 
   useEffect(() => {
     supabase
@@ -43,6 +48,58 @@ export function AboutUsScreen() {
       .then(({ data }) => setNews((data as NewsPost[]) ?? []))
       .catch(() => setNews([]));
   }, []);
+
+  async function handleContactSubmit() {
+    setContactError(null);
+    const name = fullName.trim();
+    const emailNorm = email.trim().toLowerCase();
+    const ageNum = Number.parseInt(age, 10);
+    const message = inquiry.trim();
+
+    if (name.length < 2) {
+      setContactError(t.about.contactErrorName);
+      return;
+    }
+    if (!emailNorm.includes("@") || emailNorm.length < 5) {
+      setContactError(t.about.contactErrorEmail);
+      return;
+    }
+    if (!Number.isFinite(ageNum) || ageNum < 1 || ageNum > 120) {
+      setContactError(t.about.contactErrorAge);
+      return;
+    }
+    if (message.length < 5) {
+      setContactError(t.about.contactErrorInquiry);
+      return;
+    }
+
+    setContactLoading(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const { error } = await supabase.from("contact_inquiries").insert({
+        full_name: name,
+        email: emailNorm,
+        age: ageNum,
+        inquiry: message,
+        user_id: user?.id ?? null,
+      });
+      if (error) {
+        setContactError(error.message || t.about.contactErrorGeneric);
+        return;
+      }
+      setContactSuccess(true);
+      setFullName("");
+      setEmail("");
+      setAge("");
+      setInquiry("");
+    } catch {
+      setContactError(t.about.contactErrorGeneric);
+    } finally {
+      setContactLoading(false);
+    }
+  }
 
   if (selectedNews) {
     return (
@@ -273,15 +330,74 @@ export function AboutUsScreen() {
       <View style={styles.contactBox}>
         <Text style={styles.contactTitle}>{t.about.contactTitle}</Text>
         <Text style={styles.contactBody}>{t.about.contactBody}</Text>
-        <Pressable
-          style={({ pressed }) => [
-            styles.contactBtn,
-            pressed && { opacity: 0.9 },
-          ]}
-          onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`)}
-        >
-          <Text style={styles.contactBtnText}>{t.about.contactButton}</Text>
-        </Pressable>
+        {contactSuccess ? (
+          <View style={styles.contactForm}>
+            <Text style={styles.contactSuccessTitle}>{t.about.contactSuccessTitle}</Text>
+            <Text style={styles.contactSuccessBody}>{t.about.contactSuccessBody}</Text>
+            <Pressable
+              style={({ pressed }) => [styles.contactBtn, pressed && { opacity: 0.9 }]}
+              onPress={() => setContactSuccess(false)}
+            >
+              <Text style={styles.contactBtnText}>{t.about.contactSendAnother}</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.contactForm}>
+            <Text style={styles.contactLabel}>{t.about.contactFullName}</Text>
+            <TextInput
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder={t.about.contactFullNamePlaceholder}
+              placeholderTextColor={Colors.textLight}
+              style={styles.contactInput}
+              autoCapitalize="words"
+            />
+            <Text style={styles.contactLabel}>{t.about.contactEmail}</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t.about.contactEmailPlaceholder}
+              placeholderTextColor={Colors.textLight}
+              style={styles.contactInput}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={styles.contactLabel}>{t.about.contactAge}</Text>
+            <TextInput
+              value={age}
+              onChangeText={setAge}
+              placeholder={t.about.contactAgePlaceholder}
+              placeholderTextColor={Colors.textLight}
+              style={styles.contactInput}
+              keyboardType="number-pad"
+            />
+            <Text style={styles.contactLabel}>{t.about.contactInquiry}</Text>
+            <TextInput
+              value={inquiry}
+              onChangeText={setInquiry}
+              placeholder={t.about.contactInquiryPlaceholder}
+              placeholderTextColor={Colors.textLight}
+              style={[styles.contactInput, styles.contactTextarea]}
+              multiline
+              textAlignVertical="top"
+            />
+            {contactError ? <Text style={styles.contactError}>{contactError}</Text> : null}
+            <Pressable
+              style={({ pressed }) => [
+                styles.contactBtn,
+                contactLoading && { opacity: 0.6 },
+                pressed && { opacity: 0.9 },
+              ]}
+              onPress={() => void handleContactSubmit()}
+              disabled={contactLoading}
+            >
+              <Text style={styles.contactBtnText}>
+                {contactLoading ? t.about.contactSending : t.about.contactButton}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -684,11 +800,54 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 18,
   },
+  contactForm: {
+    width: "100%",
+    alignItems: "stretch",
+  },
+  contactLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.white,
+    marginBottom: 6,
+  },
+  contactInput: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  contactTextarea: {
+    minHeight: 96,
+    paddingTop: 12,
+  },
+  contactError: {
+    color: "#FEE2E2",
+    fontSize: 13,
+    marginBottom: 10,
+  },
+  contactSuccessTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: Colors.white,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  contactSuccessBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#BFDBFE",
+    textAlign: "center",
+    marginBottom: 14,
+  },
   contactBtn: {
     backgroundColor: Colors.white,
     borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 12,
+    alignItems: "center",
   },
   contactBtnText: {
     color: Colors.primary,

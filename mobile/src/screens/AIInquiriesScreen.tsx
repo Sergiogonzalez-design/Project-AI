@@ -222,6 +222,7 @@ import { useI18n } from "../lib/i18n";
 import { getNotificationsEnabled } from "../lib/notifications";
 import {
   buildPhysioLinkedCompletionMessage,
+  buildPhysioLinkedFunctionalTestsPrompt,
   buildPhysioLinkedIntroGreeting,
   buildPhysioLinkedWelcome,
   physioDisplayName,
@@ -230,6 +231,8 @@ import { refreshSmartReminders } from "../lib/smart-reminders";
 import { supabase } from "../lib/supabase";
 import { FadeInView } from "../components/ui/FadeInView";
 import { TrustPanel } from "../components/ui/TrustPanel";
+import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
+import { useSpeechToText } from "../hooks/useSpeechToText";
 
 const WELCOME_MESSAGE =
   "¿En qué puedo ayudarte? Cuéntame si tienes alguna molestia, duda sobre ejercicios o lo que necesites.";
@@ -387,6 +390,11 @@ function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string 
   );
 }
 
+function isLongAssistantReply(content: string) {
+  const lines = content.split("\n").filter((l) => l.trim().length > 0);
+  return content.length >= 480 || lines.length >= 8;
+}
+
 type LinkedPhysioInfo = {
   physio_id?: string | null;
   physio_name: string | null;
@@ -478,6 +486,7 @@ export function AIInquiriesScreen({
   const [loadingModal, setLoadingModal] = useState(false);
   const [revealingMessageId, setRevealingMessageId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const pinRevealToStartRef = useRef(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -494,6 +503,113 @@ export function AIInquiriesScreen({
   const [physioCodeError, setPhysioCodeError] = useState<string | null>(null);
   const [physioCodeBusy, setPhysioCodeBusy] = useState(false);
   const pendingFisioCodeReload = useRef(false);
+  /** Fisioterapia: wait for functional-test answers before generating the physio report. */
+  const pendingPhysioReportRef = useRef<{
+    patientId: string;
+    conversationId: string;
+    bodyArea: string;
+    onsetType: string;
+    painLevel: number;
+    hadTrauma: string;
+    description: string;
+    symptomContext: string;
+    patientSummary: string;
+    language: ConsultLanguage;
+  } | null>(null);
+  const autoSpokenIdsRef = useRef<Set<string>>(new Set());
+  const [conversationMode, setConversationMode] = useState(false);
+  const conversationModeRef = useRef(false);
+  const conversationBusyRef = useRef(false);
+  const startMicRef = useRef<() => void>(() => {});
+  const stopMicRef = useRef<() => void>(() => {});
+  const sendVoiceTurnRef = useRef<(text: string) => void>(() => {});
+  const pendingVoiceTextRef = useRef<string | null>(null);
+  const hearingTextRef = useRef("");
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const SILENCE_MS = 3000;
+
+  const {
+    supported: ttsSupported,
+    speakingId,
+    speak,
+    cancel: cancelSpeech,
+    toggle: toggleSpeak,
+  } = useSpeechSynthesis({ language: consultLanguage });
+
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }, []);
+
+  const resumeConversationListening = useCallback(() => {
+    conversationBusyRef.current = false;
+    hearingTextRef.current = "";
+    clearSilenceTimer();
+    if (!conversationModeRef.current) return;
+    if (phaseRef.current === "questionnaire") return;
+    setTimeout(() => {
+      if (
+        conversationModeRef.current &&
+        !conversationBusyRef.current &&
+        phaseRef.current !== "questionnaire"
+      ) {
+        startMicRef.current();
+      }
+    }, 500);
+  }, [clearSilenceTimer]);
+
+  const {
+    supported: sttSupported,
+    listening,
+    error: sttError,
+    start: startMic,
+    stop: stopMic,
+  } = useSpeechToText({
+    language: consultLanguage,
+    keepAlive: conversationMode,
+    onHearing: (heard) => {
+      if (!conversationModeRef.current || conversationBusyRef.current) return;
+      hearingTextRef.current = heard;
+      setChatInput(heard);
+      clearSilenceTimer();
+      silenceTimerRef.current = setTimeout(() => {
+        if (!conversationModeRef.current || conversationBusyRef.current) return;
+        const text = hearingTextRef.current.trim();
+        if (text.length < 2) return;
+        conversationBusyRef.current = true;
+        clearSilenceTimer();
+        stopMicRef.current();
+        sendVoiceTurnRef.current(text);
+      }, SILENCE_MS);
+    },
+  });
+
+  startMicRef.current = () => {
+    void startMic();
+  };
+  stopMicRef.current = stopMic;
+
+  function toggleConversationMode() {
+    clearSilenceTimer();
+    hearingTextRef.current = "";
+    if (conversationMode) {
+      conversationModeRef.current = false;
+      setConversationMode(false);
+      conversationBusyRef.current = false;
+      stopMic();
+      cancelSpeech();
+      return;
+    }
+    conversationModeRef.current = true;
+    setConversationMode(true);
+    conversationBusyRef.current = false;
+    cancelSpeech();
+    if (phase !== "questionnaire") void startMic();
+  }
 
   const chatScrollRef = useRef<ScrollView>(null);
   const questionnaireScrollRef = useRef<ScrollView>(null);
@@ -534,11 +650,22 @@ export function AIInquiriesScreen({
     chatScrollRef.current?.scrollToEnd({ animated: true });
   }, []);
 
-  const scrollToMessageStart = useCallback((id: string) => {
+  const scrollToBottomAfterPaint = useCallback(() => {
+    requestAnimationFrame(() => {
+      setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 50);
+    });
+  }, []);
+
+  const scrollToMessageStart = useCallback((id: string, animated = true) => {
     const y = messageOffsets.current[id];
     if (y != null) {
-      chatScrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: true });
+      chatScrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated });
     }
+  }, []);
+
+  const beginAssistantReveal = useCallback((id: string, content: string) => {
+    pinRevealToStartRef.current = isLongAssistantReply(content);
+    setRevealingMessageId(id);
   }, []);
 
   const scrollQuestionnaireToTop = useCallback(() => {
@@ -559,10 +686,18 @@ export function AIInquiriesScreen({
   );
 
   useEffect(() => {
-    if (revealingMessageId) {
-      requestAnimationFrame(() => scrollToMessageStart(revealingMessageId));
+    if (!revealingMessageId) return;
+    if (pinRevealToStartRef.current) {
+      requestAnimationFrame(() => scrollToMessageStart(revealingMessageId, false));
+      const t1 = setTimeout(() => scrollToMessageStart(revealingMessageId, false), 80);
+      const t2 = setTimeout(() => scrollToMessageStart(revealingMessageId, true), 250);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
     }
-  }, [revealingMessageId, scrollToMessageStart]);
+    scrollToBottom();
+  }, [revealingMessageId, scrollToMessageStart, scrollToBottom]);
 
   useEffect(() => {
     updateScrollDownVisibility();
@@ -1009,7 +1144,7 @@ export function AIInquiriesScreen({
     setInitialMessage(text);
     setCaseImageUrl(null);
     const aiMsgId = `ai-${Date.now()}`;
-    setRevealingMessageId(aiMsgId);
+    beginAssistantReveal(aiMsgId, answer);
     setMessages((prev) => [
       ...prev,
       { id: aiMsgId, role: "assistant", content: answer },
@@ -1249,7 +1384,7 @@ export function AIInquiriesScreen({
         .select("id, role, content")
         .single();
       if (aiMsg) {
-        setRevealingMessageId((aiMsg as Message).id);
+        beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
       }
     } catch {
@@ -1304,7 +1439,7 @@ export function AIInquiriesScreen({
       .select("id, role, content")
       .single();
     if (aiMsg) {
-      setRevealingMessageId((aiMsg as Message).id);
+      beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
     }
     return aiMsg as Message | null;
@@ -1456,8 +1591,14 @@ export function AIInquiriesScreen({
   }
 
   async function handleIntroSubmit() {
-    const text = chatInput.trim() || (attachedUri ? photoOnlyCaption(locale) : "");
-    if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading) return;
+    const text =
+      (pendingVoiceTextRef.current ?? chatInput).trim() ||
+      (attachedUri ? photoOnlyCaption(locale) : "");
+    pendingVoiceTextRef.current = null;
+    if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading) {
+      if (conversationModeRef.current) resumeConversationListening();
+      return;
+    }
     const userMsgId = `user-${Date.now()}`;
     setChatInput("");
     setChatLoading(true);
@@ -1474,6 +1615,7 @@ export function AIInquiriesScreen({
         ...prev,
         { id: userMsgId, role: "user", content: text, image_url: imageUrl },
       ]);
+      scrollToBottomAfterPaint();
 
       const triage = await triageMessage(text, imageUrl, lang, fisioEdgeExtras);
 
@@ -1549,175 +1691,175 @@ export function AIInquiriesScreen({
   async function handleQuestionnaireSubmit() {
     setFormError(null);
 
+    const focusIssue = (
+      issue: { message: string; section: string },
+      sections: readonly string[],
+      setIndex: (i: number) => void
+    ) => {
+      setFormError(issue.message);
+      const idx = sections.findIndex((s) => s === issue.section);
+      if (idx >= 0) setIndex(idx);
+    };
+
     if (questionnairePart === "shoulder") {
       const shoulderFocus = resolveShoulderQuestionnaireFocus(initialMessage);
       const sections = getVisibleShoulderSections(shoulderAnswers, shoulderFocus);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateShoulderSection(
+        const sectionIssue = validateShoulderSection(
           lastSection,
           shoulderAnswers,
           shoulderFocus
         );
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setShoulderSectionIndex(sections.length - 1);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setShoulderSectionIndex);
           return;
         }
       }
-      const err = validateShoulderAdaptive(shoulderAnswers, shoulderFocus);
-      if (err) {
-        setFormError(err);
+      const issue = validateShoulderAdaptive(shoulderAnswers, shoulderFocus);
+      if (issue) {
+        focusIssue(issue, sections, setShoulderSectionIndex);
         return;
       }
     } else if (questionnairePart === "elbow") {
       const sections = getVisibleElbowSections(elbowAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateElbowSection(lastSection, elbowAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setElbowSectionIndex(sections.length - 1);
+        const sectionIssue = validateElbowSection(lastSection, elbowAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setElbowSectionIndex);
           return;
         }
       }
-      const err = validateElbowAdaptive(elbowAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateElbowAdaptive(elbowAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setElbowSectionIndex);
         return;
       }
     } else if (questionnairePart === "wrist_hand") {
       const sections = getVisibleWristSections(wristAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateWristSection(lastSection, wristAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setWristSectionIndex(sections.length - 1);
+        const sectionIssue = validateWristSection(lastSection, wristAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setWristSectionIndex);
           return;
         }
       }
-      const err = validateWristAdaptive(wristAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateWristAdaptive(wristAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setWristSectionIndex);
         return;
       }
     } else if (questionnairePart === "finger") {
       const sections = getVisibleFingerSections(fingerAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateFingerSection(lastSection, fingerAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setFingerSectionIndex(sections.length - 1);
+        const sectionIssue = validateFingerSection(lastSection, fingerAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setFingerSectionIndex);
           return;
         }
       }
-      const err = validateFingerAdaptive(fingerAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateFingerAdaptive(fingerAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setFingerSectionIndex);
         return;
       }
     } else if (questionnairePart === "head") {
       const sections = getVisibleHeadSections(headAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateHeadSection(lastSection, headAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setHeadSectionIndex(sections.length - 1);
+        const sectionIssue = validateHeadSection(lastSection, headAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setHeadSectionIndex);
           return;
         }
       }
-      const err = validateHeadAdaptive(headAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateHeadAdaptive(headAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setHeadSectionIndex);
         return;
       }
     } else if (questionnairePart === "neck") {
       const sections = getVisibleNeckSections(neckAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateNeckSection(lastSection, neckAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setNeckSectionIndex(sections.length - 1);
+        const sectionIssue = validateNeckSection(lastSection, neckAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setNeckSectionIndex);
           return;
         }
       }
-      const err = validateNeckAdaptive(neckAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateNeckAdaptive(neckAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setNeckSectionIndex);
         return;
       }
     } else if (questionnairePart === "ankle_foot") {
       const sections = getVisibleLowerLegSections(lowerLegAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateLowerLegSection(lastSection, lowerLegAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setLowerLegSectionIndex(sections.length - 1);
+        const sectionIssue = validateLowerLegSection(lastSection, lowerLegAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setLowerLegSectionIndex);
           return;
         }
       }
-      const err = validateLowerLegAdaptive(lowerLegAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateLowerLegAdaptive(lowerLegAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setLowerLegSectionIndex);
         return;
       }
     } else if (questionnairePart === "knee") {
       const sections = getVisibleKneeSections(kneeAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateKneeSection(lastSection, kneeAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setKneeSectionIndex(sections.length - 1);
+        const sectionIssue = validateKneeSection(lastSection, kneeAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setKneeSectionIndex);
           return;
         }
       }
-      const err = validateKneeAdaptive(kneeAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateKneeAdaptive(kneeAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setKneeSectionIndex);
         return;
       }
     } else if (questionnairePart === "back") {
       const sections = getVisibleBackSections(backAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateBackSection(lastSection, backAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setBackSectionIndex(sections.length - 1);
+        const sectionIssue = validateBackSection(lastSection, backAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setBackSectionIndex);
           return;
         }
       }
-      const err = validateBackAdaptive(backAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateBackAdaptive(backAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setBackSectionIndex);
         return;
       }
     } else if (questionnairePart === "hip") {
       const sections = getVisibleHipSections(hipAnswers);
       const lastSection = sections[sections.length - 1];
       if (lastSection) {
-        const sectionErr = validateHipSection(lastSection, hipAnswers);
-        if (sectionErr) {
-          setFormError(sectionErr);
-          setHipSectionIndex(sections.length - 1);
+        const sectionIssue = validateHipSection(lastSection, hipAnswers);
+        if (sectionIssue) {
+          focusIssue(sectionIssue, sections, setHipSectionIndex);
           return;
         }
       }
-      const err = validateHipAdaptive(hipAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateHipAdaptive(hipAnswers);
+      if (issue) {
+        focusIssue(issue, sections, setHipSectionIndex);
         return;
       }
     } else {
-      const err = validateGenericConsulta(genericAnswers);
-      if (err) {
-        setFormError(err);
+      const issue = validateGenericConsulta(genericAnswers);
+      if (issue) {
+        setFormError(issue.message);
         return;
       }
     }
@@ -1810,13 +1952,13 @@ export function AIInquiriesScreen({
               ? `Sí: ${fingerAnswers.como_empezo}`
               : "No"
           : questionnairePart === "head"
-            ? headAnswers.mecanismo.includes("Golpe / traumatismo en la cabeza") ||
+            ? headAnswers.mecanismo.includes("Golpe fuerte en la cabeza") ||
               headAnswers.rf_trauma === "Sí"
               ? `Sí: ${headAnswers.mecanismo.join(", ") || "trauma"}`
               : "No"
           : questionnairePart === "neck"
             ? neckAnswers.mecanismo.includes("Caída") ||
-              neckAnswers.mecanismo.includes("Golpe directo / traumatismo") ||
+              neckAnswers.mecanismo.includes("Golpe directo / lesión fuerte") ||
               neckAnswers.rf_trauma_grave === "Sí"
               ? `Sí: ${neckAnswers.mecanismo.join(", ") || "trauma"}`
               : "No"
@@ -1880,14 +2022,16 @@ export function AIInquiriesScreen({
       if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
       if (linkedPhysio) {
-        const clinicalForPhysio = await callEdgeText(
+        const patientFacingAi = await callEdgeText(
           {
             bodyArea: areaLabel,
             onsetType,
             painLevel,
             hadTrauma: hadTraumaVal,
             description: initialMessage,
-            symptomContext: contextForAi,
+            symptomContext:
+              contextForAi +
+              `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`,
             conversationHistory: [],
             language: consultLanguage,
             ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
@@ -1965,11 +2109,14 @@ export function AIInquiriesScreen({
             hip: questionnairePart === "hip" ? hipAnswers : null,
             generic: questionnairePart === "generic" ? genericAnswers : null,
             redFlagsUrgent,
-            patientFacingSummaryHidden: true,
+            awaitingFunctionalTestsForPhysioReport: true,
           },
         });
 
-        const sent = await maybeGenerateAndSendPhysioReport({
+        const nudge = buildPhysioLinkedFunctionalTestsPrompt(linkedPhysio.physio_name);
+        const combined = `${patientFacingAi.trim()}\n\n${nudge}`;
+
+        pendingPhysioReportRef.current = {
           patientId: user.id,
           conversationId,
           bodyArea: areaLabel,
@@ -1978,22 +2125,23 @@ export function AIInquiriesScreen({
           hadTrauma: hadTraumaVal,
           description: initialMessage,
           symptomContext: contextForAi,
-          patientSummary: clinicalForPhysio,
+          patientSummary: patientFacingAi,
           language: consultLanguage,
-        });
-        if (sent) setPhysioReportSentBanner(true);
+        };
 
-        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name);
         const { data: aiMsg } = await supabase
           .from("messages")
-          .insert({ conversation_id: conversationId, role: "assistant", content: thanks })
+          .insert({ conversation_id: conversationId, role: "assistant", content: combined })
           .select("id, role, content")
           .single();
 
-        if (aiMsg) setMessages((prev) => [...prev, aiMsg as Message]);
+        if (aiMsg) {
+          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
+          setMessages((prev) => [...prev, aiMsg as Message]);
+        }
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
-        setPhase("complete");
+        setPhase("followup");
         return;
       }
 
@@ -2046,7 +2194,7 @@ export function AIInquiriesScreen({
           },
         });
 
-        setRevealingMessageId((aiMsg as Message).id);
+        beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
@@ -2132,7 +2280,7 @@ export function AIInquiriesScreen({
       setActiveId(conv.id);
       setActiveTitle(title);
       setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
-      setRevealingMessageId((aiMsg as Message).id);
+      beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
       markPartEvaluated(questionnairePart);
       setCaseImageUrl(null);
@@ -2158,8 +2306,14 @@ export function AIInquiriesScreen({
   }
 
   async function handleFollowupSubmit() {
-    const text = chatInput.trim() || (attachedUri ? photoOnlyCaption(locale) : "");
-    if ((!text && !attachedUri) || phase !== "followup" || chatLoading || !activeId) return;
+    const text =
+      (pendingVoiceTextRef.current ?? chatInput).trim() ||
+      (attachedUri ? photoOnlyCaption(locale) : "");
+    pendingVoiceTextRef.current = null;
+    if ((!text && !attachedUri) || phase !== "followup" || chatLoading || !activeId) {
+      if (conversationModeRef.current) resumeConversationListening();
+      return;
+    }
     const userMsgId = `u-${Date.now()}`;
     setChatInput("");
     setChatLoading(true);
@@ -2171,6 +2325,7 @@ export function AIInquiriesScreen({
         ...prev,
         { id: userMsgId, role: "user", content: text, image_url: imageUrl },
       ]);
+      scrollToBottomAfterPaint();
 
       const triage = await triageMessage(text, imageUrl, consultLanguage, fisioEdgeExtras);
       let userSaved = false;
@@ -2344,7 +2499,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .select("id, role, content")
             .single();
 
-          setRevealingMessageId((aiMsg as Message).id);
+          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
           setMessages((prev) => [...prev, aiMsg as Message]);
           return;
         }
@@ -2459,8 +2614,61 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           .select("id, role, content")
           .single();
 
-        setRevealingMessageId((aiMsg as Message).id);
+        beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
+        return;
+      }
+
+      // Fisioterapia: after functional-test answers, generate report + completion (not before).
+      const pendingPhysio = pendingPhysioReportRef.current;
+      const answeringPendingPhysioTests =
+        Boolean(linkedPhysio && pendingPhysio) &&
+        (reportsFunctionalTestResults(text) || text.trim().length >= 25);
+
+      if (linkedPhysio && pendingPhysio && answeringPendingPhysioTests) {
+        await saveUserMessage();
+        const lastEval =
+          partEvaluationsRef.current[partEvaluationsRef.current.length - 1];
+        const completedPart =
+          lastEval?.part && lastEval.part !== "generic"
+            ? lastEval.part
+            : questionnairePart !== "generic"
+              ? (questionnairePart as AdaptiveQuestionnairePart)
+              : evaluatedParts[evaluatedParts.length - 1];
+        if (completedPart) markFunctionalTestsDone(completedPart);
+
+        const functionalBlock = `\n\nResultados de pruebas funcionales reportados por el paciente:\n${text}`;
+        pendingPhysioReportRef.current = null;
+
+        const sent = await maybeGenerateAndSendPhysioReport({
+          ...pendingPhysio,
+          symptomContext: pendingPhysio.symptomContext + functionalBlock,
+          patientSummary: pendingPhysio.patientSummary + functionalBlock,
+        });
+        if (sent) setPhysioReportSentBanner(true);
+
+        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name);
+        const { data: aiMsg } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: activeId,
+            role: "assistant",
+            content: thanks,
+          })
+          .select("id, role, content")
+          .single();
+        if (aiMsg) {
+          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
+          setMessages((prev) => [...prev, aiMsg as Message]);
+        }
+        setPhase("complete");
+        return;
+      }
+
+      if (linkedPhysio && pendingPhysio) {
+        await saveUserMessage();
+        const nudge = buildPhysioLinkedFunctionalTestsPrompt(linkedPhysio.physio_name);
+        await appendAssistantMessage(activeId, nudge);
         return;
       }
 
@@ -2527,7 +2735,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           .select("id, role, content")
           .single();
 
-        setRevealingMessageId((aiMsg as Message).id);
+        beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
 
         if (!hasMoreZonesPending(completedPart)) {
@@ -2676,7 +2884,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         .select("id, role, content")
         .single();
 
-      setRevealingMessageId((aiMsg as Message).id);
+      beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
@@ -2685,6 +2893,41 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       setChatLoading(false);
     }
   }
+
+  sendVoiceTurnRef.current = (text: string) => {
+    pendingVoiceTextRef.current = text;
+    setChatInput(text);
+    if (phase === "intro") void handleIntroSubmit();
+    else if (phase === "followup") void handleFollowupSubmit();
+    else resumeConversationListening();
+  };
+
+  useEffect(() => {
+    if (!conversationModeRef.current) return;
+    if (phase === "questionnaire") {
+      clearSilenceTimer();
+      stopMic();
+      conversationBusyRef.current = true;
+    }
+  }, [phase, stopMic, clearSilenceTimer]);
+
+  useEffect(() => {
+    if (!conversationMode || !conversationBusyRef.current) return;
+    if (chatLoading || revealingMessageId) return;
+    if (phase === "questionnaire") return;
+    const t = setTimeout(() => {
+      if (
+        conversationModeRef.current &&
+        conversationBusyRef.current &&
+        !chatLoading &&
+        !revealingMessageId &&
+        phaseRef.current !== "questionnaire"
+      ) {
+        resumeConversationListening();
+      }
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [conversationMode, chatLoading, revealingMessageId, phase, resumeConversationListening]);
 
   const showChatInput =
     historyLoaded &&
@@ -3418,13 +3661,34 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   <StreamingAssistantMessage
                     content={msg.content}
                     animate={shouldAnimateAssistantMessage(msg, revealingMessageId)}
-                    onRevealComplete={() => {
-                      if (revealingMessageId === msg.id) {
-                        setRevealingMessageId(null);
-                      }
-                      updateScrollDownVisibility();
-                    }}
-                    onRevealTick={updateScrollDownVisibility}
+                      onRevealComplete={() => {
+                        if (revealingMessageId === msg.id) {
+                          setRevealingMessageId(null);
+                        }
+                        pinRevealToStartRef.current = false;
+                        updateScrollDownVisibility();
+                        if (
+                          msg.id === WELCOME_ID ||
+                          autoSpokenIdsRef.current.has(msg.id)
+                        ) {
+                          return;
+                        }
+                        if (!conversationModeRef.current) return;
+                        autoSpokenIdsRef.current.add(msg.id);
+                        stopMicRef.current();
+                        conversationBusyRef.current = true;
+                        if (ttsSupported) {
+                          speak(msg.content, msg.id, {
+                            onEnd: () => {
+                              if (phaseRef.current === "questionnaire") return;
+                              resumeConversationListening();
+                            },
+                          });
+                        } else if (phaseRef.current !== "questionnaire") {
+                          resumeConversationListening();
+                        }
+                      }}
+                      onRevealTick={updateScrollDownVisibility}
                   >
                     {(visibleText, isRevealing) => (
                       <>
@@ -3446,6 +3710,26 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                               {t.consulta.disclaimer}
                             </Text>
                           )}
+                        {msg.id !== WELCOME_ID && ttsSupported ? (
+                          <Pressable
+                            onPress={() => toggleSpeak(msg.content, msg.id)}
+                            hitSlop={8}
+                            style={styles.speakBtn}
+                            accessibilityLabel={
+                              speakingId === msg.id
+                                ? "Detener audio"
+                                : "Escuchar respuesta"
+                            }
+                          >
+                            <Ionicons
+                              name={speakingId === msg.id ? "stop" : "volume-high-outline"}
+                              size={16}
+                              color={
+                                speakingId === msg.id ? Colors.primary : Colors.textSecondary
+                              }
+                            />
+                          </Pressable>
+                        ) : null}
                       </>
                     )}
                   </StreamingAssistantMessage>
@@ -3572,21 +3856,37 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   {
                     marginTop: 18,
                     width: "100%",
+                    height: 52,
                     borderRadius: 16,
                     backgroundColor: "#2563EB",
-                    paddingVertical: 14,
                     paddingHorizontal: 20,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 8,
+                    shadowColor: "#2563EB",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 12,
+                    elevation: 4,
                   },
-                  pressed && { opacity: 0.9 },
+                  pressed && { opacity: 0.92, transform: [{ translateY: 1 }] },
                 ]}
                 onPress={startNewConsultation}
               >
-                <Ionicons name="add" size={20} color="#fff" />
-                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: "rgba(255,255,255,0.22)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="add" size={16} color="#fff" />
+                </View>
+                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>
                   {locale === "en" ? "New consultation" : "Nueva consulta"}
                 </Text>
               </Pressable>
@@ -3597,21 +3897,37 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 style={({ pressed }) => [
                   {
                     width: "100%",
+                    height: 52,
                     borderRadius: 16,
                     backgroundColor: "#2563EB",
-                    paddingVertical: 14,
                     paddingHorizontal: 20,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 8,
+                    shadowColor: "#2563EB",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 12,
+                    elevation: 4,
                   },
-                  pressed && { opacity: 0.9 },
+                  pressed && { opacity: 0.92, transform: [{ translateY: 1 }] },
                 ]}
                 onPress={startNewConsultation}
               >
-                <Ionicons name="add" size={20} color="#fff" />
-                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: "rgba(255,255,255,0.22)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="add" size={16} color="#fff" />
+                </View>
+                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "600" }}>
                   {locale === "en" ? "New consultation" : "Nueva consulta"}
                 </Text>
               </Pressable>
@@ -3641,10 +3957,36 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             </View>
           ) : null}
           <View style={styles.inputBar}>
+            {!conversationMode ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.micIconBtn,
+                  chatLoading && styles.sendBtnDisabled,
+                  pressed && styles.attachBtnPressed,
+                ]}
+                onPress={pickConsultPhoto}
+                disabled={chatLoading}
+                accessibilityLabel={t.consulta.attachPhoto}
+              >
+                <Ionicons name="add" size={24} color={Colors.textSecondary} />
+              </Pressable>
+            ) : null}
             <TextInput
               style={styles.chatInput}
               placeholder={
-                phase === "intro"
+                conversationMode
+                  ? listening
+                    ? locale === "en"
+                      ? "Listening… (3s silence = AI turn)"
+                      : "Te escucho… (3 s de silencio = turno de la IA)"
+                    : phase === "questionnaire"
+                      ? locale === "en"
+                        ? "Complete the on-screen questionnaire…"
+                        : "Completa el cuestionario en pantalla…"
+                      : locale === "en"
+                        ? "Conversation active — AI is responding…"
+                        : "Conversación activa — la IA está respondiendo…"
+                  : phase === "intro"
                   ? t.consulta.placeholderIntro
                   : linkedPhysio
                     ? locale === "en"
@@ -3657,34 +3999,65 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               onChangeText={setChatInput}
               multiline
               maxLength={2000}
-              editable={!chatLoading}
+              editable={!chatLoading && !conversationMode}
             />
-            <Pressable
-              style={({ pressed }) => [
-                styles.attachBtn,
-                chatLoading && styles.sendBtnDisabled,
-                pressed && styles.attachBtnPressed,
-              ]}
-              onPress={pickConsultPhoto}
-              disabled={chatLoading}
-              accessibilityLabel={t.consulta.attachPhoto}
-            >
-              <Ionicons name="camera-outline" size={20} color={Colors.text} />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.sendBtn,
-                (!chatInput.trim() && !attachedUri) || chatLoading
-                  ? styles.sendBtnDisabled
-                  : null,
-                pressed && styles.sendBtnPressed,
-              ]}
-              onPress={phase === "intro" ? handleIntroSubmit : handleFollowupSubmit}
-              disabled={(!chatInput.trim() && !attachedUri) || chatLoading}
-            >
-              <Ionicons name="send" size={18} color={Colors.white} />
-            </Pressable>
+            {sttSupported ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.micIconBtn,
+                  conversationMode && styles.micIconBtnActive,
+                  chatLoading && !conversationMode && styles.sendBtnDisabled,
+                  pressed && styles.attachBtnPressed,
+                ]}
+                onPress={toggleConversationMode}
+                disabled={chatLoading && !conversationMode}
+                accessibilityLabel={
+                  conversationMode ? "Salir de conversación" : "Conversación por voz"
+                }
+              >
+                <Ionicons
+                  name={conversationMode ? "stop" : "mic-outline"}
+                  size={22}
+                  color={conversationMode ? Colors.white : Colors.textSecondary}
+                />
+              </Pressable>
+            ) : null}
+            {!conversationMode && (chatInput.trim() || attachedUri) ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.sendBtn,
+                  chatLoading ? styles.sendBtnDisabled : null,
+                  pressed && styles.sendBtnPressed,
+                ]}
+                onPress={() => {
+                  stopMic();
+                  cancelSpeech();
+                  if (phase === "intro") handleIntroSubmit();
+                  else handleFollowupSubmit();
+                }}
+                disabled={chatLoading}
+                accessibilityLabel="Enviar"
+              >
+                <Ionicons name="arrow-up" size={20} color={Colors.white} />
+              </Pressable>
+            ) : null}
           </View>
+          {(conversationMode || sttError) && (
+            <Text style={styles.voiceHint}>
+              {sttError ??
+                (phase === "questionnaire"
+                  ? locale === "en"
+                    ? "Conversation paused: complete the questionnaire. Then the AI will speak and you can continue."
+                    : "Conversación en pausa: completa el cuestionario. Luego la IA hablará y podréis seguir."
+                  : listening
+                    ? locale === "en"
+                      ? "Speak naturally. After 3 seconds of silence, it's the AI's turn."
+                      : "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
+                    : locale === "en"
+                      ? "AI is responding…"
+                      : "La IA está respondiendo…")}
+            </Text>
+          )}
         </View>
       )}
 
@@ -4033,35 +4406,42 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: 16,
+    minHeight: 52,
     backgroundColor: Colors.primary,
     borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 4,
   },
   submitBtnPressed: { backgroundColor: Colors.primaryDark },
-  submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  submitBtnText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: -0.2,
+  },
   error: { color: Colors.danger, fontSize: 13, marginBottom: 8, lineHeight: 18 },
   inputBarWrap: {
-    backgroundColor: Colors.white,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
+    backgroundColor: "rgba(248,250,252,0.82)",
+    borderTopWidth: 0,
+    paddingBottom: 8,
   },
   attachPreviewRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 10,
   },
   attachPreview: {
     width: 56,
     height: 56,
-    borderRadius: 10,
+    borderRadius: 16,
   },
   removePhotoText: {
     fontSize: 13,
@@ -4071,50 +4451,113 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    gap: 8,
+    marginHorizontal: 12,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: Colors.white,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
   },
   attachBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  attachBtnPressed: { backgroundColor: Colors.primarySoft },
+  micBtnListening: {
+    borderColor: "#FECACA",
+    backgroundColor: Colors.dangerSoft,
+  },
+  micIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  micIconBtnActive: {
+    backgroundColor: Colors.primary,
+  },
+  conversationBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 44,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
   },
-  attachBtnPressed: { backgroundColor: Colors.primarySoft },
+  conversationBtnActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
+  },
+  conversationBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+  conversationBtnTextActive: {
+    color: Colors.white,
+  },
+  speakBtn: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    padding: 4,
+  },
+  voiceHint: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: "center",
+  },
+  autoPlayRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  autoPlayText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
   chatInput: {
     flex: 1,
     maxHeight: 120,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
+    borderWidth: 0,
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    fontSize: 16,
     color: Colors.text,
-    backgroundColor: Colors.primarySoft,
+    backgroundColor: "transparent",
     letterSpacing: -0.1,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.text,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sendBtnDisabled: { opacity: 0.4 },
-  sendBtnPressed: { backgroundColor: Colors.primaryDark },
+  sendBtnPressed: { backgroundColor: "#1E293B" },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.45)',

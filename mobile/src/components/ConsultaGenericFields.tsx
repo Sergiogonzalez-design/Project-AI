@@ -115,7 +115,7 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
       <Text style={styles.sectionTitle}>{en ? L.urgency : "Comprobación de urgencia"}</Text>
       <Text style={styles.label}>{en ? L.rf_deformidad : "¿Deformidad evidente?"}</Text>
       <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_deformidad} onChange={(rf_deformidad) => patch({ rf_deformidad })} displayOption={displayOption} />
-      <Text style={styles.label}>{en ? L.rf_fiebre : "¿Fiebre asociada?"}</Text>
+      <Text style={styles.label}>{en ? L.rf_fiebre : "¿Tienes fiebre junto con el dolor?"}</Text>
       <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_fiebre} onChange={(rf_fiebre) => patch({ rf_fiebre })} displayOption={displayOption} />
       <Text style={styles.label}>{en ? L.rf_perdida_sensibilidad : "¿Pérdida de sensibilidad?"}</Text>
       <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_perdida_sensibilidad} onChange={(rf_perdida_sensibilidad) => patch({ rf_perdida_sensibilidad })} displayOption={displayOption} />
@@ -132,7 +132,7 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
           style={styles.input}
           value={a.mecanismo_otro}
           onChangeText={(mecanismo_otro) => patch({ mecanismo_otro })}
-          placeholder={en ? L.mecanismo_otro : "Describe el mecanismo"}
+          placeholder={en ? L.mecanismo_otro : "Cuéntanos qué pasó o cómo empezó"}
           placeholderTextColor={Colors.textLight}
         />
       )}

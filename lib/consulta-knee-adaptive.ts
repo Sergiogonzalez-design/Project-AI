@@ -6,6 +6,7 @@ import {
  * Adaptive questionnaire for knee pain — same structure as shoulder / neck / lower leg
  * (urgency → core → mechanism branches → neuro / swelling / instability → history).
  */
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -18,7 +19,7 @@ export const EVOLUTION_OPTIONS = [
   "Más de 1 mes",
 ] as const;
 
-export const ONSET_FORM_OPTIONS = ["Repentino", "Progresivo"] as const;
+export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
   "Caída",
@@ -26,17 +27,17 @@ export const MECHANISM_OPTIONS = [
   "Torsión / cambio de dirección",
   "Entrenamiento o ejercicio",
   "Movimiento repetitivo",
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Otro",
 ] as const;
 
 export const KNEE_LOCATION_OPTIONS = [
   "Cara anterior / rótula",
-  "Cara interna (medial)",
-  "Cara externa (lateral)",
-  "Hueco poplíteo (detrás)",
-  "Línea articular",
-  "Debajo de la rótula / tendón rotuliano",
+  "Cara interna (lado de dentro)",
+  "Cara externa (lado de fuera)",
+  "Hueco detrás de la rodilla",
+  "Donde se juntan los huesos (línea de la articulación)",
+  "Debajo de la rótula / tendón de la rótula",
   "Por encima de la rótula",
   "No estoy seguro",
 ] as const;
@@ -48,15 +49,6 @@ export const PAIN_TYPE_OPTIONS = [
   "Presión / peso",
   "Hormigueo",
   "Malestar difuso",
-] as const;
-
-export const PAIN_SITUATION_OPTIONS = [
-  "En reposo",
-  "Al caminar",
-  "Con esfuerzo o carga",
-  "Por la noche",
-  "Al despertar / primeros pasos",
-  "Constante",
 ] as const;
 
 export const FUNCTIONAL_LIMIT_OPTIONS = [
@@ -88,7 +80,7 @@ export const AGGRAVATING_MOVEMENT_OPTIONS = [
   "Pivotar / girar",
   "Saltar",
   "Estar sentado mucho rato",
-  "Extender del todo",
+  "Estirar del todo",
   "Ninguno",
 ] as const;
 
@@ -108,7 +100,7 @@ export const TRAINING_LOAD_OPTIONS = [
   "Carga elevada",
   "Carga moderada",
   "Peso corporal",
-  "Resistencia / endurance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)",
 ] as const;
 
 export const NEURO_ZONE_OPTIONS = [
@@ -126,7 +118,7 @@ export const SWELLING_ONSET_OPTIONS = [
   "Inmediata tras la lesión",
   "En las primeras horas",
   "Al día siguiente",
-  "Progresiva en días",
+  "Poco a poco en días",
 ] as const;
 
 export const LOCKING_TYPE_OPTIONS = [
@@ -139,12 +131,6 @@ export const INSTABILITY_GIVING_WAY_OPTIONS = [
   "No",
   "A veces",
   "Sí, con frecuencia",
-] as const;
-
-export const TRAINING_IMPACT_OPTIONS = [
-  "No afecta",
-  "Parcialmente",
-  "No puedo entrenar o competir",
 ] as const;
 
 export type KneeAdaptiveAnswers = {
@@ -165,7 +151,6 @@ export type KneeAdaptiveAnswers = {
   intensidad_dolor: number;
   localizacion_rodilla: string[];
   tipo_dolor: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
@@ -191,17 +176,14 @@ export type KneeAdaptiveAnswers = {
   // Neuro branch
   neuro_zona: string[];
   neuro_constante: string;
-  neuro_movimientos: string;
   // Swelling branch
   hinchazon_inicio: string;
   hinchazon_progresion: string;
   hinchazon_calor: string;
   // Instability / locking branch
   inestabilidad_cede: string;
-  inestabilidad_cuando: string;
   bloqueo_tipo: string;
   bloqueo_desbloqueo: string;
-  chasquido_cuando: string;
   // Patellar instability branch
   rotula_desplaza: string;
   rotula_antes: string;
@@ -209,7 +191,6 @@ export type KneeAdaptiveAnswers = {
   // History
   lesion_previa: string;
   lesion_previa_detalle: string;
-  deporte_impacto: string;
 };
 
 export function defaultKneeAdaptiveAnswers(): KneeAdaptiveAnswers {
@@ -229,7 +210,6 @@ export function defaultKneeAdaptiveAnswers(): KneeAdaptiveAnswers {
     intensidad_dolor: 5,
     localizacion_rodilla: [],
     tipo_dolor: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
@@ -250,21 +230,17 @@ export function defaultKneeAdaptiveAnswers(): KneeAdaptiveAnswers {
     itb_patron: "",
     neuro_zona: [],
     neuro_constante: "",
-    neuro_movimientos: "",
     hinchazon_inicio: "",
     hinchazon_progresion: "",
     hinchazon_calor: "",
     inestabilidad_cede: "",
-    inestabilidad_cuando: "",
     bloqueo_tipo: "",
     bloqueo_desbloqueo: "",
-    chasquido_cuando: "",
     rotula_desplaza: "",
     rotula_antes: "",
     rotula_recolocacion: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
-    deporte_impacto: "",
   };
 }
 
@@ -306,7 +282,7 @@ function isTwist(a: KneeAdaptiveAnswers): boolean {
 function isRepetitiveOrProgressive(a: KneeAdaptiveAnswers): boolean {
   return (
     a.mecanismo.includes("Movimiento repetitivo") ||
-    a.mecanismo.includes("Inicio progresivo sin causa clara")
+    a.mecanismo.includes("Empezó poco a poco, sin causa clara")
   );
 }
 
@@ -350,9 +326,9 @@ function isPatellarDislocation(a: KneeAdaptiveAnswers): boolean {
 
 function isLateralRunningMechanism(a: KneeAdaptiveAnswers): boolean {
   return (
-    a.localizacion_rodilla.includes("Cara externa (lateral)") &&
+    a.localizacion_rodilla.includes("Cara externa (lado de fuera)") &&
     (a.mecanismo.includes("Movimiento repetitivo") ||
-      a.mecanismo.includes("Inicio progresivo sin causa clara"))
+      a.mecanismo.includes("Empezó poco a poco, sin causa clara"))
   );
 }
 
@@ -371,7 +347,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "rf_deformidad",
     section: "red_flags",
-    label: "¿Hay deformidad evidente en la rodilla?",
+    label: "¿La rodilla se ve torcida, deformada o muy distinta de lo normal?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -379,7 +355,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "rf_no_apoyo",
     section: "red_flags",
-    label: "¿Incapacidad para apoyar peso o caminar?",
+    label: "¿No puedes apoyar peso o caminar?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -387,7 +363,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "rf_bloqueo",
     section: "red_flags",
-    label: "¿Rodilla bloqueada o incapacidad para estirar del todo?",
+    label: "¿La rodilla se queda trabada o no puedes estirarla del todo?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -403,7 +379,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "rf_fiebre",
     section: "red_flags",
-    label: "¿Fiebre asociada al dolor?",
+    label: "¿Tienes fiebre junto con el dolor?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -412,7 +388,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     id: "rf_vascular",
     section: "red_flags",
     label:
-      "¿Dolor en pantorrilla con hinchazón (sospecha vascular) que te preocupa?",
+      "¿Dolor en pantorrilla con hinchazón (posible problema de circulación) que te preocupa?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -456,7 +432,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "mecanismo_otro",
     section: "core",
-    label: "Describe el mecanismo",
+    label: "Cuéntanos qué pasó o cómo empezó",
     type: "text",
     required: true,
     showIf: (a) => a.mecanismo.includes("Otro"),
@@ -483,16 +459,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     type: "multi",
     options: PAIN_TYPE_OPTIONS,
     required: true,
-  },
-  {
-    id: "patron_dolor",
-    section: "core",
-    label: "¿En qué situaciones aparece o empeora? (puedes marcar varias)",
-    type: "multi",
-    options: PAIN_SITUATION_OPTIONS,
-    required: true,
-  },
-  {
+  },  {
     id: "limitacion_funcional",
     section: "core",
     label: "¿Cuánto te limita al caminar o apoyar? (puedes marcar varias)",
@@ -503,7 +470,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "irradiacion",
     section: "core",
-    label: "¿El dolor se irradia hacia la pierna, pantorrilla o pie?",
+    label: "¿El dolor se extiende hacia la pierna, pantorrilla o pie?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -511,7 +478,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "irradiacion_detalle",
     section: "core",
-    label: "¿Hasta dónde llega la irradiación?",
+    label: "¿Hasta dónde llega ese dolor?",
     type: "text",
     required: true,
     showIf: (a) => a.irradiacion === "Sí",
@@ -675,15 +642,6 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     required: true,
     showIf: hasNeuro,
   },
-  {
-    id: "neuro_movimientos",
-    section: "neuro",
-    label: "¿Qué movimientos lo desencadenan?",
-    type: "text",
-    required: false,
-    showIf: hasNeuro,
-  },
-
   // Swelling branch
   {
     id: "hinchazon_inicio",
@@ -722,16 +680,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     options: INSTABILITY_GIVING_WAY_OPTIONS,
     required: true,
     showIf: hasInstability,
-  },
-  {
-    id: "inestabilidad_cuando",
-    section: "instability_locking",
-    label: "¿En qué situaciones notas la inestabilidad o el fallo?",
-    type: "text",
-    required: false,
-    showIf: hasInstability,
-  },
-  {
+  },  {
     id: "bloqueo_tipo",
     section: "instability_locking",
     label: "¿Qué tipo de bloqueo notas?",
@@ -749,15 +698,6 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     required: true,
     showIf: hasLocking,
   },
-  {
-    id: "chasquido_cuando",
-    section: "instability_locking",
-    label: "¿Cuándo aparece el chasquido o pop?",
-    type: "text",
-    required: false,
-    showIf: hasClickPop,
-  },
-
   // Patellar instability branch
   {
     id: "rotula_desplaza",
@@ -803,21 +743,12 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     type: "text",
     required: true,
     showIf: (a) => a.lesion_previa === "Sí",
-  },
-  {
-    id: "deporte_impacto",
-    section: "history",
-    label: "¿Cómo afecta a tu entrenamiento o deporte?",
-    type: "single",
-    options: TRAINING_IMPACT_OPTIONS,
-    required: true,
-  },
-];
+  },];
 
 export const KNEE_SECTION_LABELS: Record<KneeQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
   core: "Caracterización del problema",
-  trauma: "Detalles del traumatismo",
+  trauma: "Detalles del golpe o la caída",
   twist: "Torsión / cambio de dirección",
   training: "Detalles del entrenamiento",
   repetitive: "Actividad repetitiva / progresiva",
@@ -875,12 +806,12 @@ export function detectKneeRedFlags(answers: KneeAdaptiveAnswers): {
   triggered: string[];
 } {
   const labels: Record<string, string> = {
-    rf_deformidad: "Deformidad evidente en rodilla",
+    rf_deformidad: "Se ve torcido, deformado o muy distinto en rodilla",
     rf_no_apoyo: "Incapacidad para apoyar peso o caminar",
     rf_bloqueo: "Rodilla bloqueada / no puede estirar del todo",
     rf_hinchazon_subita: "Hinchazón súbita e intensa",
-    rf_fiebre: "Fiebre asociada",
-    rf_vascular: "Dolor de pantorrilla con hinchazón (sospecha vascular)",
+    rf_fiebre: "Fiebre junto con el dolor",
+    rf_vascular: "Dolor de pantorrilla con hinchazón (posible problema de circulación)",
     rf_perdida_sensibilidad: "Pérdida de sensibilidad en el pie",
     rf_extension_activa:
       "Incapacidad para levantar la pierna estirada tras el inicio (sospecha rotura del mecanismo extensor: tendón rotuliano o cuadricipital)",
@@ -904,11 +835,11 @@ function isAnswered(q: KneeQuestionDef, answers: KneeAdaptiveAnswers): boolean {
   return typeof val === "string" && val.length > 0;
 }
 
-export function validateKneeAdaptive(answers: KneeAdaptiveAnswers): string | null {
+export function validateKneeAdaptive(answers: KneeAdaptiveAnswers): AdaptiveValidationIssue | null {
   const visible = getVisibleKneeQuestions(answers);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -917,13 +848,13 @@ export function validateKneeAdaptive(answers: KneeAdaptiveAnswers): string | nul
 export function validateKneeSection(
   section: KneeQuestionSection,
   answers: KneeAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleKneeQuestions(answers).filter(
     (q) => q.section === section
   );
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -967,7 +898,6 @@ export function formatKneeAdaptive(
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización rodilla: ${formatMulti(answers.localizacion_rodilla)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
-    `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
@@ -1018,10 +948,7 @@ export function formatKneeAdaptive(
       "",
       "— HORMIGUEO / ENTUMECIMIENTO —",
       `Zona: ${formatMulti(answers.neuro_zona)}`,
-      `Constante: ${answers.neuro_constante}`,
-      answers.neuro_movimientos
-        ? `Movimientos desencadenantes: ${answers.neuro_movimientos}`
-        : ""
+      `Constante: ${answers.neuro_constante}`
     );
   }
   if (hasSwelling(answers)) {
@@ -1036,21 +963,13 @@ export function formatKneeAdaptive(
   if (hasInstabilityLockingSection(answers)) {
     lines.push("", "— INESTABILIDAD / BLOQUEO / CHASQUIDO —");
     if (hasInstability(answers)) {
-      lines.push(
-        `Rodilla cede/falla: ${answers.inestabilidad_cede}`,
-        answers.inestabilidad_cuando
-          ? `Situaciones: ${answers.inestabilidad_cuando}`
-          : ""
-      );
+      lines.push(`Rodilla cede/falla: ${answers.inestabilidad_cede}`);
     }
     if (hasLocking(answers)) {
       lines.push(
         `Tipo bloqueo: ${answers.bloqueo_tipo}`,
         `Desbloqueo: ${answers.bloqueo_desbloqueo}`
       );
-    }
-    if (hasClickPop(answers) && answers.chasquido_cuando) {
-      lines.push(`Chasquido/pop cuándo: ${answers.chasquido_cuando}`);
     }
   }
   if (hasPatellarSection(answers)) {
@@ -1071,7 +990,6 @@ export function formatKneeAdaptive(
     "",
     "— ANTECEDENTES —",
     `Lesión previa rodilla: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
-    `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (ligamentos, meniscos, cartílago, tendón, bursa, nervio), no para diagnosticar.",
     "",
@@ -1083,7 +1001,7 @@ export function formatKneeAdaptive(
     "- Debajo rótula / tendón rotuliano + salto / carga → tendinopatía rotuliana (jumper's knee).",
     "- Cara interna + trauma/contacto → LCM vs lesión meniscal medial.",
     "- Cara externa + trauma/contacto → LCL vs lesión meniscal lateral.",
-    "- Cara externa (lateral) + carrera/repetitivo + siempre a la misma distancia o al bajar escaleras/cuestas → síndrome de la banda iliotibial (IT band) vs lesión meniscal lateral.",
+    "- Cara externa (lado de fuera) + carrera/repetitivo + siempre a la misma distancia o al bajar escaleras/cuestas → síndrome de la banda iliotibial (IT band) vs lesión meniscal lateral.",
     "- Golpe directo en la espinilla con la rodilla flexionada (salpicadero, caída de rodillas) → mecanismo típico de lesión del LCP (ligamento cruzado posterior).",
     "- Incapacidad para levantar la pierna estirada tras el inicio (extensión activa contra gravedad) → sospecha rotura del mecanismo extensor (tendón rotuliano o cuadricipital) — URGENCIA, valorar cuanto antes.",
     "- Inicio progresivo + edad + rigidez matutina / escaleras → artrosis (OA) vs inflamación.",
@@ -1108,7 +1026,7 @@ export const KNEE_LABEL_EN: Partial<Record<string, string>> = {
   rf_no_apoyo: "Are you unable to bear weight or walk?",
   rf_bloqueo: "Is the knee locked or unable to fully straighten?",
   rf_hinchazon_subita: "Sudden, intense swelling of the knee?",
-  rf_fiebre: "Fever associated with the pain?",
+  rf_fiebre: "Do you have a fever along with the pain?",
   rf_vascular: "Calf pain with swelling that concerns you (vascular concern)?",
   rf_perdida_sensibilidad: "Loss of sensation in the foot?",
   rf_extension_activa:
@@ -1116,14 +1034,13 @@ export const KNEE_LABEL_EN: Partial<Record<string, string>> = {
   evolucion: "How long have you had this problem?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
-  mecanismo_otro: "Describe the mechanism",
+  mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_rodilla: "Where do you feel the pain in the knee? (you can select several)",
   tipo_dolor: "How would you describe the pain? (you can select several)",
-  patron_dolor: "In which situations does it appear or worsen? (you can select several)",
   limitacion_funcional: "How much does it limit walking or weight-bearing?",
-  irradiacion: "Does the pain radiate to the leg, calf, or foot?",
-  irradiacion_detalle: "How far does the radiation go?",
+  irradiacion: "Does the pain spread to the leg, calf, or foot?",
+  irradiacion_detalle: "How far does that pain go?",
   sintomas_asociados: "What other symptoms do you notice? (you can select several)",
   movimientos_agravantes: "Which movements provoke or worsen it? (you can select several)",
   trauma_detalle: "Describe the blow or fall",
@@ -1143,21 +1060,17 @@ export const KNEE_LABEL_EN: Partial<Record<string, string>> = {
     "Does it always appear at the same running distance or after going down stairs/hills?",
   neuro_zona: "Which areas have tingling or numbness? (you can select several)",
   neuro_constante: "Is the tingling or numbness constant?",
-  neuro_movimientos: "Which movements trigger it?",
   hinchazon_inicio: "When did the swelling appear?",
   hinchazon_progresion: "Has the swelling increased, stayed the same, or gone down?",
   hinchazon_calor: "Is the area warm to the touch?",
   inestabilidad_cede: "Does the knee give way or fail when bearing weight or turning?",
-  inestabilidad_cuando: "In which situations do you notice instability or giving way?",
   bloqueo_tipo: "What type of locking do you notice?",
   bloqueo_desbloqueo: "Can it unlock on its own or do you need help?",
-  chasquido_cuando: "When does the click or pop appear?",
   rotula_desplaza: "Do you feel like the kneecap shifts or has come out of place?",
   rotula_antes: "Has this happened before?",
   rotula_recolocacion: "Did it go back into place on its own?",
   lesion_previa: "Have you had previous injuries in this knee?",
   lesion_previa_detalle: "Describe previous injuries or treatments",
-  deporte_impacto: "How does it affect your training or sport?",
 };
 
 export const KNEE_OPTION_EN: Record<string, string> = {
@@ -1170,20 +1083,20 @@ export const KNEE_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
+  "Poco a poco": "Gradual",
   Caída: "Fall",
   "Golpe directo": "Direct blow",
   "Torsión / cambio de dirección": "Twist / change of direction",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Movimiento repetitivo": "Repetitive movement",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   Otro: "Other",
   "Cara anterior / rótula": "Front / kneecap",
-  "Cara interna (medial)": "Inner side (medial)",
-  "Cara externa (lateral)": "Outer side (lateral)",
-  "Hueco poplíteo (detrás)": "Popliteal fossa (behind)",
-  "Línea articular": "Joint line",
-  "Debajo de la rótula / tendón rotuliano": "Below kneecap / patellar tendon",
+  "Cara interna (lado de dentro)": "Inner side (medial)",
+  "Cara externa (lado de fuera)": "Outer side (lateral)",
+  "Hueco detrás de la rodilla": "Hollow behind the knee",
+  "Donde se juntan los huesos (línea de la articulación)": "Joint line",
+  "Debajo de la rótula / tendón de la rótula": "Below kneecap / patellar tendon",
   "Por encima de la rótula": "Above the kneecap",
   "No estoy seguro": "I'm not sure",
   Punzante: "Sharp",
@@ -1220,7 +1133,7 @@ export const KNEE_OPTION_EN: Record<string, string> = {
   "Pivotar / girar": "Pivoting / turning",
   Saltar: "Jumping",
   "Estar sentado mucho rato": "Sitting for long periods",
-  "Extender del todo": "Fully straightening",
+  "Estirar del todo": "Fully straightening",
   "Sí, pude seguir caminando": "Yes, I could keep walking",
   "Parcialmente / cojeando": "Partially / limping",
   "No, no pude apoyar": "No, I couldn't bear weight",
@@ -1230,7 +1143,7 @@ export const KNEE_OPTION_EN: Record<string, string> = {
   "Carga elevada": "Heavy load",
   "Carga moderada": "Moderate load",
   "Peso corporal": "Bodyweight",
-  "Resistencia / endurance": "Endurance / resistance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)": "Endurance / resistance",
   "Pie completo": "Whole foot",
   "Dedos del pie": "Toes",
   "Planta del pie": "Sole of the foot",
@@ -1241,7 +1154,7 @@ export const KNEE_OPTION_EN: Record<string, string> = {
   "Cara externa rodilla": "Outer knee",
   "Inmediata tras la lesión": "Immediate after the injury",
   "En las primeras horas": "Within the first hours",
-  "Progresiva en días": "Gradual over days",
+  "Poco a poco en días": "Gradual over days",
   "Ha aumentado": "Has increased",
   "Se mantiene": "Stayed the same",
   "Ha bajado": "Has gone down",

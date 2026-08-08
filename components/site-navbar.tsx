@@ -5,6 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  ExitPatientModeButton,
+  readPatientModeFromDocument,
+} from "@/components/fisio-patient-mode";
 import { isClientAdminEmail } from "@/lib/is-admin-client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -22,19 +26,28 @@ export function SiteNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [patientMode, setPatientMode] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    setPatientMode(readPatientModeFromDocument());
   }, []);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email ?? null);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user?.email ?? null);
-    });
+    void supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        setUserEmail(data.user?.email ?? null);
+      })
+      .catch(() => {
+        setUserEmail(null);
+      });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUserEmail(session?.user?.email ?? null);
+      }
+    );
     return () => listener.subscription.unsubscribe();
   }, []);
 
@@ -70,6 +83,8 @@ export function SiteNavbar() {
   async function handleSignOut() {
     setSigningOut(true);
     setMenuOpen(false);
+    document.cookie =
+      "aikinora_patient_mode=; path=/; max-age=0; SameSite=Lax";
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/login");
@@ -82,12 +97,12 @@ export function SiteNavbar() {
           <div className="fixed inset-0 z-[100]" role="presentation">
             <button
               type="button"
-              className="absolute inset-0 bg-black/40"
+              className="absolute inset-0 top-14 bg-black/40"
               aria-label="Cerrar menú"
               onClick={() => setMenuOpen(false)}
             />
             <aside
-              className="absolute bottom-0 right-0 top-14 flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200 bg-white shadow-2xl"
+              className="absolute bottom-0 right-0 top-14 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
               style={{ animation: "slideInRight 180ms ease-out" }}
               role="dialog"
               aria-modal="true"
@@ -104,10 +119,10 @@ export function SiteNavbar() {
                       key={href}
                       href={href}
                       onClick={() => setMenuOpen(false)}
-                      className={`rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+                      className={`rounded-[14px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                         active
-                          ? "bg-slate-900 text-white"
-                          : "text-slate-800 hover:bg-slate-100"
+                          ? "bg-[#EFF6FF] text-slate-900 shadow-[inset_3px_0_0_#2563EB]"
+                          : "text-slate-800 hover:bg-[#F1F5F9]"
                       }`}
                     >
                       {label}
@@ -116,12 +131,12 @@ export function SiteNavbar() {
                 })}
               </nav>
 
-              <div className="shrink-0 border-t border-slate-200 p-3">
+              <div className="shrink-0 border-t border-slate-200/80 p-3">
                 <button
                   type="button"
                   onClick={() => void handleSignOut()}
                   disabled={signingOut}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                  className="btn-secondary w-full !justify-start !text-sm"
                 >
                   {signingOut ? "Saliendo…" : "Cerrar sesión"}
                 </button>
@@ -134,51 +149,60 @@ export function SiteNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-[110] w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
+      <header className="sticky top-0 z-[110] w-full border-b border-slate-200/70 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/consulta"
-            className="flex items-center gap-2"
-            aria-label="Kinora — Consulta"
+            className="flex items-center gap-2.5"
+            aria-label="AIKinora — Consulta"
           >
             <Image
               src="/logo-icon.png"
-              alt="Kinora"
-              width={30}
-              height={30}
+              alt="AIKinora"
+              width={28}
+              height={28}
               className="object-contain"
               priority
             />
-            <span className="text-[15px] font-bold tracking-tight text-slate-900">
-              Kinora
+            <span className="text-[15px] font-semibold tracking-tight text-slate-900">
+              AIKinora
             </span>
           </Link>
 
-          <button
-            type="button"
-            className="rounded-lg p-2 text-slate-800 transition-colors hover:bg-slate-100"
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-            aria-expanded={menuOpen}
-          >
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" aria-hidden>
-              {menuOpen ? (
-                <path
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  d="M6 6l12 12M6 18L18 6"
-                />
-              ) : (
-                <path
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {patientMode ? <ExitPatientModeButton /> : null}
+            <button
+              type="button"
+              className="btn-icon !h-10 !w-10 text-slate-800"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={menuOpen}
+            >
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                {menuOpen ? (
+                  <path
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    d="M6 6l12 12M6 18L18 6"
+                  />
+                ) : (
+                  <path
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
       {menu}

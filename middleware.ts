@@ -16,6 +16,10 @@ import {
   isPhysioProfileComplete,
   type PhysioProfileFields,
 } from "@/lib/physio-profile-complete";
+import {
+  isPatientModeCookieValue,
+  PATIENT_MODE_COOKIE,
+} from "@/lib/physio-invite";
 
 const PROFILE_COLUMNS =
   `account_type, ${ATHLETE_PROFILE_COLUMNS}, ${PHYSIO_PROFILE_COLUMNS}` as const;
@@ -69,6 +73,9 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const search = request.nextUrl.search;
+  const patientMode = isPatientModeCookieValue(
+    request.cookies.get(PATIENT_MODE_COOKIE)?.value
+  );
 
   const isPublic =
     pathname === "/login" ||
@@ -157,10 +164,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
 
-    // Physios must stay on /fisio — patient pages like /fisioterapia share a
-    // session cookie, so without this they can open the code form and hit
-    // "los fisioterapeutas no pueden vincularse con un código".
-    if (profile?.account_type === "physio") {
+    // Physios stay on /fisio unless they opted into "modo paciente".
+    if (profile?.account_type === "physio" && !patientMode) {
       const onPhysioArea =
         pathname === "/fisio" || pathname.startsWith("/fisio/");
       if (!onPhysioArea) {

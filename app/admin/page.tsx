@@ -25,7 +25,7 @@ export default function AdminHomePage() {
         Panel de administración
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-        Gestiona usuarios, noticias y la base de conocimientos de Kinora. Solo
+        Gestiona usuarios, noticias y la base de conocimientos de AIKinora. Solo
         tu cuenta de administrador puede acceder aquí.
       </p>
 

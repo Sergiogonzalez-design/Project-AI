@@ -312,7 +312,7 @@ export function ProfileForm() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
+            className="btn-primary mt-6 w-full"
           >
             {saving ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Guardando…</>

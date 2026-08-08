@@ -208,9 +208,9 @@ export function ConsultaAdaptiveNeck({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateNeckSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateNeckSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

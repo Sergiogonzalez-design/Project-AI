@@ -1,7 +1,8 @@
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -14,22 +15,22 @@ export const EVOLUTION_OPTIONS = [
   "Más de 1 mes",
 ] as const;
 
-export const ONSET_FORM_OPTIONS = ["Repentino", "Progresivo"] as const;
+export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
   "Caída",
   "Golpe directo",
   "Entrenamiento o ejercicio",
   "Movimiento repetitivo",
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Otro",
 ] as const;
 
 export const SHOULDER_ANATOMIC_LOCATION = [
-  "Parte frontal (deltoides/anterior)",
+  "Parte delantera del hombro",
   "Parte lateral",
   "Parte posterior",
-  "Cerca de la clavícula / articulación AC",
+  "Cerca de la clavícula (parte superior del hombro)",
   "Profundo dentro del hombro",
   "Zona escapular (omóplato)",
   "No estoy seguro",
@@ -37,7 +38,7 @@ export const SHOULDER_ANATOMIC_LOCATION = [
 
 /** Pectoral/chest location chips — not glenohumeral “hombro” landmarks. */
 export const PECTORAL_ANATOMIC_LOCATION = [
-  "Parte interna del pecho (cerca del esternón)",
+  "Parte interna del pecho (cerca del centro del pecho)",
   "Vientre muscular del pectoral (centro del pecho)",
   "Inserción cercana a la axila",
   "Borde inferior del pectoral",
@@ -64,14 +65,6 @@ export const PAIN_TYPE_OPTIONS = [
   "Presión / peso",
   "Hormigueo",
   "Malestar difuso",
-] as const;
-
-export const PAIN_SITUATION_OPTIONS = [
-  "En reposo",
-  "Al mover",
-  "Con esfuerzo o carga",
-  "Por la noche",
-  "Constante",
 ] as const;
 
 export const FUNCTIONAL_LIMIT_OPTIONS = [
@@ -119,7 +112,7 @@ export const PECTORAL_AGGRAVATING_MOVEMENT_OPTIONS = [
 ] as const;
 
 export const PECTORAL_ASSOCIATED_SYMPTOM_OPTIONS = [
-  "Debilidad al juntar los brazos (aducción)",
+  "Debilidad al juntar los brazos delante del pecho",
   "Hematoma en pecho o axila",
   "Chasquidos o latigazo",
   "Inflamación / hinchazón",
@@ -163,7 +156,7 @@ export const TRAINING_LOAD_OPTIONS = [
   "Carga elevada",
   "Carga moderada",
   "Peso corporal",
-  "Resistencia / endurance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)",
 ] as const;
 
 export const TINGLING_FINGER_OPTIONS = [
@@ -186,12 +179,6 @@ export const INSTABILITY_FEELING_OPTIONS = [
   "No",
   "A veces",
   "Sí, con frecuencia",
-] as const;
-
-export const TRAINING_IMPACT_OPTIONS = [
-  "No afecta",
-  "Parcialmente",
-  "No puedo entrenar o competir",
 ] as const;
 
 export const INSTABILITY_DIRECTION_OPTIONS = [
@@ -219,7 +206,6 @@ export type ShoulderAdaptiveAnswers = {
   intensidad_dolor: number;
   localizacion_hombro: string[];
   tipo_dolor: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
@@ -243,20 +229,13 @@ export type ShoulderAdaptiveAnswers = {
   // Tingling branch
   hormigueo_dedos: string[];
   hormigueo_constante: string;
-  hormigueo_movimientos: string;
   // Instability branch
   inestabilidad_salido: string;
   inestabilidad_desplaza: string;
-  inestabilidad_cuando: string;
   inestabilidad_direccion: string;
-  // Click branch
-  chasquido_cuando: string;
-  // Weakness branch
-  debilidad_movimiento: string;
   // History
   lesion_previa: string;
   lesion_previa_detalle: string;
-  deporte_impacto: string;
 };
 
 export function defaultShoulderAdaptiveAnswers(): ShoulderAdaptiveAnswers {
@@ -276,7 +255,6 @@ export function defaultShoulderAdaptiveAnswers(): ShoulderAdaptiveAnswers {
     intensidad_dolor: 5,
     localizacion_hombro: [],
     tipo_dolor: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
@@ -296,16 +274,11 @@ export function defaultShoulderAdaptiveAnswers(): ShoulderAdaptiveAnswers {
     repetitivo_frecuencia: "",
     hormigueo_dedos: [],
     hormigueo_constante: "",
-    hormigueo_movimientos: "",
     inestabilidad_salido: "",
     inestabilidad_desplaza: "",
-    inestabilidad_cuando: "",
     inestabilidad_direccion: "",
-    chasquido_cuando: "",
-    debilidad_movimiento: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
-    deporte_impacto: "",
   };
 }
 
@@ -322,7 +295,6 @@ export function withShoulderHintsFromText(text: string): ShoulderAdaptiveAnswers
   const mecanismo: string[] = [];
   const movimientos: string[] = [];
   const localizacion: string[] = [];
-  const patron: string[] = [];
   const sintomas: string[] = [];
   let inicio = "";
   let evolucion = "";
@@ -346,7 +318,7 @@ export function withShoulderHintsFromText(text: string): ShoulderAdaptiveAnswers
   if (/de\s+golpe|repentin|s[uú]bit|chasquido|crack|pop\b/i.test(t)) {
     inicio = "Repentino";
   } else if (/poco a poco|progresiv|gradual|fue apareciendo/i.test(t)) {
-    inicio = "Progresivo";
+    inicio = "Poco a poco";
   }
 
   if (/ca[ií]da|caer[ií]?|me ca[ií]|fall(ing|ed)?\b/i.test(t)) mecanismo.push("Caída");
@@ -395,7 +367,7 @@ export function withShoulderHintsFromText(text: string): ShoulderAdaptiveAnswers
 
   if (focus === "pectoral") {
     if (/estern[oó]n|interno/i.test(t)) {
-      localizacion.push("Parte interna del pecho (cerca del esternón)");
+      localizacion.push("Parte interna del pecho (cerca del centro del pecho)");
     }
     if (/axila|axillary/i.test(t)) localizacion.push("Axila");
     if (/vientre|centro|medio/i.test(t)) {
@@ -403,26 +375,19 @@ export function withShoulderHintsFromText(text: string): ShoulderAdaptiveAnswers
     }
   } else {
     if (/delante|frontal|anterior/i.test(t)) {
-      localizacion.push("Parte frontal (deltoides/anterior)");
+      localizacion.push("Parte delantera del hombro");
     }
     if (/lateral|lado/i.test(t)) localizacion.push("Parte lateral");
     if (/detr[aá]s|posterior|om[oó]plato|escapul/i.test(t)) {
       localizacion.push("Zona escapular (omóplato)");
     }
     if (/clav[ií]cula|\bac\b/i.test(t)) {
-      localizacion.push("Cerca de la clavícula / articulación AC");
+      localizacion.push("Cerca de la clavícula (parte superior del hombro)");
     }
     if (/parte\s+alta\s+del\s+brazo|upper\s+arm/i.test(t)) {
-      localizacion.push("Parte frontal (deltoides/anterior)");
+      localizacion.push("Parte delantera del hombro");
     }
   }
-
-  if (/noche|nocturn|dormir|sleep/i.test(t)) patron.push("Por la noche");
-  if (/reposo|rest/i.test(t)) patron.push("En reposo");
-  if (/al mover|al movimiento|when\s+i\s+move|al elevar/i.test(t)) {
-    patron.push("Al mover");
-  }
-  if (/esfuerzo|carga|effort|load/i.test(t)) patron.push("Con esfuerzo o carga");
 
   if (/hormigueo|entumec|tingling|numb/i.test(t)) {
     sintomas.push("Hormigueo o entumecimiento");
@@ -450,7 +415,6 @@ export function withShoulderHintsFromText(text: string): ShoulderAdaptiveAnswers
     mecanismo: [...new Set(mecanismo)],
     movimientos_agravantes: [...new Set(movimientos)],
     localizacion_hombro: [...new Set(localizacion)],
-    patron_dolor: [...new Set(patron)],
     sintomas_asociados: [...new Set(sintomas)],
     ...(irradiacion ? { irradiacion } : {}),
     ...(entreno_ejercicio ? { entreno_ejercicio } : {}),
@@ -465,8 +429,6 @@ export type ShoulderQuestionSection =
   | "repetitive"
   | "tingling"
   | "instability"
-  | "clicking"
-  | "weakness"
   | "history";
 
 export type ShoulderQuestionDef = {
@@ -492,18 +454,14 @@ function hasTingling(a: ShoulderAdaptiveAnswers): boolean {
   );
 }
 
-function hasWeakness(a: ShoulderAdaptiveAnswers): boolean {
-  return a.sintomas_asociados.some((s) => /debilidad/i.test(s));
-}
-
 export const SHOULDER_QUESTIONS: ShoulderQuestionDef[] = [
   // Timing first so sleep/night questions can be hidden when injury is hours-old
   { id: "evolucion", section: "red_flags", label: "¿Cuánto tiempo llevas con este problema?", type: "single", options: EVOLUTION_OPTIONS, required: true },
-  { id: "rf_deformidad", section: "red_flags", label: "¿Hay deformidad evidente tras un traumatismo?", type: "single", options: YES_NO, required: true },
-  { id: "rf_no_movimiento", section: "red_flags", label: "¿Incapacidad absoluta para mover el brazo?", type: "single", options: YES_NO, required: true },
+  { id: "rf_deformidad", section: "red_flags", label: "¿Tras un golpe o caída, se ve torcido, deformado o muy distinto de lo normal?", type: "single", options: YES_NO, required: true },
+  { id: "rf_no_movimiento", section: "red_flags", label: "¿No puedes mover el brazo en absoluto?", type: "single", options: YES_NO, required: true },
   { id: "rf_perdida_fuerza", section: "red_flags", label: "¿Pérdida súbita de fuerza en el brazo?", type: "single", options: YES_NO, required: true },
   { id: "rf_perdida_sensibilidad", section: "red_flags", label: "¿Pérdida de sensibilidad (entumecimiento marcado)?", type: "single", options: YES_NO, required: true },
-  { id: "rf_fiebre", section: "red_flags", label: "¿Fiebre asociada al dolor?", type: "single", options: YES_NO, required: true },
+  { id: "rf_fiebre", section: "red_flags", label: "¿Tienes fiebre junto con el dolor?", type: "single", options: YES_NO, required: true },
   { id: "rf_respiracion_torax", section: "red_flags", label: "¿Dolor acompañado de dificultad respiratoria o dolor torácico?", type: "single", options: YES_NO, required: true },
   { id: "rf_luxacion_actual", section: "red_flags", label: "¿Sientes que el hombro está fuera de su sitio ahora mismo?", type: "single", options: YES_NO, required: true },
   { id: "rf_dolor_nocturno_sistemico", section: "red_flags", label: "¿Dolor nocturno constante que no mejora con reposo, con pérdida de peso no explicada?", type: "single", options: YES_NO, required: true, showIf: (a) => shouldShowSleepDependentQuestion("rf_dolor_nocturno_sistemico", a.evolucion) },
@@ -511,14 +469,13 @@ export const SHOULDER_QUESTIONS: ShoulderQuestionDef[] = [
   // Core clinical characterization
   { id: "inicio", section: "core", label: "¿Cómo fue el inicio?", type: "single", options: ONSET_FORM_OPTIONS, required: true },
   { id: "mecanismo", section: "core", label: "¿Qué pudo provocarlo? (puedes marcar varias)", type: "multi", options: MECHANISM_OPTIONS, required: true },
-  { id: "mecanismo_otro", section: "core", label: "Describe el mecanismo", type: "text", required: true, showIf: (a) => a.mecanismo.includes("Otro") },
+  { id: "mecanismo_otro", section: "core", label: "Cuéntanos qué pasó o cómo empezó", type: "text", required: true, showIf: (a) => a.mecanismo.includes("Otro") },
   { id: "intensidad_dolor", section: "core", label: "Intensidad del dolor (1–10)", type: "slider", required: true },
   { id: "localizacion_hombro", section: "core", label: "¿Dónde sientes el dolor en el hombro? (puedes marcar varias)", type: "multi", options: SHOULDER_ANATOMIC_LOCATION, required: true },
   { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: true },
-  { id: "patron_dolor", section: "core", label: "¿En qué situaciones aparece o empeora?", type: "multi", options: PAIN_SITUATION_OPTIONS, required: true },
   { id: "limitacion_funcional", section: "core", label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)", type: "multi", options: FUNCTIONAL_LIMIT_OPTIONS, required: true },
-  { id: "irradiacion", section: "core", label: "¿El dolor se irradia hacia el brazo?", type: "single", options: YES_NO, required: true },
-  { id: "irradiacion_detalle", section: "core", label: "¿Hasta dónde llega la irradiación?", type: "text", required: true, showIf: (a) => a.irradiacion === "Sí" },
+  { id: "irradiacion", section: "core", label: "¿El dolor se extiende hacia el brazo?", type: "single", options: YES_NO, required: true },
+  { id: "irradiacion_detalle", section: "core", label: "¿Hasta dónde llega ese dolor?", type: "text", required: true, showIf: (a) => a.irradiacion === "Sí" },
   { id: "cuello_sintomas", section: "core", label: "¿También notas dolor, rigidez u hormigueo en el cuello?", type: "single", options: YES_NO, required: true },
   {
     id: "cuello_empeora_brazo",
@@ -558,24 +515,15 @@ export const SHOULDER_QUESTIONS: ShoulderQuestionDef[] = [
   // Tingling branch
   { id: "hormigueo_dedos", section: "tingling", label: "¿Qué dedos o zonas están afectados?", type: "multi", options: TINGLING_FINGER_OPTIONS, required: true, showIf: hasTingling },
   { id: "hormigueo_constante", section: "tingling", label: "¿El hormigueo es constante?", type: "single", options: ["No, intermitente", "Sí, constante"], required: true, showIf: hasTingling },
-  { id: "hormigueo_movimientos", section: "tingling", label: "¿Qué movimientos lo desencadenan?", type: "text", required: false, showIf: hasTingling },
 
   // Instability branch
-  { id: "inestabilidad_salido", section: "instability", label: "¿El hombro se ha salido (luxación) anteriormente?", type: "single", options: INSTABILITY_HISTORY_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
+  { id: "inestabilidad_salido", section: "instability", label: "¿El hombro se ha salido de sitio alguna vez?", type: "single", options: INSTABILITY_HISTORY_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
   { id: "inestabilidad_desplaza", section: "instability", label: "¿Sientes que el hombro se desplaza o da inseguridad?", type: "single", options: INSTABILITY_FEELING_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
-  { id: "inestabilidad_cuando", section: "instability", label: "¿En qué situaciones notas la inestabilidad?", type: "text", required: false, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
   { id: "inestabilidad_direccion", section: "instability", label: "¿Hacia qué dirección notas que se desplaza el hombro?", type: "single", options: INSTABILITY_DIRECTION_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
-
-  // Clicking branch
-  { id: "chasquido_cuando", section: "clicking", label: "¿Cuándo aparecen los chasquidos?", type: "text", required: false, showIf: (a) => hasSymptom(a, "Chasquidos") },
-
-  // Weakness branch
-  { id: "debilidad_movimiento", section: "weakness", label: "¿Con qué movimiento notas más debilidad?", type: "text", required: false, showIf: hasWeakness },
 
   // History
   { id: "lesion_previa", section: "history", label: "¿Has tenido lesiones previas en este hombro?", type: "single", options: YES_NO, required: true },
   { id: "lesion_previa_detalle", section: "history", label: "Describe lesiones o tratamientos previos", type: "text", required: true, showIf: (a) => a.lesion_previa === "Sí" },
-  { id: "deporte_impacto", section: "history", label: "¿Cómo afecta a tu entrenamiento o deporte?", type: "single", options: TRAINING_IMPACT_OPTIONS, required: true },
 ];
 
 export const SHOULDER_SECTION_LABELS: Record<ShoulderQuestionSection, string> = {
@@ -586,8 +534,6 @@ export const SHOULDER_SECTION_LABELS: Record<ShoulderQuestionSection, string> = 
   repetitive: "Movimiento repetitivo",
   tingling: "Hormigueo / entumecimiento",
   instability: "Inestabilidad",
-  clicking: "Chasquidos",
-  weakness: "Debilidad",
   history: "Antecedentes",
 };
 
@@ -599,8 +545,6 @@ export const SHOULDER_SECTION_ORDER: ShoulderQuestionSection[] = [
   "repetitive",
   "tingling",
   "instability",
-  "clicking",
-  "weakness",
   "history",
 ];
 
@@ -658,7 +602,6 @@ export function adaptShoulderQuestionForFocus(
       };
     case "inestabilidad_salido":
     case "inestabilidad_desplaza":
-    case "inestabilidad_cuando":
     case "inestabilidad_direccion":
       // Hidden in pectoral focus via filter below; keep type-safe default.
       return q;
@@ -708,11 +651,11 @@ export function detectRedFlags(answers: ShoulderAdaptiveAnswers): {
   triggered: string[];
 } {
   const labels: Record<string, string> = {
-    rf_deformidad: "Deformidad evidente tras traumatismo",
-    rf_no_movimiento: "Incapacidad absoluta para mover el brazo",
+    rf_deformidad: "Se ve torcido, deformado o muy distinto tras un golpe o ca�da",
+    rf_no_movimiento: "No puedes mover el brazo en absoluto",
     rf_perdida_fuerza: "Pérdida súbita de fuerza",
     rf_perdida_sensibilidad: "Pérdida de sensibilidad",
-    rf_fiebre: "Fiebre asociada",
+    rf_fiebre: "Fiebre junto con el dolor",
     rf_respiracion_torax: "Dificultad respiratoria o dolor torácico",
     rf_luxacion_actual: "Luxación actual (hombro fuera de sitio ahora mismo)",
     rf_dolor_nocturno_sistemico: "Dolor nocturno constante con pérdida de peso no explicada",
@@ -735,11 +678,11 @@ function isAnswered(q: ShoulderQuestionDef, answers: ShoulderAdaptiveAnswers): b
 export function validateShoulderAdaptive(
   answers: ShoulderAdaptiveAnswers,
   focus: ShoulderQuestionnaireFocus = "shoulder"
-): string | null {
+): AdaptiveValidationIssue | null {
   const visible = getVisibleShoulderQuestions(answers, focus);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -793,7 +736,6 @@ export function formatShoulderAdaptive(
       ? `Localización anatómica pectoral/pecho: ${formatMulti(answers.localizacion_hombro)}`
       : `Localización anatómica hombro: ${formatMulti(answers.localizacion_hombro)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
-    `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
     `Síntomas de cuello: ${answers.cuello_sintomas || "—"}`,
@@ -838,8 +780,7 @@ export function formatShoulderAdaptive(
       "",
       "— HORMIGUEO —",
       `Dedos/zona: ${formatMulti(answers.hormigueo_dedos)}`,
-      `Constante: ${answers.hormigueo_constante}`,
-      answers.hormigueo_movimientos ? `Movimientos desencadenantes: ${answers.hormigueo_movimientos}` : ""
+      `Constante: ${answers.hormigueo_constante}`
     );
   }
   if (hasSymptom(answers, "Sensación de inestabilidad")) {
@@ -848,18 +789,7 @@ export function formatShoulderAdaptive(
       "— INESTABILIDAD —",
       `Luxaciones previas: ${answers.inestabilidad_salido}`,
       `Sensación desplazamiento: ${answers.inestabilidad_desplaza}`,
-      `Dirección de la inestabilidad: ${answers.inestabilidad_direccion || "—"}`,
-      answers.inestabilidad_cuando ? `Cuándo: ${answers.inestabilidad_cuando}` : ""
-    );
-  }
-  if (hasSymptom(answers, "Chasquidos") && answers.chasquido_cuando) {
-    lines.push("", "— CHASQUIDOS —", `Cuándo: ${answers.chasquido_cuando}`);
-  }
-  if (hasWeakness(answers)) {
-    lines.push(
-      "",
-      "— DEBILIDAD —",
-      answers.debilidad_movimiento ? `Movimiento con más debilidad: ${answers.debilidad_movimiento}` : "Movimiento con más debilidad: —"
+      `Dirección de la inestabilidad: ${answers.inestabilidad_direccion || "—"}`
     );
   }
 
@@ -869,7 +799,6 @@ export function formatShoulderAdaptive(
     focus === "pectoral"
       ? `Lesión previa pectoral/pecho: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`
       : `Lesión previa hombro: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
-    `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas, no para diagnosticar.",
     "",
@@ -904,38 +833,37 @@ export function validateShoulderSection(
   section: ShoulderQuestionSection,
   answers: ShoulderAdaptiveAnswers,
   focus: ShoulderQuestionnaireFocus = "shoulder"
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleShoulderQuestions(answers, focus).filter(
     (q) => q.section === section
   );
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
 }
 
 export const SHOULDER_LABEL_EN: Partial<Record<string, string>> = {
-  rf_deformidad: "Is there an obvious deformity after trauma?",
+  rf_deformidad: "Does it look twisted, deformed, or very different from normal after a hit or fall?",
   rf_no_movimiento: "Are you completely unable to move the arm?",
   rf_perdida_fuerza: "Sudden loss of strength in the arm?",
   rf_perdida_sensibilidad: "Loss of sensation (marked numbness)?",
-  rf_fiebre: "Fever associated with the pain?",
+  rf_fiebre: "Do you have a fever along with the pain?",
   rf_respiracion_torax: "Pain with breathing difficulty or chest pain?",
   rf_luxacion_actual: "Does it feel like the shoulder is out of place right now?",
   rf_dolor_nocturno_sistemico: "Constant night pain that doesn't improve with rest, with unexplained weight loss?",
   evolucion: "How long have you had this problem?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
-  mecanismo_otro: "Describe the mechanism",
+  mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_hombro: "Where do you feel the pain in the shoulder? (you can select several)",
   tipo_dolor: "How would you describe the pain?",
-  patron_dolor: "In which situations does it appear or worsen?",
   limitacion_funcional: "How much does it limit you day to day?",
-  irradiacion: "Does the pain radiate down the arm?",
-  irradiacion_detalle: "How far does the radiation go?",
+  irradiacion: "Does the pain spread down the arm?",
+  irradiacion_detalle: "How far does that pain go?",
   cuello_sintomas: "Do you also notice pain, stiffness, or tingling in the neck?",
   cuello_empeora_brazo:
     "When you turn or tilt your head, does the shoulder pain or arm tingling get worse?",
@@ -954,16 +882,11 @@ export const SHOULDER_LABEL_EN: Partial<Record<string, string>> = {
   repetitivo_frecuencia: "How often do you do that activity?",
   hormigueo_dedos: "Which fingers or areas are affected?",
   hormigueo_constante: "Is the tingling constant?",
-  hormigueo_movimientos: "Which movements trigger it?",
   inestabilidad_salido: "Has the shoulder come out (dislocated) before?",
   inestabilidad_desplaza: "Does the shoulder feel like it shifts or is insecure?",
-  inestabilidad_cuando: "In which situations do you notice the instability?",
   inestabilidad_direccion: "In which direction does the shoulder feel like it shifts?",
-  chasquido_cuando: "When do the clicks appear?",
-  debilidad_movimiento: "With which movement do you notice the most weakness?",
   lesion_previa: "Have you had previous injuries in this shoulder?",
   lesion_previa_detalle: "Describe previous injuries or treatments",
-  deporte_impacto: "How does it affect your training or sport?",
 };
 
 export const SHOULDER_OPTION_EN: Record<string, string> = {
@@ -976,20 +899,20 @@ export const SHOULDER_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
+  "Poco a poco": "Gradual",
   Caída: "Fall",
   "Golpe directo": "Direct blow",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Movimiento repetitivo": "Repetitive movement",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   Otro: "Other",
-  "Parte frontal (deltoides/anterior)": "Front (deltoid/anterior)",
+  "Parte delantera del hombro": "Front of the shoulder",
   "Parte lateral": "Side (lateral)",
   "Parte posterior": "Back (posterior)",
-  "Cerca de la clavícula / articulación AC": "Near the collarbone / AC joint",
+  "Cerca de la clavícula (parte superior del hombro)": "Near the collarbone (top of the shoulder)",
   "Profundo dentro del hombro": "Deep inside the shoulder",
   "Zona escapular (omóplato)": "Scapular area (shoulder blade)",
-  "Parte interna del pecho (cerca del esternón)": "Inner chest (near the sternum)",
+  "Parte interna del pecho (cerca del centro del pecho)": "Inner chest (near the sternum)",
   "Vientre muscular del pectoral (centro del pecho)": "Pectoral muscle belly (mid-chest)",
   "Inserción cercana a la axila": "Insertion near the armpit",
   "Borde inferior del pectoral": "Lower border of the pectoral",
@@ -999,7 +922,7 @@ export const SHOULDER_OPTION_EN: Record<string, string> = {
   Flexiones: "Push-ups",
   "Llevar el brazo atrás con el codo estirado": "Arm back with elbow straight",
   "Poner los brazos en cruz": "Arms out in a cross (T-pose)",
-  "Debilidad al juntar los brazos (aducción)": "Weakness bringing the arms together (adduction)",
+  "Debilidad al juntar los brazos delante del pecho": "Weakness bringing the arms together (adduction)",
   "Hematoma en pecho o axila": "Bruising in the chest or armpit",
   "Chasquidos o latigazo": "Clicking or whip-like snap",
   "Sobre el pecho": "Onto the chest",
@@ -1054,7 +977,7 @@ export const SHOULDER_OPTION_EN: Record<string, string> = {
   "Carga elevada": "Heavy load",
   "Carga moderada": "Moderate load",
   "Peso corporal": "Bodyweight",
-  "Resistencia / endurance": "Endurance / resistance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)": "Endurance / resistance",
   Pulgar: "Thumb",
   Índice: "Index",
   Medio: "Middle",
@@ -1087,8 +1010,6 @@ export const SHOULDER_SECTION_LABELS_EN: Record<string, string> = {
   repetitive: "Repetitive movement",
   tingling: "Tingling / numbness",
   instability: "Instability",
-  clicking: "Clicking",
-  weakness: "Weakness",
   history: "History",
 };
 

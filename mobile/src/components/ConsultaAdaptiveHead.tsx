@@ -208,9 +208,9 @@ export function ConsultaAdaptiveHead({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateHeadSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateHeadSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

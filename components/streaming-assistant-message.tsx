@@ -35,12 +35,21 @@ export function StreamingAssistantMessage({
   useEffect(() => {
     if (!animate) {
       setVisibleCount(lines.length);
+      // Still notify so conversation TTS / scroll hooks can run for non-animated replies.
+      onRevealCompleteRef.current?.();
       return;
     }
 
     setVisibleCount(0);
     let count = 0;
     let timer: number | null = null;
+    let completed = false;
+
+    const finish = () => {
+      if (completed) return;
+      completed = true;
+      onRevealCompleteRef.current?.();
+    };
 
     const tick = () => {
       count += 1;
@@ -49,7 +58,7 @@ export function StreamingAssistantMessage({
 
       if (count >= lines.length) {
         if (timer != null) window.clearInterval(timer);
-        onRevealCompleteRef.current?.();
+        finish();
       }
     };
 

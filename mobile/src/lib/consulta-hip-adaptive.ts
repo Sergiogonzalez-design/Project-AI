@@ -1,11 +1,12 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 /**
  * Adaptive questionnaire for hip / groin pain — same structure as knee / shoulder / lower leg
  * (urgency → core → mechanism branches → neuro / impingement / trochanter → history).
  */
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -18,7 +19,7 @@ export const EVOLUTION_OPTIONS = [
   "Más de 1 mes",
 ] as const;
 
-export const ONSET_FORM_OPTIONS = ["Repentino", "Progresivo"] as const;
+export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
   "Caída",
@@ -27,19 +28,19 @@ export const MECHANISM_OPTIONS = [
   "Movimiento repetitivo / carrera",
   "Cambio de dirección / pivote",
   "Sprint / chute / estirón explosivo",
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Otro",
 ] as const;
 
 export const HIP_LOCATION_OPTIONS = [
-  "Ingle / anterior",
-  "Lateral (trocánter)",
+  "Ingle / parte delantera",
+  "Parte de fuera de la cadera (hueso lateral)",
   "Posterior / glúteo",
-  "Isquion / al sentarse",
+  "Hueso del asiento / al sentarte",
   "Profundo en la cadera",
-  "Irradia a muslo",
-  "Irradia a rodilla",
-  "Bilateral",
+  "Se extiende al muslo",
+  "Se extiende a la rodilla",
+  "En las dos caderas",
   "No estoy seguro",
 ] as const;
 
@@ -50,15 +51,6 @@ export const PAIN_TYPE_OPTIONS = [
   "Presión / peso",
   "Hormigueo",
   "Malestar difuso",
-] as const;
-
-export const PAIN_SITUATION_OPTIONS = [
-  "En reposo",
-  "Al caminar",
-  "Con esfuerzo o carga",
-  "Por la noche",
-  "Al despertar / primeros pasos",
-  "Constante",
 ] as const;
 
 export const FUNCTIONAL_LIMIT_OPTIONS = [
@@ -110,7 +102,7 @@ export const TRAINING_LOAD_OPTIONS = [
   "Carga elevada",
   "Carga moderada",
   "Peso corporal",
-  "Resistencia / endurance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)",
 ] as const;
 
 export const NEURO_ZONE_OPTIONS = [
@@ -122,12 +114,6 @@ export const NEURO_ZONE_OPTIONS = [
   "Ingle",
   "Glúteo",
   "Lateral cadera",
-] as const;
-
-export const TRAINING_IMPACT_OPTIONS = [
-  "No afecta",
-  "Parcialmente",
-  "No puedo entrenar o competir",
 ] as const;
 
 export type HipAdaptiveAnswers = {
@@ -147,7 +133,6 @@ export type HipAdaptiveAnswers = {
   intensidad_dolor: number;
   localizacion_cadera: string[];
   tipo_dolor: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
@@ -168,7 +153,6 @@ export type HipAdaptiveAnswers = {
   // Neuro branch
   neuro_zona: string[];
   neuro_constante: string;
-  neuro_movimientos: string;
   // C-sign / impingement branch
   impingement_c_sign: string;
   impingement_flexion: string;
@@ -186,7 +170,6 @@ export type HipAdaptiveAnswers = {
   // History
   lesion_previa: string;
   lesion_previa_detalle: string;
-  deporte_impacto: string;
 };
 
 export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
@@ -205,7 +188,6 @@ export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
     intensidad_dolor: 5,
     localizacion_cadera: [],
     tipo_dolor: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
@@ -221,7 +203,6 @@ export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
     pivote_detalle: "",
     neuro_zona: [],
     neuro_constante: "",
-    neuro_movimientos: "",
     impingement_c_sign: "",
     impingement_flexion: "",
     impingement_clicking: "",
@@ -234,7 +215,6 @@ export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
     lateral_escaleras: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
-    deporte_impacto: "",
   };
 }
 
@@ -291,19 +271,19 @@ function hasImpingementSection(a: HipAdaptiveAnswers): boolean {
 }
 
 function hasLateralTrochanterSection(a: HipAdaptiveAnswers): boolean {
-  return a.localizacion_cadera.includes("Lateral (trocánter)");
+  return a.localizacion_cadera.includes("Parte de fuera de la cadera (hueso lateral)");
 }
 
 function hasPosteriorSection(a: HipAdaptiveAnswers): boolean {
   return (
     a.localizacion_cadera.includes("Posterior / glúteo") ||
-    a.localizacion_cadera.includes("Isquion / al sentarse")
+    a.localizacion_cadera.includes("Hueso del asiento / al sentarte")
   );
 }
 
 function hasAdductorSection(a: HipAdaptiveAnswers): boolean {
   return (
-    a.localizacion_cadera.includes("Ingle / anterior") ||
+    a.localizacion_cadera.includes("Ingle / parte delantera") ||
     a.mecanismo.includes("Sprint / chute / estirón explosivo")
   );
 }
@@ -324,7 +304,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     id: "rf_no_apoyo",
     section: "red_flags",
     label:
-      "¿Incapacidad para apoyar peso tras caída o traumatismo? (especialmente si hay riesgo de osteoporosis)",
+      "¿No puedes apoyar peso tras una caída o golpe? (sobre todo si tienes huesos frágiles / osteoporosis)",
     type: "single",
     options: YES_NO,
     required: true,
@@ -332,7 +312,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
   {
     id: "rf_deformidad",
     section: "red_flags",
-    label: "¿Deformidad evidente o pierna acortada/rotada?",
+    label: "¿Se ve torcido, deformado o muy distinto de lo normal, o la pierna más corta o girada?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -340,7 +320,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
   {
     id: "rf_fiebre",
     section: "red_flags",
-    label: "¿Fiebre asociada al dolor de cadera?",
+    label: "¿Tienes fiebre junto con el dolor de cadera?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -348,7 +328,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
   {
     id: "rf_dolor_nocturno_peso",
     section: "red_flags",
-    label: "¿Dolor nocturno progresivo con pérdida de peso inexplicada?",
+    label: "¿Dolor nocturno que va a más, con pérdida de peso sin explicación?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -358,7 +338,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     id: "rf_vascular",
     section: "red_flags",
     label:
-      "¿Dolor inguinal súbito e intenso con preocupación vascular o pie frío?",
+      "¿Dolor fuerte y súbito en la ingle, muy intenso, o con el pie frío?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -393,7 +373,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
   {
     id: "mecanismo_otro",
     section: "core",
-    label: "Describe el mecanismo",
+    label: "Cuéntanos qué pasó o cómo empezó",
     type: "text",
     required: true,
     showIf: (a) => a.mecanismo.includes("Otro"),
@@ -420,16 +400,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     type: "multi",
     options: PAIN_TYPE_OPTIONS,
     required: true,
-  },
-  {
-    id: "patron_dolor",
-    section: "core",
-    label: "¿En qué situaciones aparece o empeora? (puedes marcar varias)",
-    type: "multi",
-    options: PAIN_SITUATION_OPTIONS,
-    required: true,
-  },
-  {
+  },  {
     id: "limitacion_funcional",
     section: "core",
     label: "¿Cuánto te limita al caminar o apoyar? (puedes marcar varias)",
@@ -440,7 +411,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
   {
     id: "irradiacion",
     section: "core",
-    label: "¿El dolor se irradia hacia muslo, rodilla o ingle?",
+    label: "¿El dolor se extiende hacia muslo, rodilla o ingle?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -448,7 +419,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
   {
     id: "irradiacion_detalle",
     section: "core",
-    label: "¿Hasta dónde llega la irradiación?",
+    label: "¿Hasta dónde llega ese dolor?",
     type: "text",
     required: true,
     showIf: (a) => a.irradiacion === "Sí",
@@ -457,7 +428,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     id: "rf_cola_caballo",
     section: "core",
     label:
-      "¿Alteración reciente de orina/heces o entumecimiento en la zona del asiento (silla de montar)?",
+      "¿Alteración reciente de orina/heces o entumecimiento en la zona del asiento (entre las piernas)?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -575,15 +546,6 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     required: true,
     showIf: hasNeuro,
   },
-  {
-    id: "neuro_movimientos",
-    section: "neuro",
-    label: "¿Qué movimientos lo desencadenan?",
-    type: "text",
-    required: false,
-    showIf: hasNeuro,
-  },
-
   // Deep hip / sitting pain branch (plain language — no clinical jargon for patients)
   {
     id: "impingement_c_sign",
@@ -627,7 +589,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
   {
     id: "posterior_estirar",
     section: "posterior",
-    label: "¿Duele o irradia por la parte posterior del muslo al estirar la pierna?",
+    label: "¿Duele o se extiende por la parte de atrás del muslo al estirar la pierna?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -702,21 +664,12 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     type: "text",
     required: true,
     showIf: (a) => a.lesion_previa === "Sí",
-  },
-  {
-    id: "deporte_impacto",
-    section: "history",
-    label: "¿Cómo afecta a tu entrenamiento o deporte?",
-    type: "single",
-    options: TRAINING_IMPACT_OPTIONS,
-    required: true,
-  },
-];
+  },];
 
 export const HIP_SECTION_LABELS: Record<HipQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
   core: "Caracterización del problema",
-  trauma: "Detalles del traumatismo",
+  trauma: "Detalles del golpe o la caída",
   training: "Detalles del entrenamiento",
   repetitive: "Movimiento repetitivo / carrera",
   pivot: "Cambio de dirección / pivote",
@@ -776,14 +729,14 @@ export function detectHipRedFlags(answers: HipAdaptiveAnswers): {
   triggered: string[];
 } {
   const labels: Record<string, string> = {
-    rf_no_apoyo: "Incapacidad para apoyar peso tras traumatismo",
+    rf_no_apoyo: "No puedes apoyar peso tras golpe o caída",
     rf_deformidad: "Deformidad o pierna acortada/rotada",
-    rf_fiebre: "Fiebre asociada al dolor de cadera",
-    rf_dolor_nocturno_peso: "Dolor nocturno progresivo con pérdida de peso",
-    rf_vascular: "Dolor inguinal súbito con preocupación vascular o pie frío",
+    rf_fiebre: "Fiebre junto con el dolor de cadera",
+    rf_dolor_nocturno_peso: "Dolor nocturno que va a más con pérdida de peso",
+    rf_vascular: "Dolor fuerte y súbito en la ingle con preocupación vascular o pie frío",
     rf_perdida_sensibilidad: "Pérdida de sensibilidad en pie o pierna",
     rf_cola_caballo:
-      "Alteración de esfínteres o entumecimiento en silla de montar (sospecha síndrome de cola de caballo)",
+      "Problemas para controlar orina/heces o entumecimiento en la zona del asiento (entre las piernas)",
   };
   const triggered: string[] = [];
   for (const id of RED_FLAG_IDS) {
@@ -800,11 +753,11 @@ function isAnswered(q: HipQuestionDef, answers: HipAdaptiveAnswers): boolean {
   return typeof val === "string" && val.length > 0;
 }
 
-export function validateHipAdaptive(answers: HipAdaptiveAnswers): string | null {
+export function validateHipAdaptive(answers: HipAdaptiveAnswers): AdaptiveValidationIssue | null {
   const visible = getVisibleHipQuestions(answers);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -813,13 +766,13 @@ export function validateHipAdaptive(answers: HipAdaptiveAnswers): string | null 
 export function validateHipSection(
   section: HipQuestionSection,
   answers: HipAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleHipQuestions(answers).filter(
     (q) => q.section === section
   );
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -868,7 +821,6 @@ export function formatHipAdaptive(
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización EXACTA marcada por el paciente: ${formatMulti(answers.localizacion_cadera)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
-    `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
@@ -912,10 +864,7 @@ export function formatHipAdaptive(
       "",
       "— HORMIGUEO / ENTUMECIMIENTO —",
       `Zona: ${formatMulti(answers.neuro_zona)}`,
-      `Constante: ${answers.neuro_constante}`,
-      answers.neuro_movimientos
-        ? `Movimientos desencadenantes: ${answers.neuro_movimientos}`
-        : ""
+      `Constante: ${answers.neuro_constante}`
     );
   }
   if (hasImpingementSection(answers)) {
@@ -957,7 +906,6 @@ export function formatHipAdaptive(
     "",
     "— ANTECEDENTES —",
     `Lesión/cirugía previa cadera: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
-    `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (labrum, cartílago, tendón, bursa, músculos aductores, nervio), no para diagnosticar.",
     "",
@@ -973,7 +921,7 @@ export function formatHipAdaptive(
     "- Caída + no apoyo + deformidad → fractura/luxación (urgencia).",
     "- Dolor nocturno progresivo + pérdida peso → valorar patología ósea (priorizar valoración).",
     "- Fiebre + hinchazón → infección (urgencia).",
-    "- Dolor inguinal súbito + pie frío → sospecha vascular (urgencia)."
+    "- Dolor fuerte y súbito en la ingle + pie frío → posible problema de circulación (urgencia)."
   );
 
   return lines.filter(Boolean).join("\n");
@@ -1003,7 +951,7 @@ export function hipBodyAreaLabelForAi(
   }
   if (/Profundo en la cadera/i.test(text)) parts.push("cadera profunda");
   if (/Lateral|troc[aá]nter/i.test(text)) parts.push("cadera lateral");
-  if (/Irradia a rodilla|rodilla/i.test(locs.join(" ")) || /Irradia a rodilla/.test(text)) {
+  if (/Se extiende a la rodilla|rodilla/i.test(locs.join(" ")) || /Se extiende a la rodilla/.test(text)) {
     if (locs.some((l) => /rodilla/i.test(l))) parts.push("irradiación hacia rodilla");
   }
 
@@ -1026,14 +974,13 @@ export const HIP_LABEL_EN: Partial<Record<string, string>> = {
   evolucion: "How long have you had this problem?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
-  mecanismo_otro: "Describe the mechanism",
+  mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_cadera: "Where do you feel the pain in the hip? (you can select several)",
   tipo_dolor: "How would you describe the pain? (you can select several)",
-  patron_dolor: "In which situations does it appear or worsen? (you can select several)",
   limitacion_funcional: "How much does it limit walking or weight-bearing?",
-  irradiacion: "Does the pain radiate to the thigh, knee, or groin?",
-  irradiacion_detalle: "How far does the radiation go?",
+  irradiacion: "Does the pain spread to the thigh, knee, or groin?",
+  irradiacion_detalle: "How far does that pain go?",
   sintomas_asociados: "What other symptoms do you notice? (you can select several)",
   movimientos_agravantes: "Which movements provoke or worsen it? (you can select several)",
   trauma_detalle: "Describe the blow or fall",
@@ -1046,7 +993,6 @@ export const HIP_LABEL_EN: Partial<Record<string, string>> = {
   pivote_detalle: "Describe the change of direction or pivot",
   neuro_zona: "Which areas have tingling or numbness? (you can select several)",
   neuro_constante: "Is the tingling or numbness constant?",
-  neuro_movimientos: "Which movements trigger it?",
   impingement_c_sign:
     "Does it hurt more if you cup your hand over the front/side of the groin (as if pointing to the deep hip area)?",
   impingement_flexion:
@@ -1063,7 +1009,6 @@ export const HIP_LABEL_EN: Partial<Record<string, string>> = {
   lateral_escaleras: "Does it worsen going up or down stairs?",
   lesion_previa: "Have you had previous injuries or surgery on this hip?",
   lesion_previa_detalle: "Describe previous injuries, surgeries, or treatments",
-  deporte_impacto: "How does it affect your training or sport?",
 };
 
 export const HIP_OPTION_EN: Record<string, string> = {
@@ -1076,23 +1021,23 @@ export const HIP_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
+  "Poco a poco": "Gradual",
   Caída: "Fall",
   "Golpe directo": "Direct blow",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Movimiento repetitivo / carrera": "Repetitive movement / running",
   "Cambio de dirección / pivote": "Change of direction / pivot",
   "Sprint / chute / estirón explosivo": "Sprint / kicking / explosive stretch",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   Otro: "Other",
-  "Ingle / anterior": "Groin / anterior",
-  "Lateral (trocánter)": "Lateral (trochanter)",
+  "Ingle / parte delantera": "Groin / anterior",
+  "Parte de fuera de la cadera (hueso lateral)": "Outer hip (side bone)",
   "Posterior / glúteo": "Posterior / buttock",
-  "Isquion / al sentarse": "Sit bone (ischium) / when sitting",
+  "Hueso del asiento / al sentarte": "Sit bone (ischium) / when sitting",
   "Profundo en la cadera": "Deep in the hip",
-  "Irradia a muslo": "Radiates to thigh",
-  "Irradia a rodilla": "Radiates to knee",
-  Bilateral: "Bilateral",
+  "Se extiende al muslo": "Spreads to the thigh",
+  "Se extiende a la rodilla": "Spreads to the knee",
+  "En las dos caderas": "Both hips",
   "No estoy seguro": "I'm not sure",
   Punzante: "Sharp",
   Quemazón: "Burning",
@@ -1139,7 +1084,7 @@ export const HIP_OPTION_EN: Record<string, string> = {
   "Carga elevada": "Heavy load",
   "Carga moderada": "Moderate load",
   "Peso corporal": "Bodyweight",
-  "Resistencia / endurance": "Endurance / resistance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)": "Endurance / resistance",
   "Pie completo": "Whole foot",
   "Dedos del pie": "Toes",
   Pantorrilla: "Calf",

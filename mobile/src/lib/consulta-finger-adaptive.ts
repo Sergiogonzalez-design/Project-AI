@@ -1,7 +1,9 @@
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
+
 export const YES_NO = ["No", "Sí"] as const;
 
 export const FINGER_OPTIONS = [
@@ -17,11 +19,11 @@ export const HAND_OPTIONS = ["Derecha", "Izquierda", "Ambas"] as const;
 
 export const FINGER_LOCATION_OPTIONS = [
   "Punta del dedo",
-  "Articulación distal (IFD/DIP)",
-  "Articulación media (IFP/PIP)",
-  "Nudillo (IFM/MCP)",
-  "Cara palmar",
-  "Cara dorsal",
+  "Articulación cerca de la punta del dedo",
+  "Articulación del medio del dedo",
+  "Nudillo (unión del dedo con la mano)",
+  "Parte de la palma",
+  "Parte de atrás del dedo",
   "Lado del dedo",
   "Todo el dedo",
 ] as const;
@@ -110,8 +112,8 @@ export const FINGER_NUMBNESS = [
 ] as const;
 
 export const FINGER_AGGRAVATING = [
-  "Flexionar",
-  "Extender",
+  "Doblar",
+  "Estirar",
   "Agarrar",
   "Pellizcar",
   "Teclear",
@@ -142,7 +144,6 @@ export type FingerAdaptiveAnswers = {
   intensidad_dolor: number;
   naturaleza_dolor: string[];
   hinchazon: string;
-  moreton: string;
   deformidad_visible: string;
 
   flexion_completa: string;
@@ -163,10 +164,7 @@ export type FingerAdaptiveAnswers = {
   entumecimiento: string;
 
   test_puno_completo: string;
-  test_extension_mesa: string;
-  test_agarre_botella: string;
   test_pinza_papel: string;
-  test_punta_pulgar: string;
   test_estabilidad_lateral: string;
 };
 
@@ -188,7 +186,6 @@ export function defaultFingerAdaptiveAnswers(): FingerAdaptiveAnswers {
     intensidad_dolor: 5,
     naturaleza_dolor: [],
     hinchazon: "",
-    moreton: "",
     deformidad_visible: "",
     flexion_completa: "",
     extension_completa: "",
@@ -205,10 +202,7 @@ export function defaultFingerAdaptiveAnswers(): FingerAdaptiveAnswers {
     limitaciones_funcionales: [],
     entumecimiento: "",
     test_puno_completo: "",
-    test_extension_mesa: "",
-    test_agarre_botella: "",
     test_pinza_papel: "",
-    test_punta_pulgar: "",
     test_estabilidad_lateral: "",
   };
 }
@@ -375,16 +369,7 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     type: "single",
     options: FINGER_SWELLING,
     required: true,
-  },
-  {
-    id: "moreton",
-    section: "core",
-    label: "¿Has notado moretones?",
-    type: "single",
-    options: YES_NO,
-    required: true,
-  },
-  {
+  },  {
     id: "deformidad_visible",
     section: "core",
     label: "¿El dedo se ve doblado o diferente a lo normal?",
@@ -516,42 +501,14 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     type: "single",
     options: FINGER_SELF_TEST,
     required: true,
-  },
-  {
-    id: "test_extension_mesa",
-    section: "self_tests",
-    label: "Con la mano en la mesa, ¿puedes levantar el dedo afectado sin dolor?",
-    type: "single",
-    options: FINGER_SELF_TEST,
-    required: true,
-  },
-  {
-    id: "test_agarre_botella",
-    section: "self_tests",
-    label: "¿Agarrar una botella de agua reproduce tu dolor?",
-    type: "single",
-    options: FINGER_SELF_TEST,
-    required: true,
-  },
-  {
+  },  {
     id: "test_pinza_papel",
     section: "self_tests",
     label: "¿Pellizcar un papel entre pulgar y dedo es doloroso o difícil?",
     type: "single",
     options: FINGER_SELF_TEST,
     required: true,
-  },
-  {
-    id: "test_punta_pulgar",
-    section: "self_tests",
-    label: "¿Puedes juntar la punta del dedo con el pulgar con suavidad?",
-    type: "single",
-    options: FINGER_SELF_TEST,
-    required: true,
-    // Senseless when the injured digit IS the thumb
-    showIf: (a) => a.dedo_afectado !== "Pulgar",
-  },
-  {
+  },  {
     id: "test_estabilidad_lateral",
     section: "self_tests",
     label: "Al mover el dedo de lado a lado, ¿se siente inestable o demasiado suelto?",
@@ -643,17 +600,17 @@ function isAnswered(q: FingerQuestionDef, answers: FingerAdaptiveAnswers): boole
 export function validateFingerSection(
   section: FingerQuestionSection,
   answers: FingerAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleFingerQuestions(answers).filter((q) => q.section === section);
   for (const q of questions) {
     if (q.required && !isAnswered(q, answers)) {
-      return "Por favor, completa todas las preguntas antes de continuar.";
+      return missingQuestionIssue(q);
     }
   }
   return null;
 }
 
-export function validateFingerAdaptive(answers: FingerAdaptiveAnswers): string | null {
+export function validateFingerAdaptive(answers: FingerAdaptiveAnswers): AdaptiveValidationIssue | null {
   for (const section of getVisibleFingerSections(answers)) {
     const err = validateFingerSection(section, answers);
     if (err) return err;
@@ -687,7 +644,6 @@ export function formatFingerAdaptive(answers: FingerAdaptiveAnswers, introText?:
     `Dolor actual: ${answers.intensidad_dolor}/10`,
     `Naturaleza del dolor: ${fmtList(answers.naturaleza_dolor)}`,
     `Hinchazón: ${answers.hinchazon || "—"}`,
-    `Moretón: ${answers.moreton || "—"}`,
     `Deformidad visible: ${answers.deformidad_visible || "—"}`,
   ].join("\n");
 
@@ -719,12 +675,7 @@ export function formatFingerAdaptive(answers: FingerAdaptiveAnswers, introText?:
         "",
         "Autoevaluación:",
         `- Puño completo: ${answers.test_puno_completo || "—"}`,
-        `- Extensión en mesa: ${answers.test_extension_mesa || "—"}`,
-        `- Agarre botella: ${answers.test_agarre_botella || "—"}`,
         `- Pinza papel: ${answers.test_pinza_papel || "—"}`,
-        answers.dedo_afectado !== "Pulgar"
-          ? `- Punta a pulgar: ${answers.test_punta_pulgar || "—"}`
-          : "",
         `- Estabilidad lateral: ${answers.test_estabilidad_lateral || "—"}`,
       ]
         .filter(Boolean)
@@ -745,7 +696,7 @@ export function formatFingerAdaptive(answers: FingerAdaptiveAnswers, introText?:
     isThumb
       ? "- Dolor en la base del pulgar tras traumatismo axial (puñetazo, caída) → fractura de Bennett o Rolando (base del primer metacarpiano)."
       : "",
-    "- Deformidad evidente con incapacidad de movimiento tras traumatismo → luxación interfalángica.",
+    "- Se ve torcido, deformado o muy distinto con incapacidad de movimiento tras traumatismo → luxación interfalángica.",
     isThumb
       ? "- Inestabilidad al pinzar o forzar en valgo el pulgar tras caída con esquís/bastón o similar → lesión del ligamento colateral cubital del pulgar (UCL, \"pulgar del esquiador\")."
       : "",
@@ -797,7 +748,6 @@ export const FINGER_LABEL_EN: Partial<Record<string, string>> = {
   intensidad_dolor: "Pain intensity now (0–10)",
   naturaleza_dolor: "How would you describe the pain? (you can select several)",
   hinchazon: "Is there swelling?",
-  moreton: "Have you noticed bruising?",
   deformidad_visible: "Does the finger look bent or different from normal?",
   flexion_completa: "Can you bend the finger fully?",
   extension_completa: "Can you straighten it fully?",
@@ -814,10 +764,7 @@ export const FINGER_LABEL_EN: Partial<Record<string, string>> = {
   limitaciones_funcionales: "Which activities are difficult for you?",
   entumecimiento: "Do you notice numbness or tingling in any finger?",
   test_puno_completo: "Self-check — Can you make a fist closing all fingers?",
-  test_extension_mesa: "With the hand on the table, can you lift the affected finger without pain?",
-  test_agarre_botella: "Does gripping a water bottle reproduce your pain?",
   test_pinza_papel: "Is pinching a sheet of paper between thumb and finger painful or difficult?",
-  test_punta_pulgar: "Can you gently touch the fingertip to the thumb?",
   test_estabilidad_lateral: "When moving the finger side to side, does it feel unstable or too loose?",
 };
 
@@ -834,11 +781,11 @@ export const FINGER_OPTION_EN: Record<string, string> = {
   Izquierda: "Left",
   Ambas: "Both",
   "Punta del dedo": "Fingertip",
-  "Articulación distal (IFD/DIP)": "Distal joint (DIP)",
-  "Articulación media (IFP/PIP)": "Middle joint (PIP)",
-  "Nudillo (IFM/MCP)": "Knuckle (MCP)",
-  "Cara palmar": "Palm side (volar)",
-  "Cara dorsal": "Back of the finger (dorsal)",
+  "Articulación cerca de la punta del dedo": "Joint near the fingertip",
+  "Articulación del medio del dedo": "Middle finger joint",
+  "Nudillo (unión del dedo con la mano)": "Knuckle (where finger meets hand)",
+  "Parte de la palma": "Palm side (inside)",
+  "Parte de atrás del dedo": "Back of the finger (dorsal)",
   "Lado del dedo": "Side of the finger",
   "Todo el dedo": "Whole finger",
   "Ha sido ahora": "Just now",
@@ -894,8 +841,8 @@ export const FINGER_OPTION_EN: Record<string, string> = {
   "Abrir tarros": "Opening jars",
   "Tocar instrumento": "Playing an instrument",
   Ninguna: "None",
-  Flexionar: "Flexing",
-  Extender: "Extending",
+  Doblar: "Bending",
+  Estirar: "Straightening",
   Agarrar: "Gripping",
   Pellizcar: "Pinching",
   "Nada específico": "Nothing specific",

@@ -2,7 +2,7 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const NOTIFICATIONS_ENABLED_KEY = "kinora_notifications_enabled";
+const NOTIFICATIONS_ENABLED_KEY = "AIKinora_notifications_enabled";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -25,8 +25,8 @@ export async function setNotificationsEnabled(enabled: boolean): Promise<void> {
 
 export async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== "android") return;
-  await Notifications.setNotificationChannelAsync("kinora-reminders", {
-    name: "Kinora reminders",
+  await Notifications.setNotificationChannelAsync("AIKinora-reminders", {
+    name: "AIKinora reminders",
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: "#2563EB",
@@ -88,7 +88,7 @@ export async function scheduleReminders(
         title: reminder.title,
         body: reminder.body,
         sound: true,
-        ...(Platform.OS === "android" ? { channelId: "kinora-reminders" } : null),
+        ...(Platform.OS === "android" ? { channelId: "AIKinora-reminders" } : null),
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,

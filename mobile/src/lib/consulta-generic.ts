@@ -3,7 +3,11 @@ import {
   MECHANISM_OPTIONS,
   ONSET_FORM_OPTIONS,
   YES_NO,
-} from "./consulta-shoulder-adaptive";
+} from "@/lib/consulta-shoulder-adaptive";
+import {
+  missingQuestionIssue,
+  type AdaptiveValidationIssue,
+} from "@/lib/consulta-validation";
 
 export type GenericConsultaAnswers = {
   evolucion: string;
@@ -31,20 +35,64 @@ export function defaultGenericConsultaAnswers(): GenericConsultaAnswers {
   };
 }
 
-export function validateGenericConsulta(a: GenericConsultaAnswers): string | null {
-  if (!a.evolucion) return "Indica cuánto tiempo llevas con el problema.";
-  if (!a.inicio) return "Indica cómo fue el inicio.";
-  if (!a.mecanismo.length) return "Indica qué pudo provocarlo.";
-  if (a.mecanismo.includes("Otro") && !a.mecanismo_otro.trim()) return "Describe el mecanismo.";
-  if (!a.rf_deformidad || !a.rf_fiebre || !a.rf_perdida_sensibilidad) {
-    return "Responde las preguntas de urgencia.";
+export function validateGenericConsulta(
+  a: GenericConsultaAnswers
+): AdaptiveValidationIssue | null {
+  if (!a.evolucion) {
+    return missingQuestionIssue({
+      id: "evolucion",
+      section: "core",
+      label: "¿Cuánto tiempo llevas con el problema?",
+    });
+  }
+  if (!a.inicio) {
+    return missingQuestionIssue({
+      id: "inicio",
+      section: "core",
+      label: "¿Cómo fue el inicio?",
+    });
+  }
+  if (!a.mecanismo.length) {
+    return missingQuestionIssue({
+      id: "mecanismo",
+      section: "core",
+      label: "¿Qué pudo provocarlo?",
+    });
+  }
+  if (a.mecanismo.includes("Otro") && !a.mecanismo_otro.trim()) {
+    return missingQuestionIssue({
+      id: "mecanismo_otro",
+      section: "core",
+      label: "Cuéntanos qué pasó o cómo empezó",
+    });
+  }
+  if (!a.rf_deformidad) {
+    return missingQuestionIssue({
+      id: "rf_deformidad",
+      section: "red_flags",
+      label: "¿Deformidad evidente?",
+    });
+  }
+  if (!a.rf_fiebre) {
+    return missingQuestionIssue({
+      id: "rf_fiebre",
+      section: "red_flags",
+      label: "¿Tienes fiebre junto con el dolor?",
+    });
+  }
+  if (!a.rf_perdida_sensibilidad) {
+    return missingQuestionIssue({
+      id: "rf_perdida_sensibilidad",
+      section: "red_flags",
+      label: "¿Pérdida de sensibilidad?",
+    });
   }
   return null;
 }
 
 export function formatGenericConsulta(a: GenericConsultaAnswers, bodyMapText: string): string {
   const redFlags = [
-    a.rf_deformidad === "Sí" ? "Deformidad evidente" : null,
+    a.rf_deformidad === "Sí" ? "Se ve torcido, deformado o muy distinto" : null,
     a.rf_fiebre === "Sí" ? "Fiebre" : null,
     a.rf_perdida_sensibilidad === "Sí" ? "Pérdida de sensibilidad" : null,
   ].filter(Boolean);

@@ -4,9 +4,9 @@ import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 
 export const PHYSIO_GREETING =
-  "¡Hola! Soy Physio, tu asistente de Kinora. ¿En qué puedo ayudarte hoy?";
+  "¡Hola! Soy Physio, tu asistente de AIKinora. ¿En qué puedo ayudarte hoy?";
 export const PHYSIO_GREETING_EN =
-  "Hi! I'm Physio, your Kinora assistant. How can I help you today?";
+  "Hi! I'm Physio, your AIKinora assistant. How can I help you today?";
 
 type Props = {
   onSkip?: () => void;

@@ -147,6 +147,8 @@ ORDEN POR PROBABILIDAD (OBLIGATORIO):
 IMPORTANTE SOBRE **Pruebas funcionales**:
 - Obligatoria en la primera valoración si el caso NO es urgente/hospital.
 - Si el caso ES urgente: omite **Pruebas funcionales** (ve a hospital/imagen).
+- SOLO la zona lesionada/afectada de ESTE caso (p. ej. tobillo → solo tobillo/pie; NO rodilla, cadera, lumbar, Windlass o SLR “por conexión”).
+- NO incluyas pruebas de regiones adyacentes o cinéticas “por si acaso”, aunque puedan referir dolor. Hipótesis a distancia se explican en texto; las pruebas del paciente son solo locales.
 - En seguimientos: no repitas toda la batería si el paciente ya respondió; interpreta y solo añade pruebas nuevas si hace falta aclarar.
 - Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas.
 

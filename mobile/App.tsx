@@ -22,6 +22,9 @@ import {
   isPhysioProfileComplete,
 } from "./src/lib/physio-profile-complete";
 
+/** Don't leave testers on an infinite splash if Auth/network hangs. */
+const BOOT_TIMEOUT_MS = 12_000;
+
 function AppInner() {
   const { ready } = useI18n();
   const [session, setSession] = useState<Session | null>(null);
@@ -34,50 +37,80 @@ function AppInner() {
 
   const checkOnboarding = useCallback(
     async (userId: string, email: string | undefined) => {
-      // Admin uses the same login; skip athlete onboarding only for that account
-      if (isAdminEmail(email)) {
-        setIsPhysio(false);
-        setOnboardingDone(true);
-        return;
-      }
-      const { data: accountData } = await supabase
-        .from("profiles")
-        .select("account_type")
-        .eq("id", userId)
-        .maybeSingle();
-      const physio = accountData?.account_type === "physio";
-      setIsPhysio(physio);
-
-      if (physio) {
-        const { data } = await supabase
+      try {
+        // Admin uses the same login; skip athlete onboarding only for that account
+        if (isAdminEmail(email)) {
+          setIsPhysio(false);
+          setOnboardingDone(true);
+          return;
+        }
+        const { data: accountData } = await supabase
           .from("profiles")
-          .select(PHYSIO_PROFILE_COLUMNS)
+          .select("account_type")
           .eq("id", userId)
           .maybeSingle();
-        setOnboardingDone(isPhysioProfileComplete(data));
-        return;
-      }
+        const physio = accountData?.account_type === "physio";
+        setIsPhysio(physio);
 
-      const { data } = await supabase
-        .from("profiles")
-        .select(ATHLETE_PROFILE_COLUMNS)
-        .eq("id", userId)
-        .maybeSingle();
-      setOnboardingDone(isAthleteProfileComplete(data));
+        if (physio) {
+          const { data } = await supabase
+            .from("profiles")
+            .select(PHYSIO_PROFILE_COLUMNS)
+            .eq("id", userId)
+            .maybeSingle();
+          setOnboardingDone(isPhysioProfileComplete(data));
+          return;
+        }
+
+        const { data } = await supabase
+          .from("profiles")
+          .select(ATHLETE_PROFILE_COLUMNS)
+          .eq("id", userId)
+          .maybeSingle();
+        setOnboardingDone(isAthleteProfileComplete(data));
+      } catch {
+        // Fail open to login/main flow rather than an endless spinner.
+        setIsPhysio(false);
+        setOnboardingDone(false);
+      }
     },
     []
   );
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) {
-        await checkOnboarding(data.session.user.id, data.session.user.email);
-      } else {
-        setOnboardingDone(null);
+    let cancelled = false;
+
+    const finishLoading = () => {
+      if (!cancelled) setLoading(false);
+    };
+
+    const boot = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) return;
+        setSession(data.session);
+        if (data.session?.user) {
+          await checkOnboarding(data.session.user.id, data.session.user.email);
+        } else {
+          setOnboardingDone(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setSession(null);
+          setOnboardingDone(null);
+        }
+      } finally {
+        finishLoading();
       }
-      setLoading(false);
-    });
+    };
+
+    void boot();
+
+    const timeout = setTimeout(() => {
+      // Network/Auth/profile stall — leave splash instead of spinning forever.
+      finishLoading();
+      setOnboardingDone((done) => (done === null ? false : done));
+    }, BOOT_TIMEOUT_MS);
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
@@ -90,25 +123,29 @@ function AppInner() {
       }
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      listener.subscription.unsubscribe();
+    };
   }, [checkOnboarding]);
-
-  if (!ready || loading || (session && onboardingDone === null)) {
-    return (
-      <View style={styles.splash}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
-  }
 
   if (!isSupabaseConfigured()) {
     return (
       <View style={styles.configError}>
         <Text style={styles.configTitle}>Supabase</Text>
         <Text style={styles.configBody}>
-          Copia mobile/.env.example a mobile/.env y usa la misma URL y clave que la web
-          (proyecto klxlzzgrymkexvuelzex).
+          Falta la configuración de Supabase en esta build. Vuelve a generar la
+          app con EXPO_PUBLIC_SUPABASE_URL y la clave del proyecto.
         </Text>
+      </View>
+    );
+  }
+
+  if (!ready || loading || (session && onboardingDone === null)) {
+    return (
+      <View style={styles.splash}>
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
@@ -156,7 +193,25 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <I18nProvider>
-        <AppInner />
+        <View style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
+            <AppInner />
+          </View>
+          <View
+            style={{
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: Colors.border,
+              backgroundColor: "#fff",
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+            }}
+          >
+            <Text style={{ fontSize: 11, lineHeight: 15, color: Colors.textLight }}>
+              AIKinora es una IA orientativa: no sustituye el criterio clínico ni un
+              diagnóstico médico presencial.
+            </Text>
+          </View>
+        </View>
       </I18nProvider>
     </SafeAreaProvider>
   );

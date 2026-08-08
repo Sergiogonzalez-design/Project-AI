@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Kinora",
+    "name": "AIKinora",
     "slug": "physioguidea",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,7 +14,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.physioguidea.app",
-      "buildNumber": "1"
+      "buildNumber": "3",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "AIKinora usa el micrófono para que puedas dictar tu consulta por voz.",
+        "NSSpeechRecognitionUsageDescription": "AIKinora usa el reconocimiento de voz para convertir lo que dices en texto en el chat."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +30,10 @@
       },
       "package": "com.physioguidea.app",
       "versionCode": 1,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,17 +50,24 @@
       [
         "expo-image-picker",
         {
-          photosPermission:
-            "Kinora necesita acceso a tus fotos para adjuntar una imagen de la lesión a la consulta.",
-          cameraPermission:
-            "Kinora necesita la cámara para fotografiar la zona lesionada."
+          "photosPermission": "AIKinora necesita acceso a tus fotos para adjuntar una imagen de la lesión a la consulta.",
+          "cameraPermission": "AIKinora necesita la cámara para fotografiar la zona lesionada."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "AIKinora usa el micrófono para que puedas dictar tu consulta por voz.",
+          "speechRecognitionPermission": "AIKinora usa el reconocimiento de voz para convertir lo que dices en texto en el chat.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "d7b0ed1a-d988-4c02-a42b-057d701049c9"
       }
-    }
+    },
+    "owner": "sergiogonzalez"
   }
 }

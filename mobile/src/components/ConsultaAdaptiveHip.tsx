@@ -208,9 +208,9 @@ export function ConsultaAdaptiveHip({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateHipSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateHipSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

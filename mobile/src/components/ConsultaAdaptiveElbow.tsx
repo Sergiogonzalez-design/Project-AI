@@ -211,9 +211,9 @@ export function ConsultaAdaptiveElbow({
 
   function handleNext() {
     if (!currentSection) return;
-    const err = validateElbowSection(currentSection, answers);
-    if (err) {
-      onSectionError(err);
+    const issue = validateElbowSection(currentSection, answers);
+    if (issue) {
+      onSectionError(issue.message);
       return;
     }
     onSectionError(null);

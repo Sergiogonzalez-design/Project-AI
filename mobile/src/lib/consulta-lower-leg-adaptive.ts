@@ -1,13 +1,14 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
-import type { AnkleFootFocus } from "./detect-body-part";
+} from "@/lib/consulta-timing";
+import type { AnkleFootFocus } from "@/lib/detect-body-part";
 /**
  * Adaptive questionnaire for lower leg / shin / calf / Achilles / ankle / foot
  * (ankle_foot region) — adapts labels and location options to region_focus
  * (foot vs ankle vs lower_leg) from the patient's initial complaint.
  */
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -20,19 +21,19 @@ export const EVOLUTION_OPTIONS = [
   "Más de 1 mes",
 ] as const;
 
-export const ONSET_FORM_OPTIONS = ["Repentino", "Progresivo"] as const;
+export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
   "Caída",
   "Golpe directo",
   "Entrenamiento o ejercicio",
   "Movimiento repetitivo / correr",
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Otro",
 ] as const;
 
 export const LOWER_LEG_LOCATION_OPTIONS = [
-  "Justo debajo de la rodilla / tuberosidad tibial",
+  "Justo debajo de la rodilla (prominencia ósea)",
   "Espinilla anterior",
   "Cara interna",
   "Cara externa",
@@ -47,15 +48,15 @@ export const FOOT_LOCATION_OPTIONS = [
   "Talón (debajo / inserción)",
   "Talón (lateral o posterior)",
   "Dorso del pie",
-  "Mediopié",
-  "Antepié / dedos",
+  "Parte media del pie",
+  "Parte delantera del pie / dedos",
   "Tobillo",
   "No estoy seguro",
 ] as const;
 
 export const ANKLE_LOCATION_OPTIONS = [
-  "Tobillo (cara externa / lateral)",
-  "Tobillo (cara interna / medial)",
+  "Tobillo por fuera",
+  "Tobillo por dentro",
   "Parte anterior del tobillo",
   "Parte posterior / Aquiles",
   "Transición a la pierna",
@@ -68,7 +69,7 @@ export const MIXED_LOCATION_OPTIONS = [
   "Planta del pie / arco",
   "Talón",
   "Dorso del pie",
-  "Dedos / antepié",
+  "Dedos / parte delantera del pie",
   "No estoy seguro",
 ] as const;
 
@@ -76,7 +77,7 @@ export const MIXED_LOCATION_OPTIONS = [
 export const WHOLE_LEG_LOCATION_OPTIONS = [
   "Muslo / encima de la rodilla",
   "Rodilla",
-  "Justo debajo de la rodilla / tuberosidad tibial",
+  "Justo debajo de la rodilla (prominencia ósea)",
   "Espinilla anterior",
   "Pantorrilla",
   "Tendón de Aquiles",
@@ -92,15 +93,6 @@ export const PAIN_TYPE_OPTIONS = [
   "Presión / peso",
   "Hormigueo",
   "Malestar difuso",
-] as const;
-
-export const PAIN_SITUATION_OPTIONS = [
-  "En reposo",
-  "Al caminar",
-  "Con esfuerzo o carga",
-  "Por la noche",
-  "Al despertar / primeros pasos",
-  "Constante",
 ] as const;
 
 export const FUNCTIONAL_LIMIT_OPTIONS = [
@@ -128,7 +120,7 @@ export const AGGRAVATING_MOVEMENT_OPTIONS = [
   "Saltar",
   "Subir / bajar escaleras",
   "Ponerse de puntillas",
-  "Flexionar el tobillo",
+  "Doblar el tobillo",
   "Estirar la pantorrilla",
   "Tocar la zona",
   "Primeros pasos al despertar",
@@ -151,7 +143,7 @@ export const TRAINING_LOAD_OPTIONS = [
   "Carga elevada",
   "Carga moderada",
   "Peso corporal",
-  "Resistencia / endurance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)",
 ] as const;
 
 export const NEURO_ZONE_OPTIONS = [
@@ -168,13 +160,7 @@ export const SWELLING_ONSET_OPTIONS = [
   "Inmediata tras la lesión",
   "En las primeras horas",
   "Al día siguiente",
-  "Progresiva en días",
-] as const;
-
-export const TRAINING_IMPACT_OPTIONS = [
-  "No afecta",
-  "Parcialmente",
-  "No puedo entrenar o competir",
+  "Poco a poco en días",
 ] as const;
 
 export type LowerLegAdaptiveAnswers = {
@@ -197,7 +183,6 @@ export type LowerLegAdaptiveAnswers = {
   intensidad_dolor: number;
   localizacion_pierna: string[];
   tipo_dolor: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
@@ -217,7 +202,6 @@ export type LowerLegAdaptiveAnswers = {
   // Neuro branch
   neuro_zona: string[];
   neuro_constante: string;
-  neuro_movimientos: string;
   // Swelling branch
   hinchazon_inicio: string;
   hinchazon_progresion: string;
@@ -232,7 +216,6 @@ export type LowerLegAdaptiveAnswers = {
   // History
   lesion_previa: string;
   lesion_previa_detalle: string;
-  deporte_impacto: string;
 };
 
 export function defaultLowerLegAdaptiveAnswers(
@@ -259,7 +242,6 @@ export function defaultLowerLegAdaptiveAnswers(
     intensidad_dolor: 5,
     localizacion_pierna: prefilledLocation,
     tipo_dolor: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
@@ -275,7 +257,6 @@ export function defaultLowerLegAdaptiveAnswers(
     repetitivo_frecuencia: "",
     neuro_zona: [],
     neuro_constante: "",
-    neuro_movimientos: "",
     hinchazon_inicio: "",
     hinchazon_progresion: "",
     hinchazon_calor: "",
@@ -286,7 +267,6 @@ export function defaultLowerLegAdaptiveAnswers(
     espinilla_reposo: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
-    deporte_impacto: "",
   };
 }
 
@@ -326,7 +306,7 @@ export function withAnkleFootFocusFromText(
   }
 
   if (/de\s+golpe|repentin|s[uú]bit|chasquido|pop\b/i.test(t)) inicio = "Repentino";
-  else if (/poco a poco|progresiv|gradual/i.test(t)) inicio = "Progresivo";
+  else if (/poco a poco|progresiv|gradual/i.test(t)) inicio = "Poco a poco";
 
   if (/ca[ií]da|caer|fall/i.test(t) && !mecanismo.includes("Caída")) {
     mecanismo.push("Caída");
@@ -468,7 +448,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
   {
     id: "rf_deformidad",
     section: "red_flags",
-    label: "¿Hay deformidad evidente en la pierna, espinilla o tobillo?",
+    label: "¿La pierna, espinilla o tobillo se ve torcido, deformado o muy distinto de lo normal?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -476,7 +456,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
   {
     id: "rf_no_apoyo",
     section: "red_flags",
-    label: "¿Incapacidad absoluta para apoyar o caminar?",
+    label: "¿No puedes apoyar o caminar en absoluto?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -500,7 +480,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
   {
     id: "rf_fiebre",
     section: "red_flags",
-    label: "¿Fiebre asociada al dolor?",
+    label: "¿Tienes fiebre junto con el dolor?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -509,7 +489,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     id: "rf_vascular",
     section: "red_flags",
     label:
-      "¿Dolor en pantorrilla con hinchazón unilateral (una sola pierna) que te preocupa?",
+      "¿Dolor en pantorrilla con hinchazón en una sola pierna que te preocupa?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -518,7 +498,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     id: "rf_compartimental",
     section: "red_flags",
     label:
-      "¿Dolor desproporcionado que empeora al estirar los dedos del pie o el tobillo, con tensión extrema en pantorrilla/espinilla?",
+      "¿Dolor mucho más fuerte de lo que parece, que empeora al estirar los dedos del pie o el tobillo, con tensión extrema en pantorrilla/espinilla?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -545,7 +525,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
   {
     id: "mecanismo_otro",
     section: "core",
-    label: "Describe el mecanismo",
+    label: "Cuéntanos qué pasó o cómo empezó",
     type: "text",
     required: true,
     showIf: (a) => a.mecanismo.includes("Otro"),
@@ -581,16 +561,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     type: "multi",
     options: PAIN_TYPE_OPTIONS,
     required: true,
-  },
-  {
-    id: "patron_dolor",
-    section: "core",
-    label: "¿En qué situaciones aparece o empeora? (puedes marcar varias)",
-    type: "multi",
-    options: PAIN_SITUATION_OPTIONS,
-    required: true,
-  },
-  {
+  },  {
     id: "limitacion_funcional",
     section: "core",
     label: "¿Cuánto te limita al caminar o apoyar? (puedes marcar varias)",
@@ -601,7 +572,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
   {
     id: "irradiacion",
     section: "core",
-    label: "¿El dolor se irradia hacia el pie, tobillo u otra zona?",
+    label: "¿El dolor se extiende hacia el pie, tobillo u otra zona?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -609,7 +580,7 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
   {
     id: "irradiacion_detalle",
     section: "core",
-    label: "¿Hasta dónde llega la irradiación?",
+    label: "¿Hasta dónde llega ese dolor?",
     type: "text",
     required: true,
     showIf: (a) => a.irradiacion === "Sí",
@@ -725,15 +696,6 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     required: true,
     showIf: hasNeuro,
   },
-  {
-    id: "neuro_movimientos",
-    section: "neuro",
-    label: "¿Qué movimientos lo desencadenan?",
-    type: "text",
-    required: false,
-    showIf: hasNeuro,
-  },
-
   // Swelling branch
   {
     id: "hinchazon_inicio",
@@ -835,21 +797,12 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     type: "text",
     required: true,
     showIf: (a) => a.lesion_previa === "Sí",
-  },
-  {
-    id: "deporte_impacto",
-    section: "history",
-    label: "¿Cómo afecta a tu entrenamiento o deporte?",
-    type: "single",
-    options: TRAINING_IMPACT_OPTIONS,
-    required: true,
-  },
-];
+  },];
 
 export const LOWER_LEG_SECTION_LABELS: Record<LowerLegQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
   core: "Caracterización del problema",
-  trauma: "Detalles del traumatismo",
+  trauma: "Detalles del golpe o la caída",
   training: "Detalles del entrenamiento",
   repetitive: "Movimiento repetitivo / carrera",
   neuro: "Hormigueo / entumecimiento",
@@ -908,16 +861,16 @@ function focusAwareQuestion(
     if (focus === "ankle") {
       return {
         ...q,
-        label: "¿El dolor se irradia hacia el pie o hacia la pierna?",
+        label: "¿El dolor se extiende hacia el pie o hacia la pierna?",
       };
     }
   }
   if (q.id === "rf_deformidad") {
     if (focus === "foot") {
-      return { ...q, label: "¿Hay deformidad evidente en el pie o el tobillo?" };
+      return { ...q, label: "¿El pie o el tobillo se ve torcido, deformado o muy distinto de lo normal?" };
     }
     if (focus === "ankle") {
-      return { ...q, label: "¿Hay deformidad evidente en el tobillo?" };
+      return { ...q, label: "¿El tobillo se ve torcido, deformado o muy distinto de lo normal?" };
     }
   }
   if (q.id === "rf_perdida_sensibilidad" && focus === "foot") {
@@ -969,14 +922,14 @@ export function detectLowerLegRedFlags(answers: LowerLegAdaptiveAnswers): {
   triggered: string[];
 } {
   const labels: Record<string, string> = {
-    rf_deformidad: "Deformidad evidente",
-    rf_no_apoyo: "Incapacidad absoluta para apoyar o caminar",
+    rf_deformidad: "Se ve torcido, deformado o muy distinto",
+    rf_no_apoyo: "No puedes apoyar o caminar en absoluto",
     rf_hinchazon_subita: "Hinchazón súbita e intensa de pantorrilla",
     rf_perdida_sensibilidad: "Pérdida de sensibilidad en el pie",
-    rf_fiebre: "Fiebre asociada",
-    rf_vascular: "Dolor de pantorrilla con hinchazón unilateral (sospecha vascular)",
+    rf_fiebre: "Fiebre junto con el dolor",
+    rf_vascular: "Dolor de pantorrilla con hinchazón en una sola pierna (posible problema de circulación)",
     rf_compartimental:
-      "Dolor desproporcionado con estiramiento pasivo de dedos/tobillo y tensión extrema (sospecha síndrome compartimental agudo)",
+      "Dolor mucho más fuerte de lo que parece al estirar dedos/tobillo, con tensión extrema (posible síndrome compartimental)",
   };
   const triggered: string[] = [];
   for (const id of RED_FLAG_IDS) {
@@ -995,11 +948,11 @@ function isAnswered(q: LowerLegQuestionDef, answers: LowerLegAdaptiveAnswers): b
 
 export function validateLowerLegAdaptive(
   answers: LowerLegAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const visible = getVisibleLowerLegQuestions(answers);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -1008,13 +961,13 @@ export function validateLowerLegAdaptive(
 export function validateLowerLegSection(
   section: LowerLegQuestionSection,
   answers: LowerLegAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleLowerLegQuestions(answers).filter(
     (q) => q.section === section
   );
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -1062,11 +1015,11 @@ export function bodyAreaLabelFromLowerLegAnswers(
     push("Rodilla", "Knee");
   }
   if (
-    hasExactLoc(answers, "Justo debajo de la rodilla / tuberosidad tibial") ||
-    hasLoc(answers, "tuberosidad")
+    hasExactLoc(answers, "Justo debajo de la rodilla (prominencia ósea)") ||
+    hasLoc(answers, "prominencia") || hasLoc(answers, "tuberosidad")
   ) {
     push(
-      "Tuberosidad tibial / debajo de rodilla",
+      "Prominencia ósea debajo de la rodilla",
       "Tibial tuberosity / below knee"
     );
   }
@@ -1090,8 +1043,8 @@ export function bodyAreaLabelFromLowerLegAnswers(
       "Talón",
       "Dorso",
       "Dedos",
-      "Antepié",
-      "Mediopié"
+      "Parte delantera del pie",
+      "Parte media del pie"
     )
   ) {
     push("Pie", "Foot");
@@ -1136,7 +1089,7 @@ function differentialGuidanceForLocations(
       "- Rodilla → diferenciales de **rodilla** (patelofemoral, menisco, tendón rotuliano, LCA/LCL según mecanismo). NO pantorrilla ni Aquiles salvo irradiación explícita."
     );
   }
-  if (hasExactLoc(answers, "Justo debajo de la rodilla / tuberosidad tibial")) {
+  if (hasExactLoc(answers, "Justo debajo de la rodilla (prominencia ósea)")) {
     lines.push(
       "- Justo debajo de rodilla / tuberosidad tibial + salto/carga → Osgood-Schlatter / tendón rotuliano distal."
     );
@@ -1203,7 +1156,7 @@ export function formatLowerLegAdaptive(
     `Hinchazón súbita pantorrilla: ${answers.rf_hinchazon_subita || "—"}`,
     `Pérdida sensibilidad pie: ${answers.rf_perdida_sensibilidad || "—"}`,
     `Fiebre: ${answers.rf_fiebre || "—"}`,
-    `Sospecha vascular (dolor + hinchazón unilateral): ${answers.rf_vascular || "—"}`,
+    `Sospecha vascular (dolor + hinchazón en una sola pierna): ${answers.rf_vascular || "—"}`,
     `Dolor desproporcionado con estiramiento pasivo + tensión extrema (sospecha compartimental agudo): ${answers.rf_compartimental || "—"}`,
     "",
     "— VARIABLES CLÍNICAS —",
@@ -1216,7 +1169,6 @@ export function formatLowerLegAdaptive(
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización (${zoneLabel}): ${formatMulti(answers.localizacion_pierna)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
-    `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional (caminar/apoyo): ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
@@ -1254,10 +1206,7 @@ export function formatLowerLegAdaptive(
       "",
       "— HORMIGUEO / ENTUMECIMIENTO —",
       `Zona: ${formatMulti(answers.neuro_zona)}`,
-      `Constante: ${answers.neuro_constante}`,
-      answers.neuro_movimientos
-        ? `Movimientos desencadenantes: ${answers.neuro_movimientos}`
-        : ""
+      `Constante: ${answers.neuro_constante}`
     );
   }
   if (hasSwelling(answers)) {
@@ -1291,7 +1240,6 @@ export function formatLowerLegAdaptive(
     "",
     "— ANTECEDENTES —",
     `Lesión previa pierna baja: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
-    `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas de la ZONA LOCALIZADA, no para diagnosticar.",
     "",
@@ -1314,7 +1262,7 @@ export const LOWER_LEG_LABEL_EN: Partial<Record<string, string>> = {
   rf_no_apoyo: "Are you completely unable to bear weight or walk?",
   rf_hinchazon_subita: "Sudden, intense swelling of the calf?",
   rf_perdida_sensibilidad: "Loss of sensation in the foot?",
-  rf_fiebre: "Fever associated with the pain?",
+  rf_fiebre: "Do you have a fever along with the pain?",
   rf_vascular:
     "Calf pain with unilateral swelling (one leg only) that concerns you?",
   rf_compartimental:
@@ -1322,17 +1270,15 @@ export const LOWER_LEG_LABEL_EN: Partial<Record<string, string>> = {
   evolucion: "How long have you had this problem?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
-  mecanismo_otro: "Describe the mechanism",
+  mecanismo_otro: "Tell us what happened or how it started",
   inicio_chasquido: "Did you notice a sudden snap or 'pop' during the movement?",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_pierna:
     "Where do you feel the pain in the lower leg? (you can select several)",
   tipo_dolor: "How would you describe the pain? (you can select several)",
-  patron_dolor:
-    "In which situations does it appear or worsen? (you can select several)",
   limitacion_funcional: "How much does it limit walking or weight-bearing?",
-  irradiacion: "Does the pain radiate to the foot, ankle, or another area?",
-  irradiacion_detalle: "How far does the radiation go?",
+  irradiacion: "Does the pain spread to the foot, ankle, or another area?",
+  irradiacion_detalle: "How far does that pain go?",
   sintomas_asociados: "What other symptoms do you notice? (you can select several)",
   movimientos_agravantes:
     "Which movements provoke or worsen it? (you can select several)",
@@ -1347,7 +1293,6 @@ export const LOWER_LEG_LABEL_EN: Partial<Record<string, string>> = {
   neuro_zona:
     "Which areas have tingling or numbness? (you can select several)",
   neuro_constante: "Is the tingling or numbness constant?",
-  neuro_movimientos: "Which movements trigger it?",
   hinchazon_inicio: "When did the swelling or inflammation appear?",
   hinchazon_progresion: "Has the swelling increased, stayed the same, or gone down?",
   hinchazon_calor: "Is the area warm to the touch?",
@@ -1362,7 +1307,6 @@ export const LOWER_LEG_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa:
     "Have you had previous injuries in this leg, shin, calf, or Achilles?",
   lesion_previa_detalle: "Describe previous injuries or treatments",
-  deporte_impacto: "How does it affect your training or sport?",
 };
 
 export const LOWER_LEG_OPTION_EN: Record<string, string> = {
@@ -1375,14 +1319,14 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
+  "Poco a poco": "Gradual",
   Caída: "Fall",
   "Golpe directo": "Direct blow",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Movimiento repetitivo / correr": "Repetitive movement / running",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   Otro: "Other",
-  "Justo debajo de la rodilla / tuberosidad tibial":
+  "Justo debajo de la rodilla (prominencia ósea)":
     "Just below the knee / tibial tuberosity",
   "Muslo / encima de la rodilla": "Thigh / above the knee",
   Rodilla: "Knee",
@@ -1426,7 +1370,7 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   Saltar: "Jumping",
   "Subir / bajar escaleras": "Going up / down stairs",
   "Ponerse de puntillas": "Rising onto tiptoes",
-  "Flexionar el tobillo": "Flexing the ankle",
+  "Doblar el tobillo": "Flexing the ankle",
   "Estirar la pantorrilla": "Stretching the calf",
   "Tocar la zona": "Touching the area",
   "Primeros pasos al despertar": "First steps on waking",
@@ -1440,7 +1384,7 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   "Carga elevada": "Heavy load",
   "Carga moderada": "Moderate load",
   "Peso corporal": "Bodyweight",
-  "Resistencia / endurance": "Endurance / resistance",
+  "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)": "Endurance / resistance",
   "Pie completo": "Whole foot",
   "Dedos del pie": "Toes",
   "Planta del pie": "Sole of the foot",
@@ -1448,21 +1392,20 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   "Planta del pie / arco": "Sole of the foot / arch",
   "Talón (debajo / inserción)": "Heel (underside / insertion)",
   "Talón (lateral o posterior)": "Heel (side or back)",
-  "Mediopié": "Midfoot",
-  "Antepié / dedos": "Forefoot / toes",
-  "Tobillo (cara externa / lateral)": "Ankle (outer / lateral side)",
-  "Tobillo (cara interna / medial)": "Ankle (inner / medial side)",
+  "Parte media del pie": "Midfoot",
+  "Parte delantera del pie / dedos": "Forefoot / toes",
+  "Tobillo por fuera": "Ankle (outer / lateral side)",
+  "Tobillo por dentro": "Ankle (inner / medial side)",
   "Parte anterior del tobillo": "Front of the ankle",
   "Parte posterior / Aquiles": "Back of the ankle / Achilles",
   "Transición a la pierna": "Transition to the lower leg",
   "Hacia el pie / planta": "Toward the foot / sole",
   Talón: "Heel",
-  "Dedos / antepié": "Toes / forefoot",
-  Tobillo: "Ankle",
+  "Dedos / parte delantera del pie": "Toes / forefoot",
   Espinilla: "Shin",
   "Inmediata tras la lesión": "Immediate after the injury",
   "En las primeras horas": "Within the first hours",
-  "Progresiva en días": "Gradual over days",
+  "Poco a poco en días": "Gradual over days",
   "Ha aumentado": "Has increased",
   "Se mantiene": "Stayed the same",
   "Ha bajado": "Has gone down",

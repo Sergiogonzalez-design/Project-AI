@@ -78,7 +78,7 @@ export function PhysioOnboardingForm() {
   return (
     <div className="w-full max-w-lg rounded-2xl border border-blue-100 bg-white px-6 py-8 shadow-sm sm:px-8">
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo-icon.png" alt="Kinora" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="AIKinora" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">Bienvenido, fisioterapeuta</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -108,7 +108,7 @@ export function PhysioOnboardingForm() {
               type="text"
               value={clinicName}
               onChange={(e) => setClinicName(e.target.value)}
-              placeholder="Ej: Clínica Kinora"
+              placeholder="Ej: Clínica AIKinora"
               className={inputClass}
             />
           </div>

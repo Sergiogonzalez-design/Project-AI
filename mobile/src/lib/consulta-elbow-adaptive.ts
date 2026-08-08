@@ -1,7 +1,8 @@
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -15,12 +16,12 @@ export const EVOLUTION_OPTIONS = [
 
 export const ONSET_FORM_OPTIONS = [
   "Repentino",
-  "Progresivo",
+  "Poco a poco",
   "Va y viene",
 ] as const;
 
 export const MECHANISM_OPTIONS = [
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Tras entrenamiento o ejercicio",
   "Tras levantar pesas",
   "Tras lanzar",
@@ -50,7 +51,7 @@ export const PAIN_TYPE_OPTIONS = [
 ] as const;
 
 export const AGGRAVATING_MOVEMENT_OPTIONS = [
-  "Flexionar el codo",
+  "Doblar el codo",
   "Estirar el codo",
   "Rotar el antebrazo",
   "Girar un pomo o llave",
@@ -63,21 +64,13 @@ export const AGGRAVATING_MOVEMENT_OPTIONS = [
   "Ninguno en particular",
 ] as const;
 
-export const PAIN_SITUATION_OPTIONS = [
-  "Solo al mover",
-  "Con esfuerzo o carga",
-  "En reposo",
-  "Por la noche",
-  "Constantemente",
-] as const;
-
 export const FUNCTIONAL_LIMIT_OPTIONS = [
   "Ninguna",
   "Molestia leve",
   "No puedo entrenar",
   "Dificultad para cargar objetos",
   "Dificultad para vestirme",
-  "Dificultad para flexionar o estirar por completo",
+  "Me cuesta doblar o estirar del todo",
   "No puedo usar el brazo con normalidad",
 ] as const;
 
@@ -110,16 +103,6 @@ export const PREVIOUS_EPISODE_OPTIONS = [
   "Varias veces",
 ] as const;
 
-export const RELIEF_OPTIONS = [
-  "Reposo",
-  "Hielo",
-  "Calor",
-  "Antiinflamatorios",
-  "Movimiento",
-  "Compresión",
-  "Nada",
-] as const;
-
 export const FALL_LANDING_OPTIONS = [
   "Sobre la mano",
   "Sobre el codo",
@@ -141,7 +124,7 @@ export const WEIGHTS_TIMING_OPTIONS = [
 
 export const THROWING_PHASE_OPTIONS = [
   "Durante la aceleración",
-  "Durante el follow-through",
+  "Al terminar el lanzamiento (fase final)",
   "En ambas fases",
 ] as const;
 
@@ -155,7 +138,7 @@ export const TINGLING_FINGER_OPTIONS = [
 
 export const ROM_LIMIT_CAUSE_OPTIONS = [
   "Por dolor",
-  "Por bloqueo mecánico",
+  "Porque se traba / no deja pasar",
   "Por falta de fuerza",
 ] as const;
 
@@ -179,14 +162,12 @@ export type ElbowAdaptiveAnswers = {
   localizacion_codo: string[];
   tipo_dolor: string[];
   movimientos_agravantes: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   sintomas_asociados: string[];
   irradiacion: string;
   irradiacion_detalle: string;
   cuello_sintomas: string;
   cuello_empeora_brazo: string;
-  alivia_con: string[];
   // Fall branch
   caida_como: string;
   caida_chasquido: string;
@@ -215,7 +196,6 @@ export type ElbowAdaptiveAnswers = {
   // Instability branch
   inestabilidad_cede: string;
   inestabilidad_antes: string;
-  inestabilidad_cuando: string;
   inestabilidad_posicion: string;
   // ROM branch
   rom_limit_causa: string;
@@ -244,14 +224,12 @@ export function defaultElbowAdaptiveAnswers(): ElbowAdaptiveAnswers {
     localizacion_codo: [],
     tipo_dolor: [],
     movimientos_agravantes: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     sintomas_asociados: [],
     irradiacion: "",
     irradiacion_detalle: "",
     cuello_sintomas: "",
     cuello_empeora_brazo: "",
-    alivia_con: [],
     caida_como: "",
     caida_chasquido: "",
     caida_uso_brazo: "",
@@ -273,7 +251,6 @@ export function defaultElbowAdaptiveAnswers(): ElbowAdaptiveAnswers {
     bloqueo_chasquido: "",
     inestabilidad_cede: "",
     inestabilidad_antes: "",
-    inestabilidad_cuando: "",
     inestabilidad_posicion: "",
     rom_limit_causa: "",
     test_extension_muneca: "",
@@ -291,7 +268,6 @@ export function withElbowHintsFromText(text: string): ElbowAdaptiveAnswers {
 
   const movimientos: string[] = [];
   const localizacion: string[] = [];
-  const patron: string[] = [];
   const sintomas: string[] = [];
   let inicio = "";
   let evolucion = "";
@@ -315,7 +291,7 @@ export function withElbowHintsFromText(text: string): ElbowAdaptiveAnswers {
   if (/de\s+golpe|repentin|s[uú]bit|chasquido|crack|pop\b/i.test(t)) {
     inicio = "Repentino";
   } else if (/poco a poco|progresiv|gradual|fue apareciendo/i.test(t)) {
-    inicio = "Progresivo";
+    inicio = "Poco a poco";
   } else if (/va y viene|intermitente/i.test(t)) {
     inicio = "Va y viene";
   }
@@ -328,10 +304,10 @@ export function withElbowHintsFromText(text: string): ElbowAdaptiveAnswers {
   else if (/entrenamiento|ejercicio|tenis|p[aá]del|golf/i.test(t)) {
     mecanismo = "Tras entrenamiento o ejercicio";
   } else if (/progresiv|poco a poco|sin causa/i.test(t)) {
-    mecanismo = "Inicio progresivo sin causa clara";
+    mecanismo = "Empezó poco a poco, sin causa clara";
   }
 
-  if (/flexionar|doblar|bend/i.test(t)) movimientos.push("Flexionar el codo");
+  if (/flexionar|doblar|bend/i.test(t)) movimientos.push("Doblar el codo");
   if (/estirar|extender|straighten/i.test(t)) movimientos.push("Estirar el codo");
   if (/rotar|girar|antebrazo|pronaci|supinaci/i.test(t)) {
     movimientos.push("Rotar el antebrazo");
@@ -362,11 +338,6 @@ export function withElbowHintsFromText(text: string): ElbowAdaptiveAnswers {
     localizacion.push("Parte anterior del codo");
   }
 
-  if (/noche|nocturn|dormir/i.test(t)) patron.push("Por la noche");
-  if (/reposo/i.test(t)) patron.push("En reposo");
-  if (/al mover|solo al/i.test(t)) patron.push("Solo al mover");
-  if (/esfuerzo|carga/i.test(t)) patron.push("Con esfuerzo o carga");
-
   if (/hormigueo|entumec/i.test(t)) {
     sintomas.push("Hormigueo");
     sintomas.push("Entumecimiento");
@@ -387,7 +358,6 @@ export function withElbowHintsFromText(text: string): ElbowAdaptiveAnswers {
     ...(mecanismo ? { mecanismo } : {}),
     movimientos_agravantes: [...new Set(movimientos)],
     localizacion_codo: [...new Set(localizacion)],
-    patron_dolor: [...new Set(patron)],
     sintomas_asociados: [...new Set(sintomas.filter((s) => s))],
     ...(irradiacion ? { irradiacion } : {}),
   };
@@ -430,7 +400,15 @@ function hasTingling(a: ElbowAdaptiveAnswers): boolean {
 }
 
 function hasRomLimit(a: ElbowAdaptiveAnswers): boolean {
-  return a.limitacion_funcional.includes("Dificultad para flexionar o estirar por completo");
+  return a.limitacion_funcional.includes("Me cuesta doblar o estirar del todo");
+}
+
+function hasLateralElbowPain(a: ElbowAdaptiveAnswers): boolean {
+  return a.localizacion_codo.includes("Parte externa del codo");
+}
+
+function hasMedialElbowPain(a: ElbowAdaptiveAnswers): boolean {
+  return a.localizacion_codo.includes("Parte interna del codo");
 }
 
 export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
@@ -438,10 +416,10 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
   // Timing first (hide sleep/night questions if injury is hours-old)
   { id: "evolucion", section: "red_flags", label: "¿Cuándo comenzó el problema?", type: "single", options: EVOLUTION_OPTIONS, required: true },
   // Red flags
-  { id: "rf_deformidad", section: "red_flags", label: "¿Hay deformidad evidente tras la lesión?", type: "single", options: YES_NO, required: true },
-  { id: "rf_no_movimiento", section: "red_flags", label: "¿Incapacidad absoluta para mover el codo?", type: "single", options: YES_NO, required: true },
-  { id: "rf_inflamacion_severa", section: "red_flags", label: "¿Inflamación severa inmediata tras un traumatismo?", type: "single", options: YES_NO, required: true },
-  { id: "rf_fiebre", section: "red_flags", label: "¿Fiebre asociada al dolor?", type: "single", options: YES_NO, required: true },
+  { id: "rf_deformidad", section: "red_flags", label: "¿Tras la lesión, se ve torcido, deformado o muy distinto de lo normal?", type: "single", options: YES_NO, required: true },
+  { id: "rf_no_movimiento", section: "red_flags", label: "¿No puedes mover el codo en absoluto?", type: "single", options: YES_NO, required: true },
+  { id: "rf_inflamacion_severa", section: "red_flags", label: "¿Hinchazón fuerte justo después de un golpe o caída?", type: "single", options: YES_NO, required: true },
+  { id: "rf_fiebre", section: "red_flags", label: "¿Tienes fiebre junto con el dolor?", type: "single", options: YES_NO, required: true },
   { id: "rf_herida_abierta", section: "red_flags", label: "¿Hay herida abierta en la zona?", type: "single", options: YES_NO, required: true },
   { id: "rf_perdida_fuerza", section: "red_flags", label: "¿Pérdida súbita de fuerza en el brazo?", type: "single", options: YES_NO, required: true },
   { id: "rf_perdida_sensibilidad", section: "red_flags", label: "¿Pérdida de sensibilidad (entumecimiento marcado)?", type: "single", options: YES_NO, required: true },
@@ -455,10 +433,9 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
   { id: "localizacion_codo", section: "core", label: "¿Dónde sientes el dolor en el codo? (puedes marcar varias)", type: "multi", options: ELBOW_LOCATION_OPTIONS, required: true },
   { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: true },
   { id: "movimientos_agravantes", section: "core", label: "¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: AGGRAVATING_MOVEMENT_OPTIONS, required: true },
-  { id: "patron_dolor", section: "core", label: "¿Cuándo te duele?", type: "multi", options: PAIN_SITUATION_OPTIONS, required: true },
   { id: "limitacion_funcional", section: "core", label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)", type: "multi", options: FUNCTIONAL_LIMIT_OPTIONS, required: true },
   { id: "sintomas_asociados", section: "core", label: "¿Qué otros síntomas notas?", type: "multi", options: ASSOCIATED_SYMPTOM_OPTIONS, required: true },
-  { id: "irradiacion", section: "core", label: "¿El dolor se irradia a otra zona?", type: "single", options: RADIATION_OPTIONS, required: true },
+  { id: "irradiacion", section: "core", label: "¿El dolor se extiende a otra zona?", type: "single", options: RADIATION_OPTIONS, required: true },
   { id: "irradiacion_detalle", section: "core", label: "¿Hasta dónde llega o qué dedos afecta?", type: "text", required: true, showIf: (a) => a.irradiacion === "Hacia dedos concretos" },
   { id: "cuello_sintomas", section: "core", label: "¿También notas dolor, rigidez u hormigueo en el cuello?", type: "single", options: YES_NO, required: true },
   {
@@ -473,7 +450,6 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
       a.irradiacion === "Desde el cuello hacia el brazo/codo" ||
       hasTingling(a),
   },
-  { id: "alivia_con", section: "core", label: "¿Qué mejora el dolor?", type: "multi", options: RELIEF_OPTIONS, required: true },
 
   // Fall
   { id: "caida_como", section: "fall", label: "¿Cómo caíste?", type: "single", options: FALL_LANDING_OPTIONS, required: true, showIf: (a) => a.mecanismo === "Tras una caída" },
@@ -499,7 +475,7 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
   // Tingling
   { id: "hormigueo_dedos", section: "tingling", label: "¿Qué dedos están afectados?", type: "multi", options: TINGLING_FINGER_OPTIONS, required: true, showIf: hasTingling },
   { id: "hormigueo_constante", section: "tingling", label: "¿El hormigueo es constante o intermitente?", type: "single", options: ["Constante", "Intermitente"], required: true, showIf: hasTingling },
-  { id: "hormigueo_flexion", section: "tingling", label: "¿Se desencadena al flexionar el codo?", type: "single", options: YES_NO, required: true, showIf: hasTingling },
+  { id: "hormigueo_flexion", section: "tingling", label: "¿Empieza o empeora al doblar el codo?", type: "single", options: YES_NO, required: true, showIf: hasTingling },
 
   // Locking
   { id: "bloqueo_atascado", section: "locking", label: "¿El codo se queda atascado?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Bloqueo") },
@@ -509,15 +485,14 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
   // Instability
   { id: "inestabilidad_cede", section: "instability", label: "¿Sientes que el codo cede o falla?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Inestabilidad") },
   { id: "inestabilidad_antes", section: "instability", label: "¿Ha pasado antes?", type: "single", options: INSTABILITY_PREVIOUS_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Inestabilidad") },
-  { id: "inestabilidad_cuando", section: "instability", label: "¿Al lanzar, empujar u otra situación?", type: "text", required: false, showIf: (a) => hasSymptom(a, "Inestabilidad") },
   { id: "inestabilidad_posicion", section: "instability", label: "¿Ocurre al empujarte para levantarte de una silla o del suelo con la palma hacia arriba?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Inestabilidad") },
 
   // ROM limit
-  { id: "rom_limit_causa", section: "rom_limit", label: "¿Por qué no puedes flexionar o estirar por completo?", type: "single", options: ROM_LIMIT_CAUSE_OPTIONS, required: true, showIf: hasRomLimit },
+  { id: "rom_limit_causa", section: "rom_limit", label: "¿Por qué no puedes doblar o estirar del todo?", type: "single", options: ROM_LIMIT_CAUSE_OPTIONS, required: true, showIf: hasRomLimit },
 
-  // Self-tests
-  { id: "test_extension_muneca", section: "self_tests", label: "¿Duele en la parte externa del codo al estirar la muñeca contra resistencia?", type: "single", options: YES_NO, required: true },
-  { id: "test_flexion_muneca", section: "self_tests", label: "¿Duele en la parte interna al flexionar la muñeca contra resistencia?", type: "single", options: YES_NO, required: true },
+  // Self-tests (gated to lateral / medial location)
+  { id: "test_extension_muneca", section: "self_tests", label: "¿Duele en la parte externa del codo al estirar la muñeca contra resistencia?", type: "single", options: YES_NO, required: true, showIf: hasLateralElbowPain },
+  { id: "test_flexion_muneca", section: "self_tests", label: "¿Duele en la parte interna al doblar la muñeca contra resistencia?", type: "single", options: YES_NO, required: true, showIf: hasMedialElbowPain },
 
   // History
   { id: "episodios_previos", section: "history", label: "¿Has tenido este problema antes en el codo?", type: "single", options: PREVIOUS_EPISODE_OPTIONS, required: true },
@@ -584,10 +559,10 @@ export function detectElbowRedFlags(answers: ElbowAdaptiveAnswers): {
   triggered: string[];
 } {
   const labels: Record<string, string> = {
-    rf_deformidad: "Deformidad evidente tras lesión",
-    rf_no_movimiento: "Incapacidad absoluta para mover el codo",
-    rf_inflamacion_severa: "Inflamación severa inmediata tras trauma",
-    rf_fiebre: "Fiebre asociada",
+    rf_deformidad: "Se ve torcido, deformado o muy distinto tras lesión",
+    rf_no_movimiento: "No puedes mover el codo en absoluto",
+    rf_inflamacion_severa: "Hinchazón fuerte justo después de un golpe o caída",
+    rf_fiebre: "Fiebre junto con el dolor",
     rf_herida_abierta: "Herida abierta",
     rf_perdida_fuerza: "Pérdida súbita de fuerza",
     rf_perdida_sensibilidad: "Pérdida de sensibilidad",
@@ -608,11 +583,11 @@ function isAnswered(q: ElbowQuestionDef, answers: ElbowAdaptiveAnswers): boolean
   return typeof val === "string" && val.length > 0;
 }
 
-export function validateElbowAdaptive(answers: ElbowAdaptiveAnswers): string | null {
+export function validateElbowAdaptive(answers: ElbowAdaptiveAnswers): AdaptiveValidationIssue | null {
   const visible = getVisibleElbowQuestions(answers);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -621,11 +596,11 @@ export function validateElbowAdaptive(answers: ElbowAdaptiveAnswers): string | n
 export function validateElbowSection(
   section: ElbowQuestionSection,
   answers: ElbowAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleElbowQuestions(answers).filter((q) => q.section === section);
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -670,7 +645,6 @@ export function formatElbowAdaptive(
     `Localización anatómica codo: ${formatMulti(answers.localizacion_codo)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Movimientos agravantes: ${formatMulti(answers.movimientos_agravantes)}`,
-    `Cuándo duele: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -678,7 +652,6 @@ export function formatElbowAdaptive(
     answers.cuello_empeora_brazo
       ? `Cabeza empeora codo/brazo: ${answers.cuello_empeora_brazo}`
       : "",
-    `Qué mejora el dolor: ${formatMulti(answers.alivia_con)}`,
   ];
 
   if (answers.mecanismo === "Tras una caída") {
@@ -742,20 +715,26 @@ export function formatElbowAdaptive(
       "— INESTABILIDAD —",
       `Cede o falla: ${answers.inestabilidad_cede}`,
       `Episodios previos: ${answers.inestabilidad_antes}`,
-      `Ocurre al empujarse para levantarse (silla/suelo) con palma arriba: ${answers.inestabilidad_posicion || "—"}`,
-      answers.inestabilidad_cuando ? `Cuándo: ${answers.inestabilidad_cuando}` : ""
+      `Ocurre al empujarse para levantarse (silla/suelo) con palma arriba: ${answers.inestabilidad_posicion || "—"}`
     );
   }
   if (hasRomLimit(answers)) {
     lines.push("", "— LIMITACIÓN DE MOVIMIENTO —", `Causa principal: ${answers.rom_limit_causa}`);
   }
 
-  lines.push(
-    "",
-    "— AUTOEVALUACIÓN —",
-    `Dolor externo al estirar muñeca contra resistencia: ${answers.test_extension_muneca || "—"}`,
-    `Dolor interno al flexionar muñeca contra resistencia: ${answers.test_flexion_muneca || "—"}`
-  );
+  if (hasLateralElbowPain(answers) || hasMedialElbowPain(answers)) {
+    lines.push("", "— AUTOEVALUACIÓN —");
+    if (hasLateralElbowPain(answers)) {
+      lines.push(
+        `Dolor externo al estirar muñeca contra resistencia: ${answers.test_extension_muneca || "—"}`
+      );
+    }
+    if (hasMedialElbowPain(answers)) {
+      lines.push(
+        `Dolor interno al doblar muñeca contra resistencia: ${answers.test_flexion_muneca || "—"}`
+      );
+    }
+  }
 
   lines.push(
     "",
@@ -766,13 +745,13 @@ export function formatElbowAdaptive(
     "",
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
     "- Dolor externo del codo + duele al estirar la muñeca contra resistencia → epicondilitis lateral (codo de tenista).",
-    "- Dolor interno del codo + duele al flexionar la muñeca contra resistencia → epicondilitis medial (codo de golfista) / pronador.",
-    "- Hormigueo en dedo anular/meñique + empeora al flexionar el codo o apoyarse con la palma hacia arriba → síndrome del túnel cubital.",
+    "- Dolor interno del codo + duele al doblar la muñeca contra resistencia → epicondilitis medial (codo de golfista) / pronador.",
+    "- Hormigueo en dedo anular/meñique + empeora al doblar el codo o apoyarse con la palma hacia arriba → síndrome del túnel cubital.",
     "- Dolor e hinchazón en la punta posterior del codo, sin gran limitación funcional → bursitis olecraneana.",
     "- Dolor interno en lanzadores + inestabilidad en valgo → lesión del ligamento colateral cubital (UCL) del lanzador.",
     "- Pop/chasquido al levantar peso + hueco o bulto en cara anterior del brazo → rotura del tendón del bíceps distal.",
     "- Caída sobre la mano con el codo extendido + dolor en cara externa profunda → fractura de cabeza radial.",
-    "- Deformidad evidente tras trauma + incapacidad de movimiento → luxación de codo.",
+    "- Se ve torcido, deformado o muy distinto tras trauma + incapacidad de movimiento → luxación de codo.",
     "- Inestabilidad al empujarse para levantarse con la palma hacia arriba tras luxación previa → inestabilidad posterolateral rotatoria (PLRI).",
     "- Adolescente/deportista con dolor externo de esfuerzo repetitivo (lanzamiento/gimnasia) → osteocondritis disecante (OCD) del cóndilo humeral.",
     "- Dolor en el antebrazo proximal con pronación repetitiva, sin claros signos de epicondilitis → síndrome del pronador redondo.",
@@ -786,8 +765,8 @@ export function formatElbowAdaptive(
 export const ELBOW_LABEL_EN: Partial<Record<string, string>> = {
   rf_deformidad: "Is there an obvious deformity after the injury?",
   rf_no_movimiento: "Are you completely unable to move the elbow?",
-  rf_inflamacion_severa: "Severe swelling immediately after trauma?",
-  rf_fiebre: "Fever associated with the pain?",
+  rf_inflamacion_severa: "Did it swell a lot right after a hit or fall?",
+  rf_fiebre: "Do you have a fever along with the pain?",
   rf_herida_abierta: "Is there an open wound in the area?",
   rf_perdida_fuerza: "Sudden loss of strength in the arm?",
   rf_perdida_sensibilidad: "Loss of sensation (marked numbness)?",
@@ -799,15 +778,13 @@ export const ELBOW_LABEL_EN: Partial<Record<string, string>> = {
   localizacion_codo: "Where do you feel the pain in the elbow? (you can select several)",
   tipo_dolor: "How would you describe the pain?",
   movimientos_agravantes: "Which movements make it worse? (you can select several)",
-  patron_dolor: "When does it hurt?",
   limitacion_funcional: "How much does it limit you day to day?",
   sintomas_asociados: "What other symptoms do you notice?",
-  irradiacion: "Does the pain radiate to another area?",
+  irradiacion: "Does the pain spread to another area?",
   irradiacion_detalle: "How far does it go, or which fingers are affected?",
   cuello_sintomas: "Do you also notice pain, stiffness, or tingling in the neck?",
   cuello_empeora_brazo:
     "When you turn or tilt your head, does the elbow pain or arm tingling get worse?",
-  alivia_con: "What improves the pain?",
   caida_como: "How did you fall?",
   caida_chasquido: "Did you hear a crack or click?",
   caida_uso_brazo: "Could you keep using the arm afterwards?",
@@ -829,7 +806,6 @@ export const ELBOW_LABEL_EN: Partial<Record<string, string>> = {
   bloqueo_chasquido: "Does it click before unlocking?",
   inestabilidad_cede: "Does the elbow give way or feel unstable?",
   inestabilidad_antes: "Has this happened before?",
-  inestabilidad_cuando: "When throwing, pushing, or another situation?",
   inestabilidad_posicion: "Does it happen when pushing yourself up from a chair or the floor with your palm facing up?",
   rom_limit_causa: "Why can't you fully bend or straighten it?",
   test_extension_muneca: "Does it hurt on the outside of the elbow when extending the wrist against resistance?",
@@ -848,9 +824,9 @@ export const ELBOW_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
+  "Poco a poco": "Gradual",
   "Va y viene": "Comes and goes",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   "Tras entrenamiento o ejercicio": "After training or exercise",
   "Tras levantar pesas": "After lifting weights",
   "Tras lanzar": "After throwing",
@@ -871,7 +847,7 @@ export const ELBOW_OPTION_EN: Record<string, string> = {
   "Tirantez o tirón": "Tightness or pulling",
   "Descarga eléctrica": "Electric shock",
   "Latido o punzadas": "Throbbing or stabbing",
-  "Flexionar el codo": "Bending the elbow",
+  "Doblar el codo": "Bending the elbow",
   "Estirar el codo": "Straightening the elbow",
   "Rotar el antebrazo": "Rotating the forearm",
   "Girar un pomo o llave": "Turning a doorknob or key",
@@ -892,7 +868,7 @@ export const ELBOW_OPTION_EN: Record<string, string> = {
   "No puedo entrenar": "I can't train",
   "Dificultad para cargar objetos": "Difficulty carrying objects",
   "Dificultad para vestirme": "Difficulty dressing",
-  "Dificultad para flexionar o estirar por completo": "Difficulty fully bending or straightening",
+  "Me cuesta doblar o estirar del todo": "Difficulty fully bending or straightening",
   "No puedo usar el brazo con normalidad": "I can't use the arm normally",
   "Inflamación / hinchazón": "Inflammation / swelling",
   Moretón: "Bruising",
@@ -930,7 +906,7 @@ export const ELBOW_OPTION_EN: Record<string, string> = {
   "Justo después": "Right afterwards",
   "Al día siguiente": "The next day",
   "Durante la aceleración": "During acceleration",
-  "Durante el follow-through": "During follow-through",
+  "Al terminar el lanzamiento (fase final)": "At the end of the throw (follow-through)",
   "En ambas fases": "In both phases",
   Pulgar: "Thumb",
   Índice: "Index",
@@ -938,7 +914,7 @@ export const ELBOW_OPTION_EN: Record<string, string> = {
   Anular: "Ring",
   Meñique: "Little finger",
   "Por dolor": "Because of pain",
-  "Por bloqueo mecánico": "Because of mechanical locking",
+  "Porque se traba / no deja pasar": "Because of mechanical locking",
   "Por falta de fuerza": "Because of lack of strength",
   Constante: "Constant",
   Intermitente: "Intermittent",

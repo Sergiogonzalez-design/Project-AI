@@ -53,10 +53,10 @@ export function SignupForm() {
       className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white px-6 py-9 shadow-xl shadow-blue-500/10 sm:px-8"
     >
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
-        <Image src="/logo-icon.png" alt="Kinora" width={56} height={56} className="object-contain" />
+        <Image src="/logo-icon.png" alt="AIKinora" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">Crear cuenta</h1>
-          <p className="mt-1 text-sm text-slate-500">Regístrate para usar Kinora</p>
+          <p className="mt-1 text-sm text-slate-500">Regístrate para usar AIKinora</p>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export function SignupForm() {
 
       <button
         type="submit" disabled={loading}
-        className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
+        className="btn-primary w-full"
       >
         {loading ? "Creando cuenta…" : "Crear cuenta"}
       </button>

@@ -4,7 +4,7 @@ export const Colors = {
   primarySoft: "#EFF6FF",
   primaryDark: "#1E40AF",
   white: "#FFFFFF",
-  background: "#F5F8FF",
+  background: "#F8FAFC",
   surface: "#FFFFFF",
   border: "#E2E8F0",
   borderStrong: "#BFDBFE",

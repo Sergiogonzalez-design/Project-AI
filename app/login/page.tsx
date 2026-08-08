@@ -3,7 +3,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Iniciar sesión · Kinora",
+  title: "Iniciar sesión · AIKinora",
   description: "Accede a tu cuenta",
 };
 

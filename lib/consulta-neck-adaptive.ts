@@ -6,6 +6,7 @@ import {
  * Adaptive questionnaire for neck / cervical spine — same structure as shoulder
  * (urgency → core → mechanism branches → neuro → history).
  */
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -18,16 +19,16 @@ export const EVOLUTION_OPTIONS = [
   "Más de 1 mes",
 ] as const;
 
-export const ONSET_FORM_OPTIONS = ["Repentino", "Progresivo"] as const;
+export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
   "Caída",
-  "Golpe directo / traumatismo",
+  "Golpe directo / lesión fuerte",
   "Movimiento brusco (latigazo / giro)",
   "Entrenamiento o ejercicio",
   "Postura mantenida (pantalla, dormir mal)",
   "Movimiento repetitivo",
-  "Inicio progresivo sin causa clara",
+  "Empezó poco a poco, sin causa clara",
   "Otro",
 ] as const;
 
@@ -48,16 +49,6 @@ export const PAIN_TYPE_OPTIONS = [
   "Presión / peso",
   "Hormigueo",
   "Malestar difuso",
-] as const;
-
-export const PAIN_SITUATION_OPTIONS = [
-  "En reposo",
-  "Al mover el cuello",
-  "Mirando arriba o abajo",
-  "Al girar la cabeza",
-  "Por la noche / al dormir",
-  "Tras estar mucho rato con pantallas",
-  "Constante",
 ] as const;
 
 export const FUNCTIONAL_LIMIT_OPTIONS = [
@@ -82,14 +73,14 @@ export const ASSOCIATED_SYMPTOM_OPTIONS = [
 ] as const;
 
 export const AGGRAVATING_MOVEMENT_OPTIONS = [
-  "Flexionar (mirar al pecho)",
-  "Extender (mirar al techo)",
+  "Doblar el cuello (mirar al pecho)",
+  "Estirar el cuello (mirar al techo)",
   "Rotar a la derecha",
   "Rotar a la izquierda",
   "Inclinar la oreja al hombro",
   "Cargar peso / mochila",
   "Trabajar con el ordenador",
-  "Extender e inclinar la cabeza hacia el lado donde duele/hormiguea",
+  "Estirar e inclinar la cabeza hacia el lado donde duele/hormiguea",
   "Ninguno en particular",
 ] as const;
 
@@ -107,12 +98,6 @@ export const NEURO_ARM_SIDE_OPTIONS = [
   "Izquierdo",
   "Ambos",
   "No aplica",
-] as const;
-
-export const TRAINING_IMPACT_OPTIONS = [
-  "No afecta",
-  "Parcialmente",
-  "No puedo entrenar o competir",
 ] as const;
 
 export const WHIPLASH_DIRECTION_OPTIONS = [
@@ -153,7 +138,6 @@ export type NeckAdaptiveAnswers = {
   intensidad_dolor: number;
   localizacion_cuello: string[];
   tipo_dolor: string[];
-  patron_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
@@ -176,7 +160,6 @@ export type NeckAdaptiveAnswers = {
   neuro_constante: string;
   lesion_previa: string;
   lesion_previa_detalle: string;
-  deporte_impacto: string;
 };
 
 export function defaultNeckAdaptiveAnswers(): NeckAdaptiveAnswers {
@@ -199,7 +182,6 @@ export function defaultNeckAdaptiveAnswers(): NeckAdaptiveAnswers {
     intensidad_dolor: 5,
     localizacion_cuello: [],
     tipo_dolor: [],
-    patron_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
@@ -222,7 +204,6 @@ export function defaultNeckAdaptiveAnswers(): NeckAdaptiveAnswers {
     neuro_constante: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
-    deporte_impacto: "",
   };
 }
 
@@ -288,7 +269,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
   {
     id: "rf_trauma_grave",
     section: "red_flags",
-    label: "¿Hubo un traumatismo fuerte en el cuello (accidente, caída de altura, golpe intenso)?",
+    label: "¿Hubo un golpe o accidente fuerte en el cuello (accidente, caída de altura, golpe intenso)?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -312,7 +293,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
   {
     id: "rf_fiebre",
     section: "red_flags",
-    label: "¿Fiebre, rigidez extrema del cuello o malestar general intenso?",
+    label: "¿Tienes fiebre, el cuello muy rígido o un malestar general intenso?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -346,7 +327,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
     id: "rf_manipulacion_reciente",
     section: "red_flags",
     label:
-      "¿Te has hecho recientemente una manipulación o ajuste cervical (fisioterapia, quiropráctico, osteopatía)?",
+      "¿Te has hecho recientemente una manipulación o ajuste del cuello (fisioterapia, quiropráctico, osteopatía)?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -364,7 +345,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
     id: "rf_lhermitte",
     section: "red_flags",
     label:
-      "¿Notas una descarga eléctrica que baja por la espalda o brazos al flexionar el cuello hacia delante?",
+      "¿Notas una descarga eléctrica que baja por la espalda o brazos al doblar el cuello hacia delante?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -398,7 +379,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
   {
     id: "mecanismo_otro",
     section: "core",
-    label: "Describe el mecanismo",
+    label: "Cuéntanos qué pasó o cómo empezó",
     type: "text",
     required: true,
     showIf: (a) => a.mecanismo.includes("Otro"),
@@ -425,16 +406,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
     type: "multi",
     options: PAIN_TYPE_OPTIONS,
     required: true,
-  },
-  {
-    id: "patron_dolor",
-    section: "core",
-    label: "¿En qué situaciones aparece o empeora?",
-    type: "multi",
-    options: PAIN_SITUATION_OPTIONS,
-    required: true,
-  },
-  {
+  },  {
     id: "limitacion_funcional",
     section: "core",
     label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)",
@@ -445,7 +417,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
   {
     id: "irradiacion",
     section: "core",
-    label: "¿El dolor se irradia a otra zona?",
+    label: "¿El dolor se extiende a otra zona?",
     type: "single",
     options: RADIATION_OPTIONS,
     required: true,
@@ -453,7 +425,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
   {
     id: "irradiacion_detalle",
     section: "core",
-    label: "Describe hasta dónde llega y cómo es la irradiación",
+    label: "Cuéntanos hasta dónde llega ese dolor y cómo es",
     type: "text",
     required: true,
     showIf: (a) => a.irradiacion !== "No" && a.irradiacion !== "",
@@ -461,7 +433,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
   {
     id: "sintomas_asociados",
     section: "core",
-    label: "¿Qué otros síntomas notas? (músculos, nervios…)",
+    label: "¿Qué otros síntomas notas? (músculos, hormigueo…)",
     type: "multi",
     options: ASSOCIATED_SYMPTOM_OPTIONS,
     required: true,
@@ -491,7 +463,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
     type: "text",
     required: true,
     showIf: (a) =>
-      a.mecanismo.includes("Caída") || a.mecanismo.includes("Golpe directo / traumatismo"),
+      a.mecanismo.includes("Caída") || a.mecanismo.includes("Golpe directo / lesión fuerte"),
   },
   {
     id: "trauma_chasquido",
@@ -501,7 +473,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
     options: YES_NO,
     required: true,
     showIf: (a) =>
-      a.mecanismo.includes("Caída") || a.mecanismo.includes("Golpe directo / traumatismo"),
+      a.mecanismo.includes("Caída") || a.mecanismo.includes("Golpe directo / lesión fuerte"),
   },
 
   {
@@ -605,7 +577,7 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
   {
     id: "neuro_constante",
     section: "neuro",
-    label: "¿Esos síntomas nerviosos son constantes?",
+    label: "¿Ese hormigueo, entumecimiento o debilidad es constante?",
     type: "single",
     options: ["No, intermitente", "Sí, constante"],
     required: true,
@@ -627,21 +599,12 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
     type: "text",
     required: true,
     showIf: (a) => a.lesion_previa === "Sí",
-  },
-  {
-    id: "deporte_impacto",
-    section: "history",
-    label: "¿Cómo afecta a tu entrenamiento o deporte?",
-    type: "single",
-    options: TRAINING_IMPACT_OPTIONS,
-    required: true,
-  },
-];
+  },];
 
 export const NECK_SECTION_LABELS: Record<NeckQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
   core: "Caracterización del problema",
-  trauma: "Detalles del traumatismo",
+  trauma: "Detalles del golpe o la caída",
   whiplash: "Movimiento brusco",
   posture: "Postura / pantalla",
   training: "Detalles del entrenamiento",
@@ -699,14 +662,14 @@ export function detectNeckRedFlags(answers: NeckAdaptiveAnswers): {
   triggered: string[];
 } {
   const labels: Record<string, string> = {
-    rf_trauma_grave: "Traumatismo fuerte en cuello",
+    rf_trauma_grave: "Golpe o accidente fuerte en el cuello",
     rf_debilidad_brazos_piernas: "Debilidad en brazos/piernas o torpeza al caminar",
     rf_perdida_sensibilidad: "Pérdida de sensibilidad marcada",
     rf_fiebre: "Fiebre / rigidez extrema / malestar general",
     rf_mareo_vision: "Mareo intenso, visión doble, habla o deglución",
-    rf_esfinteres: "Alteración de esfínteres",
+    rf_esfinteres: "Problemas nuevos para controlar orina o heces",
     rf_cefalea_subita: "Cefalea repentina, muy intensa o distinta a la habitual (sospecha VAD/hemorragia)",
-    rf_manipulacion_reciente: "Manipulación/ajuste cervical reciente (riesgo de disección arterial)",
+    rf_manipulacion_reciente: "Manipulación/ajuste del cuello reciente (riesgo de disección arterial)",
     rf_torpeza_manos: "Torpeza fina en manos (sospecha mielopatía)",
     rf_lhermitte: "Signo de Lhermitte (descarga eléctrica con flexión cervical)",
     rf_perdida_peso_cancer: "Pérdida de peso inexplicada o antecedente de cáncer",
@@ -726,11 +689,11 @@ function isAnswered(q: NeckQuestionDef, answers: NeckAdaptiveAnswers): boolean {
   return typeof val === "string" && val.length > 0;
 }
 
-export function validateNeckAdaptive(answers: NeckAdaptiveAnswers): string | null {
+export function validateNeckAdaptive(answers: NeckAdaptiveAnswers): AdaptiveValidationIssue | null {
   const visible = getVisibleNeckQuestions(answers);
   for (const q of visible) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -739,11 +702,11 @@ export function validateNeckAdaptive(answers: NeckAdaptiveAnswers): string | nul
 export function validateNeckSection(
   section: NeckQuestionSection,
   answers: NeckAdaptiveAnswers
-): string | null {
+): AdaptiveValidationIssue | null {
   const questions = getVisibleNeckQuestions(answers).filter((q) => q.section === section);
   for (const q of questions) {
     if (q.required !== false && !isAnswered(q, answers)) {
-      return `Responde: ${q.label.replace(/\?$/, "")}.`;
+      return missingQuestionIssue(q);
     }
   }
   return null;
@@ -790,7 +753,6 @@ export function formatNeckAdaptive(
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización cuello: ${formatMulti(answers.localizacion_cuello)}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
-    `Situaciones de dolor: ${formatMulti(answers.patron_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
@@ -801,7 +763,7 @@ export function formatNeckAdaptive(
     lines.push("", "— PATRÓN DE CEFALEA —", `Nuca → sien/ojo mismo lado: ${answers.cefalea_patron}`);
   }
 
-  if (answers.mecanismo.includes("Caída") || answers.mecanismo.includes("Golpe directo / traumatismo")) {
+  if (answers.mecanismo.includes("Caída") || answers.mecanismo.includes("Golpe directo / lesión fuerte")) {
     lines.push(
       "",
       "— DETALLE TRAUMA —",
@@ -856,7 +818,6 @@ export function formatNeckAdaptive(
     "",
     "— ANTECEDENTES —",
     `Lesión previa cuello: ${answers.lesion_previa}${answers.lesion_previa === "Sí" && answers.lesion_previa_detalle ? ` — ${answers.lesion_previa_detalle}` : ""}`,
-    `Impacto deportivo: ${answers.deporte_impacto}`,
     "",
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (músculos, discos, nervios), no para diagnosticar.",
     "",
@@ -867,7 +828,7 @@ export function formatNeckAdaptive(
     "- Cefalea que empieza en la nuca y sube hacia sien/ojo del mismo lado + relacionada con postura o movimientos cervicales → cefalea cervicogénica vs migraña/cefalea 1ª.",
     "- Dolor local, sin irradiación neurológica, relacionado con postura mantenida o sobreuso → dolor mecánico/miofascial (contractura, síndrome del trapecio).",
     "- Torpeza fina en manos + alteración de la marcha + signo de Lhermitte + hiperreflexia → sospecha de MIELOPATÍA CERVICAL (valorar con prioridad, no solo de urgencia inmediata pero sí preferente).",
-    "- Manipulación/ajuste cervical reciente + cefalea súbita distinta + mareo/vértigo + síntomas neurológicos (visión doble, disartria, disfagia, ataxia) → SOSPECHA DE DISECCIÓN ARTERIAL VERTEBRAL/CAROTÍDEA (VAD) — URGENCIA ABSOLUTA, derivar a urgencias de inmediato.",
+    "- Manipulación/ajuste del cuello reciente + cefalea súbita distinta + mareo/vértigo + síntomas neurológicos (visión doble, disartria, disfagia, ataxia) → SOSPECHA DE DISECCIÓN ARTERIAL VERTEBRAL/CAROTÍDEA (VAD) — URGENCIA ABSOLUTA, derivar a urgencias de inmediato.",
     "- Fiebre + rigidez cervical extrema + malestar general intenso → sospecha de MENINGISMO/meningitis — urgencia médica inmediata.",
     "- Traumatismo fuerte + dolor intenso + limitación severa o inestabilidad → sospecha de FRACTURA CERVICAL — inmovilizar y derivar a urgencias, no manipular.",
     "- Pérdida de peso inexplicada o antecedente de cáncer + dolor nocturno o progresivo sin mecánica clara → descartar causa neoplásica/metastásica.",
@@ -904,14 +865,13 @@ export const NECK_LABEL_EN: Partial<Record<string, string>> = {
   evolucion: "How long have you had this problem?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
-  mecanismo_otro: "Describe the mechanism",
+  mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_cuello: "Where do you feel the pain in the neck? (you can select several)",
   tipo_dolor: "How would you describe the pain?",
-  patron_dolor: "In which situations does it appear or worsen?",
   limitacion_funcional: "How much does it limit you day to day?",
-  irradiacion: "Does the pain radiate to another area?",
-  irradiacion_detalle: "Describe how far it goes and what the radiation feels like",
+  irradiacion: "Does the pain spread to another area?",
+  irradiacion_detalle: "Describe how far that pain goes and what it feels like",
   sintomas_asociados: "What other symptoms do you notice? (muscles, nerves…)",
   movimientos_agravantes: "Which neck movements provoke or worsen it? (you can select several)",
   cefalea_patron: "If you have a headache, does it start at the back of the head/neck and go up toward the temple/eye on the same side?",
@@ -931,7 +891,6 @@ export const NECK_LABEL_EN: Partial<Record<string, string>> = {
   neuro_constante: "Are those nerve symptoms constant?",
   lesion_previa: "Have you had previous injuries or problems in the neck?",
   lesion_previa_detalle: "Describe previous injuries or treatments",
-  deporte_impacto: "How does it affect your training or sport?",
 };
 
 export const NECK_OPTION_EN: Record<string, string> = {
@@ -944,14 +903,14 @@ export const NECK_OPTION_EN: Record<string, string> = {
   "Entre 1 y 4 semanas": "Between 1 and 4 weeks",
   "Más de 1 mes": "More than 1 month",
   Repentino: "Sudden",
-  Progresivo: "Gradual",
+  "Poco a poco": "Gradual",
   Caída: "Fall",
-  "Golpe directo / traumatismo": "Direct blow / trauma",
+  "Golpe directo / lesión fuerte": "Direct blow / hard impact",
   "Movimiento brusco (latigazo / giro)": "Sudden movement (whiplash / twist)",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Postura mantenida (pantalla, dormir mal)": "Sustained posture (screen, poor sleep)",
   "Movimiento repetitivo": "Repetitive movement",
-  "Inicio progresivo sin causa clara": "Gradual onset with no clear cause",
+  "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   Otro: "Other",
   "Base del cráneo / nuca alta": "Base of skull / upper nape",
   "Lateral del cuello (un lado)": "Side of the neck (one side)",
@@ -988,14 +947,14 @@ export const NECK_OPTION_EN: Record<string, string> = {
   "Espasmo muscular": "Muscle spasm",
   "Zumbido en el oído o sensación de oído tapado": "Ringing in the ear or feeling of a blocked ear",
   Ninguno: "None",
-  "Flexionar (mirar al pecho)": "Flexion (looking at the chest)",
-  "Extender (mirar al techo)": "Extension (looking at the ceiling)",
+  "Doblar el cuello (mirar al pecho)": "Flexion (looking at the chest)",
+  "Estirar el cuello (mirar al techo)": "Extension (looking at the ceiling)",
   "Rotar a la derecha": "Rotate to the right",
   "Rotar a la izquierda": "Rotate to the left",
   "Inclinar la oreja al hombro": "Tilt ear toward shoulder",
   "Cargar peso / mochila": "Carrying weight / backpack",
   "Trabajar con el ordenador": "Working at a computer",
-  "Extender e inclinar la cabeza hacia el lado donde duele/hormiguea":
+  "Estirar e inclinar la cabeza hacia el lado donde duele/hormiguea":
     "Extending and tilting the head toward the side that hurts/tingles",
   "Ninguno en particular": "None in particular",
   "Hacia un hombro": "Toward one shoulder",

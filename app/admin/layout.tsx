@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Admin · Kinora",
+  title: "Admin · AIKinora",
   robots: { index: false, follow: false },
 };
 
@@ -25,7 +25,7 @@ export default function AdminLayout({
               Administración
             </p>
             <p className="text-sm font-medium text-neutral-800">
-              Panel de gestión · Kinora
+              Panel de gestión · AIKinora
             </p>
           </div>
           <div className="flex items-center gap-4">
