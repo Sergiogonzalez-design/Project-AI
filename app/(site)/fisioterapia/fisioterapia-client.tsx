@@ -7,9 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type LinkedPhysio = {
-  physio_id: string;
+  physio_id?: string | null;
   physio_name: string | null;
-  clinic_name: string | null;
+  clinic_name?: string | null;
 };
 
 /** Avoid a loading flash every time the user switches Consulta ↔ Fisioterapia. */

@@ -3912,9 +3912,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   conversationMode
                     ? listening
                       ? "Te escucho… (3 s de silencio = turno de la IA)"
-                      : phase === "questionnaire"
-                        ? "Completa el cuestionario en pantalla…"
-                        : "Conversación activa — la IA está respondiendo…"
+                      : "Conversación activa — la IA está respondiendo…"
                     : inputPlaceholder
                 }
                 rows={1}
@@ -3958,11 +3956,9 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             {(conversationMode || sttError) && (
               <p className="mt-1.5 text-center text-xs text-slate-500">
                 {sttError ??
-                  (phase === "questionnaire"
-                    ? "Modo conversación en pausa: responde el cuestionario. Luego la IA hablará y seguiráis hablando."
-                    : listening
-                      ? "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
-                      : "La IA está respondiendo…")}
+                  (listening
+                    ? "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
+                    : "La IA está respondiendo…")}
               </p>
             )}
             <p className="mt-2 w-full text-center text-xs text-slate-400">
