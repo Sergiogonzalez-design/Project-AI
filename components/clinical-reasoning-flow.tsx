@@ -14,6 +14,7 @@ import {
   type ReasoningSession,
 } from "@/lib/clinical-reasoning";
 import { CLINICAL_TEST_IMAGES } from "@/lib/clinical-test-images";
+import { getClinicalTestVideoSrc } from "@/lib/clinical-test-videos";
 import { bodyPartLabel } from "@/lib/body-parts";
 import type {
   ClinicalConclusionNode,
@@ -41,6 +42,7 @@ function TestScreen({
   onAnswer: (result: "positive" | "negative") => void;
 }) {
   const image = CLINICAL_TEST_IMAGES.find((t) => t.id === node.testId);
+  const videoSrc = getClinicalTestVideoSrc(node.testId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,14 +75,30 @@ function TestScreen({
         </div>
       )}
 
-      <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-8 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Vídeo demostrativo
-        </p>
-        <p className="mt-1 text-sm text-neutral-600">
-          Espacio reservado — podrás añadir el vídeo de esta prueba más adelante.
-        </p>
-      </div>
+      {videoSrc ? (
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-black">
+          <video
+            key={videoSrc}
+            src={videoSrc}
+            controls
+            playsInline
+            preload="metadata"
+            className="aspect-square w-full bg-black object-contain"
+            aria-label={`Vídeo demostrativo: ${node.title}`}
+          >
+            Tu navegador no puede reproducir este vídeo.
+          </video>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-8 text-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Vídeo demostrativo
+          </p>
+          <p className="mt-1 text-sm text-neutral-600">
+            Espacio reservado — podrás añadir el vídeo de esta prueba más adelante.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <button

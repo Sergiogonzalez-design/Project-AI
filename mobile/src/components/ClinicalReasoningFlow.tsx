@@ -8,9 +8,11 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { ResizeMode, Video } from "expo-av";
 import { Colors } from "../lib/colors";
 import { bodyPartLabel } from "../lib/body-parts";
 import { CLINICAL_TEST_IMAGES } from "../lib/clinical-test-images";
+import { getClinicalTestVideoSrc } from "../lib/clinical-test-videos";
 import {
   advanceFromConclusion,
   applyAnswer,
@@ -41,6 +43,7 @@ function TestCard({
   onAnswer: (result: "positive" | "negative") => void;
 }) {
   const image = CLINICAL_TEST_IMAGES.find((t) => t.id === node.testId);
+  const videoSrc = getClinicalTestVideoSrc(node.testId);
 
   return (
     <View style={styles.cardInner}>
@@ -65,12 +68,26 @@ function TestCard({
         </View>
       )}
 
-      <View style={styles.videoPlaceholder}>
-        <Text style={styles.videoLabel}>Vídeo demostrativo</Text>
-        <Text style={styles.placeholderText}>
-          Espacio reservado — podrás añadir el vídeo más adelante.
-        </Text>
-      </View>
+      {videoSrc ? (
+        <View style={styles.videoWrap}>
+          <Video
+            key={videoSrc}
+            source={{ uri: videoSrc }}
+            style={styles.videoPlayer}
+            useNativeControls
+            resizeMode={ResizeMode.CONTAIN}
+            isLooping={false}
+            accessibilityLabel={`Vídeo demostrativo: ${node.title}`}
+          />
+        </View>
+      ) : (
+        <View style={styles.videoPlaceholder}>
+          <Text style={styles.videoLabel}>Vídeo demostrativo</Text>
+          <Text style={styles.placeholderText}>
+            Espacio reservado — podrás añadir el vídeo más adelante.
+          </Text>
+        </View>
+      )}
 
       <View style={styles.answerRow}>
         <Pressable
@@ -372,6 +389,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F9FAFB",
     gap: 4,
+  },
+  videoWrap: {
+    overflow: "hidden",
+    borderRadius: 12,
+    backgroundColor: "#000",
+  },
+  videoPlayer: {
+    width: "100%",
+    aspectRatio: 1,
+    backgroundColor: "#000",
   },
   videoLabel: {
     fontSize: 11,
