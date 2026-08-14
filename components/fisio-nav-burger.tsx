@@ -1,37 +1,71 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  isNavLinkActive,
+  PHYSIO_NAV_LINKS,
+  type AppNavLink,
+} from "@/lib/app-nav-links";
 
-const links = [
-  { href: "/fisio", label: "Pacientes" },
-  { href: "/fisio/consulta", label: "Consulta" },
-] as const;
-
-/** Compact ☰ menu for Pacientes / Consulta on the fisio header. */
+/** Slide-out ☰ menu: Paciente, Consulta, About, Profile (physio). */
 export function FisioNavBurger() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const menuId = useId();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     if (!open) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
+  const menu =
+    mounted && open
+      ? createPortal(
+          <div className="fixed inset-0 z-[100]" role="presentation">
+            <button
+              type="button"
+              className="absolute inset-0 top-14 bg-black/40"
+              aria-label="Cerrar menú"
+              onClick={() => setOpen(false)}
+            />
+            <aside
+              id={menuId}
+              className="absolute bottom-0 right-0 top-14 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
+              style={{ animation: "slideInRight 180ms ease-out" }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menú de navegación"
+            >
+              <NavLinks links={PHYSIO_NAV_LINKS} pathname={pathname} onNavigate={() => setOpen(false)} />
+            </aside>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
-    <div ref={rootRef} className="relative">
+    <>
       <button
         type="button"
         aria-label={open ? "Cerrar menú" : "Abrir menú"}
@@ -58,26 +92,39 @@ export function FisioNavBurger() {
           )}
         </svg>
       </button>
+      {menu}
+    </>
+  );
+}
 
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute right-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg"
-        >
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2.5 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      ) : null}
-    </div>
+function NavLinks({
+  links,
+  pathname,
+  onNavigate,
+}: {
+  links: AppNavLink[];
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 pt-4">
+      {links.map(({ href, label }) => {
+        const active = isNavLinkActive(pathname, href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            onClick={onNavigate}
+            className={`rounded-[14px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+              active
+                ? "bg-[#EFF6FF] text-slate-900 shadow-[inset_3px_0_0_#2563EB]"
+                : "text-slate-800 hover:bg-[#F1F5F9]"
+            }`}
+          >
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

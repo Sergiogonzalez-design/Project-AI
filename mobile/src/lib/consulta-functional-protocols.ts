@@ -291,13 +291,9 @@ export const HAMSTRING_PROTOCOL: FunctionalProtocol = {
     },
     {
       id: "pain_nprs",
-      kind: "scale",
-      scaleMin: 1,
-      scaleMax: 10,
-      scalePositiveFrom: 4,
       question: {
-        es: "¿Cuánto duele del 1 al 10?",
-        en: "How much does it hurt from 1 to 10?",
+        es: "¿El dolor es fuerte (más de 4 sobre 10)?",
+        en: "Is the pain strong (more than 4 out of 10)?",
       },
     },
     {
@@ -1513,7 +1509,7 @@ export function buildUniversalNonUrgentPathwayPrompt(bodyArea: string): string {
   const imagingEn = imagingAfterFailedRetest(bodyArea || "general", "en");
   return [
     "PROTOCOLO UNIVERSAL NO URGENTE (obligatorio en TODAS las zonas):",
-    "1) OBLIGATORIO: pide **Pruebas funcionales** (3–6 tests concretos en lenguaje cotidiano, SIN nombres clínicos). El paciente debe hacerlas y responderte los resultados para orientar mejor qué tiene.",
+    "1) OBLIGATORIO: pide **Pruebas funcionales** (3–6 preguntas SÍ/NO en lenguaje cotidiano, SIN nombres clínicos). El paciente las responde con botones Sí/No; no pidas texto libre ni escalas.",
     `2) Si los tests sugieren lesión/molestia relevante → reposo relativo ${UNIVERSAL_REST_HOURS.min}–${UNIVERSAL_REST_HOURS.max} h (frío/elevación si hay inflamación).`,
     `3) Retest: repetir los MISMOS tests tras ese plazo (aviso ~${UNIVERSAL_REST_HOURS.notify} h).`,
     "4) Si el retest no mejora o sigue doliendo → imagen adaptada a la zona (NO en la primera pasada, salvo urgencia).",

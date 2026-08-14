@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PhysioEquipmentSettings } from "@/components/physio-equipment-settings";
 import { buildPhysioInviteUrl } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 
@@ -263,20 +262,6 @@ export default function FisioPatientsPage() {
           solo cambia el código para nuevos pacientes.
         </p>
       </section>
-
-      <section className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-        <h2 className="text-base font-semibold text-neutral-900">
-          Consulta clínica con Physio
-        </h2>
-        <Link
-          href="/fisio/consulta"
-          className="mt-3 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          Abrir consulta
-        </Link>
-      </section>
-
-      <PhysioEquipmentSettings />
 
       <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between gap-3">

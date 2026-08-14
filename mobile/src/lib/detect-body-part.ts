@@ -32,8 +32,8 @@ const COMPLAINT_PART_ALIASES: Partial<Record<BodyPartId, string[]>> = {
   wrist_hand: ["mu[ñn]eca", "\\bmano\\b", "\\bmanos\\b", "\\bwrist\\b", "\\bhand\\b"],
   finger: ["dedos?", "finger", "pulgar"],
   head: ["cabeza", "cefalea", "migra[nñ]a", "headache", "\\bhead\\b"],
-  hip: ["cadera", "\\bhip\\b", "ingle", "gl[uú]teo"],
-  knee: ["rodilla", "\\bknee\\b", "menisco", "muslo", "cuadr[ií]ceps", "isquio"],
+  hip: ["cadera", "\\bhip\\b", "ingle", "gl[uú]teo", "muslo\\s*interno"],
+  knee: ["rodilla", "\\bknee\\b", "menisco", "r[oó]tula"],
   ankle_foot: [
     "piernas?",
     "\\blegs?\\b",
@@ -48,6 +48,11 @@ const COMPLAINT_PART_ALIASES: Partial<Record<BodyPartId, string[]>> = {
     "\\bcalf\\b",
     "aquiles",
     "tal[oó]n",
+    "muslo",
+    "thigh",
+    "isquio",
+    "hamstring",
+    "cuadr[ií]ceps",
   ],
 };
 
@@ -204,13 +209,79 @@ export function isFootOrPlantarComplaint(text: string): boolean {
   return false;
 }
 
-export type AnkleFootFocus = "foot" | "ankle" | "lower_leg" | "leg" | "mixed";
+export type AnkleFootFocus = "foot" | "ankle" | "lower_leg" | "leg" | "thigh" | "mixed";
+
+/** Inner thigh / adductors — hip questionnaire, not knee or generic muslo. */
+export function isInnerThighOrAdductorComplaint(text: string): boolean {
+  return /muslo\s*interno|inner\s*thigh|\baductores?\b|\badductors?\b/i.test(text);
+}
+
+/**
+ * Thigh / hamstring / quadriceps named as the painful site.
+ * Must NOT be treated as the knee joint ("rodilla").
+ * "muslo interno" alone is hip/adductor, not this.
+ */
+export function isThighOrHamstringComplaint(text: string): boolean {
+  const t = text.trim();
+  if (
+    isInnerThighOrAdductorComplaint(t) &&
+    !/isquiotibial|\bisquios?\b|hamstring|cuadr[ií]ceps|muslo\s*(anterior|posterior)|parte\s+de\s+atr[aá]s/i.test(
+      t
+    )
+  ) {
+    const withoutInner = t.replace(/muslo\s*interno|inner\s*thigh/gi, " ");
+    if (!/\bmuslos?\b|\bthighs?\b/i.test(withoutInner)) return false;
+  }
+  return /isquiotibial|\bisquios?\b|hamstring|\bmuslos?\b|\bthighs?\b|cuadr[ií]ceps|cu[aá]driceps|\bquads?\b|\bquadriceps\b|recto\s*femoral/i.test(
+    t
+  );
+}
+
+function thighHasLowerLegOrFoot(text: string): boolean {
+  return /espinilla|\bshin\b|pantorrilla|gemelo|\bcalf\b|tobillo|ankle|aquiles|achilles|fascitis|plantar|tal[oó]n|heel|tuberosidad/i.test(
+    text
+  );
+}
+
+/** Patient-facing name when the complaint is muslo / isquio / cuádriceps. */
+export function thighFacingLabel(
+  text: string,
+  locale: "es" | "en" = "es"
+): string {
+  const ham = /isquiotibial|\bisquios?\b|hamstring/i.test(text);
+  const quad = /cuadr[ií]ceps|cu[aá]driceps|\bquads?\b|\bquadriceps\b/i.test(text);
+  const muslo = /\bmuslos?\b|\bthighs?\b/i.test(text);
+  if (locale === "en") {
+    if (ham && muslo) return "Hamstring and thigh";
+    if (ham && quad) return "Hamstring and quadriceps";
+    if (ham) return "Hamstrings";
+    if (quad) return "Quadriceps / thigh";
+    return "Thigh";
+  }
+  if (ham && muslo) return "Isquio y muslo";
+  if (ham && quad) return "Isquio y cuádriceps";
+  if (ham) return "Isquiotibiales";
+  if (quad) return "Cuádriceps / muslo";
+  return "Muslo";
+}
+
+function thighIntroZone(text: string, locale: "es" | "en"): string {
+  const label = thighFacingLabel(text, locale);
+  if (locale === "en") return `your ${label.toLowerCase()}`;
+  if (label === "Isquio y muslo") return "tu isquio y tu muslo";
+  if (label === "Isquio y cuádriceps") return "tu isquio y tu cuádriceps";
+  if (label === "Isquiotibiales") return "tus isquiotibiales";
+  if (label === "Cuádriceps / muslo") return "tu cuádriceps / muslo";
+  return "tu muslo";
+}
 
 /** Sub-region inside ankle_foot so the questionnaire matches what the patient said. */
 export function resolveAnkleFootFocus(text: string): AnkleFootFocus {
   const t = text.trim();
   // Vague "pierna" → whole-leg location question (do NOT assume below knee)
   if (isVagueLegComplaint(t)) return "leg";
+  // Named muslo / isquio / cuádriceps — not the knee, not "pierna baja"
+  if (isThighOrHamstringComplaint(t) && !thighHasLowerLegOrFoot(t)) return "thigh";
 
   const foot = isFootOrPlantarComplaint(t);
   const ankle =
@@ -231,10 +302,36 @@ export function resolveAnkleFootFocus(text: string): AnkleFootFocus {
   return "mixed";
 }
 
-/** True knee-joint complaint (not "below the knee" landmark phrasing). */
+/** "Rodilla" used only as a landmark (near/below the knee), not as the painful joint. */
+export function isKneeUsedOnlyAsLandmark(text: string): boolean {
+  const t = text.trim();
+  if (!/\brodilla\b|\bknee\b/i.test(t)) return false;
+  if (hasKneeAsPainSite(t)) return false;
+  return /(?:debajo|bajo|cerca|al\s+lado|alrededor|por\s+debajo|por\s+encima|justo\s+debajo)\s+(de\s+)?(la\s+)?rodilla|below\s+(the\s+)?knee|near\s+(the\s+)?knee|under\s+(the\s+)?knee|around\s+(the\s+)?knee/i.test(
+    t
+  );
+}
+
+/** Pain/injury language attached to the knee joint itself. */
+export function hasKneeAsPainSite(text: string): boolean {
+  return /(?:duele|dolor|molestia|hinchaz|inflam|lesi[oó]n|pinchazo|tir[oó]n).{0,28}rodilla|rodilla.{0,28}(?:duele|dolor|molest|hinchaz)|menisco|ligamento\s*cruzado|r[oó]tula|patella|(?:hurt|pain|sore|swell).{0,24}knee|knee.{0,24}(?:hurt|pain|sore|swell)/i.test(
+    text
+  );
+}
+
+export function hasExplicitAnkleOrFootSite(text: string): boolean {
+  return /\b(tobillos?|ankles?|pies?|feet|foot)\b/i.test(text) ||
+    /esguince\s+(de\s+)?tobillo|fascitis|planta(\s+del\s+pie)?|tal[oó]n|aquiles|achilles/i.test(
+      text
+    );
+}
+
+/** True knee-joint complaint (not "below/near the knee" landmark phrasing). */
 export function isTrueKneeComplaint(text: string): boolean {
-  if (isBelowKneeOrLowerLeg(text)) return false;
-  return /rodilla|knee|menisco|cruzado|r[oó]tula|patella|ligamento\s*colateral|cuadr[ií]ceps|cu[aá]driceps|quad(?:riceps)?|muslo|isquiotibial|isquio|hamstring/i.test(
+  if (isBelowKneeOrLowerLeg(text) || isKneeUsedOnlyAsLandmark(text)) return false;
+  if (hasExplicitAnkleOrFootSite(text) && !hasKneeAsPainSite(text)) return false;
+  if (isThighOrHamstringComplaint(text) && !hasKneeAsPainSite(text)) return false;
+  return /rodilla|knee|menisco|cruzado|r[oó]tula|patella|ligamento\s*colateral/i.test(
     text
   );
 }
@@ -274,10 +371,9 @@ const KEYWORDS: Record<BodyPartId, RegExp[]> = {
     /flexionar el codo/i,
     /estirar el codo/i,
   ],
-  wrist_hand: [/mu[ñn]eca/i, /mano/i, /wrist/i, /hand/i],
+  wrist_hand: [/\bmu[ñn]ecas?\b/i, /\bmanos?\b/i, /\bwrists?\b/i, /\bhands?\b/i],
   finger: [
-    /dedo/i,
-    /dedos/i,
+    /\bdedos?\b/i,
     /finger/i,
     /pulgar/i,
     /índice/i,
@@ -302,9 +398,24 @@ const KEYWORDS: Record<BodyPartId, RegExp[]> = {
     /head\s+pain/i,
   ],
   neck: [/cuello/i, /neck/i, /cervical/i],
-  back: [/espalda/i, /lumbar/i, /dorsal/i, /back/i],
-  hip: [/cadera/i, /hip/i, /ingle/i, /aductor/i, /adductor/i, /pubalgia/i],
-  knee: [/rodilla/i, /knee/i, /menisco/i, /ligamento cruzado/i, /cuadr[ií]ceps/i, /cu[aá]driceps/i, /quad(?:riceps)?/i, /muslo/i, /isquiotibial/i, /isquio/i, /hamstring/i],
+  back: [/espalda/i, /lumbar/i, /dorsal/i, /\bbacks?\b/i],
+  hip: [
+    /cadera/i,
+    /\bhips?\b/i,
+    /ingle/i,
+    /aductor/i,
+    /adductor/i,
+    /pubalgia/i,
+    /muslo\s*interno/i,
+  ],
+  knee: [
+    /\brodillas?\b/i,
+    /\bknees?\b/i,
+    /menisco/i,
+    /ligamento cruzado/i,
+    /r[oó]tula/i,
+    /patella/i,
+  ],
   ankle_foot: [
     /tobillo/i,
     /pie\b/i,
@@ -325,6 +436,15 @@ const KEYWORDS: Record<BodyPartId, RegExp[]> = {
     /pierna/i,
     /lower\s*leg/i,
     /tuberosidad\s*tibial/i,
+    /\bmuslos?\b/i,
+    /\bthighs?\b/i,
+    /isquiotibial/i,
+    /\bisquios?\b/i,
+    /hamstring/i,
+    /cuadr[ií]ceps/i,
+    /cu[aá]driceps/i,
+    /\bquads?\b/i,
+    /\bquadriceps\b/i,
   ],
 };
 
@@ -342,8 +462,22 @@ export function isTrueHeadComplaint(text: string): boolean {
   return /\bla\s+cabeza\b|\bcabeza\b/i.test(withoutOverhead);
 }
 
+function dropConflictingZones(text: string, parts: BodyPartId[]): BodyPartId[] {
+  let out = parts.filter((id, i) => parts.indexOf(id) === i);
+  if (hasExplicitAnkleOrFootSite(text) && !isTrueKneeComplaint(text)) {
+    out = out.filter((id) => id !== "knee");
+    if (!out.includes("ankle_foot")) out = ["ankle_foot", ...out];
+  }
+  if (isThighOrHamstringComplaint(text) && !isTrueKneeComplaint(text)) {
+    out = out.filter((id) => id !== "knee");
+    if (!out.includes("ankle_foot")) out = ["ankle_foot", ...out];
+  }
+  return out;
+}
+
 /** Body parts mentioned as injury sites in free text (may be empty), ordered by first mention.
  * Workout context ("entreno de pierna") is ignored; "molestia en la espalda" wins.
+ * Keyword leftovers ("semana" ≠ muñeca, "alrededor" ≠ dedo) must not invent extra zones.
  */
 export function detectBodyPartsFromText(text: string): BodyPartId[] {
   const linked = detectComplaintLinkedBodyParts(text);
@@ -355,19 +489,36 @@ export function detectBodyPartsFromText(text: string): BodyPartId[] {
     isFootOrPlantarComplaint(scanText) ||
     isBelowKneeOrLowerLeg(scanText)
   ) {
-    const also: BodyPartId[] = [];
-    for (const [id, patterns] of Object.entries(KEYWORDS) as [BodyPartId, RegExp[]][]) {
-      if (id === "ankle_foot" || id === "knee") continue;
-      if (id === "head" && !isTrueHeadComplaint(scanText)) continue;
-      if (patterns.some((p) => p.test(scanText))) also.push(id);
-    }
-    // Complaint-linked other zones (e.g. espalda) beat a vague leftover "pierna"
+    // Other complaint-linked zones (e.g. espalda) beat a vague leftover "pierna"
     if (linked.length > 0 && !linked.includes("ankle_foot") && !linked.includes("knee")) {
-      return sortPartsByFirstMention(text, linked);
+      return dropConflictingZones(text, sortPartsByFirstMention(text, linked));
     }
-    if (also.length === 0) return ["ankle_foot"];
-    const all = ["ankle_foot" as BodyPartId, ...also];
-    return sortPartsByFirstMention(text, all);
+    const linkedOthers = linked.filter((id) => id !== "ankle_foot" && id !== "knee");
+    if (linked.length > 0 && (linked.includes("ankle_foot") || linked.includes("knee"))) {
+      const sites = linked.filter((id) => id !== "knee" || isTrueKneeComplaint(text));
+      const withAnkle = sites.includes("ankle_foot") ? sites : ["ankle_foot" as BodyPartId, ...sites];
+      return dropConflictingZones(text, sortPartsByFirstMention(text, withAnkle));
+    }
+    if (linkedOthers.length === 0) return ["ankle_foot"];
+    return dropConflictingZones(
+      text,
+      sortPartsByFirstMention(text, ["ankle_foot" as BodyPartId, ...linkedOthers])
+    );
+  }
+
+  // Muslo / isquio / cuádriceps → thigh questionnaire, never "rodilla".
+  // "pierna izquierda/derecha" is laterality, not a second zone.
+  if (
+    isThighOrHamstringComplaint(text) &&
+    !hasKneeAsPainSite(text) &&
+    !isBelowKneeOrLowerLeg(scanText) &&
+    !isFootOrPlantarComplaint(scanText)
+  ) {
+    const others = linked.filter((id) => id !== "knee" && id !== "ankle_foot");
+    return dropConflictingZones(
+      text,
+      sortPartsByFirstMention(text, ["ankle_foot" as BodyPartId, ...others])
+    );
   }
 
   const found: BodyPartId[] = [];
@@ -378,19 +529,19 @@ export function detectBodyPartsFromText(text: string): BodyPartId[] {
   if (found.includes("knee") && found.includes("ankle_foot") && !isTrueKneeComplaint(scanText)) {
     const withoutKnee = found.filter((id) => id !== "knee");
     if (linked.length > 0) {
-      return sortPartsByFirstMention(
-        text,
-        [...linked, ...withoutKnee.filter((p) => !linked.includes(p))]
-      );
+      return dropConflictingZones(text, sortPartsByFirstMention(text, linked));
     }
-    return sortPartsByFirstMention(text, withoutKnee);
+    return dropConflictingZones(text, sortPartsByFirstMention(text, withoutKnee));
   }
 
   if (linked.length > 0) {
     const extras = found.filter((p) => !linked.includes(p));
-    return sortPartsByFirstMention(text, [...linked, ...extras]);
+    return dropConflictingZones(
+      text,
+      sortPartsByFirstMention(text, [...linked, ...extras])
+    );
   }
-  return sortPartsByFirstMention(text, found);
+  return dropConflictingZones(text, sortPartsByFirstMention(text, found));
 }
 
 function sortPartsByFirstMention(text: string, parts: BodyPartId[]): BodyPartId[] {
@@ -444,6 +595,9 @@ export function questionnaireForText(text: string): {
     return { part: "hip", detected: ["hip"] };
   }
   if (isFootOrPlantarComplaint(text) || isBelowKneeOrLowerLeg(text)) {
+    return { part: "ankle_foot", detected: ["ankle_foot"] };
+  }
+  if (isThighOrHamstringComplaint(text) && !isTrueKneeComplaint(text)) {
     return { part: "ankle_foot", detected: ["ankle_foot"] };
   }
   if (isTrueKneeComplaint(text)) {
@@ -538,6 +692,9 @@ export function patientFacingPartLabel(
   }
   if (part === "ankle_foot") {
     const focus = resolveAnkleFootFocus(text);
+    if (focus === "thigh" || isThighOrHamstringComplaint(text)) {
+      return thighFacingLabel(text, locale);
+    }
     if (locale === "en") {
       if (focus === "foot") return "Foot";
       if (focus === "ankle") return "Ankle";
@@ -603,8 +760,12 @@ export function questionnaireIntroMessage(
     !/\bcadera\b|\bhip\b/i.test(text);
 
   const ankleFootFocus = part === "ankle_foot" ? resolveAnkleFootFocus(text) : null;
-  const ankleFootZoneEs =
-    ankleFootFocus === "foot"
+  const useThighZone =
+    ankleFootFocus === "thigh" ||
+    (part === "ankle_foot" && isThighOrHamstringComplaint(text));
+  const ankleFootZoneEs = useThighZone
+    ? thighIntroZone(text, "es")
+    : ankleFootFocus === "foot"
       ? "tu pie"
       : ankleFootFocus === "ankle"
         ? "tu tobillo"
@@ -613,8 +774,9 @@ export function questionnaireIntroMessage(
           : ankleFootFocus === "leg"
             ? "tu pierna"
             : "tu tobillo / pie / pierna baja";
-  const ankleFootZoneEn =
-    ankleFootFocus === "foot"
+  const ankleFootZoneEn = useThighZone
+    ? thighIntroZone(text, "en")
+    : ankleFootFocus === "foot"
       ? "your foot"
       : ankleFootFocus === "ankle"
         ? "your ankle"

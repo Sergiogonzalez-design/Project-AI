@@ -1,56 +1,34 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
-const SOURCES_HEADING =
-  /\*\*(Fuentes consultadas|Sources consulted)\*\*|^Fuentes consultadas$|^Sources consulted$/i;
-
-function parseSourcesBlock(content: string): {
-  body: string;
-  sources: string[];
-  heading: string;
-} {
-  const lines = content.split("\n");
-  let headingIndex = -1;
-  let heading = "Fuentes consultadas";
-
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim().replace(/\*/g, "");
-    if (/^Fuentes consultadas$/i.test(trimmed) || /^Sources consulted$/i.test(trimmed)) {
-      headingIndex = i;
-      heading = /sources consulted/i.test(trimmed)
-        ? "Sources consulted"
-        : "Fuentes consultadas";
-      break;
-    }
-  }
-
-  if (headingIndex === -1) {
-    return { body: content, sources: [], heading };
-  }
-
-  const body = lines.slice(0, headingIndex).join("\n").trimEnd();
-  const sources: string[] = [];
-  for (let i = headingIndex + 1; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-    if (!trimmed) continue;
-    if (/^Fuente:/i.test(trimmed) || /^- Fuente:/i.test(trimmed)) continue;
-    const bullet = trimmed.replace(/^[-•*]\s+/, "").trim();
-    if (bullet) sources.push(bullet);
-  }
-
-  return { body, sources, heading };
-}
+import { extractCitedSources, type CitedSource } from "@/lib/source-links";
 
 type Props = {
   content: string;
   renderBody: (body: string) => React.ReactNode;
 };
 
+function SourceItem({ source }: { source: CitedSource }) {
+  if (!source.href) {
+    return <span className="block text-xs text-slate-600">{source.title}</span>;
+  }
+
+  return (
+    <a
+      href={source.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block text-xs text-blue-600 underline-offset-2 hover:underline"
+    >
+      {source.title}
+    </a>
+  );
+}
+
 /** Renders assistant text with a collapsible sources button instead of an inline list. */
 export function AssistantMessageWithSources({ content, renderBody }: Props) {
   const { body, sources, heading } = useMemo(
-    () => parseSourcesBlock(content),
+    () => extractCitedSources(content),
     [content]
   );
   const [open, setOpen] = useState(false);
@@ -82,15 +60,10 @@ export function AssistantMessageWithSources({ content, renderBody }: Props) {
             </svg>
           </button>
           {open ? (
-            <ul className="mt-2 space-y-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <ul className="mt-2 space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
               {sources.map((source) => (
-                <li key={source}>
-                  <a
-                    href="/conocimientos"
-                    className="block text-xs text-blue-600 underline-offset-2 hover:underline"
-                  >
-                    {source}
-                  </a>
+                <li key={source.title}>
+                  <SourceItem source={source} />
                 </li>
               ))}
             </ul>
@@ -99,19 +72,4 @@ export function AssistantMessageWithSources({ content, renderBody }: Props) {
       ) : null}
     </>
   );
-}
-
-export function stripInlineFuenteLines(content: string): string {
-  return content
-    .split("\n")
-    .filter((line) => {
-      const t = line.trim();
-      return !(
-        SOURCES_HEADING.test(t) ||
-        /^Fuente:/i.test(t) ||
-        /^- Fuente:/i.test(t) ||
-        (/^Source:/i.test(t) || /^- Source:/i.test(t))
-      );
-    })
-    .join("\n");
 }

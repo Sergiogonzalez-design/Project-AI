@@ -113,7 +113,7 @@ export const FUNCTIONAL_TEST_QUESTIONS: Record<FunctionalRegionId, string[]> = {
     "¿Estabas haciendo peso muerto con mucho peso?",
     "¿Duele al flexionar la rodilla?",
     "¿Duele al tocar la punta de los pies con la rodilla estirada?",
-    "¿Cuánto duele del 1 al 10?",
+    "¿El dolor es fuerte (más de 4 sobre 10)?",
     "¿Duele al hacer curl nórdico?",
   ],
   /** Prefer structured CALF_PROTOCOL / ACHILLES_PROTOCOL (all SÍ/NO). */
@@ -188,9 +188,10 @@ export const FUNCTIONAL_TEST_QUESTIONS: Record<FunctionalRegionId, string[]> = {
     "¿Notas chasquido o dolor en el espacio entre los dedos al comprimir el antepié?",
   ],
   generic: [
-    "En una escala 0–10, ¿qué te limita más ahora: dolor en reposo, dolor al mover, o debilidad/inestabilidad?",
-    "¿Qué dos movimientos de la vida diaria empeoran más la molestia?",
-    "Comparando con el lado sano, ¿qué porcentaje de función sientes (0–100%)?",
+    "¿Duele al mover la zona afectada? (SÍ/NO)",
+    "¿Duele en reposo? (SÍ/NO)",
+    "¿Sientes debilidad o inestabilidad al apoyar o cargar esa zona? (SÍ/NO)",
+    "¿El dolor te impide hacer tus actividades habituales? (SÍ/NO)",
   ],
 };
 
@@ -238,8 +239,8 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
     protocolBlock,
     `Banco de tests de valoración funcional para la zona "${bodyArea || region}" (región: ${region}).`,
     "Sigue siempre el PROTOCOLO UNIVERSAL: tests → reposo 24–36 h → retest → imagen adaptada si no mejora.",
-    "CRÍTICO — DIFERENCIACIÓN KINORA: en la PRIMERA valoración no urgente DEBES incluir la sección **Pruebas funcionales** con 3–6 pruebas concretas de ESTE banco/protocolo. Pide explícitamente: «Haz estas pruebas y responde aquí qué pasa en cada una». Sin esa sección la respuesta está incompleta.",
-    "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como instrucción cotidiana de movimiento (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco trae jerga, tradúcela.",
+    "CRÍTICO — DIFERENCIACIÓN KINORA: en la PRIMERA valoración no urgente DEBES incluir la sección **Pruebas funcionales** con 3–6 pruebas concretas de ESTE banco/protocolo, cada una como pregunta SÍ/NO. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NO pidas texto libre, escalas 1–10 ni comparar lados. Sin esa sección la respuesta está incompleta.",
+    "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como pregunta cotidiana de SÍ/NO (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco trae jerga o una escala, tradúcela a SÍ/NO.",
     "PRIORIDAD: protocolo estructurado de la zona (si existe) > RAG Functional Assessment / Special Tests / Assessment Dossier > banco local:",
     ...questions.map((q, i) => `${i + 1}. ${q}`),
     "Si los documentos recuperados aportan tests más específicos, priorízalos y cita su fuente (salvo banco fijo del protocolo).",

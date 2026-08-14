@@ -5,8 +5,44 @@ import {
   AI_DATA_FIDELITY_RULES,
   AI_EVIDENCE_AND_SEVERITY_RULES,
   AI_FOLLOW_UP_EVIDENCE_RULES,
+  AI_EVIDENCE_DB_RULES,
+  AI_HIP_GROIN_DOHA_RULES,
+  AI_HIP_LATERAL_PAIN_RULES,
+  AI_HIP_MASTER_INTEGRATION_RULES,
+  AI_HIP_POSTERIOR_PAIN_RULES,
+  AI_HIP_TRAUMATIC_RULES,
+  AI_KNEE_ANTERIOR_PAIN_RULES,
+  AI_KNEE_INSTABILITY_ACL_RULES,
+  AI_KNEE_LATERAL_PAIN_RULES,
+  AI_KNEE_MASTER_INTEGRATION_RULES,
+  AI_KNEE_MEDIAL_PAIN_RULES,
+  AI_SHOULDER_ANTERIOR_PAIN_RULES,
+  AI_SHOULDER_INSTABILITY_TRAUMA_RULES,
+  AI_SHOULDER_LATERAL_RCRSP_RULES,
+  AI_SHOULDER_MASTER_INTEGRATION_RULES,
+  AI_SHOULDER_SUPERIOR_AC_RULES,
+  AI_ANKLE_ACHILLES_RULES,
+  AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES,
+  AI_ANKLE_LATERAL_SPRAIN_RULES,
+  AI_ANKLE_TRAUMA_OTTAWA_RULES,
+  AI_FOOT_PLANTAR_HEEL_RULES,
+  AI_ELBOW_EPICONDYLALGIA_RULES,
+  AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES,
+  AI_ELBOW_WRIST_NEURAL_RULES,
+  AI_WRIST_DEQUERVAIN_RULES,
+  AI_WRIST_TRAUMA_SCAPHOID_RULES,
+  AI_CERVICAL_NECK_PAIN_RULES,
+  AI_CERVICAL_TRAUMA_REDFLAGS_RULES,
+  AI_LUMBAR_BACK_PAIN_RULES,
+  AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES,
+  AI_FINGER_DIGITAL_PAIN_RULES,
+  AI_HEAD_HEADACHE_MASTER_RULES,
+  AI_SPINE_MASTER_INTEGRATION_RULES,
+  AI_GLOBAL_CROSS_REGION_RULES,
   AI_ILLUSTRATED_CLINICAL_TESTS_RULES,
   AI_IMAGE_CONTEXT_RULES,
+  AI_PATIENT_RESPONSE_EMOJI_RULES,
+  AI_PHYSIO_RESPONSE_EMOJI_RULES,
   appendSourcesFooter,
   buildFunctionalQuestionsPromptBlock,
   buildPhysioEquipmentContext,
@@ -200,11 +236,11 @@ function withPatientConsultContext(
   body: RequestBody,
   language: "es" | "en"
 ): string {
-  return withConsultaGeneralRules(
+  return `${withConsultaGeneralRules(
     withFisioterapiaFlow(prompt, body, language),
     body,
     language
-  );
+  )}\n\n${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
 }
 
 function buildAthleteContext(profile: Record<string, unknown> | null): string {
@@ -257,22 +293,42 @@ async function embedAndMatch(
   return (chunks ?? []) as RagChunk[];
 }
 
+async function embedAndMatchPhysioguide(
+  supabase: ReturnType<typeof createClient>,
+  queryText: string,
+  matchCount: number
+): Promise<RagChunk[]> {
+  if (queryText.trim().length <= 10) return [];
+  const embeddingRes = await openai.embeddings.create({
+    model: "text-embedding-3-small",
+    input: queryText.slice(0, 8000),
+  });
+  const { data: chunks } = await supabase.rpc("match_document_chunks_prefixed", {
+    query_embedding: embeddingRes.data[0].embedding,
+    name_prefix: "Physioguide —",
+    match_count: matchCount,
+    match_threshold: 0.25,
+  });
+  return (chunks ?? []) as RagChunk[];
+}
+
 async function fetchRagContext(
   supabase: ReturnType<typeof createClient>,
   queryText: string,
   bodyArea = ""
 ): Promise<{ context: string; sources: string[] }> {
-  const primary = await embedAndMatch(supabase, queryText, 6);
+  const primary = await embedAndMatch(supabase, queryText, 8);
+  const physioguide = await embedAndMatchPhysioguide(supabase, queryText, 8);
   const functionalQuery = [
     bodyArea,
-    "Functional Assessment Special Tests Clinical Tests valoración funcional movement tests",
+    "Physioguide Functional Assessment Special Tests Clinical Tests valoración funcional",
   ]
     .filter(Boolean)
     .join(" ");
   const functional = await embedAndMatch(supabase, functionalQuery, 4);
 
   const byId = new Map<string, RagChunk>();
-  for (const c of [...primary, ...functional]) {
+  for (const c of [...physioguide, ...primary, ...functional]) {
     const key = `${c.source_name ?? ""}::${(c.content ?? "").slice(0, 80)}`;
     if (!byId.has(key)) byId.set(key, c);
   }
@@ -296,10 +352,13 @@ REGLAS DE CLASIFICACIÓN:
    - Incluye mensajes de seguimiento como "también me duele el codo" o "ahora me molesta el cuello".
    - bodyPart debe ser la zona principal de ESTE mensaje (shoulder, elbow, wrist_hand, finger, neck, back, hip, knee, ankle_foot).
    - Usa "finger" cuando el problema es específico de uno o varios dedos; "wrist_hand" para muñeca/mano en general; "neck" para cuello/cervical; "back" para espalda/lumbar/dorsal.
-   - CRÍTICO — NO confundas rodilla con pierna bajo la rodilla:
+   - CRÍTICO — NO confundas rodilla con tobillo / pie / pierna bajo la rodilla:
+     * "me duele el tobillo" / "ankle" / "me he torcido el tobillo" → bodyPart = "ankle_foot". NUNCA "knee".
      * "me duele la pierna, justo debajo de la rodilla" / "debajo de la rodilla" / "below the knee" / "espinilla" / "shin" / "pantorrilla" / "gemelo" / "pierna" (sin decir que duele la articulación de la rodilla) → bodyPart = "ankle_foot" (pierna baja / tibia / tobillo-pie). NUNCA "knee".
      * "me duele la rodilla" / "menisco" / "ligamento cruzado" / "rótula" → bodyPart = "knee".
-     * Si menciona "rodilla" solo como referencia de ubicación ("debajo de la rodilla"), NO es knee.
+     * Si menciona "rodilla" solo como referencia de ubicación ("debajo de la rodilla", "cerca del tobillo y la rodilla"), NO es knee si el dolor es del tobillo/pie.
+     * "esta semana" / "hace una semana" / "around" / "alrededor" es TIEMPO o una preposición, NO una zona (no es muñeca ni dedo).
+     * Si el paciente nombra UNA sola zona de dolor, bodyPart es ESA zona. No inventes una segunda zona.
    - CRÍTICO — pie / planta NO es "pierna":
      * "me duele la planta del pie" / "fascitis" / "talón" / "me duele el pie" → bodyPart = "ankle_foot" (el cuestionario se adapta al PIE). No trates el relato como dolor de pantorrilla/espinilla.
    - CRÍTICO — "brazo" / "arm" es DEMASIADO VAGO (igual que "pierna"):
@@ -370,7 +429,9 @@ Responde en español:
 - Empático, claro y práctico
 - NO emitas diagnóstico definitivo
 - Si no hay una lesión personal descrita, no inventes síntomas ni mecanismos
-- Si la pregunta era educativa, NO invites a rellenar un cuestionario de lesión`;
+- Si la pregunta era educativa, NO invites a rellenar un cuestionario de lesión
+
+${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
 
 const MULTI_PART_SUMMARY_PROMPT = `Eres Physio, asistente de Kinora. El paciente ha completado cuestionarios de VARIAS zonas corporales y ya recibió la orientación de cada una por separado.
 
@@ -402,7 +463,9 @@ REGLAS:
 - Habla como **Physio** (nunca digas «la IA»).
 - Lenguaje sencillo para el paciente; no es diagnóstico médico.
 - Sé conciso: orientativo 350-700 palabras en total.
-- Destaca en negrita nombres de lesiones/cuadros y destinos clave (**fisioterapeuta**, **urgencias**, etc.).`;
+- Destaca en negrita nombres de lesiones/cuadros y destinos clave (**fisioterapeuta**, **urgencias**, etc.).
+
+${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
 
 const REMINDERS_SYSTEM_PROMPT = `Eres Physio de Kinora. Generas recordatorios locales inteligentes para un paciente con una molestia musculoesquelética.
 
@@ -421,7 +484,8 @@ Reglas:
 - Tono empático, claro, accionable; sin diagnóstico ni alarmismo.
 - Incluye movilidad suave, gestión de carga, chequeo de síntomas y seguimiento.
 - Si language=en responde en inglés; si language=es en español.
-- No inventes diagnósticos concretos; habla de molestia/zona.`;
+- No inventes diagnósticos concretos; habla de molestia/zona.
+- Puedes usar 1 emoji estilo Apple al inicio de cada title (opcional); máx. 1 en body si aporta claridad.`;
 
 const CLINICAL_SCREEN_PROMPT = `Eres un asistente de fisioterapia y medicina deportiva para Kinora. Orientas al usuario en español con claridad, empatía y detalle moderado (aprox. 450-800 palabras).
 
@@ -440,7 +504,7 @@ IMPORTANTE: NO emites diagnósticos definitivos. Usas las variables clínicas pa
 
 En el resumen (2-4 frases): zona, mecanismo, evolución, intensidad, limitación. Si hay banderas rojas o PRIORIDAD ALTA, destácalo al inicio.
 
-CRÍTICO — DIFERENCIACIÓN KINORA: si el caso NO es urgente, la respuesta está incompleta sin la sección **Pruebas funcionales**. Incluye 3–6 pruebas concretas SOLO de la zona lesionada/afectada (del banco/protocolo de ESA zona) y pide: «Haz estas pruebas y responde aquí qué pasa en cada una». NO añadas pruebas de otras regiones aunque estén “conectadas” (p. ej. tobillo → no Windlass/SLR/rodilla). Escribe cada prueba como instrucción cotidiana de movimiento (p. ej. elevar el brazo por encima de la cabeza y ver si duele). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, etc.).
+CRÍTICO — DIFERENCIACIÓN KINORA: si el caso NO es urgente, la respuesta está incompleta sin la sección **Pruebas funcionales**. Incluye 3–6 pruebas concretas SOLO de la zona lesionada/afectada (del banco/protocolo de ESA zona), cada una como pregunta SÍ/NO. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NO pidas texto libre, escalas 1–10 ni comparar lados. NO añadas pruebas de otras regiones aunque estén “conectadas” (p. ej. tobillo → no Windlass/SLR/rodilla). Escribe cada prueba como pregunta cotidiana de movimiento (p. ej. ¿duele al elevar el brazo por encima de la cabeza?). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, etc.).
 
 ${AI_EVIDENCE_AND_SEVERITY_RULES}
 
@@ -457,7 +521,7 @@ REGLAS ESTRICTAS PARA ESTE MENSAJE:
 - Si el bloque "Contexto de la conversación" indica ELECCIÓN ENTRE ZONAS / BETWEEN-ZONES: respóndelo al pie de la letra. NO digas que ya empezaste un cuestionario nuevo. NO ignores la pregunta del paciente. Ayúdale a elegir entre pruebas funcionales ahora o el siguiente cuestionario.
 - Si el bloque indica RESULTADOS DE PRUEBAS FUNCIONALES / FUNCTIONAL TEST RESULTS: el paciente está respondiendo a las pruebas que YA pediste. LEE sus respuestas, INTERPRÉTALAS y da una conclusión más clara. NO abras ni inventes un cuestionario nuevo.
 - Si el paciente responde a tests funcionales (p. ej. "pude hacer los 3, pero me duele otra cosa / duele en otro sitio"): INTERPRETA eso primero. Baja hipótesis locales no reproducidas; abre alternativas (otra estructura local o causa a distancia, p. ej. cuello → codo). Haz 1–3 preguntas concretas de aclaración; no vuelvas a pedir "haz otra vez todos los tests" ni un informe completo.
-- Integra TODA la historia (mecanismo, neurológicos, agravantes, antecedentes) con las pruebas: las pruebas confirman/descartan, no borran hallazgos previos. Si hay neurológicos claros, no priorices solo musculotendinoso.
+- Integra TODA la historia (mecanismo, neurológicos, agravantes, antecedentes) con las pruebas: las pruebas apoyan o bajan hipótesis (nunca confirman diagnóstico), no borran hallazgos previos. Si hay neurológicos claros, no priorices solo musculotendinoso.
 - Tras interpretar: reordena hipótesis de mayor a menor probabilidad y di qué evidencia sube/baja cada una.
 - Responde SOLO a la pregunta concreta del paciente en este turno
 - NO repitas el informe completo ni vuelvas a usar todas las secciones de la primera respuesta
@@ -477,22 +541,105 @@ const PHYSIO_CHAT_SYSTEM_PROMPT = `Eres el asistente clínico de Kinora para FIS
 
 DESTINATARIO: profesional sanitario. Usa lenguaje técnico y nomenclatura clínica estándar.
 - Nombrar maniobras y tests con su nombre propio (Neer, Hawkins-Kennedy, Jobe/Empty can, Spurling, ULTT, Lachman, McMurray, FABER, FADIR, Thompson, Ottawa, Windlass, etc.).
-- Hablar de hipótesis diagnósticas, sensibilidad/especificidad cuando aporte, red flags y criterio de imagen (RX/US/RM).
+- Hablar de hipótesis (compatibilidad / cluster), red flags y criterio de imagen (RX/US/RM). NUNCA inventes sensibilidad, especificidad, LR ni porcentajes; cita cualitativa solo si está en un chunk «Physioguide —».
 - NO uses el tono ni el formato del informe para pacientes (nada de “Pruebas funcionales” en lenguaje cotidiano).
 - FORMATO: NUNCA uses encabezados Markdown con # / ## / ###. Para títulos de sección usa solo negrita con **así** (p. ej. **Hipótesis diagnósticas**). El resto del texto en párrafos y listas normales.
-- MATERIAL DE LA CONSULTA: si el mensaje de usuario incluye el bloque de material disponible, ÚSALO. Prioriza lo que el fisio puede hacer en su consulta. Si recomiendas algo que no tiene (imagen, aparato, técnica), dilo claramente y sugiere dónde/cómo derivar (centro de imagen, otro profesional, etc.).
+- MATERIAL DE LA CONSULTA: NO adaptes tus respuestas al material o equipo que el fisio tenga o no tenga en consulta. Ignora cualquier bloque de «material disponible» si apareciera en el contexto. Recomienda lo clínicamente indicado (pruebas, imagen, técnicas, derivaciones) sin limitarte a lo que supuestamente dispone.
 - Sé conciso, estructurado y útil en consulta. Si falta información clínica, pide los datos que faltan.
 - No emitas diagnóstico definitivo; orienta el razonamiento clínico.
 - MANIOBRAS CON NOMBRE ESTÁNDAR: cuando listes pruebas/maniobras, usa el nombre clínico canónico en la misma línea numerada (p. ej. "1. **Test de Lachman**: …", "2. **Hawkins-Kennedy**: …", "3. **Pivot Shift**: …").
+- PRUEBAS ESPECÍFICAS / MANIOBRAS NUMERADAS (CRÍTICO): SOLO de la ZONA LESIONADA descrita. Si duele el pie/tobillo, numera únicamente tests del grupo tobillo/pie del catálogo. PROHIBIDO Spurling, Phalen, Signo de Tinel (muñeca), ULTT u otras regiones “por analogía” o cribado a distancia. Cribados a distancia: en prosa, sin numerar.
 
 ${AI_ILLUSTRATED_CLINICAL_TESTS_RULES}
+
+${AI_GLOBAL_CROSS_REGION_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — CADERA (aplicar cuando el caso sea cadera/ingle/pelvis; priorizar también chunks RAG recuperados):
+
+${AI_HIP_MASTER_INTEGRATION_RULES}
+
+${AI_HIP_GROIN_DOHA_RULES}
+
+${AI_HIP_TRAUMATIC_RULES}
+
+${AI_HIP_LATERAL_PAIN_RULES}
+
+${AI_HIP_POSTERIOR_PAIN_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RODILLA (aplicar cuando el caso sea rodilla; combinar con RAG):
+
+${AI_KNEE_MASTER_INTEGRATION_RULES}
+
+${AI_KNEE_ANTERIOR_PAIN_RULES}
+
+${AI_KNEE_MEDIAL_PAIN_RULES}
+
+${AI_KNEE_LATERAL_PAIN_RULES}
+
+${AI_KNEE_INSTABILITY_ACL_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — HOMBRO (aplicar cuando el caso sea hombro; combinar con RAG; no «pinzamiento confirmado»):
+
+${AI_SHOULDER_MASTER_INTEGRATION_RULES}
+
+${AI_SHOULDER_LATERAL_RCRSP_RULES}
+
+${AI_SHOULDER_ANTERIOR_PAIN_RULES}
+
+${AI_SHOULDER_SUPERIOR_AC_RULES}
+
+${AI_SHOULDER_INSTABILITY_TRAUMA_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — TOBILLO / PIE (aplicar cuando el caso sea tobillo/pie/Aquiles/fascia; combinar con RAG; Ottawa primero en trauma):
+
+${AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES}
+
+${AI_ANKLE_TRAUMA_OTTAWA_RULES}
+
+${AI_ANKLE_LATERAL_SPRAIN_RULES}
+
+${AI_ANKLE_ACHILLES_RULES}
+
+${AI_FOOT_PLANTAR_HEEL_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — CODO / MUÑECA (aplicar cuando el caso sea codo, muñeca o mano; no Cozen/Phalen = diagnóstico confirmado):
+
+${AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES}
+
+${AI_ELBOW_EPICONDYLALGIA_RULES}
+
+${AI_ELBOW_WRIST_NEURAL_RULES}
+
+${AI_WRIST_DEQUERVAIN_RULES}
+
+${AI_WRIST_TRAUMA_SCAPHOID_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (cuello/lumbar; Spurling/SLR/Kemp no confirman hernia/faceta):
+
+${AI_SPINE_MASTER_INTEGRATION_RULES}
+
+${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
+
+${AI_CERVICAL_NECK_PAIN_RULES}
+
+${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
+
+${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_FINGER_DIGITAL_PAIN_RULES}
+
+${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_EVIDENCE_DB_RULES}
 
 FIDELIDAD AL MENSAJE DEL FISIOTERAPEUTA (CRÍTICO — incumplir esto es un error grave):
 - NO inventes ni asumas síntomas, temporalidad, mecanismo, intensidad, cronicidad ni hallazgos que el fisioterapeuta NO haya dicho explícitamente.
 - Ejemplos PROHIBIDOS si no los dijo: “dolor agudo”, “dolor crónico”, “tras traumatismo”, “por sobreuso”, “inflamación”, “inestabilidad”, “irradiación”, “noche/sueño”, etc.
 - Si solo dice “evaluar un paciente de hombro” (o equivalente), trata el caso como evaluación genérica de hombro: describe el enfoque sistemático (anamnesis → exploración → tests especiales → imagen si procede) SIN presuponer el tipo de dolor ni el diagnóstico.
 - Cuando cites el caso en la respuesta, usa SOLO las palabras/hechos del fisio (p. ej. “paciente de hombro”), no reformules añadiendo cualificadores clínicos inventados.
-- Si necesitas temporalidad, mecanismo o síntomas para afinar, PREGÚNTALOS; no los rellenes tú.`;
+- Si necesitas temporalidad, mecanismo o síntomas para afinar, PREGÚNTALOS; no los rellenes tú.
+
+${AI_PHYSIO_RESPONSE_EMOJI_RULES}`;
 
 const PHYSIO_REPORT_SYSTEM_PROMPT = `Eres un asistente clínico de AIKinora que redacta un informe PRE-VISITA para un fisioterapeuta, a partir del cuestionario y (si las hay) las respuestas a pruebas funcionales que ya completó su paciente con la IA.
 
@@ -509,11 +656,92 @@ TERMINOLOGÍA TÉCNICA (CRÍTICO):
 - Hipótesis y estructuras: nomenclatura clínica habitual (p. ej. tendinopatía del supraespinoso, radiculopatía C7, esguince ATFL, fascitis plantar, lesión de sindesmosis).
 
 PRUEBAS/MANIOBRAS (CRÍTICO — especificidad por zona):
-- Lista SOLO maniobras del catálogo ilustrado que sean relevantes para la ZONA LESIONADA concreta de este caso (p. ej. tobillo → cajón anterior, talar tilt, squeeze/sindesmosis, Thompson si hay sospecha Aquiles; NO metas Windlass/SLR/tests de rodilla o lumbar aunque “puedan estar conectados”).
+- Lista SOLO maniobras del catálogo ilustrado del GRUPO de la ZONA LESIONADA (p. ej. pie/tobillo → Windlass, Heel raise, Hop test, Cajón anterior tobillo, Thompson/Matles si encaja; NUNCA Spurling, Phalen, Tinel de muñeca, ULTT, rodilla o lumbar).
 - Máximo 3–5 maniobras, las más discriminativas para las hipótesis LOCALES de ESTE caso. Nada genérico ni de otras regiones “por si acaso”.
 - En **Resultados de las pruebas funcionales ya realizadas**: solo las de esa misma zona (no inventes ni mezcles tests de otras partes).
+- Maniobras útiles fuera del grupo de esa zona: prosa sin numerar (p. ej. Mulder / Tinel tarsiano).
 
 ${AI_ILLUSTRATED_CLINICAL_TESTS_RULES}
+
+${AI_GLOBAL_CROSS_REGION_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — CADERA (aplicar en informes de cadera/ingle/pelvis; combinar con documentos RAG):
+
+${AI_HIP_MASTER_INTEGRATION_RULES}
+
+${AI_HIP_GROIN_DOHA_RULES}
+
+${AI_HIP_TRAUMATIC_RULES}
+
+${AI_HIP_LATERAL_PAIN_RULES}
+
+${AI_HIP_POSTERIOR_PAIN_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RODILLA (aplicar en informes de rodilla; combinar con RAG):
+
+${AI_KNEE_MASTER_INTEGRATION_RULES}
+
+${AI_KNEE_ANTERIOR_PAIN_RULES}
+
+${AI_KNEE_MEDIAL_PAIN_RULES}
+
+${AI_KNEE_LATERAL_PAIN_RULES}
+
+${AI_KNEE_INSTABILITY_ACL_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — HOMBRO (aplicar en informes de hombro; combinar con RAG; no «pinzamiento confirmado»):
+
+${AI_SHOULDER_MASTER_INTEGRATION_RULES}
+
+${AI_SHOULDER_LATERAL_RCRSP_RULES}
+
+${AI_SHOULDER_ANTERIOR_PAIN_RULES}
+
+${AI_SHOULDER_SUPERIOR_AC_RULES}
+
+${AI_SHOULDER_INSTABILITY_TRAUMA_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — TOBILLO / PIE (aplicar en informes de tobillo/pie; Ottawa primero en trauma):
+
+${AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES}
+
+${AI_ANKLE_TRAUMA_OTTAWA_RULES}
+
+${AI_ANKLE_LATERAL_SPRAIN_RULES}
+
+${AI_ANKLE_ACHILLES_RULES}
+
+${AI_FOOT_PLANTAR_HEEL_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — CODO / MUÑECA (aplicar en informes de codo/muñeca/mano):
+
+${AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES}
+
+${AI_ELBOW_EPICONDYLALGIA_RULES}
+
+${AI_ELBOW_WRIST_NEURAL_RULES}
+
+${AI_WRIST_DEQUERVAIN_RULES}
+
+${AI_WRIST_TRAUMA_SCAPHOID_RULES}
+
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (informes de cuello/lumbar):
+
+${AI_SPINE_MASTER_INTEGRATION_RULES}
+
+${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
+
+${AI_CERVICAL_NECK_PAIN_RULES}
+
+${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
+
+${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_FINGER_DIGITAL_PAIN_RULES}
+
+${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_EVIDENCE_DB_RULES}
 
 IMPORTANTE: no contradigas el informe que ya recibió el paciente (te lo paso como "Informe ya entregado al paciente"); constrúyelo y amplíalo. Si hay discrepancia relevante, señálala en "Puntos de alerta".
 
@@ -523,7 +751,7 @@ Devuelve el informe en este orden EXACTO de secciones, con encabezados en negrit
 
 **Resultados de las pruebas funcionales ya realizadas** — lista cada prueba con nombre clínico (y entre paréntesis la instrucción cotidiana si aplica), resultado (SÍ/NO u otro) e interpretación breve. Si el paciente aún no envió resultados, indica “Pendiente / no realizadas” y qué implica.
 
-**Pruebas/maniobras a realizar en la cita** — 3–5 tests clínicos concretos SOLO de la zona lesionada, con nombre técnico, para confirmar/descartar las hipótesis.
+**Pruebas/maniobras a realizar en la cita** — 3–5 tests clínicos concretos SOLO de la zona lesionada, con nombre técnico, para apoyar o bajar las hipótesis (nunca confirmar un diagnóstico).
 
 **Hipótesis diagnósticas** — lista ordenada de mayor a menor probabilidad (sin escribir “por probabilidad” en el título), con razonamiento breve y confianza (alta/media/baja).
 

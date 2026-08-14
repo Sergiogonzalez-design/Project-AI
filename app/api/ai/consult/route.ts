@@ -6,6 +6,7 @@ import { formatAthleteProfileContext } from "@/lib/format-athlete-profile";
 import {
   AI_DATA_FIDELITY_RULES,
   AI_EVIDENCE_AND_SEVERITY_RULES,
+  AI_PATIENT_RESPONSE_EMOJI_RULES,
   appendSourcesFooter,
   formatRagContext,
   type RagChunk,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     "match_document_chunks",
     {
       query_embedding: queryEmbedding,
-      match_count: 6,
+      match_count: 8,
       match_threshold: 0.3,
     }
   );
@@ -85,9 +86,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: matchError.message }, { status: 500 });
   }
 
+  const physioguideEmbedding = await openai.embeddings.create({
+    model: "text-embedding-3-small",
+    input: queryText.slice(0, 8000),
+  });
+  const { data: physioguideChunks } = await supabase.rpc(
+    "match_document_chunks_prefixed",
+    {
+      query_embedding: physioguideEmbedding.data[0].embedding,
+      name_prefix: "Physioguide —",
+      match_count: 8,
+      match_threshold: 0.25,
+    }
+  );
+
   const functionalEmbedding = await openai.embeddings.create({
     model: "text-embedding-3-small",
-    input: `${body.bodyArea} Functional Assessment Special Tests valoración funcional`,
+    input: `${body.bodyArea} Physioguide Functional Assessment Special Tests valoración funcional`,
   });
   const { data: functionalChunks } = await supabase.rpc("match_document_chunks", {
     query_embedding: functionalEmbedding.data[0].embedding,
@@ -96,7 +111,11 @@ export async function POST(request: NextRequest) {
   });
 
   const merged = new Map<string, RagChunk>();
-  for (const c of [...(chunks ?? []), ...(functionalChunks ?? [])] as RagChunk[]) {
+  for (const c of [
+    ...(chunks ?? []),
+    ...(physioguideChunks ?? []),
+    ...(functionalChunks ?? []),
+  ] as RagChunk[]) {
     const key = `${c.source_name ?? ""}::${(c.content ?? "").slice(0, 80)}`;
     if (!merged.has(key)) merged.set(key, c);
   }
@@ -105,11 +124,13 @@ export async function POST(request: NextRequest) {
   const systemPrompt = `Eres un asistente de fisioterapia y medicina deportiva para Kinora. Orientas al usuario en español con claridad, empatía y detalle moderado.
 
 IMPORTANTE: NO emites diagnósticos definitivos.
-CRÍTICO — DIFERENCIACIÓN KINORA: si el caso NO es urgente, la respuesta está incompleta sin la sección **Pruebas funcionales**. Incluye 3–6 pruebas concretas de la zona (del banco/protocolo inyectado) y pide: «Haz estas pruebas y responde aquí qué pasa en cada una». Escribe cada prueba como instrucción cotidiana de movimiento (p. ej. elevar el brazo por encima de la cabeza y ver si duele). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, etc.).
+CRÍTICO — DIFERENCIACIÓN KINORA: si el caso NO es urgente, la respuesta está incompleta sin la sección **Pruebas funcionales**. Incluye 3–6 pruebas concretas de la zona (del banco/protocolo inyectado), cada una como pregunta SÍ/NO. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NO pidas texto libre, escalas 1–10 ni comparar lados. Escribe cada prueba como pregunta cotidiana de movimiento (p. ej. ¿duele al elevar el brazo por encima de la cabeza?). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, etc.).
 
 ${AI_EVIDENCE_AND_SEVERITY_RULES}
 
-${AI_DATA_FIDELITY_RULES}`;
+${AI_DATA_FIDELITY_RULES}
+
+${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
 
   const userMessage = [
     `Síntomas actuales:\n${queryText}`,

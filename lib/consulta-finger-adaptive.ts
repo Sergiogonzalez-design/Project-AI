@@ -138,6 +138,7 @@ export type FingerAdaptiveAnswers = {
   dedo_afectado: string;
   mano: string;
   localizacion_dedo: string[];
+  dolor_familiar: string;
   cuando_empezo: string;
   como_empezo: string;
   detalle_otro: string;
@@ -180,6 +181,7 @@ export function defaultFingerAdaptiveAnswers(): FingerAdaptiveAnswers {
     dedo_afectado: "",
     mano: "",
     localizacion_dedo: [],
+    dolor_familiar: "",
     cuando_empezo: "",
     como_empezo: "",
     detalle_otro: "",
@@ -319,6 +321,15 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "¿Dónde sientes el dolor con más intensidad? (puedes marcar varias zonas)",
     type: "finger_map",
     options: FINGER_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿Es el mismo dolor u hormigueo que notas al agarrar, pellizcar, usar el móvil o al despertar de noche?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
     required: true,
   },
   {
@@ -639,6 +650,7 @@ export function formatFingerAdaptive(answers: FingerAdaptiveAnswers, introText?:
     `Dedo(s): ${answers.dedo_afectado || "—"}`,
     `Mano: ${answers.mano || "—"}`,
     `Localización del dolor: ${fmtList(answers.localizacion_dedo)}`,
+    `Dolor familiar (agarre/pellizcar/noche): ${answers.dolor_familiar || "—"}`,
     `Inicio temporal: ${answers.cuando_empezo || "—"}`,
     `Mecanismo: ${answers.como_empezo || "—"}`,
     `Dolor actual: ${answers.intensidad_dolor}/10`,
@@ -742,6 +754,8 @@ export const FINGER_LABEL_EN: Partial<Record<string, string>> = {
   dedo_afectado: "Which finger is bothering you?",
   mano: "Which hand is affected?",
   localizacion_dedo: "Where do you feel the pain most intensely? (you can select several areas)",
+  dolor_familiar:
+    "Is it the same pain or tingling you notice when gripping, pinching, using your phone, or waking at night?",
   cuando_empezo: "When did the symptoms start?",
   como_empezo: "What were you doing when it started?",
   detalle_otro: "Tell us what happened",

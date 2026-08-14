@@ -7,12 +7,13 @@ import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { StreamingAssistantMessage } from "@/components/streaming-assistant-message";
 import { VoiceConversationButton } from "@/components/voice-conversation-button";
 import { VoiceSpeakButton } from "@/components/voice-speak-button";
+import { useKeyboardOverlap } from "@/hooks/use-keyboard-overlap";
 import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
+import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import { PHOTO_ONLY_CAPTION, uploadConsultPhoto } from "@/lib/consult-photo";
 import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
@@ -85,6 +86,14 @@ function renderAssistantContent(content: string) {
 
   return content.split("\n").map((line, li) => {
     const trimmed = line.trim().replace(/^\*\s+/, "• ");
+    if (
+      /^Fuente:/i.test(trimmed) ||
+      /^- Fuente:/i.test(trimmed) ||
+      /^Source:/i.test(trimmed) ||
+      /^- Source:/i.test(trimmed)
+    ) {
+      return null;
+    }
     const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
     const headingText = headingMatch?.[2] ?? null;
     // Whole-line bold, e.g. **1. Exploración física**
@@ -107,17 +116,8 @@ function renderAssistantContent(content: string) {
       testImage && !shownTestIds.has(testImage.id) ? testImage : null;
     if (showImage) shownTestIds.add(showImage.id);
 
-    const imageBlock = showImage ? (
-      <div className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
-        <Image
-          src={showImage.src}
-          alt={showImage.title}
-          width={640}
-          height={480}
-          className="h-auto w-full max-w-md object-cover"
-          sizes="(max-width: 768px) 100vw, 28rem"
-        />
-      </div>
+    const mediaBlock = showImage ? (
+      <ClinicalTestMediaBlock test={showImage} />
     ) : null;
 
     if (numberedText) {
@@ -133,7 +133,7 @@ function renderAssistantContent(content: string) {
               <span className="text-neutral-900"> {parsed.body}</span>
             ) : null}
           </p>
-          {imageBlock}
+          {mediaBlock}
         </div>
       );
     }
@@ -146,7 +146,7 @@ function renderAssistantContent(content: string) {
               {stripMarkdownStars(wholeBoldMatch[1])}
             </strong>
           </p>
-          {imageBlock}
+          {mediaBlock}
         </div>
       );
     }
@@ -159,7 +159,7 @@ function renderAssistantContent(content: string) {
               {stripMarkdownStars(headingText)}
             </strong>
           </p>
-          {imageBlock}
+          {mediaBlock}
         </div>
       );
     }
@@ -167,7 +167,7 @@ function renderAssistantContent(content: string) {
     return (
       <div key={li} className={li > 0 ? "mt-2" : undefined}>
         <p className="text-neutral-900">{renderInlineParts(trimmed)}</p>
-        {imageBlock}
+        {mediaBlock}
       </div>
     );
   });
@@ -208,6 +208,7 @@ export function FisioChatInterface() {
   const hearingTextRef = useRef("");
   const silenceTimerRef = useRef<number | null>(null);
   const SILENCE_MS = 3000;
+  const keyboardOverlap = useKeyboardOverlap();
 
   const {
     supported: ttsSupported,
@@ -797,7 +798,13 @@ export function FisioChatInterface() {
         {showChatInput ? (
           <form
             onSubmit={(e) => void handleSend(e)}
-            className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-6"
+            className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent px-4 pt-2 sm:px-6"
+            style={{
+              paddingBottom:
+                keyboardOverlap > 0
+                  ? keyboardOverlap + 8
+                  : "max(1rem, env(safe-area-inset-bottom))",
+            }}
           >
             <div className="mx-auto w-full max-w-3xl">
               {attachedPreview ? (
@@ -840,6 +847,12 @@ export function FisioChatInterface() {
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  onFocus={(e) => {
+                    const el = e.currentTarget;
+                    window.setTimeout(() => {
+                      el.scrollIntoView({ block: "nearest", inline: "nearest" });
+                    }, 350);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();

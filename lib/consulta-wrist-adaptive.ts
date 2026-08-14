@@ -127,6 +127,7 @@ export type WristAdaptiveAnswers = {
   comienzo: string;
   intensidad_dolor: number;
   localizacion_muneca: string[];
+  dolor_familiar: string;
   calidad_dolor: string[];
   movimientos_agravantes: string[];
   limitacion_funcional: string[];
@@ -197,6 +198,7 @@ export function defaultWristAdaptiveAnswers(): WristAdaptiveAnswers {
     comienzo: "",
     intensidad_dolor: 5,
     localizacion_muneca: [],
+    dolor_familiar: "",
     calidad_dolor: [],
     movimientos_agravantes: [],
     limitacion_funcional: [],
@@ -294,23 +296,31 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
   { id: "rf_perdida_fuerza", section: "red_flags", label: "¿Pérdida súbita de fuerza?", type: "single", options: YES_NO, required: true },
   { id: "rf_perdida_sensibilidad", section: "red_flags", label: "¿Pérdida de sensibilidad marcada?", type: "single", options: YES_NO, required: true },
 
-  // Core
-  { id: "inicio", section: "core", label: "1. ¿Cómo empezó el problema?", type: "single", options: WRIST_ONSET_OPTIONS, required: true },
-  { id: "comienzo", section: "core", label: "2. ¿Cuándo comenzó?", type: "single", options: WRIST_BEGIN_OPTIONS, required: true },
-  { id: "intensidad_dolor", section: "core", label: "3. Intensidad de dolor actual", type: "slider", required: true, min: 0, max: 10 },
-  { id: "localizacion_muneca", section: "core", label: "4. ¿Dónde duele? (puedes seleccionar varias zonas)", type: "wrist_map", options: WRIST_LOCATION_OPTIONS, required: true },
-  { id: "calidad_dolor", section: "core", label: "5. ¿Cómo es el dolor?", type: "multi", options: WRIST_PAIN_QUALITY_OPTIONS, required: true },
-  { id: "movimientos_agravantes", section: "core", label: "6. ¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: WRIST_AGGRAVATING_MOVEMENTS, required: true },
-  { id: "limitacion_funcional", section: "core", label: "7. ¿Qué te cuesta hacer? (puedes marcar varias)", type: "multi", options: WRIST_FUNCTIONAL_LIMIT, required: true },
-  { id: "sintomas_asociados", section: "core", label: "8. ¿Qué más notas?", type: "multi", options: WRIST_ASSOCIATED_SYMPTOMS, required: true },
-  { id: "irradiacion", section: "core", label: "9. ¿El dolor se extiende a otra zona?", type: "single", options: WRIST_RADIATION, required: true },
-  { id: "episodio_previo", section: "core", label: "10. ¿Te ha pasado antes?", type: "single", options: WRIST_PREVIOUS_EPISODE, required: true },
+  // Core — location + familiar pain before mechanism
+  { id: "localizacion_muneca", section: "core", label: "1. ¿Dónde duele? (puedes seleccionar varias zonas)", type: "wrist_map", options: WRIST_LOCATION_OPTIONS, required: true },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label: "2. ¿Es el mismo dolor que notas al agarrar, usar el pulgar, flexionar la muñeca o al despertar con hormigueo?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
+    required: true,
+  },
+  { id: "inicio", section: "core", label: "3. ¿Cómo empezó el problema?", type: "single", options: WRIST_ONSET_OPTIONS, required: true },
+  { id: "comienzo", section: "core", label: "4. ¿Cuándo comenzó?", type: "single", options: WRIST_BEGIN_OPTIONS, required: true },
+  { id: "intensidad_dolor", section: "core", label: "5. Intensidad de dolor actual", type: "slider", required: true, min: 0, max: 10 },
+  { id: "calidad_dolor", section: "core", label: "6. ¿Cómo es el dolor?", type: "multi", options: WRIST_PAIN_QUALITY_OPTIONS, required: true },
+  { id: "movimientos_agravantes", section: "core", label: "7. ¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: WRIST_AGGRAVATING_MOVEMENTS, required: true },
+  { id: "limitacion_funcional", section: "core", label: "8. ¿Qué te cuesta hacer? (puedes marcar varias)", type: "multi", options: WRIST_FUNCTIONAL_LIMIT, required: true },
+  { id: "sintomas_asociados", section: "core", label: "9. ¿Qué más notas?", type: "multi", options: WRIST_ASSOCIATED_SYMPTOMS, required: true },
+  { id: "irradiacion", section: "core", label: "10. ¿El dolor se extiende a otra zona?", type: "single", options: WRIST_RADIATION, required: true },
+  { id: "episodio_previo", section: "core", label: "11. ¿Te ha pasado antes?", type: "single", options: WRIST_PREVIOUS_EPISODE, required: true },
 
   // No preguntamos deporte: pedimos actividad tipo + detalle (dinámico)
   {
     id: "actividad_tipo",
     section: "core",
-    label: "11. ¿Qué actividad estabas realizando cuando empezó o empeoró?",
+    label: "12. ¿Qué actividad estabas realizando cuando empezó o empeoró?",
     type: "single",
     options: ["Pesas / gimnasio", "Deporte", "Escalada", "Trabajo de oficina (teclado/ratón)", "Otra"] as const,
     required: true,
@@ -318,7 +328,7 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
   {
     id: "actividad_detalle",
     section: "core",
-    label: "12. Detalla la actividad",
+    label: "13. Detalla la actividad",
     type: "text",
     required: true,
   },
@@ -476,6 +486,7 @@ export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: s
     `Cuándo empezó: ${answers.comienzo}`,
     `Dolor actual: ${answers.intensidad_dolor}/10`,
     `Localización: ${fmtList(answers.localizacion_muneca)}`,
+    `Dolor familiar: ${answers.dolor_familiar || "—"}`,
     `Calidad: ${fmtList(answers.calidad_dolor)}`,
     `Empeora con: ${fmtList(answers.movimientos_agravantes)}`,
     `Limitación: ${answers.limitacion_funcional.join(", ") || "—"}`,
@@ -611,13 +622,15 @@ export const WRIST_LABEL_EN: Partial<Record<string, string>> = {
   rf_dedos_frios: "Pale/blue/cold fingers?",
   rf_perdida_fuerza: "Sudden loss of strength?",
   rf_perdida_sensibilidad: "Marked loss of sensation?",
-  inicio: "1. How did the problem start?",
-  comienzo: "2. When did it begin?",
-  intensidad_dolor: "3. Current pain intensity",
-  localizacion_muneca: "4. Where does it hurt? (you can select several areas)",
-  calidad_dolor: "5. What is the pain like?",
-  movimientos_agravantes: "6. Which movements make it worse? (you can select several)",
-  limitacion_funcional: "7. Functional limitation",
+  localizacion_muneca: "1. Where does it hurt? (you can select several areas)",
+  dolor_familiar:
+    "2. Is it the same pain you notice when gripping, using the thumb, bending the wrist, or waking with tingling?",
+  inicio: "3. How did the problem start?",
+  comienzo: "4. When did it begin?",
+  intensidad_dolor: "5. Current pain intensity",
+  calidad_dolor: "6. What is the pain like?",
+  movimientos_agravantes: "7. Which movements make it worse? (you can select several)",
+  limitacion_funcional: "8. Functional limitation",
   sintomas_asociados: "8. Do you notice anything else?",
   irradiacion: "9. Does the pain spread to another area?",
   episodio_previo: "10. Has this happened before?",

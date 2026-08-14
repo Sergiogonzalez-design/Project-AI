@@ -57,6 +57,7 @@ import {
 import { PhysioReportCompleteCard } from "@/components/physio-report-complete-card";
 import { VoiceConversationButton } from "@/components/voice-conversation-button";
 import { VoiceSpeakButton } from "@/components/voice-speak-button";
+import { useKeyboardOverlap } from "@/hooks/use-keyboard-overlap";
 import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { bodyPartLabel, type BodyPartId } from "@/lib/body-parts";
@@ -189,6 +190,7 @@ import {
   parseTriageResult,
   pendingPartsFromText,
   refineTriageBodyPart,
+  resolveQuestionnaireLaunch,
   reportsFunctionalTestResults,
   functionalTestResultsFollowupContext,
   consultaFinishedCloseMessage,
@@ -218,6 +220,11 @@ import {
   type ConsultLanguage,
 } from "@/lib/consult-language";
 import { AssistantMessageWithSources } from "@/components/assistant-message-with-sources";
+import { FunctionalTestYesNo } from "@/components/functional-test-yes-no";
+import {
+  latestUnansweredFunctionalTests,
+  splitFunctionalTests,
+} from "@/lib/functional-test-answers";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -318,23 +325,13 @@ function renderAssistantContent(content: string) {
 
   return content.split("\n").map((line, li) => {
     const trimmed = line.trim();
-    const isInlineFuente =
+    if (
       /^Fuente:/i.test(trimmed) ||
       /^- Fuente:/i.test(trimmed) ||
       /^Source:/i.test(trimmed) ||
-      /^- Source:/i.test(trimmed);
-
-    if (isInlineFuente) {
-      return (
-        <a
-          key={li}
-          href="/conocimientos"
-          className="mt-0.5 block text-xs text-blue-600/90 underline-offset-2 hover:underline"
-        >
-          {trimmed}
-          {li < content.split("\n").length - 1 ? "\n" : ""}
-        </a>
-      );
+      /^- Source:/i.test(trimmed)
+    ) {
+      return null;
     }
 
     const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
@@ -479,6 +476,7 @@ export function ChatInterface({
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [fisioBootDeadline, setFisioBootDeadline] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTitle, setActiveTitle] = useState("Nueva consulta");
@@ -608,6 +606,7 @@ export function ChatInterface({
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const SILENCE_MS = 3000;
+  const keyboardOverlap = useKeyboardOverlap();
 
   const {
     supported: ttsSupported,
@@ -791,7 +790,15 @@ export function ChatInterface({
     return url;
   }
 
-  useEffect(() => { loadConversations(); }, []);
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  useEffect(() => {
+    if (!linkedPhysio) return;
+    const t = window.setTimeout(() => setFisioBootDeadline(true), 800);
+    return () => window.clearTimeout(t);
+  }, [linkedPhysio]);
 
   useEffect(() => {
     if (!pendingFisioCodeReload.current || !linkedPhysio) return;
@@ -901,31 +908,37 @@ export function ChatInterface({
   }, [physioIntro, activeId]);
 
   async function loadConversations(opts?: { skipAutoOpen?: boolean }) {
-    const { data } = await supabase
-      .from("conversations")
-      .select("id, title, created_at, physio_id, physio_name, clinic_name")
-      .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
-      .order("created_at", { ascending: false })
-      .limit(linkedPhysio ? 30 : 10);
-    const list = (data as Conversation[]) ?? [];
-    setConversations(list);
+    try {
+      const { data } = await supabase
+        .from("conversations")
+        .select("id, title, created_at, physio_id, physio_name, clinic_name")
+        .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
+        .order("created_at", { ascending: false })
+        .limit(linkedPhysio ? 30 : 10);
+      const list = (data as Conversation[]) ?? [];
+      setConversations(list);
 
-    // Fisioterapia: open latest assigned chat before revealing the UI (avoids intro /
-    // empty-chat / typing-indicator flashes when switching from Consulta).
-    if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
-      const preferred =
-        (linkedPhysio.physio_id
-          ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
-          : null) ?? list[0];
-      await loadConversation(preferred.id, preferred.title);
-      return;
-    }
+      // Fisioterapia: open latest assigned chat before revealing the UI (avoids intro /
+      // empty-chat / typing-indicator flashes when switching from Consulta).
+      if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
+        const preferred =
+          (linkedPhysio.physio_id
+            ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
+            : null) ?? list[0];
+        await loadConversation(preferred.id, preferred.title);
+        return;
+      }
 
-    if (linkedPhysio) {
-      // First assigned consult — show intro only once history is confirmed empty.
-      setPhysioIntro(true);
+      if (linkedPhysio) {
+        // First assigned consult — show intro only once history is confirmed empty.
+        setPhysioIntro(true);
+      }
+    } catch (err) {
+      console.error("No se pudieron cargar las consultas:", err);
+      if (linkedPhysio) setPhysioIntro(true);
+    } finally {
+      setHistoryLoaded(true);
     }
-    setHistoryLoaded(true);
   }
 
   async function loadConversation(id: string, title: string) {
@@ -950,77 +963,83 @@ export function ChatInterface({
     clearAttachment();
     setPhysioReportSentBanner(false);
 
-    const { data } = await supabase
-      .from("messages")
-      .select("id, role, content, image_url, created_at")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true });
-
-    let msgs = (data as Message[]) ?? [];
-
-    if (linkedPhysio) {
-      const { data: report } = await supabase
-        .from("clinical_reports")
-        .select("id")
+    try {
+      const { data } = await supabase
+        .from("messages")
+        .select("id, role, content, image_url, created_at")
         .eq("conversation_id", id)
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true });
 
-      // Patients must not see the clinical orientation — only the thank-you copy.
-      msgs = msgs.filter(
-        (m) =>
-          m.role !== "assistant" ||
-          !/\*\*Resumen de tu consulta\*\*|Estructuras que podrían estar afectadas|Posibles lesiones \(orientativas\)/i.test(
-            m.content
-          )
-      );
+      let msgs = (data as Message[]) ?? [];
 
-      if (report) {
-        setPhase("complete");
-        setPhysioReportSentBanner(true);
-        setLinkedPhysioLabel(
-          [linkedPhysio.physio_name, linkedPhysio.clinic_name]
-            .filter(Boolean)
-            .join(" · ") || null
-        );
-      } else {
-        setPhase("followup");
-      }
-    } else {
-      const finished = msgs.some(
-        (m) => m.role === "assistant" && isConsultaFinishedCloseMessage(m.content)
-      );
-      if (finished) {
-        setPhase("complete");
-      } else {
-        setPhase("followup");
-        const hasOrientation = msgs.some(
+      if (linkedPhysio) {
+        const { data: report } = await supabase
+          .from("clinical_reports")
+          .select("id")
+          .eq("conversation_id", id)
+          .limit(1)
+          .maybeSingle();
+
+        // Patients must not see the clinical orientation — only the thank-you copy.
+        msgs = msgs.filter(
           (m) =>
-            m.role === "assistant" &&
-            /\*\*Resumen de tu consulta\*\*|Summary of your consultation/i.test(
+            m.role !== "assistant" ||
+            !/\*\*Resumen de tu consulta\*\*|Estructuras que podrían estar afectadas|Posibles lesiones \(orientativas\)/i.test(
               m.content
             )
         );
-        if (hasOrientation) {
-          setRelatedFollowupActive(true);
-          const lastAsst = [...msgs]
-            .reverse()
-            .find((m) => m.role === "assistant");
-          if (
-            lastAsst &&
-            /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
-              lastAsst.content
-            )
-          ) {
-            setPostGuidanceAsked(true);
+
+        if (report) {
+          setPhase("complete");
+          setPhysioReportSentBanner(true);
+          setLinkedPhysioLabel(
+            [linkedPhysio.physio_name, linkedPhysio.clinic_name]
+              .filter(Boolean)
+              .join(" · ") || null
+          );
+        } else {
+          setPhase("followup");
+        }
+      } else {
+        const finished = msgs.some(
+          (m) => m.role === "assistant" && isConsultaFinishedCloseMessage(m.content)
+        );
+        if (finished) {
+          setPhase("complete");
+        } else {
+          setPhase("followup");
+          const hasOrientation = msgs.some(
+            (m) =>
+              m.role === "assistant" &&
+              /\*\*Resumen de tu consulta\*\*|Summary of your consultation/i.test(
+                m.content
+              )
+          );
+          if (hasOrientation) {
+            setRelatedFollowupActive(true);
+            const lastAsst = [...msgs]
+              .reverse()
+              .find((m) => m.role === "assistant");
+            if (
+              lastAsst &&
+              /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
+                lastAsst.content
+              )
+            ) {
+              setPostGuidanceAsked(true);
+            }
           }
         }
       }
-    }
 
-    setMessages(msgs);
-    setOpeningConversation(false);
-    setHistoryLoaded(true);
+      setMessages(msgs);
+    } catch (err) {
+      console.error("No se pudo abrir la consulta:", err);
+      setMessages([]);
+    } finally {
+      setOpeningConversation(false);
+      setHistoryLoaded(true);
+    }
   }
 
   function clearToFisioIdle() {
@@ -1322,25 +1341,10 @@ export function ChatInterface({
     language: ConsultLanguage,
     preferredFirst?: AdaptiveQuestionnairePart | "generic"
   ) {
-    const queue = pendingPartsFromText(text, evaluatedParts);
-    if (queue.length === 0 && preferredFirst && preferredFirst !== "generic") {
-      beginQuestionnaire(text, preferredFirst, language, 0);
-      setPendingParts([]);
-      return true;
-    }
-    if (queue.length === 0 && preferredFirst === "generic") {
-      beginQuestionnaire(text, "generic", language, 0);
-      setPendingParts([]);
-      return true;
-    }
-    if (queue.length === 0) return false;
-
-    // Always follow mention order in the patient's text (first written = first asked).
-    // Do not reorder by triage.bodyPart — that often picks the last zone named.
-    const first = queue[0];
-    const rest = queue.slice(1);
-    setPendingParts(rest);
-    beginQuestionnaire(text, first, language, rest.length);
+    const launch = resolveQuestionnaireLaunch(text, evaluatedParts, preferredFirst);
+    if (!launch) return false;
+    setPendingParts(launch.rest);
+    beginQuestionnaire(text, launch.first, language, launch.rest.length);
     return true;
   }
 
@@ -2140,7 +2144,9 @@ export function ChatInterface({
           description: initialMessage,
           symptomContext:
             contextForAi +
-            `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`,
+            (redFlagsUrgent
+              ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas. Esta orientación es para el paciente. NO pidas pruebas funcionales ni hop. Prioriza HOSPITAL / URGENCIAS e imagen. NO digas que el informe ya se envió al fisio.`
+              : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`),
           conversationHistory: [],
           ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
         });
@@ -3277,7 +3283,9 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
     conversations.length > 0 &&
     !activeId;
   const showFisioBootstrap =
-    Boolean(linkedPhysio) && (!historyLoaded || (openingConversation && messages.length === 0));
+    Boolean(linkedPhysio) &&
+    !fisioBootDeadline &&
+    (!historyLoaded || (openingConversation && messages.length === 0));
   const inputPlaceholder =
     phase === "intro"
       ? "Cuéntanos qué te pasa…"
@@ -3285,6 +3293,8 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         ? "Responde sobre tu caso (informe para tu fisio)…"
         : "Pregunta lo que quieras";
   const onSend = phase === "intro" ? handleIntroSubmit : handleFollowupSubmit;
+  const awaitingFunctionalTests =
+    phase === "followup" ? latestUnansweredFunctionalTests(messages) : null;
   sendVoiceTurnRef.current = (text: string) => {
     pendingVoiceTextRef.current = text;
     flushSync(() => {
@@ -3518,11 +3528,43 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                             <>
                               <AssistantMessageWithSources
                                 content={visibleText}
-                                renderBody={(body) => (
-                                  <div className="whitespace-pre-wrap">
-                                    {renderAssistantContent(body)}
-                                  </div>
-                                )}
+                                renderBody={(body) => {
+                                  const parsed = splitFunctionalTests(body);
+                                  const showButtons =
+                                    Boolean(parsed) &&
+                                    awaitingFunctionalTests?.messageId === msg.id &&
+                                    !isRevealing;
+                                  if (!parsed || !showButtons) {
+                                    return (
+                                      <div className="whitespace-pre-wrap">
+                                        {renderAssistantContent(body)}
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div className="whitespace-pre-wrap">
+                                      {parsed.before
+                                        ? renderAssistantContent(parsed.before)
+                                        : null}
+                                      <p className={parsed.before ? "mt-3" : undefined}>
+                                        <strong className="font-bold text-blue-700">
+                                          {parsed.heading}
+                                        </strong>
+                                      </p>
+                                      <FunctionalTestYesNo
+                                        tests={parsed.tests}
+                                        language={consultLanguage}
+                                        disabled={loading}
+                                        onSubmit={(text) =>
+                                          sendVoiceTurnRef.current(text)
+                                        }
+                                      />
+                                      {parsed.after
+                                        ? renderAssistantContent(parsed.after)
+                                        : null}
+                                    </div>
+                                  );
+                                }}
                               />
                               {msg.id !== WELCOME_ID &&
                                 !msg.id.startsWith("q-intro") &&
@@ -3858,7 +3900,15 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         ) : null}
 
         {showChatInput && (
-          <div className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-8">
+          <div
+            className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent px-4 pt-2 sm:px-6 lg:px-8"
+            style={{
+              paddingBottom:
+                keyboardOverlap > 0
+                  ? keyboardOverlap + 8
+                  : "max(1rem, env(safe-area-inset-bottom))",
+            }}
+          >
             <div className="mx-auto w-full max-w-3xl">
             {attachedPreview ? (
               <div className="animate-fade-in-up mb-2 flex items-center gap-2">
@@ -3900,6 +3950,12 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onFocus={(e) => {
+                  const el = e.currentTarget;
+                  window.setTimeout(() => {
+                    el.scrollIntoView({ block: "nearest", inline: "nearest" });
+                  }, 350);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

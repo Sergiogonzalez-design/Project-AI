@@ -7,7 +7,6 @@ import {
   Alert,
   Image,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -17,6 +16,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { composerBottomInset, useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import {
   ConsultaAdaptiveShoulder,
   isLastShoulderSection,
@@ -35,6 +36,11 @@ import {
 } from "../components/ConsultaAdaptiveWrist";
 import { AssistantMessageWithSources } from "../components/AssistantMessageWithSources";
 import { ConsultaAssistantBody } from "../components/ConsultaAssistantBody";
+import { FunctionalTestYesNo } from "../components/FunctionalTestYesNo";
+import {
+  latestUnansweredFunctionalTests,
+  splitFunctionalTests,
+} from "../lib/functional-test-answers";
 import { ConsultaGenericFields } from "../components/ConsultaGenericFields";
 import { DismissKeyboard } from "../components/DismissKeyboard";
 import { PhysioAvatar } from "../components/PhysioAvatar";
@@ -189,6 +195,7 @@ import {
   nextPartReadyMessage,
   pendingPartsFromText,
   refineTriageBodyPart,
+  resolveQuestionnaireLaunch,
   reportsFunctionalTestResults,
   functionalTestResultsFollowupContext,
   consultaFinishedCloseMessage,
@@ -333,22 +340,13 @@ function BoldText({ text, style, boldStyle }: {
     <Text style={style}>
       {lines.map((line, li) => {
         const trimmed = line.trim();
-        const isInlineFuente =
+        if (
           /^Fuente:/i.test(trimmed) ||
           /^- Fuente:/i.test(trimmed) ||
           /^Source:/i.test(trimmed) ||
-          /^- Source:/i.test(trimmed);
-
-        if (isInlineFuente) {
-          return (
-            <Text
-              key={li}
-              style={[style, { fontSize: 12, color: "#2563eb", marginTop: 2 }]}
-            >
-              {trimmed}
-              {li < lines.length - 1 ? "\n" : ""}
-            </Text>
-          );
+          /^- Source:/i.test(trimmed)
+        ) {
+          return null;
         }
 
         const parts = line.split(/(\*\*[^*]+\*\*)/g);
@@ -411,6 +409,9 @@ export function AIInquiriesScreen({
   onLinkedPhysioChange,
 }: AIInquiriesScreenProps) {
   const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
+  const composerInset = composerBottomInset(keyboardHeight, insets.bottom);
   const { t, locale } = useI18n();
   const welcomeText = linkedPhysio
     ? buildPhysioLinkedWelcome(linkedPhysio.physio_name)
@@ -655,6 +656,12 @@ export function AIInquiriesScreen({
       setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 50);
     });
   }, []);
+
+  useEffect(() => {
+    if (keyboardHeight <= 0) return;
+    const t = setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 50);
+    return () => clearTimeout(t);
+  }, [keyboardHeight]);
 
   const scrollToMessageStart = useCallback((id: string, animated = true) => {
     const y = messageOffsets.current[id];
@@ -1340,25 +1347,10 @@ export function AIInquiriesScreen({
     language: ConsultLanguage,
     preferredFirst?: AdaptiveQuestionnairePart | "generic"
   ) {
-    const queue = pendingPartsFromText(text, evaluatedParts);
-    if (queue.length === 0 && preferredFirst && preferredFirst !== "generic") {
-      beginQuestionnaire(text, preferredFirst, language, 0);
-      setPendingParts([]);
-      return true;
-    }
-    if (queue.length === 0 && preferredFirst === "generic") {
-      beginQuestionnaire(text, "generic", language, 0);
-      setPendingParts([]);
-      return true;
-    }
-    if (queue.length === 0) return false;
-
-    // Always follow mention order in the patient's text (first written = first asked).
-    // Do not reorder by triage.bodyPart — that often picks the last zone named.
-    const first = queue[0];
-    const rest = queue.slice(1);
-    setPendingParts(rest);
-    beginQuestionnaire(text, first, language, rest.length);
+    const launch = resolveQuestionnaireLaunch(text, evaluatedParts, preferredFirst);
+    if (!launch) return false;
+    setPendingParts(launch.rest);
+    beginQuestionnaire(text, launch.first, language, launch.rest.length);
     return true;
   }
 
@@ -2938,6 +2930,8 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
     phase !== "complete" &&
     (phase === "intro" || phase === "followup") &&
     (!linkedPhysio || Boolean(activeId) || conversations.length === 0 || fisioNewConsultDraft);
+  const awaitingFunctionalTests =
+    phase === "followup" ? latestUnansweredFunctionalTests(messages) : null;
   const showFisioPickExisting =
     Boolean(linkedPhysio) &&
     !fisioNewConsultDraft &&
@@ -3147,10 +3141,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
 
   if (phase === "questionnaire") {
     return (
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: Colors.background }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: composerInset }}>
         {renderTopBar()}
 
         <ScrollView
@@ -3159,6 +3150,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           contentContainerStyle={styles.messageList}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           onScrollBeginDrag={Keyboard.dismiss}
         >
           {messages.map((msg) => (
@@ -3537,16 +3529,12 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         </Modal>
 
         {renderHistoryDrawer()}
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: Colors.background }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={90}
-    >
+    <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: composerInset }}>
       {renderTopBar()}
 
       {linkedPhysio && phase === "complete" ? null : linkedPhysio && physioReportSentBanner ? (
@@ -3696,13 +3684,53 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                       <>
                         <AssistantMessageWithSources
                           content={visibleText}
-                          renderBody={(body) => (
-                            <ConsultaAssistantBody
-                              text={body}
-                              style={styles.bubbleText}
-                              boldStyle={styles.bubbleBold}
-                            />
-                          )}
+                          renderBody={(body) => {
+                            const parsed = splitFunctionalTests(body);
+                            const showButtons =
+                              Boolean(parsed) &&
+                              awaitingFunctionalTests?.messageId === msg.id &&
+                              !isRevealing;
+                            if (!parsed || !showButtons) {
+                              return (
+                                <ConsultaAssistantBody
+                                  text={body}
+                                  style={styles.bubbleText}
+                                  boldStyle={styles.bubbleBold}
+                                />
+                              );
+                            }
+                            return (
+                              <View>
+                                {parsed.before ? (
+                                  <ConsultaAssistantBody
+                                    text={parsed.before}
+                                    style={styles.bubbleText}
+                                    boldStyle={styles.bubbleBold}
+                                  />
+                                ) : null}
+                                <ConsultaAssistantBody
+                                  text={`**${parsed.heading}**`}
+                                  style={styles.bubbleText}
+                                  boldStyle={styles.bubbleBold}
+                                />
+                                <FunctionalTestYesNo
+                                  tests={parsed.tests}
+                                  language={consultLanguage}
+                                  disabled={chatLoading}
+                                  onSubmit={(text) =>
+                                    sendVoiceTurnRef.current(text)
+                                  }
+                                />
+                                {parsed.after ? (
+                                  <ConsultaAssistantBody
+                                    text={parsed.after}
+                                    style={styles.bubbleText}
+                                    boldStyle={styles.bubbleBold}
+                                  />
+                                ) : null}
+                              </View>
+                            );
+                          }}
                         />
                         {msg.id !== WELCOME_ID &&
                           !msg.id.startsWith("q-intro") &&
@@ -4024,20 +4052,22 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 />
               </Pressable>
             ) : null}
-            {!conversationMode && (chatInput.trim() || attachedUri) ? (
+            {!conversationMode ? (
               <Pressable
                 style={({ pressed }) => [
                   styles.sendBtn,
-                  chatLoading ? styles.sendBtnDisabled : null,
+                  (chatLoading || (!chatInput.trim() && !attachedUri)) &&
+                    styles.sendBtnDisabled,
                   pressed && styles.sendBtnPressed,
                 ]}
                 onPress={() => {
+                  if (!chatInput.trim() && !attachedUri) return;
                   stopMic();
                   cancelSpeech();
                   if (phase === "intro") handleIntroSubmit();
                   else handleFollowupSubmit();
                 }}
-                disabled={chatLoading}
+                disabled={chatLoading || (!chatInput.trim() && !attachedUri)}
                 accessibilityLabel="Enviar"
               >
                 <Ionicons name="arrow-up" size={20} color={Colors.white} />
@@ -4146,7 +4176,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       </Modal>
 
       {renderHistoryDrawer()}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -4431,7 +4461,7 @@ const styles = StyleSheet.create({
   inputBarWrap: {
     backgroundColor: "rgba(248,250,252,0.82)",
     borderTopWidth: 0,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   attachPreviewRow: {
     flexDirection: "row",

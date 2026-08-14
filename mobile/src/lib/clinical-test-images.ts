@@ -3,7 +3,7 @@
  * Keep in sync with lib/clinical-test-images.ts (web).
  */
 
-import { WEB_APP_URL } from "./admin-api";
+import { getWebMediaBaseUrl } from "./web-media-url";
 
 export type ClinicalTestImage = {
   id: string;
@@ -238,7 +238,7 @@ const TESTS: readonly Omit<ClinicalTestImage, "src">[] = [
 export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = TESTS.map(
   (t) => ({
     ...t,
-    src: `${WEB_APP_URL}/clinical-tests/${t.id}.webp`,
+    src: `${getWebMediaBaseUrl()}/clinical-tests/${t.id}.webp`,
   })
 );
 

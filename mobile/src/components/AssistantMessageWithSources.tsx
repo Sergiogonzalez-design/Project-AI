@@ -1,56 +1,28 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../lib/colors";
-
-function parseSourcesBlock(content: string): {
-  body: string;
-  sources: string[];
-  heading: string;
-} {
-  const lines = content.split("\n");
-  let headingIndex = -1;
-  let heading = "Fuentes consultadas";
-
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim().replace(/\*/g, "");
-    if (
-      /^Fuentes consultadas$/i.test(trimmed) ||
-      /^Sources consulted$/i.test(trimmed)
-    ) {
-      headingIndex = i;
-      heading = /sources consulted/i.test(trimmed)
-        ? "Sources consulted"
-        : "Fuentes consultadas";
-      break;
-    }
-  }
-
-  if (headingIndex === -1) {
-    return { body: content, sources: [], heading };
-  }
-
-  const body = lines.slice(0, headingIndex).join("\n").trimEnd();
-  const sources: string[] = [];
-  for (let i = headingIndex + 1; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-    if (!trimmed) continue;
-    if (/^Fuente:/i.test(trimmed) || /^- Fuente:/i.test(trimmed)) continue;
-    if (/^Source:/i.test(trimmed) || /^- Source:/i.test(trimmed)) continue;
-    const bullet = trimmed.replace(/^[-•*]\s+/, "").trim();
-    if (bullet) sources.push(bullet);
-  }
-
-  return { body, sources, heading };
-}
+import { extractCitedSources, type CitedSource } from "../lib/source-links";
 
 type Props = {
   content: string;
   renderBody: (body: string) => React.ReactNode;
 };
 
+function SourceItem({ source }: { source: CitedSource }) {
+  if (!source.href) {
+    return <Text style={styles.sourcePlain}>• {source.title}</Text>;
+  }
+
+  return (
+    <Pressable onPress={() => void Linking.openURL(source.href!)}>
+      <Text style={styles.sourceLink}>• {source.title}</Text>
+    </Pressable>
+  );
+}
+
 export function AssistantMessageWithSources({ content, renderBody }: Props) {
   const { body, sources, heading } = useMemo(
-    () => parseSourcesBlock(content),
+    () => extractCitedSources(content),
     [content]
   );
   const [open, setOpen] = useState(false);
@@ -72,9 +44,7 @@ export function AssistantMessageWithSources({ content, renderBody }: Props) {
           {open ? (
             <View style={styles.list}>
               {sources.map((source) => (
-                <Text key={source} style={styles.sourceItem}>
-                  • {source}
-                </Text>
+                <SourceItem key={source.title} source={source} />
               ))}
             </View>
           ) : null}
@@ -121,10 +91,16 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    gap: 6,
+    gap: 8,
   },
-  sourceItem: {
+  sourceLink: {
     color: Colors.primary,
+    fontSize: 12,
+    lineHeight: 16,
+    textDecorationLine: "underline",
+  },
+  sourcePlain: {
+    color: Colors.text,
     fontSize: 12,
     lineHeight: 16,
   },

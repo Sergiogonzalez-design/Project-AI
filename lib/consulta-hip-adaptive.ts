@@ -105,6 +105,14 @@ export const TRAINING_LOAD_OPTIONS = [
   "Ejercicio de resistencia (mucho tiempo o muchas repeticiones)",
 ] as const;
 
+export const GROIN_DOHA_ZONE_OPTIONS = [
+  "Muslo interno / aductor",
+  "Parte delantera de la ingle",
+  "Sobre el pubis / centro",
+  "Canal inguinal / parte alta de la ingle",
+  "No estoy seguro",
+] as const;
+
 export const NEURO_ZONE_OPTIONS = [
   "Pie completo",
   "Dedos del pie",
@@ -125,6 +133,8 @@ export type HipAdaptiveAnswers = {
   rf_vascular: string;
   rf_perdida_sensibilidad: string;
   rf_cola_caballo: string;
+  /** If true after red flags, skip remaining sections (urgency). */
+  acortar_por_urgencia: boolean;
   // Core
   evolucion: string;
   inicio: string;
@@ -132,15 +142,26 @@ export type HipAdaptiveAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   localizacion_cadera: string[];
+  dolor_familiar: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
   sintomas_asociados: string[];
   movimientos_agravantes: string[];
-  // Trauma branch
+  // Groin Doha branch
+  groin_zona_exacta: string[];
+  groin_flexion_resistida: string;
+  groin_palpar_pubis: string;
+  groin_tos_valsalva: string;
+  // Trauma / acute sport branch
   trauma_detalle: string;
   trauma_apoyo: string;
+  trauma_pop: string;
+  trauma_hematoma: string;
+  trauma_hinchazon: string;
+  trauma_continuar: string;
+  trauma_debilidad: string;
   // Training branch
   entreno_ejercicio: string;
   entreno_momento: string;
@@ -161,12 +182,22 @@ export type HipAdaptiveAnswers = {
   posterior_sentarse: string;
   posterior_estirar: string;
   posterior_ciatico: string;
+  posterior_palpacion_isquion: string;
+  posterior_flexion_resistida: string;
+  posterior_sprint: string;
+  posterior_lumbar: string;
+  posterior_slr: string;
   // Adductor / pubalgia branch
   aductor_apretar: string;
   aductor_abrir: string;
   // Lateral trochanter branch
   lateral_dormir_lado: string;
   lateral_escaleras: string;
+  lateral_palpacion: string;
+  lateral_apoyo_monomodal: string;
+  lateral_abduccion_resistida: string;
+  lateral_chasquido: string;
+  lateral_lumbar: string;
   // History
   lesion_previa: string;
   lesion_previa_detalle: string;
@@ -181,20 +212,31 @@ export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
     rf_vascular: "",
     rf_perdida_sensibilidad: "",
     rf_cola_caballo: "",
+    acortar_por_urgencia: false,
     evolucion: "",
     inicio: "",
     mecanismo: [],
     mecanismo_otro: "",
     intensidad_dolor: 5,
     localizacion_cadera: [],
+    dolor_familiar: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
     sintomas_asociados: [],
     movimientos_agravantes: [],
+    groin_zona_exacta: [],
+    groin_flexion_resistida: "",
+    groin_palpar_pubis: "",
+    groin_tos_valsalva: "",
     trauma_detalle: "",
     trauma_apoyo: "",
+    trauma_pop: "",
+    trauma_hematoma: "",
+    trauma_hinchazon: "",
+    trauma_continuar: "",
+    trauma_debilidad: "",
     entreno_ejercicio: "",
     entreno_momento: "",
     entreno_carga: "",
@@ -209,10 +251,20 @@ export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
     posterior_sentarse: "",
     posterior_estirar: "",
     posterior_ciatico: "",
+    posterior_palpacion_isquion: "",
+    posterior_flexion_resistida: "",
+    posterior_sprint: "",
+    posterior_lumbar: "",
+    posterior_slr: "",
     aductor_apretar: "",
     aductor_abrir: "",
     lateral_dormir_lado: "",
     lateral_escaleras: "",
+    lateral_palpacion: "",
+    lateral_apoyo_monomodal: "",
+    lateral_abduccion_resistida: "",
+    lateral_chasquido: "",
+    lateral_lumbar: "",
     lesion_previa: "",
     lesion_previa_detalle: "",
   };
@@ -221,6 +273,7 @@ export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
 export type HipQuestionSection =
   | "red_flags"
   | "core"
+  | "groin_doha"
   | "trauma"
   | "training"
   | "repetitive"
@@ -248,6 +301,15 @@ function hasSymptom(a: HipAdaptiveAnswers, name: string): boolean {
 
 function isTrauma(a: HipAdaptiveAnswers): boolean {
   return a.mecanismo.includes("Caída") || a.mecanismo.includes("Golpe directo");
+}
+
+function isAcuteSport(a: HipAdaptiveAnswers): boolean {
+  return a.mecanismo.includes("Sprint / chute / estirón explosivo");
+}
+
+/** Fall/blow or explosive sport — traumatic hip/pelvis module. */
+function hasTraumaticSection(a: HipAdaptiveAnswers): boolean {
+  return isTrauma(a) || isAcuteSport(a);
 }
 
 function isRepetitive(a: HipAdaptiveAnswers): boolean {
@@ -286,6 +348,18 @@ function hasAdductorSection(a: HipAdaptiveAnswers): boolean {
     a.localizacion_cadera.includes("Ingle / parte delantera") ||
     a.mecanismo.includes("Sprint / chute / estirón explosivo")
   );
+}
+
+function hasGroinDohaSection(a: HipAdaptiveAnswers): boolean {
+  return (
+    a.localizacion_cadera.includes("Ingle / parte delantera") ||
+    a.localizacion_cadera.includes("Profundo en la cadera")
+  );
+}
+
+function groinZoneIncludes(a: HipAdaptiveAnswers, ...zones: string[]): boolean {
+  if (!a.groin_zona_exacta.length) return true;
+  return a.groin_zona_exacta.some((z) => zones.includes(z));
 }
 
 export const HIP_QUESTIONS: HipQuestionDef[] = [
@@ -351,8 +425,34 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     options: YES_NO,
     required: true,
   },
+  {
+    id: "rf_cola_caballo",
+    section: "red_flags",
+    label:
+      "¿Alteración reciente de orina/heces o entumecimiento en la zona del asiento (entre las piernas)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+  },
 
-  // Core clinical characterization
+  // Core clinical characterization — localización y dolor familiar ANTES de mecanismo
+  {
+    id: "localizacion_cadera",
+    section: "core",
+    label: "¿Dónde sientes el dolor en la cadera? (puedes marcar varias)",
+    type: "multi",
+    options: HIP_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿El dolor que describes es el mismo que notas al caminar, correr, entrenar o en tu actividad habitual?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es distinto o solo duele en ciertos gestos", "No estoy seguro"],
+    required: true,
+  },
   
   {
     id: "inicio",
@@ -383,14 +483,6 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     section: "core",
     label: "Intensidad del dolor (1–10)",
     type: "slider",
-    required: true,
-  },
-  {
-    id: "localizacion_cadera",
-    section: "core",
-    label: "¿Dónde sientes el dolor en la cadera? (puedes marcar varias)",
-    type: "multi",
-    options: HIP_LOCATION_OPTIONS,
     required: true,
   },
   {
@@ -425,16 +517,6 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     showIf: (a) => a.irradiacion === "Sí",
   },
   {
-    id: "rf_cola_caballo",
-    section: "core",
-    label:
-      "¿Alteración reciente de orina/heces o entumecimiento en la zona del asiento (entre las piernas)?",
-    type: "single",
-    options: YES_NO,
-    required: true,
-    showIf: (a) => a.irradiacion === "Sí",
-  },
-  {
     id: "sintomas_asociados",
     section: "core",
     label: "¿Qué otros síntomas notas? (puedes marcar varias)",
@@ -449,6 +531,60 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     type: "multi",
     options: AGGRAVATING_MOVEMENT_OPTIONS,
     required: true,
+  },
+
+  // Groin Doha — sub-localización ingle (marco master)
+  {
+    id: "groin_zona_exacta",
+    section: "groin_doha",
+    label:
+      "Si te duele la ingle, ¿puedes señalar con más detalle dónde? (puedes marcar varias)",
+    type: "multi",
+    options: GROIN_DOHA_ZONE_OPTIONS,
+    required: true,
+    showIf: hasGroinDohaSection,
+  },
+  {
+    id: "groin_flexion_resistida",
+    section: "groin_doha",
+    label:
+      "¿Duele al levantar la rodilla hacia el pecho contra resistencia (como subir escaleras con fuerza)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: (a) =>
+      hasGroinDohaSection(a) &&
+      groinZoneIncludes(
+        a,
+        "Parte delantera de la ingle",
+        "No estoy seguro"
+      ),
+  },
+  {
+    id: "groin_palpar_pubis",
+    section: "groin_doha",
+    label: "¿Duele si presionas con los dedos el centro del pubis (hueso bajo el abdomen)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: (a) =>
+      hasGroinDohaSection(a) &&
+      groinZoneIncludes(a, "Sobre el pubis / centro", "No estoy seguro"),
+  },
+  {
+    id: "groin_tos_valsalva",
+    section: "groin_doha",
+    label: "¿Empeora al toser, estornudar o hacer fuerza con el abdomen?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: (a) =>
+      hasGroinDohaSection(a) &&
+      groinZoneIncludes(
+        a,
+        "Canal inguinal / parte alta de la ingle",
+        "No estoy seguro"
+      ),
   },
 
   // Trauma branch
@@ -468,6 +604,52 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     options: TRAUMA_WEIGHT_BEARING_OPTIONS,
     required: true,
     showIf: isTrauma,
+  },
+  {
+    id: "trauma_pop",
+    section: "trauma",
+    label: "¿Oíste o sentiste un «pop», chasquido o desgarro en el momento?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasTraumaticSection,
+  },
+  {
+    id: "trauma_continuar",
+    section: "trauma",
+    label: "¿Pudiste seguir el deporte o la actividad después del momento del dolor?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasTraumaticSection,
+  },
+  {
+    id: "trauma_hematoma",
+    section: "trauma",
+    label: "¿Ha aparecido un moratón o hematoma?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasTraumaticSection,
+  },
+  {
+    id: "trauma_hinchazon",
+    section: "trauma",
+    label: "¿Hay hinchazón visible en la zona?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasTraumaticSection,
+  },
+  {
+    id: "trauma_debilidad",
+    section: "trauma",
+    label:
+      "¿Notas la pierna más débil al chutar, sprintar, levantar la rodilla o apretar las rodillas?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasTraumaticSection,
   },
 
   // Training branch
@@ -605,6 +787,54 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     required: true,
     showIf: hasPosteriorSection,
   },
+  {
+    id: "posterior_palpacion_isquion",
+    section: "posterior",
+    label:
+      "¿Duele si presionas con los dedos el hueso del asiento (tuberosidad isquiática)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
+  },
+  {
+    id: "posterior_flexion_resistida",
+    section: "posterior",
+    label:
+      "¿Duele la parte de atrás del muslo al doblar la rodilla contra resistencia (como al correr o subir cuesta)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
+  },
+  {
+    id: "posterior_sprint",
+    section: "posterior",
+    label: "¿Empeora al correr rápido, sprintar o chutar?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
+  },
+  {
+    id: "posterior_slr",
+    section: "posterior",
+    label:
+      "¿Duele en la parte de atrás del muslo o glúteo al inclinarte hacia delante y estirar la pierna recta?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
+  },
+  {
+    id: "posterior_lumbar",
+    section: "posterior",
+    label: "¿Tienes también dolor lumbar o sensación de ciática?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
+  },
 
   // Adductor / pubalgia branch
   {
@@ -647,6 +877,51 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     required: true,
     showIf: hasLateralTrochanterSection,
   },
+  {
+    id: "lateral_palpacion",
+    section: "lateral_trochanter",
+    label: "¿Duele si presionas con los dedos el hueso del lateral de la cadera?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralTrochanterSection,
+  },
+  {
+    id: "lateral_apoyo_monomodal",
+    section: "lateral_trochanter",
+    label: "¿Duele mantener el peso sobre una sola pierna (p. ej. al vestirte)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralTrochanterSection,
+  },
+  {
+    id: "lateral_abduccion_resistida",
+    section: "lateral_trochanter",
+    label: "¿Duele al separar la pierna hacia fuera contra resistencia?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralTrochanterSection,
+  },
+  {
+    id: "lateral_chasquido",
+    section: "lateral_trochanter",
+    label: "¿Notas un chasquido o salto en el lateral al caminar o mover la pierna?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralTrochanterSection,
+  },
+  {
+    id: "lateral_lumbar",
+    section: "lateral_trochanter",
+    label: "¿Tienes también dolor lumbar o sensación de ciática?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralTrochanterSection,
+  },
 
   // History
   {
@@ -669,6 +944,7 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
 export const HIP_SECTION_LABELS: Record<HipQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
   core: "Caracterización del problema",
+  groin_doha: "Detalle de la ingle (marco Doha)",
   trauma: "Detalles del golpe o la caída",
   training: "Detalles del entrenamiento",
   repetitive: "Movimiento repetitivo / carrera",
@@ -684,6 +960,7 @@ export const HIP_SECTION_LABELS: Record<HipQuestionSection, string> = {
 export const HIP_SECTION_ORDER: HipQuestionSection[] = [
   "red_flags",
   "core",
+  "groin_doha",
   "trauma",
   "training",
   "repetitive",
@@ -710,6 +987,7 @@ export function getVisibleHipQuestions(
 export function getVisibleHipSections(
   answers: HipAdaptiveAnswers
 ): HipQuestionSection[] {
+  if (answers.acortar_por_urgencia) return ["red_flags"];
   const visible = getVisibleHipQuestions(answers);
   return HIP_SECTION_ORDER.filter((s) => visible.some((q) => q.section === s));
 }
@@ -806,6 +1084,9 @@ export function formatHipAdaptive(
     urgent
       ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
       : "Ninguna bandera roja marcada como Sí",
+    answers.acortar_por_urgencia
+      ? "CUESTIONARIO ACORTADO POR URGENCIA — prioriza HOSPITAL / URGENCIAS; no pidas tests funcionales ni hop."
+      : "",
     `Incapacidad apoyo tras traumatismo: ${answers.rf_no_apoyo || "—"}`,
     `Deformidad / pierna acortada-rotada: ${answers.rf_deformidad || "—"}`,
     `Fiebre: ${answers.rf_fiebre || "—"}`,
@@ -820,6 +1101,7 @@ export function formatHipAdaptive(
     `Mecanismo: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización EXACTA marcada por el paciente: ${formatMulti(answers.localizacion_cadera)}`,
+    `Dolor familiar (mismo que en actividad): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -827,12 +1109,31 @@ export function formatHipAdaptive(
     `Movimientos agravantes: ${formatMulti(answers.movimientos_agravantes)}`,
   ];
 
-  if (isTrauma(answers)) {
+  if (hasGroinDohaSection(answers)) {
     lines.push(
       "",
-      "— DETALLE TRAUMA —",
-      `Detalle: ${answers.trauma_detalle}`,
-      `Apoyo/caminar tras trauma: ${answers.trauma_apoyo}`
+      "— INGLE — MARCO DOHA (adductor / iliopsoas / pubis / inguinal) —",
+      `Zona exacta en ingle: ${formatMulti(answers.groin_zona_exacta)}`,
+      `Dolor al levantar rodilla contra resistencia (iliopsoas): ${answers.groin_flexion_resistida}`,
+      `Palpación pubis dolorosa: ${answers.groin_palpar_pubis}`,
+      `Empeora al toser/estornudar (inguinal): ${answers.groin_tos_valsalva}`
+    );
+  }
+  if (hasTraumaticSection(answers)) {
+    lines.push(
+      "",
+      "— DETALLE TRAUMA / GESTO AGUDO —",
+      ...(isTrauma(answers)
+        ? [
+            `Detalle golpe/caída: ${answers.trauma_detalle}`,
+            `Apoyo/caminar tras trauma: ${answers.trauma_apoyo}`,
+          ]
+        : []),
+      `Pop / chasquido en el momento: ${answers.trauma_pop}`,
+      `Pudo continuar deporte/actividad: ${answers.trauma_continuar}`,
+      `Hematoma/moratón: ${answers.trauma_hematoma}`,
+      `Hinchazón: ${answers.trauma_hinchazon}`,
+      `Debilidad al gesto (chute/sprint/flexión/aducción): ${answers.trauma_debilidad}`
     );
   }
   if (answers.mecanismo.includes("Entrenamiento o ejercicio")) {
@@ -879,10 +1180,15 @@ export function formatHipAdaptive(
   if (hasPosteriorSection(answers)) {
     lines.push(
       "",
-      "— DOLOR GLÚTEO / PARTE DE ATRÁS DEL MUSLO —",
+      "— DOLOR GLÚTEO / ISQUION / PARTE DE ATRÁS DEL MUSLO —",
       `Duele al sentarse mucho tiempo / superficie dura: ${answers.posterior_sentarse}`,
       `Duele/irradia parte posterior del muslo al estirar la pierna: ${answers.posterior_estirar}`,
-      `Dolor/hormigueo glúteo al sentarse: ${answers.posterior_ciatico}`
+      `Dolor/hormigueo glúteo al sentarse (silla dura): ${answers.posterior_ciatico}`,
+      `Palpación tuberosidad isquiática dolorosa: ${answers.posterior_palpacion_isquion}`,
+      `Dolor con flexión de rodilla resistida: ${answers.posterior_flexion_resistida}`,
+      `Empeora con sprint/carrera/chute: ${answers.posterior_sprint}`,
+      `Duele al inclinarse y estirar pierna recta (SLR): ${answers.posterior_slr}`,
+      `Dolor lumbar/ciática asociado: ${answers.posterior_lumbar}`
     );
   }
   if (hasAdductorSection(answers)) {
@@ -898,7 +1204,12 @@ export function formatHipAdaptive(
       "",
       "— DOLOR LATERAL (TROCÁNTER) —",
       `Duele dormir de lado: ${answers.lateral_dormir_lado}`,
-      `Empeora con escaleras: ${answers.lateral_escaleras}`
+      `Empeora con escaleras: ${answers.lateral_escaleras}`,
+      `Palpación trocantérica dolorosa: ${answers.lateral_palpacion}`,
+      `Dolor con apoyo monopodal: ${answers.lateral_apoyo_monomodal}`,
+      `Dolor con abducción resistida: ${answers.lateral_abduccion_resistida}`,
+      `Chasquido lateral: ${answers.lateral_chasquido}`,
+      `Dolor lumbar/ciática asociado: ${answers.lateral_lumbar}`
     );
   }
 
@@ -910,15 +1221,28 @@ export function formatHipAdaptive(
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (labrum, cartílago, tendón, bursa, músculos aductores, nervio), no para diagnosticar.",
     "",
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos ni articulaciones no mencionadas):",
-    "- Posterior/glúteo o isquion + duele al sentarse + irradia por parte posterior del muslo al estirar → tendinopatía/sobrecarga de isquiotibiales proximales vs irritación glútea.",
-    "- Posterior/glúteo + dolor/hormigueo glúteo al sentarse sin dolor claro al estirar el isquiotibial → irritación glútea / posible atrapamiento nervioso vs origen isquiotibial.",
+    "- ÁRBOL MAESTRO: red flags → trauma → localización exacta → rama (groin Doha / lateral / posterior / hip-related). Permitir 2 causas coexistentes.",
+    "- Dolor familiar = mismo dolor en actividad → tests que lo reproduzcan pesan más.",
+    "- Ingle medial + aducción/apretar rodillas → adductor-related ↑ (NO confirmar por un test).",
+    "- Ingle anterior + flexión resistida → iliopsoas-related ↑.",
+    "- Pubis + palpación central → pubic-related ↑.",
+    "- Canal inguinal + tos/Valsalva → inguinal-related ↑ (orientativo).",
+    "- Posterior/isquion + sentarse duro + estirar isquio + flexión resistida + sprint → tendinopatía/distensión isquiotibial proximal ↑.",
+    "- Posterior/glúteo profundo + sentarse (silla dura) + hormigueo glúteo + estirar isquio menos claro → deep gluteal / irritación ciática ↑ (diferenciar lumbar).",
+    "- Posterior + SLR positivo + dolor lumbar → radiculopatía/ciática ↑; NO confirmar hernia por un test.",
+    "- Posterior/glúteo + dolor/hormigueo glúteo al sentarse sin dolor claro al estirar el isquiotibial → deep gluteal vs isquio según palpación y carga.",
     "- Ingle/anterior o muslo interno + duele al apretar rodillas o patear → sobrecarga/distensión de aductores (NO asumir pinzamiento de cadera).",
     "- Ingle/anterior + duele al abrir la pierna + inicio progresivo/entrenamiento → sobrecarga aductor / pubalgia atlética vs distensión aguda.",
     "- SOLO si marcó «Profundo en la cadera» + duele al sentarse/coche + chasquido/enganche → entonces sí valorar pinzamiento / labrum; si No a esas preguntas, NO priorizar labrum/FAI.",
-    "- Lateral + dormir de lado + escaleras → dolor trocantérico / glúteo medio vs tendinopatía.",
+    "- Lateral + dormir de lado + escaleras + palpación trocantérica + apoyo monopodal → compatible con GTPS/tendinopatía glútea (NO asumir bursitis automática).",
+    "- Lateral + chasquido reproducible → considerar snapping externo (ITB/glúteo mayor).",
+    "- Lateral + dolor lumbar/ciática + palpación trocantérica menos clara → lumbar/L5 referido ↑.",
     "- Irradiación a muslo/rodilla SOLO si el paciente la marcó → referida lumbar vs irradiación muscular; si no la marcó, NO menciones rodilla.",
     "- Alteración reciente de esfínteres o entumecimiento en silla de montar → sospecha cola de caballo (URGENCIA).",
-    "- Caída + no apoyo + deformidad → fractura/luxación (urgencia).",
+    "- Caída + no apoyo + deformidad → fractura/luxación (urgencia). NO tests de salto.",
+    "- Sprint/chute + pop + no pudo continuar + debilidad → distensión/avulsión según zona (flexor/recto, aductor, isquio); adolescente + dolor óseo → avulsión ↑ (imagen).",
+    "- Pivote + pop inguinal + puede apoyar + chasquido → labrum traumático ↑ (no FAI crónico automático).",
+    "- Pop + hematoma + puede cojear → distensión musculotendinosa compatible; no inventar grado de rotura.",
     "- Dolor nocturno progresivo + pérdida peso → valorar patología ósea (priorizar valoración).",
     "- Fiebre + hinchazón → infección (urgencia).",
     "- Dolor fuerte y súbito en la ingle + pie frío → posible problema de circulación (urgencia)."
@@ -985,6 +1309,12 @@ export const HIP_LABEL_EN: Partial<Record<string, string>> = {
   movimientos_agravantes: "Which movements provoke or worsen it? (you can select several)",
   trauma_detalle: "Describe the blow or fall",
   trauma_apoyo: "Could you keep bearing weight or walking afterwards?",
+  trauma_pop: "Did you hear or feel a pop, snap, or tear at the moment?",
+  trauma_continuar: "Could you continue the sport or activity after the pain started?",
+  trauma_hematoma: "Has a bruise or hematoma appeared?",
+  trauma_hinchazon: "Is there visible swelling in the area?",
+  trauma_debilidad:
+    "Does the leg feel weaker when kicking, sprinting, lifting the knee, or squeezing the knees?",
   entreno_ejercicio: "Which exercise or movement were you doing?",
   entreno_momento: "When did the pain appear?",
   entreno_carga: "What type of load were you using?",
@@ -1003,10 +1333,23 @@ export const HIP_LABEL_EN: Partial<Record<string, string>> = {
     "Does it hurt or radiate down the back of the thigh when you stretch the leg out?",
   posterior_ciatico:
     "Do you notice pain or tingling in the buttock when sitting, especially on a hard chair?",
+  posterior_palpacion_isquion:
+    "Does it hurt when you press the sit bone (ischial tuberosity) with your fingers?",
+  posterior_flexion_resistida:
+    "Does the back of the thigh hurt when bending the knee against resistance (e.g. running or climbing)?",
+  posterior_sprint: "Does it worsen when sprinting, running fast, or kicking?",
+  posterior_slr:
+    "Does it hurt in the back of the thigh or buttock when you lean forward and straighten the leg?",
+  posterior_lumbar: "Do you also have lower back pain or sciatica-like symptoms?",
   aductor_apretar: "Does it hurt to squeeze your knees together or when kicking?",
   aductor_abrir: "Does it hurt to open the leg outward (away from the body)?",
   lateral_dormir_lado: "Does it hurt when sleeping on that side?",
   lateral_escaleras: "Does it worsen going up or down stairs?",
+  lateral_palpacion: "Does it hurt when you press the bone on the side of your hip?",
+  lateral_apoyo_monomodal: "Does it hurt to stand on one leg (e.g. when getting dressed)?",
+  lateral_abduccion_resistida: "Does it hurt when you push your leg outward against resistance?",
+  lateral_chasquido: "Do you notice a snap or jump on the side when walking or moving your leg?",
+  lateral_lumbar: "Do you also have lower back pain or sciatica-like symptoms?",
   lesion_previa: "Have you had previous injuries or surgery on this hip?",
   lesion_previa_detalle: "Describe previous injuries, surgeries, or treatments",
 };

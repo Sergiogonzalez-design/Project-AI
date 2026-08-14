@@ -16,10 +16,6 @@ import {
   isPhysioProfileComplete,
   type PhysioProfileFields,
 } from "@/lib/physio-profile-complete";
-import {
-  isPatientModeCookieValue,
-  PATIENT_MODE_COOKIE,
-} from "@/lib/physio-invite";
 
 const PROFILE_COLUMNS =
   `account_type, ${ATHLETE_PROFILE_COLUMNS}, ${PHYSIO_PROFILE_COLUMNS}` as const;
@@ -35,7 +31,22 @@ function destinationFor(profile: RoutingProfile | null | undefined): string {
   return isAthleteProfileComplete(profile) ? "/consulta" : "/onboarding";
 }
 
+/** Static clinical demos and media must stay public (mobile app loads videos/images by URL). */
+function isPublicStaticAsset(pathname: string): boolean {
+  return (
+    pathname.startsWith("/clinical-tests/") ||
+    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|mov|m4v)$/i.test(pathname)
+  );
+}
+
 export async function middleware(request: NextRequest) {
+  if (isPublicStaticAsset(request.nextUrl.pathname)) {
+    const res = NextResponse.next();
+    res.headers.set("Access-Control-Allow-Origin", "*");
+    res.headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    return res;
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.next();
   }
@@ -73,9 +84,6 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const search = request.nextUrl.search;
-  const patientMode = isPatientModeCookieValue(
-    request.cookies.get(PATIENT_MODE_COOKIE)?.value
-  );
 
   const isPublic =
     pathname === "/login" ||
@@ -164,11 +172,16 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
 
-    // Physios stay on /fisio unless they opted into "modo paciente".
-    if (profile?.account_type === "physio" && !patientMode) {
+    // Physios stay on /fisio (patient Consulta is a separate patient account).
+    if (profile?.account_type === "physio") {
       const onPhysioArea =
         pathname === "/fisio" || pathname.startsWith("/fisio/");
-      if (!onPhysioArea) {
+      const onSharedSite =
+        pathname === "/perfil" ||
+        pathname.startsWith("/perfil/") ||
+        pathname === "/sobre-nosotros" ||
+        pathname.startsWith("/sobre-nosotros/");
+      if (!onPhysioArea && !onSharedSite) {
         return NextResponse.redirect(new URL("/fisio", request.url));
       }
     }
@@ -195,6 +208,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|clinical-tests|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|mov|m4v)$).*)",
   ],
 };

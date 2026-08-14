@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
     }
 
     const title = extractPageTitle(html);
-    const sourceName = title ? `${title} — ${parsed.hostname}` : parsed.toString();
+    const sourceName = title
+      ? `${title} — ${parsed.toString()}`
+      : parsed.toString();
 
     return NextResponse.json({
       text,

@@ -5,7 +5,7 @@ import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
-import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "@/lib/consulta-red-flags-copy";
+import { redFlagsDetectedLabel, redFlagsUrgencyNote, skipQuestionnaireForUrgencyLabel } from "@/lib/consulta-red-flags-copy";
 
 import { useEffect } from "react";
 import {
@@ -209,6 +209,18 @@ export function ConsultaAdaptiveHip({
     onChange({ ...answers, ...p });
   }
 
+  function handleSkipUrgency() {
+    if (currentSection !== "red_flags") return;
+    const issue = validateHipSection("red_flags", answers);
+    if (issue) {
+      onSectionError(issue.message);
+      scrollToQuestionnaireQuestion(issue.questionId);
+      return;
+    }
+    onSectionError(null);
+    onChange({ ...answers, acortar_por_urgencia: true });
+  }
+
   function handleNext() {
     if (!currentSection) return;
     const issue = validateHipSection(currentSection, answers);
@@ -266,6 +278,15 @@ export function ConsultaAdaptiveHip({
             className="btn-primary flex-1"
           >
             Siguiente
+          </button>
+        )}
+        {currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia && (
+          <button
+            type="button"
+            onClick={handleSkipUrgency}
+            className="btn-secondary flex-1"
+          >
+            {skipQuestionnaireForUrgencyLabel(locale)}
           </button>
         )}
       </div>

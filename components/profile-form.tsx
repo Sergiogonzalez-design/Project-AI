@@ -1,6 +1,7 @@
 "use client";
 
 import { AthleteProfileSection } from "@/components/athlete-profile-section";
+import { PhysioProfileSection } from "@/components/physio-profile-section";
 import { createClient } from "@/lib/supabase/client";
 import { Camera, Check, Loader2, Mail, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -27,6 +28,7 @@ export function ProfileForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
 
   useEffect(() => {
     async function load() {
@@ -38,13 +40,14 @@ export function ProfileForm() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url")
+        .select("display_name, avatar_url, account_type")
         .eq("id", user.id)
         .single();
 
       if (profile) {
         setDisplayName(profile.display_name ?? "");
         setAvatarUrl(profile.avatar_url ?? null);
+        setAccountType(profile.account_type === "physio" ? "physio" : "patient");
       }
       setLoading(false);
     }
@@ -325,7 +328,11 @@ export function ProfileForm() {
         </div>
 
         <div className="mt-6">
-          <AthleteProfileSection />
+          {accountType === "physio" ? (
+            <PhysioProfileSection />
+          ) : (
+            <AthleteProfileSection />
+          )}
         </div>
       </div>
     </div>

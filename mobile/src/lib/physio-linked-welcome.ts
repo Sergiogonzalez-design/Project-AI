@@ -22,13 +22,13 @@ export function buildPhysioLinkedWelcome(
   const name = physioDisplayName(physioName);
   return `Hola. Soy Physio, el asistente de AIKinora. Tu fisioterapeuta **${name}** te ha enviado aquí para preparar un **informe clínico** que verá en su panel antes de la cita.
 
-Este chat es **solo para eso**: cuéntame qué te molesta (dónde, cuándo empezó y cómo te afecta), te haré preguntas y te pediré unas **pruebas funcionales** sencillas. Cuando me envíes esos resultados, generaré el informe para **${name}**.
+Cuéntame qué te molesta (dónde, cuándo empezó y cómo te afecta), te haré preguntas y te pediré unas **pruebas funcionales** sencillas. Cuando me envíes esos resultados, generaré el informe para **${name}**.
 
 Si tienes otras dudas generales o quieres hablar libremente con la IA, usa la pestaña **Consulta**.
 
 Cuando quieras, empieza describiendo tu molestia.
 
-_AIKinora es una IA orientativa: no sustituye una valoración presencial._`;
+AIKinora es una IA orientativa: no sustituye una valoración presencial.`;
 }
 
 /** After questionnaire: ask the patient to complete functional tests before closing. */
@@ -36,7 +36,7 @@ export function buildPhysioLinkedFunctionalTestsPrompt(
   physioName: string | null | undefined
 ): string {
   const name = physioDisplayName(physioName);
-  return `Antes de enviar el informe a **${name}**, haz las **pruebas funcionales** de arriba (en casa, con cuidado) y responde aquí a cada una con **sí/no**, dónde duele y si se parece al otro lado.
+  return `Antes de enviar el informe a **${name}**, haz las **pruebas funcionales** de arriba (en casa, con cuidado) y pulsa **Sí** o **No** en cada una. No hace falta escribir nada más.
 
 Cuando me envíes esos resultados, cerraré la consulta y **${name}** recibirá el informe completo con tus respuestas.`;
 }
@@ -52,5 +52,5 @@ export function buildPhysioLinkedCompletionMessage(
 
 Si quieres seguir usando la IA, abre la pestaña **Consulta**.
 
-_AIKinora es una IA orientativa: no sustituye una valoración presencial._`;
+AIKinora es una IA orientativa: no sustituye una valoración presencial.`;
 }

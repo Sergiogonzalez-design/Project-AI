@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../lib/colors";
 import { hasClinicalReasoningForReport } from "../lib/clinical-reasoning";
+import { toCitedSource } from "../lib/source-links";
 
 const SECTION_ORDER = [
   "Resultados de las pruebas funcionales ya realizadas",
@@ -61,6 +62,17 @@ function splitReportSections(content: string): {
       }
       continue;
     }
+    const kept: string[] = [];
+    for (const line of body.split("\n")) {
+      const trimmed = line.trim();
+      if (/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:/i.test(trimmed)) {
+        const item = trimmed.replace(/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*/i, "").trim();
+        if (item) sources.push(item);
+        continue;
+      }
+      kept.push(line);
+    }
+    body = kept.join("\n").trim();
     if (title === "Pruebas de imagen si procede") {
       body =
         "No se recomienda realizar pruebas de imagen en esta fase inicial hasta pasadas 24-48 horas.";
@@ -162,16 +174,30 @@ export function PhysioReportView({
             onPress={() => setSourcesOpen((v) => !v)}
             style={styles.sourcesBtn}
           >
-            <Text style={styles.sourcesBtnText}>
-              {sourcesOpen ? "Ocultar fuentes consultadas" : "Fuentes consultadas"}
-            </Text>
+            <Text style={styles.sourcesBtnText}>Fuentes consultadas</Text>
+            <View style={styles.sourcesBadge}>
+              <Text style={styles.sourcesBadgeText}>{sources.length}</Text>
+            </View>
           </Pressable>
           {sourcesOpen
-            ? sources.map((s) => (
-                <Text key={s} style={styles.sourceItem}>
-                  • {s}
-                </Text>
-              ))
+            ? sources.map((s) => {
+                const source = toCitedSource(s);
+                if (!source.href) {
+                  return (
+                    <Text key={s} style={styles.sourceItem}>
+                      • {source.title}
+                    </Text>
+                  );
+                }
+                return (
+                  <Pressable
+                    key={s}
+                    onPress={() => void Linking.openURL(source.href!)}
+                  >
+                    <Text style={styles.sourceLink}>• {source.title}</Text>
+                  </Pressable>
+                );
+              })
             : null}
         </View>
       ) : null}
@@ -199,6 +225,9 @@ const styles = StyleSheet.create({
   bold: { fontWeight: "700", color: Colors.text },
   sourcesBtn: {
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.background,
@@ -211,11 +240,27 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.text,
   },
+  sourcesBadge: {
+    backgroundColor: Colors.primary,
+    borderRadius: 999,
+    minWidth: 18,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    alignItems: "center",
+  },
+  sourcesBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
   sourceItem: {
     marginTop: 4,
     fontSize: 12,
     lineHeight: 18,
     color: Colors.textLight,
+  },
+  sourceLink: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    color: Colors.primary,
+    textDecorationLine: "underline",
   },
   disclaimer: {
     fontSize: 11,

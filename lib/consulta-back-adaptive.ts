@@ -165,6 +165,7 @@ export type BackAdaptiveAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   localizacion_espalda: string[];
+  dolor_familiar: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
@@ -219,6 +220,7 @@ export function defaultBackAdaptiveAnswers(): BackAdaptiveAnswers {
     mecanismo_otro: "",
     intensidad_dolor: 5,
     localizacion_espalda: [],
+    dolor_familiar: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
@@ -387,8 +389,24 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     required: true,
   },
 
-  // Core clinical characterization
-  
+  // Core — location + familiar pain before mechanism
+  {
+    id: "localizacion_espalda",
+    section: "core",
+    label: "¿Dónde sientes el dolor en la espalda? (puedes marcar varias)",
+    type: "multi",
+    options: BACK_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿Es el mismo dolor que notas al agacharte, arquearte, estar sentado, o cuando baja por la pierna?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
+    required: true,
+  },
   {
     id: "inicio",
     section: "core",
@@ -418,14 +436,6 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     section: "core",
     label: "Intensidad del dolor (1–10)",
     type: "slider",
-    required: true,
-  },
-  {
-    id: "localizacion_espalda",
-    section: "core",
-    label: "¿Dónde sientes el dolor en la espalda? (puedes marcar varias)",
-    type: "multi",
-    options: BACK_LOCATION_OPTIONS,
     required: true,
   },
   {
@@ -837,6 +847,7 @@ export function formatBackAdaptive(
     `Mecanismo: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización espalda: ${formatMulti(answers.localizacion_espalda)}`,
+    `Dolor familiar (agacharse/arquear/pierna): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación glúteo/pierna: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -959,6 +970,8 @@ export const BACK_LABEL_EN: Partial<Record<string, string>> = {
   mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_espalda: "Where do you feel the pain in your back? (you can select several)",
+  dolor_familiar:
+    "Is it the same pain you notice when bending, arching, sitting, or when it goes down the leg?",
   tipo_dolor: "How would you describe the pain? (you can select several)",
   limitacion_funcional: "How much does it limit your daily activities?",
   irradiacion: "Does the pain spread to the buttock or leg?",

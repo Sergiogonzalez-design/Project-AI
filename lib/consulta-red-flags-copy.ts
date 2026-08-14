@@ -11,3 +11,11 @@ export function redFlagsUrgencyNote(locale: ConsultLocale = "es"): string {
     ? " Physio will prioritize recommending urgent medical care."
     : " Physio priorizará recomendarte atención médica urgente.";
 }
+
+export function skipQuestionnaireForUrgencyLabel(
+  locale: ConsultLocale = "es"
+): string {
+  return locale === "en"
+    ? "Send now — urgent care"
+    : "Enviar ahora (urgencia)";
+}

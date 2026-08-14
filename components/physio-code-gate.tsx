@@ -53,7 +53,7 @@ export function PhysioCodeGate({
         raw.includes("no encontrado")
           ? "Código no encontrado. Comprueba que lo has escrito bien."
           : raw.includes("fisioterapeutas no pueden")
-            ? "Estás en una cuenta de fisioterapeuta. Usa «Modo paciente» solo para Consulta, o inicia sesión con una cuenta de paciente para vincularte."
+            ? "Estás en una cuenta de fisioterapeuta. Inicia sesión con una cuenta de paciente para vincularte."
             : raw
       );
       return;

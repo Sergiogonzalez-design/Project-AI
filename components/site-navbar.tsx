@@ -2,50 +2,81 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { NavBackButton } from "@/components/nav-back-button";
+import { clearPatientModeCookie } from "@/components/fisio-patient-mode";
 import {
-  ExitPatientModeButton,
-  readPatientModeFromDocument,
-} from "@/components/fisio-patient-mode";
+  isNavLinkActive,
+  isPacienteLandingPath,
+  PATIENT_NAV_LINKS,
+  PHYSIO_NAV_LINKS,
+  type AppNavLink,
+} from "@/lib/app-nav-links";
 import { isClientAdminEmail } from "@/lib/is-admin-client";
+import { signOutToLogin } from "@/lib/sign-out-client";
 import { createClient } from "@/lib/supabase/client";
-
-const baseLinks = [
-  { href: "/consulta", label: "Consulta" },
-  { href: "/fisioterapia", label: "Fisioterapia" },
-  { href: "/sobre-nosotros", label: "Sobre Nosotros" },
-  { href: "/perfil", label: "Perfil" },
-] as const;
 
 export function SiteNavbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [patientMode, setPatientMode] = useState(false);
+  const [isPhysioAccount, setIsPhysioAccount] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    setPatientMode(readPatientModeFromDocument());
   }, []);
 
   useEffect(() => {
     const supabase = createClient();
-    void supabase.auth
-      .getUser()
-      .then(({ data }) => {
-        setUserEmail(data.user?.email ?? null);
-      })
-      .catch(() => {
-        setUserEmail(null);
-      });
+    async function loadUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUserEmail(user?.email ?? null);
+      if (!user) {
+        setIsPhysioAccount(false);
+        clearPatientModeCookie();
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("account_type")
+        .eq("id", user.id)
+        .maybeSingle();
+      const physio = profile?.account_type === "physio";
+      setIsPhysioAccount(physio);
+      clearPatientModeCookie();
+    }
+    void loadUser().catch(() => {
+      setUserEmail(null);
+      setIsPhysioAccount(false);
+      clearPatientModeCookie();
+    });
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUserEmail(session?.user?.email ?? null);
+        if (!session?.user) {
+          setIsPhysioAccount(false);
+          clearPatientModeCookie();
+          return;
+        }
+        const userId = session.user.id;
+        // Defer DB work — awaiting inside this callback deadlocks signOut().
+        window.setTimeout(() => {
+          void supabase
+            .from("profiles")
+            .select("account_type")
+            .eq("id", userId)
+            .maybeSingle()
+            .then(({ data: profile }) => {
+              setIsPhysioAccount(profile?.account_type === "physio");
+              clearPatientModeCookie();
+            });
+        }, 0);
       }
     );
     return () => listener.subscription.unsubscribe();
@@ -71,24 +102,27 @@ export function SiteNavbar() {
 
   const isAdmin = isClientAdminEmail(userEmail);
 
-  const links = useMemo(() => {
-    if (!isAdmin) return [...baseLinks];
-    return [
-      ...baseLinks.slice(0, -1),
-      { href: "/admin", label: "Admin" },
-      baseLinks[baseLinks.length - 1],
-    ];
-  }, [isAdmin]);
+  const usePhysioLinks = isPhysioAccount;
 
-  async function handleSignOut() {
+  const links = useMemo(() => {
+    const base: AppNavLink[] = usePhysioLinks
+      ? [...PHYSIO_NAV_LINKS]
+      : [...PATIENT_NAV_LINKS];
+    if (!isAdmin) return base;
+    return [
+      ...base.slice(0, -1),
+      { href: "/admin", label: "Admin" },
+      base[base.length - 1],
+    ];
+  }, [isAdmin, usePhysioLinks]);
+
+  const homeHref = usePhysioLinks ? "/fisio" : "/fisioterapia";
+  const showBack = !isPacienteLandingPath(pathname);
+
+  function handleSignOut() {
     setSigningOut(true);
     setMenuOpen(false);
-    document.cookie =
-      "aikinora_patient_mode=; path=/; max-age=0; SameSite=Lax";
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    signOutToLogin();
   }
 
   const menu =
@@ -113,7 +147,7 @@ export function SiteNavbar() {
                   const active =
                     href === "/admin"
                       ? pathname.startsWith("/admin")
-                      : pathname.startsWith(href);
+                      : isNavLinkActive(pathname, href);
                   return (
                     <Link
                       key={href}
@@ -134,7 +168,7 @@ export function SiteNavbar() {
               <div className="shrink-0 border-t border-slate-200/80 p-3">
                 <button
                   type="button"
-                  onClick={() => void handleSignOut()}
+                  onClick={handleSignOut}
                   disabled={signingOut}
                   className="btn-secondary w-full !justify-start !text-sm"
                 >
@@ -150,11 +184,12 @@ export function SiteNavbar() {
   return (
     <>
       <header className="sticky top-0 z-[110] w-full border-b border-slate-200/70 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6">
+          {showBack ? <NavBackButton fallbackHref={homeHref} /> : null}
           <Link
-            href="/consulta"
-            className="flex items-center gap-2.5"
-            aria-label="AIKinora — Consulta"
+            href={homeHref}
+            className="flex min-w-0 flex-1 items-center gap-2.5"
+            aria-label="AIKinora — Inicio"
           >
             <Image
               src="/logo-icon.png"
@@ -170,7 +205,6 @@ export function SiteNavbar() {
           </Link>
 
           <div className="flex items-center gap-2">
-            {patientMode ? <ExitPatientModeButton /> : null}
             <button
               type="button"
               className="btn-icon !h-10 !w-10 text-slate-800"

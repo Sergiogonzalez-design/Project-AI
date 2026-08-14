@@ -1,3 +1,4 @@
+import { AuthPageShell } from "@/components/auth-page-shell";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { PhysioOnboardingForm } from "@/components/physio-onboarding-form";
 import { createClient } from "@/lib/supabase/server";
@@ -34,8 +35,10 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
-      {isPhysio ? <PhysioOnboardingForm /> : <OnboardingForm />}
-    </main>
+    <AuthPageShell fallbackHref="/login">
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
+        {isPhysio ? <PhysioOnboardingForm /> : <OnboardingForm />}
+      </main>
+    </AuthPageShell>
   );
 }

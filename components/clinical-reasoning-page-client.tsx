@@ -58,7 +58,7 @@ export function ClinicalReasoningPageClient({
   if (loading) {
     return (
       <main className="mx-auto max-w-2xl px-6 py-10">
-        <p className="text-sm text-neutral-500">Cargando árbol clínico…</p>
+        <p className="text-sm text-neutral-500">Cargando razonamiento clínico…</p>
       </main>
     );
   }

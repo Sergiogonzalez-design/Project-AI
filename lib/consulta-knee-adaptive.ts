@@ -143,6 +143,8 @@ export type KneeAdaptiveAnswers = {
   rf_vascular: string;
   rf_perdida_sensibilidad: string;
   rf_extension_activa: string;
+  /** If true after red flags, skip remaining sections (urgency). */
+  acortar_por_urgencia: boolean;
   // Core
   evolucion: string;
   inicio: string;
@@ -150,12 +152,35 @@ export type KneeAdaptiveAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   localizacion_rodilla: string[];
+  dolor_familiar: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
   irradiacion_detalle: string;
   sintomas_asociados: string[];
   movimientos_agravantes: string[];
+  // Anterior PFPS / patellar tendon branch
+  anterior_escaleras_bajar: string;
+  anterior_sentadilla: string;
+  anterior_sentado_largo: string;
+  anterior_saltar: string;
+  anterior_palpacion_tendon: string;
+  // Medial LCM / meniscus / pes anserinus branch
+  medial_contacto: string;
+  medial_linea_articular: string;
+  medial_pes_anserino: string;
+  medial_pivot_carga: string;
+  medial_valgo_estres: string;
+  // Lateral LCL / meniscus / ITB branch
+  lateral_contacto: string;
+  lateral_linea_articular: string;
+  lateral_carrera_patron: string;
+  lateral_pivot_carga: string;
+  lateral_varo_estres: string;
+  // Posterior / popliteal branch
+  posterior_flexionar: string;
+  posterior_bulto: string;
+  posterior_bloqueo_flex: string;
   // Trauma branch
   trauma_detalle: string;
   trauma_chasquido: string;
@@ -165,6 +190,12 @@ export type KneeAdaptiveAnswers = {
   torsion_detalle: string;
   torsion_chasquido: string;
   torsion_apoyo: string;
+  // Instability / ACL cluster
+  acl_sin_contacto: string;
+  acl_pop: string;
+  acl_continuar: string;
+  acl_hinchazon_horas: string;
+  acl_cede_giro: string;
   // Training branch
   entreno_ejercicio: string;
   entreno_momento: string;
@@ -203,18 +234,38 @@ export function defaultKneeAdaptiveAnswers(): KneeAdaptiveAnswers {
     rf_vascular: "",
     rf_perdida_sensibilidad: "",
     rf_extension_activa: "",
+    acortar_por_urgencia: false,
     evolucion: "",
     inicio: "",
     mecanismo: [],
     mecanismo_otro: "",
     intensidad_dolor: 5,
     localizacion_rodilla: [],
+    dolor_familiar: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
     irradiacion_detalle: "",
     sintomas_asociados: [],
     movimientos_agravantes: [],
+    anterior_escaleras_bajar: "",
+    anterior_sentadilla: "",
+    anterior_sentado_largo: "",
+    anterior_saltar: "",
+    anterior_palpacion_tendon: "",
+    medial_contacto: "",
+    medial_linea_articular: "",
+    medial_pes_anserino: "",
+    medial_pivot_carga: "",
+    medial_valgo_estres: "",
+    lateral_contacto: "",
+    lateral_linea_articular: "",
+    lateral_carrera_patron: "",
+    lateral_pivot_carga: "",
+    lateral_varo_estres: "",
+    posterior_flexionar: "",
+    posterior_bulto: "",
+    posterior_bloqueo_flex: "",
     trauma_detalle: "",
     trauma_chasquido: "",
     trauma_apoyo: "",
@@ -222,6 +273,11 @@ export function defaultKneeAdaptiveAnswers(): KneeAdaptiveAnswers {
     torsion_detalle: "",
     torsion_chasquido: "",
     torsion_apoyo: "",
+    acl_sin_contacto: "",
+    acl_pop: "",
+    acl_continuar: "",
+    acl_hinchazon_horas: "",
+    acl_cede_giro: "",
     entreno_ejercicio: "",
     entreno_momento: "",
     entreno_carga: "",
@@ -247,8 +303,13 @@ export function defaultKneeAdaptiveAnswers(): KneeAdaptiveAnswers {
 export type KneeQuestionSection =
   | "red_flags"
   | "core"
+  | "anterior_pfp"
+  | "medial"
+  | "lateral"
+  | "posterior"
   | "trauma"
   | "twist"
+  | "instability_acl"
   | "training"
   | "repetitive"
   | "neuro"
@@ -318,6 +379,36 @@ function hasPatellarSection(a: KneeAdaptiveAnswers): boolean {
     a.localizacion_rodilla.includes("Cara anterior / rótula") ||
     hasInstability(a)
   );
+}
+
+function hasAnteriorPfpSection(a: KneeAdaptiveAnswers): boolean {
+  return (
+    a.localizacion_rodilla.includes("Cara anterior / rótula") ||
+    a.localizacion_rodilla.includes("Debajo de la rótula / tendón de la rótula") ||
+    a.localizacion_rodilla.includes("Por encima de la rótula")
+  );
+}
+
+function hasMedialSection(a: KneeAdaptiveAnswers): boolean {
+  return (
+    a.localizacion_rodilla.includes("Cara interna (lado de dentro)") ||
+    a.localizacion_rodilla.includes("Donde se juntan los huesos (línea de la articulación)")
+  );
+}
+
+function hasLateralSection(a: KneeAdaptiveAnswers): boolean {
+  return (
+    a.localizacion_rodilla.includes("Cara externa (lado de fuera)") ||
+    a.localizacion_rodilla.includes("Donde se juntan los huesos (línea de la articulación)")
+  );
+}
+
+function hasAclSection(a: KneeAdaptiveAnswers): boolean {
+  return isTwist(a) || hasInstability(a) || hasClickPop(a);
+}
+
+function hasPosteriorSection(a: KneeAdaptiveAnswers): boolean {
+  return a.localizacion_rodilla.includes("Hueco detrás de la rodilla");
 }
 
 function isPatellarDislocation(a: KneeAdaptiveAnswers): boolean {
@@ -411,7 +502,24 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     required: true,
   },
 
-  // Core clinical characterization
+  // Core — localización y dolor familiar ANTES de mecanismo
+  {
+    id: "localizacion_rodilla",
+    section: "core",
+    label: "¿Dónde sientes el dolor en la rodilla? (puedes marcar varias)",
+    type: "multi",
+    options: KNEE_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿El dolor que describes es el mismo que notas al bajar escaleras, agacharte, correr o saltar?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es distinto o solo duele en ciertos gestos", "No estoy seguro"],
+    required: true,
+  },
   
   {
     id: "inicio",
@@ -442,14 +550,6 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     section: "core",
     label: "Intensidad del dolor (1–10)",
     type: "slider",
-    required: true,
-  },
-  {
-    id: "localizacion_rodilla",
-    section: "core",
-    label: "¿Dónde sientes el dolor en la rodilla? (puedes marcar varias)",
-    type: "multi",
-    options: KNEE_LOCATION_OPTIONS,
     required: true,
   },
   {
@@ -498,6 +598,180 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     type: "multi",
     options: AGGRAVATING_MOVEMENT_OPTIONS,
     required: true,
+  },
+
+  // Anterior PFPS / patellar tendon branch
+  {
+    id: "anterior_escaleras_bajar",
+    section: "anterior_pfp",
+    label: "¿Duele más al bajar escaleras que al subir?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAnteriorPfpSection,
+  },
+  {
+    id: "anterior_sentadilla",
+    section: "anterior_pfp",
+    label: "¿Duele al agacharte o levantarte de una silla?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAnteriorPfpSection,
+  },
+  {
+    id: "anterior_sentado_largo",
+    section: "anterior_pfp",
+    label: "¿Duele después de estar sentado mucho rato (al levantarte)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAnteriorPfpSection,
+  },
+  {
+    id: "anterior_saltar",
+    section: "anterior_pfp",
+    label: "¿Duele al saltar, aterrizar o correr con impulso?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAnteriorPfpSection,
+  },
+  {
+    id: "anterior_palpacion_tendon",
+    section: "anterior_pfp",
+    label: "¿Duele si presionas justo debajo de la rótula (tendón)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAnteriorPfpSection,
+  },
+
+  // Medial LCM / meniscus / pes anserinus branch
+  {
+    id: "medial_contacto",
+    section: "medial",
+    label: "¿Te dolió por un golpe o contacto en la parte de dentro de la rodilla?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasMedialSection,
+  },
+  {
+    id: "medial_linea_articular",
+    section: "medial",
+    label: "¿Duele en la línea de la articulación por dentro (donde se juntan los huesos)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasMedialSection,
+  },
+  {
+    id: "medial_pes_anserino",
+    section: "medial",
+    label:
+      "¿Duele más abajo, en la zona interna bajo la rodilla (donde se sienten varios tendones)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasMedialSection,
+  },
+  {
+    id: "medial_pivot_carga",
+    section: "medial",
+    label: "¿Duele al girar o pivotar con el peso encima?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasMedialSection,
+  },
+  {
+    id: "medial_valgo_estres",
+    section: "medial",
+    label:
+      "¿Duele si alguien (o tú con la otra pierna) empuja suavemente la rodilla hacia dentro?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasMedialSection,
+  },
+
+  // Lateral LCL / meniscus / ITB branch
+  {
+    id: "lateral_contacto",
+    section: "lateral",
+    label: "¿Te dolió por un golpe o contacto en la parte de fuera de la rodilla?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralSection,
+  },
+  {
+    id: "lateral_linea_articular",
+    section: "lateral",
+    label: "¿Duele en la línea de la articulación por fuera (donde se juntan los huesos)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralSection,
+  },
+  {
+    id: "lateral_carrera_patron",
+    section: "lateral",
+    label:
+      "¿Duele al correr, sobre todo siempre a la misma distancia o al bajar escaleras/cuestas?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralSection,
+  },
+  {
+    id: "lateral_pivot_carga",
+    section: "lateral",
+    label: "¿Duele al girar o pivotar con el peso encima?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralSection,
+  },
+  {
+    id: "lateral_varo_estres",
+    section: "lateral",
+    label:
+      "¿Duele si alguien (o tú con la otra pierna) empuja suavemente la rodilla hacia fuera?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasLateralSection,
+  },
+
+  // Posterior / popliteal branch
+  {
+    id: "posterior_flexionar",
+    section: "posterior",
+    label: "¿Duele más al doblar del todo la rodilla (hueco de detrás)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
+  },
+  {
+    id: "posterior_bulto",
+    section: "posterior",
+    label: "¿Notas un bulto o pelota en la parte de detrás de la rodilla?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
+  },
+  {
+    id: "posterior_bloqueo_flex",
+    section: "posterior",
+    label: "¿Te cuesta doblarla del todo por tirantez o presión detrás?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasPosteriorSection,
   },
 
   // Trauma branch
@@ -564,6 +838,53 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     options: TRAUMA_WEIGHT_BEARING_OPTIONS,
     required: true,
     showIf: isTwist,
+  },
+
+  // Instability / ACL cluster
+  {
+    id: "acl_sin_contacto",
+    section: "instability_acl",
+    label: "¿Te torciste o cambiaste de dirección sin que te golpearan?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAclSection,
+  },
+  {
+    id: "acl_pop",
+    section: "instability_acl",
+    label: "¿Sentiste o escuchaste un «pop» o chasquido en el momento de la lesión?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAclSection,
+  },
+  {
+    id: "acl_continuar",
+    section: "instability_acl",
+    label: "¿Pudiste seguir jugando o entrenando después?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAclSection,
+  },
+  {
+    id: "acl_hinchazon_horas",
+    section: "instability_acl",
+    label: "¿Se hinchó mucho la rodilla en las primeras horas?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAclSection,
+  },
+  {
+    id: "acl_cede_giro",
+    section: "instability_acl",
+    label: "¿La rodilla cede o falla al girar o cambiar de dirección?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: hasAclSection,
   },
 
   // Training branch
@@ -748,8 +1069,13 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
 export const KNEE_SECTION_LABELS: Record<KneeQuestionSection, string> = {
   red_flags: "Comprobación de urgencia",
   core: "Caracterización del problema",
+  anterior_pfp: "Dolor anterior / rótula / tendón",
+  medial: "Dolor cara interna / LCM / menisco",
+  lateral: "Dolor cara externa / LCL / ITB",
+  posterior: "Hueco poplíteo / parte de detrás",
   trauma: "Detalles del golpe o la caída",
   twist: "Torsión / cambio de dirección",
+  instability_acl: "Inestabilidad / LCA (pop, hinchazón, ceder)",
   training: "Detalles del entrenamiento",
   repetitive: "Actividad repetitiva / progresiva",
   neuro: "Hormigueo / entumecimiento",
@@ -762,8 +1088,13 @@ export const KNEE_SECTION_LABELS: Record<KneeQuestionSection, string> = {
 export const KNEE_SECTION_ORDER: KneeQuestionSection[] = [
   "red_flags",
   "core",
+  "anterior_pfp",
+  "medial",
+  "lateral",
+  "posterior",
   "trauma",
   "twist",
+  "instability_acl",
   "training",
   "repetitive",
   "neuro",
@@ -787,6 +1118,7 @@ export function getVisibleKneeQuestions(
 export function getVisibleKneeSections(
   answers: KneeAdaptiveAnswers
 ): KneeQuestionSection[] {
+  if (answers.acortar_por_urgencia) return ["red_flags"];
   const visible = getVisibleKneeQuestions(answers);
   return KNEE_SECTION_ORDER.filter((s) => visible.some((q) => q.section === s));
 }
@@ -882,6 +1214,9 @@ export function formatKneeAdaptive(
     urgent
       ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
       : "Ninguna bandera roja marcada como Sí",
+    answers.acortar_por_urgencia
+      ? "CUESTIONARIO ACORTADO POR URGENCIA — prioriza HOSPITAL / URGENCIAS; no pidas tests funcionales."
+      : "",
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad apoyo/caminar: ${answers.rf_no_apoyo || "—"}`,
     `Rodilla bloqueada: ${answers.rf_bloqueo || "—"}`,
@@ -897,6 +1232,7 @@ export function formatKneeAdaptive(
     `Mecanismo: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización rodilla: ${formatMulti(answers.localizacion_rodilla)}`,
+    `Dolor familiar (mismo que en actividad): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -904,6 +1240,48 @@ export function formatKneeAdaptive(
     `Movimientos agravantes: ${formatMulti(answers.movimientos_agravantes)}`,
   ];
 
+  if (hasAnteriorPfpSection(answers)) {
+    lines.push(
+      "",
+      "— DOLOR ANTERIOR / RÓTULA / TENDÓN (PFPS / tendinopatía rotuliana) —",
+      `Duele más al bajar escaleras: ${answers.anterior_escaleras_bajar}`,
+      `Duele al agacharse/levantarse: ${answers.anterior_sentadilla}`,
+      `Duele tras sentado prolongado: ${answers.anterior_sentado_largo}`,
+      `Duele al saltar/aterrizar: ${answers.anterior_saltar}`,
+      `Palpación tendón rotuliano dolorosa: ${answers.anterior_palpacion_tendon}`
+    );
+  }
+  if (hasMedialSection(answers)) {
+    lines.push(
+      "",
+      "— DOLOR MEDIAL (LCM / MENISCO / PES ANSERINO) —",
+      `Golpe/contacto parte interna: ${answers.medial_contacto}`,
+      `Dolor línea articular interna: ${answers.medial_linea_articular}`,
+      `Dolor zona pes anserino (interna baja): ${answers.medial_pes_anserino}`,
+      `Dolor al pivotar con carga: ${answers.medial_pivot_carga}`,
+      `Dolor con estrés en valgo (empujar hacia dentro): ${answers.medial_valgo_estres}`
+    );
+  }
+  if (hasLateralSection(answers)) {
+    lines.push(
+      "",
+      "— DOLOR LATERAL (LCL / MENISCO / ITB) —",
+      `Golpe/contacto parte externa: ${answers.lateral_contacto}`,
+      `Dolor línea articular externa: ${answers.lateral_linea_articular}`,
+      `Patrón carrera/escaleras/cuestas: ${answers.lateral_carrera_patron}`,
+      `Dolor al pivotar con carga: ${answers.lateral_pivot_carga}`,
+      `Dolor con estrés en varo (empujar hacia fuera): ${answers.lateral_varo_estres}`
+    );
+  }
+  if (hasPosteriorSection(answers)) {
+    lines.push(
+      "",
+      "— HUECO POPLÍTEO / POSTERIOR —",
+      `Duele más al doblar del todo: ${answers.posterior_flexionar}`,
+      `Bulto/pelota detrás de la rodilla: ${answers.posterior_bulto}`,
+      `Tirantez/presión que impide doblar del todo: ${answers.posterior_bloqueo_flex}`
+    );
+  }
   if (isTrauma(answers)) {
     lines.push(
       "",
@@ -921,6 +1299,17 @@ export function formatKneeAdaptive(
       `Detalle: ${answers.torsion_detalle}`,
       `Chasquido/pop: ${answers.torsion_chasquido}`,
       `Apoyo/caminar tras torsión: ${answers.torsion_apoyo}`
+    );
+  }
+  if (hasAclSection(answers)) {
+    lines.push(
+      "",
+      "— INESTABILIDAD / LCA (CLUSTER) —",
+      `Torsión/corte sin contacto: ${answers.acl_sin_contacto}`,
+      `Pop/chasquido en el momento: ${answers.acl_pop}`,
+      `Pudo seguir jugando/entrenando: ${answers.acl_continuar}`,
+      `Hinchazón intensa en las primeras horas: ${answers.acl_hinchazon_horas}`,
+      `Cede/falla al girar o cambiar de dirección: ${answers.acl_cede_giro}`
     );
   }
   if (answers.mecanismo.includes("Entrenamiento o ejercicio")) {
@@ -994,19 +1383,30 @@ export function formatKneeAdaptive(
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (ligamentos, meniscos, cartílago, tendón, bursa, nervio), no para diagnosticar.",
     "",
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
-    "- Torsión + pop + hinchazón inmediata + inestabilidad → sospecha LCA vs lesión meniscal.",
+    "- ÁRBOL MAESTRO PHYSIOGUIDE RODILLA: red flags → mecanismo (torsión/pop/LCA) → localización → rama (anterior / medial / lateral / posterior / inestabilidad) → coexistencia permitida.",
+    "- Dolor familiar en escaleras/sentadilla/sentado → PFPS ↑ (NO = condromalacia confirmada).",
+    "- Debajo rótula + salto + palpación tendón → tendinopatía rotuliana ↑.",
+    "- Anterior SIN torsión/pop/bloqueo/hinchazón aguda → NO priorizar LCA/menisco sobre PFPS.",
+    "- Torsión + pop + hinchazón en horas + no pudo continuar + cede al girar → LCA ↑ (NO confirmar rotura completa por un test).",
+    "- Pop aislado o ceder por dolor SIN hinchazón/pop → NO = LCA confirmado (giving-way funcional / rotuliana / menisco).",
+    "- Rótula se desplaza/sale de sitio → inestabilidad rotuliana, no LCA.",
     "- Bloqueo mecánico + línea articular + torsión → lesión meniscal (bloqueo) vs cuerpo libre.",
     "- Cara anterior / rótula + escaleras / agacharse / sentado → PFPS (síndrome femoropatelar) vs condromalacia.",
     "- Rótula se desplaza/sale de sitio (con o sin recolocación espontánea), especialmente si ya ocurrió antes → sospecha luxación/inestabilidad rotuliana recidivante.",
     "- Debajo rótula / tendón rotuliano + salto / carga → tendinopatía rotuliana (jumper's knee).",
-    "- Cara interna + trauma/contacto → LCM vs lesión meniscal medial.",
-    "- Cara externa + trauma/contacto → LCL vs lesión meniscal lateral.",
-    "- Cara externa (lado de fuera) + carrera/repetitivo + siempre a la misma distancia o al bajar escaleras/cuestas → síndrome de la banda iliotibial (IT band) vs lesión meniscal lateral.",
+    "- Cara interna + contacto/valgo → LCM ↑ (NO confirmar grado por un test).",
+    "- Cara interna/línea articular + torsión + bloqueo → menisco medial ↑.",
+    "- Zona interna baja (pes anserino) + carrera sin bloqueo → pes anserinus ↑.",
+    "- Cara interna + trauma/contacto → LCM vs lesión meniscal medial (pueden coexistir).",
+    "- Cara externa + contacto/varo → LCL ↑ (NO confirmar grado por un test).",
+    "- Cara externa/línea articular + torsión + bloqueo → menisco lateral ↑.",
+    "- Cara externa + carrera/escaleras/cuestas reproducible sin bloqueo → ITB ↑.",
+    "- Cara externa + trauma/contacto → LCL vs lesión meniscal lateral (pueden coexistir).",
     "- Golpe directo en la espinilla con la rodilla flexionada (salpicadero, caída de rodillas) → mecanismo típico de lesión del LCP (ligamento cruzado posterior).",
     "- Incapacidad para levantar la pierna estirada tras el inicio (extensión activa contra gravedad) → sospecha rotura del mecanismo extensor (tendón rotuliano o cuadricipital) — URGENCIA, valorar cuanto antes.",
     "- Inicio progresivo + edad + rigidez matutina / escaleras → artrosis (OA) vs inflamación.",
     "- Hinchazón + calor + fiebre → artritis séptica / inflamatoria (priorizar urgencia).",
-    "- Hueco poplíteo + bloqueo flexión → quiste de Baker vs lesión meniscal posterior.",
+    "- Hueco poplíteo + bulto/limitación flexión → quiste de Baker ↑ (a menudo menisco/OA); torsión → menisco posterior; salpicadero → LCP.",
     "- Hormigueo pie + irradiación → radiculopatía lumbar vs compresión nerviosa periférica."
   );
 
@@ -1043,6 +1443,31 @@ export const KNEE_LABEL_EN: Partial<Record<string, string>> = {
   irradiacion_detalle: "How far does that pain go?",
   sintomas_asociados: "What other symptoms do you notice? (you can select several)",
   movimientos_agravantes: "Which movements provoke or worsen it? (you can select several)",
+  dolor_familiar:
+    "Is the pain you describe the same you feel when going down stairs, squatting, running, or jumping?",
+  anterior_escaleras_bajar: "Does it hurt more going down stairs than going up?",
+  anterior_sentadilla: "Does it hurt when squatting or standing up from a chair?",
+  anterior_sentado_largo: "Does it hurt after sitting for a long time (when standing up)?",
+  anterior_saltar: "Does it hurt when jumping, landing, or running with impact?",
+  anterior_palpacion_tendon: "Does it hurt if you press just below the kneecap (tendon)?",
+  medial_contacto: "Did a blow or contact on the inner side of the knee cause the pain?",
+  medial_linea_articular: "Does it hurt on the inner joint line (where the bones meet)?",
+  medial_pes_anserino:
+    "Does it hurt lower down on the inner side below the knee (where several tendons meet)?",
+  medial_pivot_carga: "Does it hurt when pivoting or turning with weight on the leg?",
+  medial_valgo_estres:
+    "Does it hurt if someone (or you with the other leg) gently pushes the knee inward?",
+  lateral_contacto: "Did a blow or contact on the outer side of the knee cause the pain?",
+  lateral_linea_articular: "Does it hurt on the outer joint line (where the bones meet)?",
+  lateral_carrera_patron:
+    "Does it hurt when running, especially always at the same distance or when going down stairs/hills?",
+  lateral_pivot_carga: "Does it hurt when pivoting or turning with weight on the leg?",
+  lateral_varo_estres:
+    "Does it hurt if someone (or you with the other leg) gently pushes the knee outward?",
+  posterior_flexionar: "Does it hurt more when fully bending the knee (hollow at the back)?",
+  posterior_bulto: "Do you notice a lump or ball at the back of the knee?",
+  posterior_bloqueo_flex:
+    "Is it hard to fully bend because of tightness or pressure at the back?",
   trauma_detalle: "Describe the blow or fall",
   trauma_chasquido: "Did you hear or feel a click or pop?",
   trauma_apoyo: "Could you keep bearing weight or walking afterwards?",
@@ -1051,6 +1476,12 @@ export const KNEE_LABEL_EN: Partial<Record<string, string>> = {
   torsion_detalle: "Describe the twist or change of direction",
   torsion_chasquido: "Did you hear or feel a click or pop?",
   torsion_apoyo: "Could you keep bearing weight or walking afterwards?",
+  acl_sin_contacto:
+    "Did you twist or change direction without being hit?",
+  acl_pop: "Did you feel or hear a pop or click at the moment of injury?",
+  acl_continuar: "Could you keep playing or training afterwards?",
+  acl_hinchazon_horas: "Did the knee swell a lot within the first few hours?",
+  acl_cede_giro: "Does the knee give way or fail when turning or changing direction?",
   entreno_ejercicio: "Which exercise or movement were you doing?",
   entreno_momento: "When did the pain appear?",
   entreno_carga: "What type of load were you using?",
@@ -1179,8 +1610,13 @@ export const KNEE_OPTION_EN: Record<string, string> = {
 export const KNEE_SECTION_LABELS_EN: Record<string, string> = {
   red_flags: "Urgency check",
   core: "Problem characterization",
+  anterior_pfp: "Front / kneecap / tendon pain",
+  medial: "Inner knee / MCL / meniscus",
+  lateral: "Outer knee / LCL / ITB",
+  posterior: "Hollow behind the knee / popliteal",
   trauma: "Trauma details",
   twist: "Twist / change of direction",
+  instability_acl: "Instability / ACL (pop, swelling, giving way)",
   training: "Training details",
   repetitive: "Repetitive / progressive activity",
   neuro: "Tingling / numbness",

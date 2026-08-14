@@ -3,7 +3,7 @@
 import { ChatInterface } from "@/components/chat-interface";
 import { PhysioCodeGate } from "@/components/physio-code-gate";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type LinkedPhysio = {
@@ -16,31 +16,38 @@ type LinkedPhysio = {
 let linkedPhysioCache: LinkedPhysio | null | undefined;
 
 export function FisioterapiaClient() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const inviteCode = (searchParams.get("code") ?? "")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "");
-  const [loading, setLoading] = useState(linkedPhysioCache === undefined);
+  const [inviteCode, setInviteCode] = useState("");
   const [linked, setLinked] = useState<LinkedPhysio | null>(
     linkedPhysioCache ?? null
   );
 
   useEffect(() => {
+    const code = new URLSearchParams(window.location.search)
+      .get("code")
+      ?.trim()
+      .toUpperCase()
+      .replace(/\s+/g, "");
+    if (code) setInviteCode(code);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
-      const supabase = createClient();
-      const { data } = await supabase.rpc("patient_get_linked_physio");
-      const row = Array.isArray(data) ? data[0] : data;
-      const next =
-        (row as LinkedPhysio | undefined)?.physio_id
-          ? (row as LinkedPhysio)
-          : null;
-      linkedPhysioCache = next;
-      if (!cancelled) {
-        setLinked(next);
-        setLoading(false);
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.rpc("patient_get_linked_physio");
+        const row = Array.isArray(data) ? data[0] : data;
+        const next =
+          (row as LinkedPhysio | undefined)?.physio_id
+            ? (row as LinkedPhysio)
+            : null;
+        linkedPhysioCache = next;
+        if (!cancelled) setLinked(next);
+      } catch (err) {
+        console.error("No se pudo cargar el fisioterapeuta vinculado:", err);
+        linkedPhysioCache = null;
+        if (!cancelled) setLinked(null);
       }
     })();
     return () => {
@@ -53,18 +60,11 @@ export function FisioterapiaClient() {
     router.replace("/fisioterapia");
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-[calc(100dvh-3.5rem)] items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">Cargando…</p>
-      </div>
-    );
-  }
-
   if (!linked) {
     return (
       <div className="h-[calc(100dvh-3.5rem)] overflow-y-auto bg-slate-50">
         <PhysioCodeGate
+          key={inviteCode || "empty"}
           initialCode={inviteCode || null}
           autoSubmit={inviteCode.length >= 6}
           onLinked={(physio) => {

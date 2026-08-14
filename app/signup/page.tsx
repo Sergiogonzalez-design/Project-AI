@@ -1,3 +1,4 @@
+import { AuthPageShell } from "@/components/auth-page-shell";
 import { SignupForm } from "@/components/signup-form";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { Metadata } from "next";
@@ -24,8 +25,10 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
-      <SignupForm />
-    </main>
+    <AuthPageShell fallbackHref="/login">
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
+        <SignupForm />
+      </main>
+    </AuthPageShell>
   );
 }

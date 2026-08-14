@@ -1,5 +1,6 @@
 import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 
 function stripMarkdownStars(text: string) {
   return text
@@ -36,21 +37,13 @@ export function ConsultaAssistantBody({ text, style, boldStyle }: Props) {
     <View>
       {lines.map((line, li) => {
         const trimmed = line.trim();
-        const isInlineFuente =
+        if (
           /^Fuente:/i.test(trimmed) ||
           /^- Fuente:/i.test(trimmed) ||
           /^Source:/i.test(trimmed) ||
-          /^- Source:/i.test(trimmed);
-
-        if (isInlineFuente) {
-          return (
-            <Text
-              key={li}
-              style={[style, { fontSize: 12, color: "#2563eb", marginTop: 2 }]}
-            >
-              {trimmed}
-            </Text>
-          );
+          /^- Source:/i.test(trimmed)
+        ) {
+          return null;
         }
 
         const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
@@ -74,13 +67,8 @@ export function ConsultaAssistantBody({ text, style, boldStyle }: Props) {
           testImage && !shownTestIds.has(testImage.id) ? testImage : null;
         if (showImage) shownTestIds.add(showImage.id);
 
-        const imageBlock = showImage ? (
-          <Image
-            source={{ uri: showImage.src }}
-            style={styles.testImage}
-            resizeMode="cover"
-            accessibilityLabel={showImage.title}
-          />
+        const mediaBlock = showImage ? (
+          <ClinicalTestMediaBlock test={showImage} />
         ) : null;
 
         if (numberedText) {
@@ -92,7 +80,7 @@ export function ConsultaAssistantBody({ text, style, boldStyle }: Props) {
                 <Text style={boldStyle}>{withBody ? `${withBody[1]}:` : plain}</Text>
                 {withBody ? ` ${withBody[2]}` : null}
               </Text>
-              {imageBlock}
+              {mediaBlock}
             </View>
           );
         }
@@ -100,7 +88,7 @@ export function ConsultaAssistantBody({ text, style, boldStyle }: Props) {
         return (
           <View key={li} style={li > 0 ? styles.lineGap : undefined}>
             <Text style={style}>{renderInlineBold(trimmed, style, boldStyle)}</Text>
-            {imageBlock}
+            {mediaBlock}
           </View>
         );
       })}
@@ -111,14 +99,4 @@ export function ConsultaAssistantBody({ text, style, boldStyle }: Props) {
 const styles = StyleSheet.create({
   lineGap: { marginTop: 8 },
   lineGapLg: { marginTop: 12 },
-  testImage: {
-    marginTop: 8,
-    width: "100%",
-    maxWidth: 320,
-    height: 200,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
-  },
 });

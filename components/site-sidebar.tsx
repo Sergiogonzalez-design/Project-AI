@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { isClientAdminEmail } from "@/lib/is-admin-client";
+import { signOutToLogin } from "@/lib/sign-out-client";
 import { createClient } from "@/lib/supabase/client";
 
 const baseLinks = [
@@ -13,7 +14,6 @@ const baseLinks = [
 
 export function SiteSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -40,16 +40,9 @@ export function SiteSidebar() {
     return [...baseLinks, { href: "/admin", label: "Admin" }];
   }, [isAdmin]);
 
-  async function handleSignOut() {
+  function handleSignOut() {
     setSigningOut(true);
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.replace("/login");
-      router.refresh();
-    } finally {
-      setSigningOut(false);
-    }
+    signOutToLogin();
   }
 
   return (

@@ -18,12 +18,25 @@ import { getClinicalTestVideoSrc } from "@/lib/clinical-test-videos";
 import { bodyPartLabel } from "@/lib/body-parts";
 import type {
   ClinicalConclusionNode,
+  ClinicalHypothesis,
   ClinicalTestNode,
   HypothesisProbability,
 } from "@/lib/clinical-reasoning/types";
 
+const PROBABILITY_ORDER: Record<HypothesisProbability, number> = {
+  alta: 0,
+  media: 1,
+  baja: 2,
+};
+
+function sortHypotheses(hypotheses: ClinicalHypothesis[]): ClinicalHypothesis[] {
+  return [...hypotheses].sort(
+    (a, b) => PROBABILITY_ORDER[a.probability] - PROBABILITY_ORDER[b.probability]
+  );
+}
+
 function probabilityBadgeClass(p: HypothesisProbability): string {
-  if (p === "alta") return "bg-red-100 text-red-800";
+  if (p === "alta") return "bg-blue-100 text-blue-800";
   if (p === "media") return "bg-amber-100 text-amber-900";
   return "bg-neutral-100 text-neutral-700";
 }
@@ -32,6 +45,35 @@ function probabilityLabel(p: HypothesisProbability): string {
   if (p === "alta") return "Alta probabilidad";
   if (p === "media") return "Probabilidad media";
   return "Baja probabilidad";
+}
+
+function ClinicalTestVideo({ src, title }: { src: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-black">
+      {failed ? (
+        <div className="flex aspect-video w-full items-center justify-center bg-neutral-900 px-4 py-8 text-center text-sm text-neutral-300">
+          No se pudo cargar el vídeo demostrativo. Recarga la página o prueba otro
+          navegador.
+        </div>
+      ) : (
+        <video
+          key={src}
+          src={src}
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full bg-black object-contain"
+          aria-label={`Vídeo demostrativo: ${title}`}
+          onError={() => setFailed(true)}
+        >
+          <track kind="captions" />
+          Tu navegador no puede reproducir este vídeo.
+        </video>
+      )}
+    </div>
+  );
 }
 
 function TestScreen({
@@ -43,6 +85,9 @@ function TestScreen({
 }) {
   const image = CLINICAL_TEST_IMAGES.find((t) => t.id === node.testId);
   const videoSrc = getClinicalTestVideoSrc(node.testId);
+  const isRouteNode = node.testId.startsWith("route-");
+  const positiveTitle = isRouteNode ? "Sí" : "Positivo";
+  const negativeTitle = isRouteNode ? "No" : "Negativo";
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,47 +103,26 @@ function TestScreen({
         ) : null}
       </div>
 
-      {image ? (
-        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
-          <Image
-            src={image.src}
-            alt={image.title}
-            width={640}
-            height={360}
-            className="h-auto w-full object-contain"
-            priority
-          />
-        </div>
-      ) : (
-        <div className="flex h-48 items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 text-sm text-neutral-500">
-          Ilustración no disponible para esta maniobra
-        </div>
-      )}
+      {!isRouteNode && (image || videoSrc) ? (
+        <div className="flex flex-col gap-4">
+          {!isRouteNode && image ? (
+            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+              <Image
+                src={image.src}
+                alt={image.title}
+                width={640}
+                height={360}
+                className="h-auto w-full object-contain"
+                priority
+              />
+            </div>
+          ) : null}
 
-      {videoSrc ? (
-        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-black">
-          <video
-            key={videoSrc}
-            src={videoSrc}
-            controls
-            playsInline
-            preload="metadata"
-            className="aspect-square w-full bg-black object-contain"
-            aria-label={`Vídeo demostrativo: ${node.title}`}
-          >
-            Tu navegador no puede reproducir este vídeo.
-          </video>
+          {!isRouteNode && videoSrc ? (
+            <ClinicalTestVideo src={videoSrc} title={node.title} />
+          ) : null}
         </div>
-      ) : (
-        <div className="rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-4 py-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Vídeo demostrativo
-          </p>
-          <p className="mt-1 text-sm text-neutral-600">
-            Espacio reservado — podrás añadir el vídeo de esta prueba más adelante.
-          </p>
-        </div>
-      )}
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <button
@@ -106,7 +130,7 @@ function TestScreen({
           onClick={() => onAnswer("positive")}
           className="rounded-2xl bg-emerald-600 px-6 py-5 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99]"
         >
-          Positivo
+          {positiveTitle}
           {node.positive.label ? (
             <span className="mt-1 block text-sm font-normal text-emerald-100">
               {node.positive.label}
@@ -118,7 +142,7 @@ function TestScreen({
           onClick={() => onAnswer("negative")}
           className="rounded-2xl bg-neutral-800 px-6 py-5 text-base font-semibold text-white shadow-sm transition hover:bg-neutral-900 active:scale-[0.99]"
         >
-          Negativo
+          {negativeTitle}
           {node.negative.label ? (
             <span className="mt-1 block text-sm font-normal text-neutral-300">
               {node.negative.label}
@@ -130,6 +154,19 @@ function TestScreen({
   );
 }
 
+function hypothesisCardClass(p: HypothesisProbability, isFinal: boolean): string {
+  const base = isFinal
+    ? "rounded-xl border-2 bg-white px-4 py-3.5 shadow-sm"
+    : "rounded-xl border bg-white px-4 py-3 shadow-sm";
+  const accent =
+    p === "alta"
+      ? "border-blue-200 border-l-4 border-l-blue-500"
+      : p === "media"
+        ? "border-amber-200 border-l-4 border-l-amber-400"
+        : "border-neutral-200 border-l-4 border-l-neutral-400";
+  return `${base} ${accent}`;
+}
+
 function ConclusionScreen({
   node,
   onContinue,
@@ -139,31 +176,73 @@ function ConclusionScreen({
   onContinue: () => void;
   canContinue: boolean;
 }) {
+  const isFinal = !canContinue;
+
   return (
     <div className="flex flex-col gap-5">
+      {isFinal ? (
+        <div className="overflow-hidden rounded-2xl border-2 border-blue-300 bg-gradient-to-br from-blue-600 via-blue-600 to-emerald-600 px-5 py-4 text-white shadow-md">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-blue-100">
+            Conclusión clínica final
+          </p>
+          <p className="mt-1.5 text-base font-semibold leading-snug">
+            Secuencia exploratoria concluida — hipótesis más probables según los
+            hallazgos registrados
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/60 px-4 py-3">
+          <p className="text-xs font-semibold text-blue-800">
+            Conclusión parcial
+          </p>
+          <p className="mt-0.5 text-sm text-blue-700/90">
+            Continúa con otra maniobra para afinar el razonamiento diferencial.
+          </p>
+        </div>
+      )}
+
       <div>
         <h2 className="text-xl font-semibold text-neutral-900">{node.title}</h2>
         <p className="mt-2 text-sm leading-relaxed text-neutral-700">{node.summary}</p>
       </div>
 
-      <div className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-          Hipótesis orientativas
-        </h3>
-        {node.hypotheses.map((h) => (
-          <div
-            key={h.name}
-            className="rounded-xl border border-neutral-200 bg-white px-4 py-3"
+      <div
+        className={`space-y-3 rounded-2xl p-4 ${
+          isFinal
+            ? "border-2 border-blue-200 bg-gradient-to-b from-blue-50 via-white to-emerald-50/80 shadow-inner"
+            : "border border-blue-100 bg-blue-50/50"
+        }`}
+      >
+        <div className="flex items-center gap-2 border-b border-blue-200/80 pb-2.5">
+          <span
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${
+              isFinal ? "bg-blue-600" : "bg-blue-500"
+            }`}
+            aria-hidden
           >
+            ?
+          </span>
+          <h3
+            className={`uppercase tracking-wide text-blue-800 ${
+              isFinal ? "text-sm font-extrabold" : "text-xs font-bold"
+            }`}
+          >
+            Hipótesis orientativas
+          </h3>
+        </div>
+        {sortHypotheses(node.hypotheses).map((h) => (
+          <div key={h.name} className={hypothesisCardClass(h.probability, isFinal)}>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-semibold text-neutral-900">{h.name}</p>
+              <p className={`font-semibold text-neutral-900 ${isFinal ? "text-base" : ""}`}>
+                {h.name}
+              </p>
               <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${probabilityBadgeClass(h.probability)}`}
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${probabilityBadgeClass(h.probability)}`}
               >
                 {probabilityLabel(h.probability)}
               </span>
             </div>
-            <p className="mt-1.5 text-sm text-neutral-600">{h.rationale}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-neutral-600">{h.rationale}</p>
           </div>
         ))}
       </div>
@@ -172,15 +251,26 @@ function ConclusionScreen({
         <button
           type="button"
           onClick={onContinue}
-          className="btn-primary w-full justify-center py-3"
+          className="btn-primary w-full justify-center py-3.5 text-base shadow-md"
         >
-          Continuar con otra prueba
+          Continuar con otra maniobra →
         </button>
       ) : (
-        <p className="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
-          Has llegado al final de este recorrido. Puedes volver atrás para revisar
-          respuestas o cerrar y contrastar con el informe completo.
-        </p>
+        <div className="rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-50 px-5 py-4 shadow-sm">
+          <p className="flex items-center gap-2 text-sm font-bold text-emerald-900">
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs text-white"
+              aria-hidden
+            >
+              ✓
+            </span>
+            Exploración concluida
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-emerald-800">
+            No quedan maniobras en esta secuencia. Puedes retroceder para revisar
+            hallazgos o cerrar y contrastar con el informe completo.
+          </p>
+        </div>
       )}
     </div>
   );
@@ -248,7 +338,7 @@ export function ClinicalReasoningFlow({
         </Link>
         <div className="mt-8 rounded-2xl border border-neutral-200 bg-white px-5 py-8 text-center">
           <p className="text-sm text-neutral-600">
-            No hay un árbol de razonamiento clínico disponible para esta consulta.
+            No hay un flujo de razonamiento clínico disponible para esta consulta.
           </p>
         </div>
       </main>
@@ -269,7 +359,7 @@ export function ClinicalReasoningFlow({
       <div className="mt-4 flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            Árbol de razonamiento clínico
+            Razonamiento clínico por pruebas
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
             {tree.title}
@@ -285,9 +375,9 @@ export function ClinicalReasoningFlow({
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-neutral-500">
-        Guía interactiva basada en las pruebas recomendadas en el informe. Las
-        respuestas orientan hacia hipótesis probables — no sustituyen el juicio
-        clínico ni pruebas complementarias.
+        Secuencia interactiva de pruebas especiales según el informe. Los
+        hallazgos orientan hipótesis probables — no sustituyen el juicio clínico
+        ni pruebas complementarias.
       </p>
 
       <div className="mt-8 rounded-2xl border border-neutral-200 bg-white px-5 py-6 shadow-sm">
@@ -323,7 +413,7 @@ export function ClinicalReasoningFlow({
           }
           className="btn-secondary text-sm"
         >
-          Reiniciar árbol
+          Reiniciar secuencia
         </button>
       </div>
     </main>

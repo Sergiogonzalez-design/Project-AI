@@ -1,16 +1,36 @@
 import path from "path";
+import { fileURLToPath } from "url";
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
-const projectRoot = path.join(__dirname);
+// Absolute project root — parent C:\Users\sergi also has package-lock.json + app/,
+// which makes Turbopack infer the wrong workspace and 404 routes like /consulta.
+const projectRoot = path.resolve(
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url))
+);
 
 const nextConfig: NextConfig = {
-  // Parent folder has another Next app + package-lock.json; without this,
-  // Turbopack picks C:\Users\sergi as root and nested /admin/* routes 404.
   turbopack: {
     root: projectRoot,
   },
   outputFileTracingRoot: projectRoot,
+  async headers() {
+    return [
+      {
+        source: "/clinical-tests/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, HEAD, OPTIONS" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400",
+          },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

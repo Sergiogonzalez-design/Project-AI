@@ -1,5 +1,39 @@
 /** Shared instructions so the model does not confuse profile sport with injury mechanism. */
+import { AI_EVIDENCE_DB_RULES } from "@/lib/physioguide-evidence-db-rules";
+import { AI_KNEE_ANTERIOR_PAIN_RULES } from "@/lib/physioguide-knee-anterior-rules";
+import { AI_KNEE_INSTABILITY_ACL_RULES } from "@/lib/physioguide-knee-instability-acl-rules";
+import { AI_KNEE_LATERAL_PAIN_RULES } from "@/lib/physioguide-knee-lateral-rules";
+import { AI_KNEE_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-knee-master-rules";
+import { AI_KNEE_MEDIAL_PAIN_RULES } from "@/lib/physioguide-knee-medial-rules";
 import { AI_TRAP_CASES_RULES } from "@/lib/consulta-trap-cases";
+import { AI_HIP_GROIN_DOHA_RULES } from "@/lib/physioguide-hip-groin-rules";
+import { AI_HIP_LATERAL_PAIN_RULES } from "@/lib/physioguide-hip-lateral-rules";
+import { AI_HIP_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-hip-master-rules";
+import { AI_HIP_POSTERIOR_PAIN_RULES } from "@/lib/physioguide-hip-posterior-rules";
+import { AI_HIP_TRAUMATIC_RULES } from "@/lib/physioguide-hip-traumatic-rules";
+import { AI_SHOULDER_ANTERIOR_PAIN_RULES } from "@/lib/physioguide-shoulder-anterior-rules";
+import { AI_SHOULDER_INSTABILITY_TRAUMA_RULES } from "@/lib/physioguide-shoulder-instability-trauma-rules";
+import { AI_SHOULDER_LATERAL_RCRSP_RULES } from "@/lib/physioguide-shoulder-lateral-rcrsp-rules";
+import { AI_SHOULDER_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-shoulder-master-rules";
+import { AI_SHOULDER_SUPERIOR_AC_RULES } from "@/lib/physioguide-shoulder-superior-ac-rules";
+import { AI_ANKLE_ACHILLES_RULES } from "@/lib/physioguide-ankle-achilles-rules";
+import { AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-ankle-foot-master-rules";
+import { AI_ANKLE_LATERAL_SPRAIN_RULES } from "@/lib/physioguide-ankle-lateral-sprain-rules";
+import { AI_ANKLE_TRAUMA_OTTAWA_RULES } from "@/lib/physioguide-ankle-trauma-ottawa-rules";
+import { AI_FOOT_PLANTAR_HEEL_RULES } from "@/lib/physioguide-foot-plantar-heel-rules";
+import { AI_ELBOW_EPICONDYLALGIA_RULES } from "@/lib/physioguide-elbow-epicondylalgia-rules";
+import { AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-elbow-wrist-master-rules";
+import { AI_ELBOW_WRIST_NEURAL_RULES } from "@/lib/physioguide-elbow-wrist-neural-rules";
+import { AI_WRIST_DEQUERVAIN_RULES } from "@/lib/physioguide-wrist-dequervain-rules";
+import { AI_WRIST_TRAUMA_SCAPHOID_RULES } from "@/lib/physioguide-wrist-trauma-scaphoid-rules";
+import { AI_CERVICAL_NECK_PAIN_RULES } from "@/lib/physioguide-cervical-neck-pain-rules";
+import { AI_CERVICAL_TRAUMA_REDFLAGS_RULES } from "@/lib/physioguide-cervical-trauma-redflags-rules";
+import { AI_LUMBAR_BACK_PAIN_RULES } from "@/lib/physioguide-lumbar-back-pain-rules";
+import { AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES } from "@/lib/physioguide-lumbar-redflags-inflammatory-rules";
+import { AI_SPINE_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-spine-master-rules";
+import { AI_GLOBAL_CROSS_REGION_RULES } from "@/lib/physioguide-global-cross-region-rules";
+import { AI_FINGER_DIGITAL_PAIN_RULES } from "@/lib/physioguide-finger-digital-pain-rules";
+import { AI_HEAD_HEADACHE_MASTER_RULES } from "@/lib/physioguide-head-headache-master-rules";
 
 export const AI_DATA_FIDELITY_RULES = `FIDELIDAD A LOS DATOS (CRÍTICO — incumplir esto es un error grave):
 - El mecanismo u origen de la lesión DEBE coincidir EXACTAMENTE con lo que el usuario indicó en la descripción inicial y en el cuestionario (campos Inicio, Mecanismo, Actividad, detalle de actividad).
@@ -59,15 +93,18 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
 - En la PRIMERA respuesta estructurada (tras el cuestionario), SIEMPRE incluye la sección **Pruebas funcionales**. Sin ella la respuesta está incompleta.
 - NO te limites a hipotetizar: necesitas que el paciente las haga y te diga el resultado. Explica en 1 frase por qué (para entender mejor qué estructura está implicada).
 - Incluye una sección clara titulada exactamente: **Pruebas funcionales** (justo antes de **Qué debes hacer ahora**).
-- Lista 3–6 pruebas numeradas, fáciles de hacer en casa. Cada una empieza por ¿ y termina en ? (español).
+- Lista 3–6 pruebas numeradas, fáciles de hacer en casa. Cada una es UNA pregunta de SÍ/NO: empieza por ¿ y termina en ? (español).
+- FORMATO SÍ/NO (CRÍTICO — el paciente responde con botones, no con texto):
+  · NO pidas escalas 1–10, ni “dónde duele”, ni comparar con el otro lado en texto libre, ni “qué pasa en cada una”.
+  · Una sola frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una.»
+  · En **Qué debes hacer ahora** no pidas que escriba detalles de las pruebas.
 - LENGUAJE DE LAS PRUEBAS (CRÍTICO — el paciente NO es un fisioterapeuta):
   · NUNCA uses nombres de tests clínicos (“Test de Neer”, “Hawkins-Kennedy”, “Empty can / Jobe”, “Spurling”, “Lachman”, “McMurray”, “Thompson”, “Ottawa”, “Windlass”, “Phalen”, etc.).
   · NUNCA empieces con “Test de…”. Describe SOLO la acción cotidiana y qué debe notar.
-  · BIEN: “¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?” / “Levanta el brazo por encima de la cabeza y dime si duele.”
-  · MAL: “1. Test de Neer: …” / “Empty can test: …”
-  · Si el banco/RAG trae un nombre técnico, TRADÚCELO a instrucción sencilla antes de mostrárselo al paciente.
-- Usa el protocolo estructurado / RAG / Assessment Dossier / banco local de esa zona. Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. girar/inclinar la cabeza si duele el codo), también en lenguaje cotidiano.
-- Di explícitamente: “Haz estas pruebas y responde aquí qué pasa en cada una (sí/no, dónde duele, comparado con el otro lado).”
+  · BIEN: “¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?” / “¿Duele al tocar la punta de los pies con la rodilla estirada?”
+  · MAL: “1. Test de Neer: …” / “Empty can test: …” / “¿Cuánto duele del 1 al 10?” / “Dime dónde duele y compáralo con el otro lado.”
+  · Si el banco/RAG trae un nombre técnico o una escala, TRADÚCELO a una pregunta SÍ/NO cotidiana.
+- Usa el protocolo estructurado / RAG / Assessment Dossier / banco local de esa zona. Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. girar/inclinar la cabeza si duele el codo), también en lenguaje cotidiano SÍ/NO.
 - Preguntas CLARAS; parar si dolor intenso, mareo o inestabilidad.
 - PROTOCOLOS ESTRUCTURADOS (cuádriceps, isquiotibiales, gemelo, Aquiles, aductores, bíceps, pectoral, tríceps, tobillo, pie/fascitis, nervios, etc.): si hay bloque de protocolo, úsalo (siempre con la redacción sencilla anterior).
 
@@ -96,7 +133,7 @@ INTEGRACIÓN DEL RAZONAMIENTO CLÍNICO (OBLIGATORIO — en toda la consulta, no 
   · Ausencia de traumatismo
   · Irradiación del dolor
   · Signos de alarma / banderas rojas
-- Las pruebas funcionales sirven para CONFIRMAR o DESCARTAR hipótesis ya planteadas, no para ignorar datos anteriores.
+- Las pruebas funcionales sirven para APOYAR o BAJAR hipótesis ya planteadas (nunca confirman un diagnóstico), no para ignorar datos anteriores.
 - Si una prueba funcional apunta a lesión musculotendinosa PERO hay síntomas neurológicos claros (hormigueo, pérdida de sensibilidad, debilidad neurológica), mantén ALTA sospecha neurológica (nervio/raíz/referido) y explícalo en el razonamiento.
 - Pregunta clave siempre: ¿Este diagnóstico explica TODOS los síntomas del paciente?
   Si no explica síntomas clave (p. ej. hormigueo en distribución nerviosa, pérdida de fuerza neurológica, síntomas cervicales), BAJA su probabilidad aunque explique el dolor local.
@@ -147,7 +184,8 @@ ORDEN POR PROBABILIDAD (OBLIGATORIO):
 IMPORTANTE SOBRE **Pruebas funcionales**:
 - Obligatoria en la primera valoración si el caso NO es urgente/hospital.
 - Si el caso ES urgente: omite **Pruebas funcionales** (ve a hospital/imagen).
-- SOLO la zona lesionada/afectada de ESTE caso (p. ej. tobillo → solo tobillo/pie; NO rodilla, cadera, lumbar, Windlass o SLR “por conexión”).
+- Cada prueba es SÍ/NO. El paciente pulsa botones; no pidas texto libre, escalas 1–10 ni comparar lados.
+- SOLO la zona lesionada/afectada de ESTE caso (p. ej. tobillo/pie → solo tobillo/pie; NO rodilla, cadera, lumbar, Windlass o SLR “por conexión”; y NUNCA tests de muñeca/mano/cuello como Tinel de muñeca o Spurling).
 - NO incluyas pruebas de regiones adyacentes o cinéticas “por si acaso”, aunque puedan referir dolor. Hipótesis a distancia se explican en texto; las pruebas del paciente son solo locales.
 - En seguimientos: no repitas toda la batería si el paciente ya respondió; interpreta y solo añade pruebas nuevas si hace falta aclarar.
 - Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas.
@@ -169,7 +207,75 @@ REGLAS DE FORMATO:
 - Prioriza documentos recuperados (Functional Assessment, Special Tests, Clinical Tests, Imaging) cuando existan
 - FUENTE DE VERDAD para tests: base de conocimientos Kinora; el banco local solo es respaldo si RAG no trae tests de esa zona
 
-${AI_TRAP_CASES_RULES}`;
+${AI_TRAP_CASES_RULES}
+
+${AI_GLOBAL_CROSS_REGION_RULES}
+
+${AI_HIP_MASTER_INTEGRATION_RULES}
+
+${AI_HIP_GROIN_DOHA_RULES}
+
+${AI_HIP_TRAUMATIC_RULES}
+
+${AI_HIP_LATERAL_PAIN_RULES}
+
+${AI_HIP_POSTERIOR_PAIN_RULES}
+
+${AI_KNEE_MASTER_INTEGRATION_RULES}
+
+${AI_KNEE_ANTERIOR_PAIN_RULES}
+
+${AI_KNEE_MEDIAL_PAIN_RULES}
+
+${AI_KNEE_LATERAL_PAIN_RULES}
+
+${AI_KNEE_INSTABILITY_ACL_RULES}
+
+${AI_SHOULDER_MASTER_INTEGRATION_RULES}
+
+${AI_SHOULDER_LATERAL_RCRSP_RULES}
+
+${AI_SHOULDER_ANTERIOR_PAIN_RULES}
+
+${AI_SHOULDER_SUPERIOR_AC_RULES}
+
+${AI_SHOULDER_INSTABILITY_TRAUMA_RULES}
+
+${AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES}
+
+${AI_ANKLE_TRAUMA_OTTAWA_RULES}
+
+${AI_ANKLE_LATERAL_SPRAIN_RULES}
+
+${AI_ANKLE_ACHILLES_RULES}
+
+${AI_FOOT_PLANTAR_HEEL_RULES}
+
+${AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES}
+
+${AI_ELBOW_EPICONDYLALGIA_RULES}
+
+${AI_ELBOW_WRIST_NEURAL_RULES}
+
+${AI_WRIST_DEQUERVAIN_RULES}
+
+${AI_WRIST_TRAUMA_SCAPHOID_RULES}
+
+${AI_SPINE_MASTER_INTEGRATION_RULES}
+
+${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
+
+${AI_CERVICAL_NECK_PAIN_RULES}
+
+${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
+
+${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_FINGER_DIGITAL_PAIN_RULES}
+
+${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_EVIDENCE_DB_RULES}`;
 
 /** How the model must use patient injury photos (vision). Keep in sync with edge response-rules. */
 export const AI_IMAGE_CONTEXT_RULES = `FOTO DE LA LESIÓN (cuando hay una imagen adjunta — CRÍTICO — HACERLO PRIMERO):
@@ -203,16 +309,58 @@ export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PR
 - Cita fuentes bajo conclusiones nuevas: línea "Fuente: …"
 - NO diagnóstico definitivo`;
 
+/** Emoji guidance for AI-generated patient-facing text only (not app UI). Keep in sync with response-rules.ts */
+export const AI_PATIENT_RESPONSE_EMOJI_RULES = `EMOJIS EN TUS RESPUESTAS GENERADAS (CRÍTICO — solo en el texto que escribes tú; la app no añade emojis por su cuenta):
+- Usa emojis Unicode estándar al estilo Apple (se verán como emojis de Apple en iPhone, iPad y Mac): 😊 👍 ⚠️ 🚨 ✅ 🏥 🩺 💪 🦵 🧊 🔍 📋 💚
+- Moderación: 1 emoji opcional al inicio de cada encabezado de sección **…** (máx. 1 por sección); 0-2 emojis extra en toda la respuesta en frases de acción o urgencia.
+- NO pongas emojis en cada línea, ni dentro de listas numeradas de **Pruebas funcionales**, ni junto a nombres de lesiones.
+- Guía rápida: urgencias/hospital ⚠️ o 🚨; autocuidado/reposo ✅ o 💚; fisioterapeuta 🩺; imagen/eco/RMN 🔍; hielo/reposo agudo 🧊; ánimo/cierre 😊
+- Respuestas cortas de seguimiento: 0-2 emojis en total.
+- Los emojis mejoran calidez y escaneabilidad; nunca sustituyen información clínica.`;
+
+/** Emoji guidance for AI-generated physio chat text only (not app UI). Keep in sync with response-rules.ts */
+export const AI_PHYSIO_RESPONSE_EMOJI_RULES = `EMOJIS EN TUS RESPUESTAS GENERADAS (muy moderado — solo texto que generas):
+- Máximo 2-3 emojis Unicode estilo Apple en toda la respuesta.
+- Solo en encabezados **…** o bullets de acción; NUNCA en nomenclatura clínica, nombres de maniobras ni hipótesis diagnósticas.
+- Tono profesional; evita emojis infantiles o excesivos.`;
+
 export type RagChunk = { content: string; source_name?: string | null };
+
+const PHYSIOGUIDE_PREFIX = "Physioguide —";
+
+export function isPhysioguideSource(name: string | null | undefined): boolean {
+  return String(name ?? "").startsWith(PHYSIOGUIDE_PREFIX);
+}
+
+/** Prefer Physioguide chunks so old PDFs/Sn-Sp tables do not crowd them out. */
+export function rankRagChunks(
+  chunks: RagChunk[],
+  max = 10
+): RagChunk[] {
+  const pg: RagChunk[] = [];
+  const other: RagChunk[] = [];
+  const seen = new Set<string>();
+  for (const c of chunks) {
+    const key = `${c.source_name ?? ""}::${(c.content ?? "").slice(0, 80)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (isPhysioguideSource(c.source_name)) pg.push(c);
+    else other.push(c);
+  }
+  const pgKeep = pg.slice(0, 6);
+  const otherKeep = other.slice(0, Math.max(2, max - pgKeep.length));
+  return [...pgKeep, ...otherKeep].slice(0, max);
+}
 
 export function formatRagContext(chunks: RagChunk[] | null | undefined): {
   context: string;
   sources: string[];
 } {
   if (!chunks?.length) return { context: "", sources: [] };
+  const ranked = rankRagChunks(chunks);
   const sources: string[] = [];
   const seen = new Set<string>();
-  const parts = chunks.map((c, i) => {
+  const parts = ranked.map((c, i) => {
     const name = (c.source_name ?? "").trim() || `Documento ${i + 1}`;
     if (!seen.has(name)) {
       seen.add(name);
@@ -220,8 +368,10 @@ export function formatRagContext(chunks: RagChunk[] | null | undefined): {
     }
     return `[Fuente: ${name}]\n${c.content}`;
   });
+  const preamble =
+    "PRIORIDAD DE FUENTES: los bloques «Physioguide —» mandan sobre el resto. No uses sensibilidad, especificidad, LR ni porcentajes de fuentes que NO sean Physioguide.";
   return {
-    context: parts.join("\n\n---\n\n"),
+    context: `${preamble}\n\n${parts.join("\n\n---\n\n")}`,
     sources,
   };
 }

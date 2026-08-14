@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { hasClinicalReasoningForReport } from "@/lib/clinical-reasoning";
+import { toCitedSource } from "@/lib/source-links";
 
 const SECTION_ORDER = [
   "Resultados de las pruebas funcionales ya realizadas",
@@ -62,6 +63,17 @@ function splitReportSections(content: string): {
       }
       continue;
     }
+    const kept: string[] = [];
+    for (const line of body.split("\n")) {
+      const trimmed = line.trim();
+      if (/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:/i.test(trimmed)) {
+        const item = trimmed.replace(/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*/i, "").trim();
+        if (item) sources.push(item);
+        continue;
+      }
+      kept.push(line);
+    }
+    body = kept.join("\n").trim();
     if (title === "Pruebas de imagen si procede") {
       body =
         "No se recomienda realizar pruebas de imagen en esta fase inicial hasta pasadas 24-48 horas.";
@@ -162,12 +174,12 @@ export function PhysioReportView({
                 href={reasoningHref}
                 className="btn-primary inline-flex items-center gap-2 px-5 py-3 text-sm"
               >
-                Árbol de razonamiento clínico
+                Razonamiento clínico por pruebas
                 <span aria-hidden>→</span>
               </Link>
               <p className="mt-2 text-xs text-neutral-500">
-                Recorre las pruebas una a una con botones Positivo / Negativo y
-                obtén hipótesis orientativas según los resultados.
+                Aplica las maniobras una a una (Positivo / Negativo) y obtén
+                hipótesis orientativas según los hallazgos.
               </p>
             </div>
           ) : null}
@@ -179,15 +191,34 @@ export function PhysioReportView({
           <button
             type="button"
             onClick={() => setSourcesOpen((v) => !v)}
-            className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
           >
-            {sourcesOpen ? "Ocultar fuentes consultadas" : "Fuentes consultadas"}
+            Fuentes consultadas
+            <span className="rounded-full bg-neutral-700 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {sources.length}
+            </span>
           </button>
           {sourcesOpen ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-600">
-              {sources.map((s) => (
-                <li key={s}>{s}</li>
-              ))}
+            <ul className="mt-2 space-y-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+              {sources.map((s) => {
+                const source = toCitedSource(s);
+                return (
+                  <li key={s}>
+                    {source.href ? (
+                      <a
+                        href={source.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 underline-offset-2 hover:underline"
+                      >
+                        {source.title}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-neutral-600">{source.title}</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
         </div>

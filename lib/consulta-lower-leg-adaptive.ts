@@ -24,6 +24,7 @@ export const EVOLUTION_OPTIONS = [
 export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
+  "Torcedura / inversión del tobillo",
   "Caída",
   "Golpe directo",
   "Entrenamiento o ejercicio",
@@ -83,6 +84,16 @@ export const WHOLE_LEG_LOCATION_OPTIONS = [
   "Tendón de Aquiles",
   "Tobillo",
   "Pie / planta",
+  "No estoy seguro",
+] as const;
+
+/** Thigh / hamstring / quadriceps — patient named muslo or isquio, not the knee. */
+export const THIGH_LOCATION_OPTIONS = [
+  "Parte de atrás del muslo (isquiotibiales)",
+  "Parte de delante del muslo (cuádriceps)",
+  "Parte interna del muslo",
+  "Parte externa del muslo",
+  "Cerca del glúteo / isquion",
   "No estoy seguro",
 ] as const;
 
@@ -182,6 +193,8 @@ export type LowerLegAdaptiveAnswers = {
   inicio_chasquido: string;
   intensidad_dolor: number;
   localizacion_pierna: string[];
+  dolor_familiar: string;
+  ottawa_dolor_oseo: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
@@ -241,6 +254,8 @@ export function defaultLowerLegAdaptiveAnswers(
     inicio_chasquido: "",
     intensidad_dolor: 5,
     localizacion_pierna: prefilledLocation,
+    dolor_familiar: "",
+    ottawa_dolor_oseo: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
@@ -311,6 +326,14 @@ export function withAnkleFootFocusFromText(
   if (/ca[ií]da|caer|fall/i.test(t) && !mecanismo.includes("Caída")) {
     mecanismo.push("Caída");
   }
+  if (
+    /torc[ií]|inversi[oó]n|se me fue el tobillo|ankle\s*sprain|rolled\s*(my\s*)?ankle/i.test(
+      t
+    ) &&
+    !mecanismo.includes("Torcedura / inversión del tobillo")
+  ) {
+    mecanismo.push("Torcedura / inversión del tobillo");
+  }
   if (/golpe|trauma/i.test(t) && !mecanismo.includes("Golpe directo")) {
     mecanismo.push("Golpe directo");
   }
@@ -329,6 +352,30 @@ export function withAnkleFootFocusFromText(
   if (/correr|running/i.test(t)) movimientos.push("Correr");
   if (/saltar|jump/i.test(t)) movimientos.push("Saltar");
   if (/escalera|stairs/i.test(t)) movimientos.push("Subir / bajar escaleras");
+
+  if (focus === "thigh") {
+    const locs: string[] = [];
+    if (/isquiotibial|\bisquios?\b|hamstring|muslo\s*posterior|parte\s+de\s+atr[aá]s/i.test(t)) {
+      locs.push("Parte de atrás del muslo (isquiotibiales)");
+    }
+    if (/cuadr[ií]ceps|cu[aá]driceps|\bquads?\b|muslo\s*anterior|recto\s*femoral/i.test(t)) {
+      locs.push("Parte de delante del muslo (cuádriceps)");
+    }
+    if (/muslo\s*interno|inner\s*thigh|aductor|adductor/i.test(t)) {
+      locs.push("Parte interna del muslo");
+    }
+    if (/muslo\s*externo|outer\s*thigh/i.test(t)) {
+      locs.push("Parte externa del muslo");
+    }
+    return {
+      ...base,
+      evolucion: evolucion || base.evolucion,
+      inicio: inicio || base.inicio,
+      mecanismo,
+      movimientos_agravantes: [...new Set(movimientos)],
+      localizacion_pierna: locs,
+    };
+  }
 
   if (focus === "lower_leg" || focus === "leg") {
     if (/espinilla|shin|tibial/i.test(t)) {
@@ -395,7 +442,11 @@ function hasSymptom(a: LowerLegAdaptiveAnswers, name: string): boolean {
 }
 
 function isTrauma(a: LowerLegAdaptiveAnswers): boolean {
-  return a.mecanismo.includes("Caída") || a.mecanismo.includes("Golpe directo");
+  return (
+    a.mecanismo.includes("Caída") ||
+    a.mecanismo.includes("Golpe directo") ||
+    a.mecanismo.includes("Torcedura / inversión del tobillo")
+  );
 }
 
 function hasNeuro(a: LowerLegAdaptiveAnswers): boolean {
@@ -504,8 +555,24 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     required: true,
   },
 
-  // Core clinical characterization
-  
+  // Core — location + familiar pain before mechanism (Physioguide)
+  {
+    id: "localizacion_pierna",
+    section: "core",
+    label: "¿Dónde sientes el dolor en la pierna baja? (puedes marcar varias)",
+    type: "multi",
+    options: LOWER_LEG_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿Es el mismo dolor que notas al caminar, torcer el tobillo, ponerte de puntillas o al dar los primeros pasos por la mañana?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
+    required: true,
+  },
   {
     id: "inicio",
     section: "core",
@@ -540,18 +607,20 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     showIf: hasChasquidoQuestion,
   },
   {
+    id: "ottawa_dolor_oseo",
+    section: "core",
+    label:
+      "¿Duele al tocar el hueso del tobillo (maleolo por detrás o la punta), el hueso del empeine (navicular) o la base del 5.º metatarsiano (borde externo del pie)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: (a) => isTrauma(a) && a.region_focus !== "thigh",
+  },
+  {
     id: "intensidad_dolor",
     section: "core",
     label: "Intensidad del dolor (1–10)",
     type: "slider",
-    required: true,
-  },
-  {
-    id: "localizacion_pierna",
-    section: "core",
-    label: "¿Dónde sientes el dolor en la pierna baja? (puedes marcar varias)",
-    type: "multi",
-    options: LOWER_LEG_LOCATION_OPTIONS,
     required: true,
   },
   {
@@ -830,6 +899,7 @@ function locationOptionsForFocus(focus: AnkleFootFocus): readonly string[] {
   if (focus === "ankle") return ANKLE_LOCATION_OPTIONS;
   if (focus === "lower_leg") return LOWER_LEG_LOCATION_OPTIONS;
   if (focus === "leg") return WHOLE_LEG_LOCATION_OPTIONS;
+  if (focus === "thigh") return THIGH_LOCATION_OPTIONS;
   return MIXED_LOCATION_OPTIONS;
 }
 
@@ -848,7 +918,9 @@ function focusAwareQuestion(
             ? "¿Dónde sientes el dolor en la pierna baja? (puedes marcar varias)"
             : focus === "leg"
               ? "¿Dónde sientes el dolor en la pierna? (muslo, rodilla, debajo de la rodilla, pantorrilla, tobillo o pie — puedes marcar varias)"
-              : "¿Dónde sientes el dolor (pierna baja, tobillo o pie)? (puedes marcar varias)";
+              : focus === "thigh"
+                ? "¿Dónde sientes el dolor en el muslo? (puedes marcar varias)"
+                : "¿Dónde sientes el dolor (pierna baja, tobillo o pie)? (puedes marcar varias)";
     return { ...q, label, options: locationOptionsForFocus(focus) };
   }
   if (q.id === "irradiacion") {
@@ -864,6 +936,12 @@ function focusAwareQuestion(
         label: "¿El dolor se extiende hacia el pie o hacia la pierna?",
       };
     }
+    if (focus === "thigh") {
+      return {
+        ...q,
+        label: "¿El dolor se extiende hacia la rodilla, el glúteo o la ingle?",
+      };
+    }
   }
   if (q.id === "rf_deformidad") {
     if (focus === "foot") {
@@ -872,6 +950,12 @@ function focusAwareQuestion(
     if (focus === "ankle") {
       return { ...q, label: "¿El tobillo se ve torcido, deformado o muy distinto de lo normal?" };
     }
+    if (focus === "thigh") {
+      return { ...q, label: "¿El muslo se ve hundido, deformado o muy distinto del otro?" };
+    }
+  }
+  if (q.id === "rf_hinchazon_subita" && focus === "thigh") {
+    return { ...q, label: "¿Hinchazón súbita e intensa del muslo?" };
   }
   if (q.id === "rf_perdida_sensibilidad" && focus === "foot") {
     return { ...q, label: "¿Pérdida de sensibilidad en la planta, dorso o dedos del pie?" };
@@ -880,6 +964,12 @@ function focusAwareQuestion(
     return {
       ...q,
       label: "¿Has tenido lesiones previas en este pie, planta o tobillo?",
+    };
+  }
+  if (q.id === "lesion_previa" && focus === "thigh") {
+    return {
+      ...q,
+      label: "¿Has tenido lesiones previas en este muslo o en los isquiotibiales?",
     };
   }
   return q;
@@ -1008,8 +1098,8 @@ export function bodyAreaLabelFromLowerLegAnswers(
     if (!parts.includes(v)) parts.push(v);
   };
 
-  if (hasExactLoc(answers, "Muslo / encima de la rodilla") || hasLoc(answers, "Thigh")) {
-    push("Muslo / cuádriceps", "Thigh / quadriceps");
+  if (hasExactLoc(answers, "Muslo / encima de la rodilla") || hasLoc(answers, "Thigh", "muslo", "isquio", "cuádriceps")) {
+    push("Muslo / isquiotibiales", "Thigh / hamstrings");
   }
   if (hasExactLoc(answers, "Rodilla")) {
     push("Rodilla", "Knee");
@@ -1063,6 +1153,9 @@ export function bodyAreaLabelFromLowerLegAnswers(
       ? "Leg (location still vague)"
       : "Pierna (localización aún vaga)";
   }
+  if (answers.region_focus === "thigh") {
+    return locale === "en" ? "Thigh / hamstrings" : "Muslo / isquiotibiales";
+  }
   return locale === "en"
     ? "Lower leg / ankle / foot"
     : "Pierna baja / tobillo / pie";
@@ -1076,7 +1169,7 @@ function differentialGuidanceForLocations(
     `Localización marcada por el paciente: ${formatMulti(locs(answers))}`,
   ];
 
-  if (hasExactLoc(answers, "Muslo / encima de la rodilla") || hasLoc(answers, "Thigh")) {
+  if (hasExactLoc(answers, "Muslo / encima de la rodilla") || hasLoc(answers, "Thigh", "muslo", "isquio", "cuádriceps")) {
     lines.push(
       "- Muslo / encima de la rodilla + correr o movimiento repetitivo → sobrecarga / distensión de **cuádriceps** (recto femoral) o **isquiotibiales** (si es posterior). Hipótesis locales del MUSLO.",
       "- Muslo anterior + dolor al chutar, sentadilla o extensión resistida → cuádriceps / tendón cuadricipital.",
@@ -1168,6 +1261,10 @@ export function formatLowerLegAdaptive(
       : "",
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización (${zoneLabel}): ${formatMulti(answers.localizacion_pierna)}`,
+    `Dolor familiar (caminar/torcer/puntillas/primeros pasos): ${answers.dolor_familiar || "—"}`,
+    answers.ottawa_dolor_oseo
+      ? `Ottawa — dolor óseo (maléolo/navicular/base 5.º MT): ${answers.ottawa_dolor_oseo}`
+      : "",
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional (caminar/apoyo): ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -1275,6 +1372,10 @@ export const LOWER_LEG_LABEL_EN: Partial<Record<string, string>> = {
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_pierna:
     "Where do you feel the pain in the lower leg? (you can select several)",
+  dolor_familiar:
+    "Is it the same pain you notice when walking, twisting the ankle, going on tiptoes, or with the first steps in the morning?",
+  ottawa_dolor_oseo:
+    "Does it hurt to touch the ankle bone (behind or tip of the malleolus), the midfoot bone (navicular), or the base of the 5th metatarsal (outer border of the foot)?",
   tipo_dolor: "How would you describe the pain? (you can select several)",
   limitacion_funcional: "How much does it limit walking or weight-bearing?",
   irradiacion: "Does the pain spread to the foot, ankle, or another area?",
@@ -1321,7 +1422,11 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   Repentino: "Sudden",
   "Poco a poco": "Gradual",
   Caída: "Fall",
+  "Torcedura / inversión del tobillo": "Ankle twist / inversion",
   "Golpe directo": "Direct blow",
+  "Sí, es el mismo": "Yes, it's the same",
+  "No, es otra molestia": "No, it's a different discomfort",
+  "No estoy seguro": "I'm not sure",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Movimiento repetitivo / correr": "Repetitive movement / running",
   "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
@@ -1329,6 +1434,11 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   "Justo debajo de la rodilla (prominencia ósea)":
     "Just below the knee / tibial tuberosity",
   "Muslo / encima de la rodilla": "Thigh / above the knee",
+  "Parte de atrás del muslo (isquiotibiales)": "Back of the thigh (hamstrings)",
+  "Parte de delante del muslo (cuádriceps)": "Front of the thigh (quadriceps)",
+  "Parte interna del muslo": "Inner thigh",
+  "Parte externa del muslo": "Outer thigh",
+  "Cerca del glúteo / isquion": "Near the buttock / sit bone",
   Rodilla: "Knee",
   Tobillo: "Ankle",
   "Pie / planta": "Foot / sole",

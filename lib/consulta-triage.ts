@@ -1,8 +1,11 @@
 import type { BodyPartId } from "@/lib/body-parts";
 import {
   detectBodyPartsFromText,
+  detectComplaintLinkedBodyParts,
+  hasExplicitAnkleOrFootSite,
   isBelowKneeOrLowerLeg,
   isFootOrPlantarComplaint,
+  isTrueKneeComplaint,
   isVagueArmComplaint,
   isVagueLegComplaint,
   patientFacingPartLabel,
@@ -80,7 +83,7 @@ const PROFESSIONAL_OR_THIRD_PERSON =
 /** True personal current symptom (first person), not teaching / hypothetical. */
 export function describesCurrentPersonalSymptom(text: string): boolean {
   const hasSymptom =
-    /\b(?:me\s+duele|tengo\s+dolor|me\s+molesta|me\s+ha\s+dolido|me\s+doli[oó]|me\s+he\s+hecho\s+da[ñn]o|me\s+hice\s+da[ñn]o|me\s+he\s+lesionado|me\s+lesion[eé]|me\s+he\s+lastimado|me\s+lastim[eé]|siento\s+dolor|tengo\s+(?:una?\s+)?(?:lesi[oó]n|molestia|hinchaz[oó]n)|(?:tengo|siento|noto)\s+(?:una?\s+)?molestia|notado\s+una?\s+molestia|(?:dolor|molestia|hinchaz[oó]n)\s+en\s+(?:la|el|mi|mis)|it\s+hurts|my\s+.+\s+hurts|i\s+(?:hurt|injured)|i\s+have\s+pain)\b/i.test(
+    /\b(?:me\s+duele|tengo\s+dolor|me\s+molesta|me\s+ha\s+dolido|me\s+doli[oó]|me\s+he\s+hecho\s+da[ñn]o|me\s+hice\s+da[ñn]o|me\s+he\s+lesionado|me\s+lesion[eé]|me\s+he\s+lastimado|me\s+lastim[eé]|me\s+he\s+torcido|me\s+torc[ií]|tengo\s+(?:un\s+)?esguince|siento\s+dolor|tengo\s+(?:una?\s+)?(?:lesi[oó]n|molestia|hinchaz[oó]n)|(?:tengo|siento|noto)\s+(?:una?\s+)?molestia|notado\s+una?\s+molestia|(?:dolor|molestia|hinchaz[oó]n)\s+en\s+(?:la|el|mi|mis)|it\s+hurts|my\s+.+\s+hurts|i\s+(?:hurt|injured|sprained)|i\s+have\s+pain)\b/i.test(
       text
     );
   const hypothetical =
@@ -159,16 +162,16 @@ const PART_PATTERNS: { part: AdaptiveQuestionnairePart; re: RegExp }[] = [
   },
   { part: "finger", re: /dedo|dedos|finger|pulgar|índice|indice|anular|meñique|falange|mallet|resorte/i },
   { part: "head", re: /cefalea|migra[nñ]a|headache|dolor\s+(?:de\s+)?(?:la\s+)?cabeza|me\s+duele\s+(?:la\s+)?cabeza|\bla\s+cabeza\b/i },
-  { part: "wrist_hand", re: /mu[ñn]eca|mano|wrist|hand/i },
+  { part: "wrist_hand", re: /\bmu[ñn]ecas?\b|\bmanos?\b|\bwrists?\b|\bhands?\b/i },
   { part: "neck", re: /cuello|neck|cervical/i },
-  { part: "back", re: /espalda|lumbar|dorsal|lumbago|ci[aá]tica|thoracic|back(?!\s*pack)/i },
+  { part: "back", re: /espalda|lumbar|dorsal|lumbago|ci[aá]tica|thoracic|\bbacks?\b/i },
   { part: "hip", re: /cadera|hip|ingle|aductor|adductor|pubalgia|muslo\s*interno/i },
-  // Lower leg BEFORE knee — "debajo de la rodilla" must not open knee questionnaire
+  // Lower leg / muslo BEFORE knee — "isquio" and "muslo" must not open knee questionnaire
   {
     part: "ankle_foot",
-    re: /tobillo|pie\b|ankle|foot|fascitis|plantar|planta|tal[oó]n|heel|gemelo|pantorrilla|calf|aquiles|achilles|espinilla|shin|pierna|lower\s*leg|tuberosidad\s*tibial|debajo\s+(de\s+)?(la\s+)?rodilla|below\s+(the\s+)?knee|under\s+(the\s+)?knee/i,
+    re: /tobillo|pie\b|ankle|foot|fascitis|plantar|planta|tal[oó]n|heel|gemelo|pantorrilla|calf|aquiles|achilles|espinilla|shin|pierna|lower\s*leg|tuberosidad\s*tibial|debajo\s+(de\s+)?(la\s+)?rodilla|below\s+(the\s+)?knee|under\s+(the\s+)?knee|\bmuslos?\b|\bthighs?\b|isquiotibial|\bisquios?\b|hamstring|cuadr[ií]ceps|cu[aá]driceps|\bquads?\b/i,
   },
-  { part: "knee", re: /rodilla|knee|menisco|cruzado|cuadr[ií]ceps|cu[aá]driceps|quad|muslo|isquio|hamstring/i },
+  { part: "knee", re: /\brodillas?\b|\bknees?\b|menisco|cruzado|r[oó]tula|patella/i },
 ];
 
 /** Fallback when triage API fails: questionnaire on clear complaint + known part. */
@@ -241,7 +244,7 @@ export function shouldStartQuestionnaire(
 
 /**
  * Ordered adaptive questionnaires still needed for a free-text complaint.
- * Used when the patient mentions several zones (e.g. hombro + muñeca).
+ * Uses the painful site the patient named ("me duele el tobillo"), not leftover keywords.
  */
 export function pendingPartsFromText(
   text: string,
@@ -256,6 +259,40 @@ export function pendingPartsFromText(
     queue.push(id);
   }
   return queue;
+}
+
+/**
+ * Pick the questionnaire zone from the sentence. A named pain site always wins
+ * over an LLM/triage guess (e.g. tobillo must not become knee).
+ */
+export function resolveQuestionnaireLaunch(
+  text: string,
+  evaluatedParts: AdaptiveQuestionnairePart[] = [],
+  preferredFirst?: AdaptiveQuestionnairePart | "generic"
+): {
+  first: AdaptiveQuestionnairePart | "generic";
+  rest: AdaptiveQuestionnairePart[];
+} | null {
+  const queue = pendingPartsFromText(text, evaluatedParts);
+  if (queue.length >= 1) {
+    return { first: queue[0], rest: queue.slice(1) };
+  }
+  if (
+    preferredFirst &&
+    preferredFirst !== "generic" &&
+    preferredFirst === "knee" &&
+    hasExplicitAnkleOrFootSite(text) &&
+    !isTrueKneeComplaint(text)
+  ) {
+    return { first: "ankle_foot", rest: [] };
+  }
+  if (preferredFirst && preferredFirst !== "generic") {
+    return { first: preferredFirst, rest: [] };
+  }
+  if (preferredFirst === "generic") {
+    return { first: "generic", rest: [] };
+  }
+  return null;
 }
 
 export function nextPartReadyMessage(
@@ -772,6 +809,19 @@ export function refineTriageBodyPart(
       intent: "general",
       answer: triage.answer,
     };
+  }
+
+  const linked = detectComplaintLinkedBodyParts(text);
+  if (linked.length === 1 && isAdaptiveQuestionnairePart(linked[0])) {
+    if (triage.action === "questionnaire" || shouldOpenSymptomQuestionnaire(text)) {
+      return { action: "questionnaire", bodyPart: linked[0] };
+    }
+  }
+
+  if (hasExplicitAnkleOrFootSite(text) && !isTrueKneeComplaint(text)) {
+    if (triage.action === "questionnaire" || triage.intent === "symptom_other") {
+      return { action: "questionnaire", bodyPart: "ankle_foot" };
+    }
   }
 
   const multi = detectBodyPartsFromText(text).length > 1;

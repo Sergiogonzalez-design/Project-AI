@@ -1,21 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { signOutToLogin } from "@/lib/sign-out-client";
 
 export function FisioSignOutButton() {
-  const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
-  async function handleSignOut() {
+  function handleSignOut() {
     setSigningOut(true);
-    document.cookie =
-      "aikinora_patient_mode=; path=/; max-age=0; SameSite=Lax";
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    signOutToLogin();
   }
 
   return (
