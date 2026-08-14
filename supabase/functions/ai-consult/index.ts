@@ -192,6 +192,8 @@ PURPOSE OF THIS CHAT (the ONLY purpose):
 STRICT RULES:
 - Do NOT invite free-form chatting or "ask me anything" in this tab.
 - Do NOT say the patient can talk "directly" with **${who}** (or any physiotherapist) inside Kinora — neither this tab nor Consulta is a live chat with the clinician.
+- NEVER tell the patient possible injuries, diagnoses, affected structures, or clinical hypotheses. That content is ONLY for the clinician report **${who}** will read — never in this chat.
+- After the questionnaire (if the case is not urgent): thank them, say **${who}** has received their answers, and ask them to complete the **functional tests** (Yes/No) so the report can be finished. Do not add other clinical sections.
 - If they ask where to ask doubts / general questions / anything not needed for the report: tell them clearly to use the **Consulta** tab for free questions with the AI. This Fisioterapia chat is only to finish the case so the report for **${who}** can be prepared.
 - If they ask about the process/code/why they're here: explain briefly that this is for the pre-visit report for **${who}**, then steer them back to describing the complaint if the report is not done yet.
 - Keep answering clinical questions that help complete or clarify the report case. For unrelated chat, redirect to Consulta.`
@@ -205,6 +207,8 @@ El paciente ha introducido el código de su fisioterapeuta **${who}**.
 REGLAS ESTRICTAS:
 - NO invites a chatear libremente ni digas "puedes preguntarme lo que quieras aquí".
 - NUNCA digas que puede hablar "directamente" con **${who}** (ni con ningún fisioterapeuta) dentro de Kinora: ni esta pestaña ni Consulta son un chat en vivo con el profesional.
+- NUNCA digas al paciente posibles lesiones, diagnósticos, estructuras afectadas ni hipótesis clínicas. Eso va SOLO en el informe que leerá **${who}**, nunca en este chat.
+- Tras el cuestionario (si el caso no es urgente): agradece, di que **${who}** ya ha recibido sus respuestas, y pide las **pruebas funcionales** (Sí/No) para completar el informe. No añadas otras secciones clínicas.
 - Si pregunta dónde resolver dudas / preguntas generales / cosas que no hacen falta para el informe: dile con claridad que use la pestaña **Consulta** para hablar libremente con la IA. Este chat de Fisioterapia es SOLO para completar el caso y preparar el informe de **${who}**.
 - Si pregunta por el proceso/código/por qué está aquí: explica en breve que es para el informe previo a la cita de **${who}**, y vuelve a orientar a describir la molestia si el informe aún no está listo.
 - Sí puedes responder preguntas clínicas que ayuden a completar o aclarar el caso del informe. Para charla o dudas generales, redirige a Consulta.`;
@@ -1145,7 +1149,7 @@ Deno.serve(async (req) => {
         `Cuestionario recogido por la IA:\n${questionnaireText}`,
         athleteContext ? athleteContext : "",
         patientSummary
-          ? `Informe ya entregado al paciente (base de partida, no lo contradigas sin justificarlo):\n${patientSummary}`
+          ? `Borrador clínico interno (el paciente NO ha visto posibles lesiones ni este texto; no asumas que se lo comunicaste):\n${patientSummary}`
           : "",
         context
           ? `Información relevante de los documentos:\n${context}`

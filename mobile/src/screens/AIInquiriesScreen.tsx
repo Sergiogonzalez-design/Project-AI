@@ -231,6 +231,7 @@ import {
   buildPhysioLinkedCompletionMessage,
   buildPhysioLinkedFunctionalTestsPrompt,
   buildPhysioLinkedIntroGreeting,
+  buildPhysioLinkedPostQuestionnaireMessage,
   buildPhysioLinkedWelcome,
   physioDisplayName,
 } from "../lib/physio-linked-welcome";
@@ -2107,8 +2108,14 @@ export function AIInquiriesScreen({
           },
         });
 
-        const nudge = buildPhysioLinkedFunctionalTestsPrompt(linkedPhysio.physio_name);
-        const combined = `${patientFacingAi.trim()}\n\n${nudge}`;
+        const combined = redFlagsUrgent
+          ? patientFacingAi.trim()
+          : buildPhysioLinkedPostQuestionnaireMessage({
+              physioName: linkedPhysio.physio_name,
+              aiText: patientFacingAi,
+              bodyArea: areaLabel,
+              language: consultLanguage,
+            });
 
         pendingPhysioReportRef.current = {
           patientId: user.id,
@@ -2661,7 +2668,10 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
 
       if (linkedPhysio && pendingPhysio) {
         await saveUserMessage();
-        const nudge = buildPhysioLinkedFunctionalTestsPrompt(linkedPhysio.physio_name);
+        const nudge = buildPhysioLinkedFunctionalTestsPrompt(
+          linkedPhysio.physio_name,
+          consultLanguage
+        );
         await appendAssistantMessage(activeId, nudge);
         return;
       }
