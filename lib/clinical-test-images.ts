@@ -427,8 +427,8 @@ export function findClinicalTestImage(line: string): ClinicalTestImage | null {
  */
 export function shouldShowClinicalTestImage(opts: {
   numberedText: string | null;
-  headingText: string | null;
-  wholeBoldText: string | null;
+  headingText?: string | null;
+  wholeBoldText?: string | null;
 }): ClinicalTestImage | null {
   const { numberedText, headingText, wholeBoldText } = opts;
   if (numberedText) return findClinicalTestImage(numberedText);
