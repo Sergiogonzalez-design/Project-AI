@@ -1448,7 +1448,6 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   Pantorrilla: "Calf",
   "Tendón de Aquiles": "Achilles tendon",
   "Transición al tobillo": "Transition to the ankle",
-  "No estoy seguro": "I'm not sure",
   Punzante: "Sharp",
   Quemazón: "Burning",
   Rigidez: "Stiffness",

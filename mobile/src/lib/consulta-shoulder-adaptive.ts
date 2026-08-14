@@ -942,7 +942,6 @@ export const SHOULDER_OPTION_EN: Record<string, string> = {
   "Hematoma en pecho o axila": "Bruising in the chest or armpit",
   "Chasquidos o latigazo": "Clicking or whip-like snap",
   "Sobre el pecho": "Onto the chest",
-  "No estoy seguro": "I'm not sure",
   Punzante: "Sharp",
   Quemazón: "Burning",
   Rigidez: "Stiffness",
