@@ -15,6 +15,7 @@ import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import type { TabParamList } from "../navigation/AppTabs";
+import { navigateToPrimaryWorkspace } from "../navigation/tab-navigation";
 
 type KnowledgeItem = {
   id: string;
@@ -148,7 +149,7 @@ export function ConocimientosScreen() {
         <Text style={styles.ctaBody}>{t.knowledge.ctaBody}</Text>
         <Pressable
           style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaBtnPressed]}
-          onPress={() => navigation.navigate("AIInquiries")}
+          onPress={() => navigateToPrimaryWorkspace(navigation)}
         >
           <Text style={styles.ctaBtnText}>{t.knowledge.ctaButton}</Text>
         </Pressable>

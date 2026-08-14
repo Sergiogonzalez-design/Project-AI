@@ -11,7 +11,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { DismissKeyboard } from "./DismissKeyboard";
 import {
   COMPETITIVE_LEVELS,
   CURRENT_SEASONS,
@@ -297,14 +296,15 @@ export function AthleteProfileCard() {
       </View>
 
       <Modal visible={editing} animationType="slide" presentationStyle="pageSheet">
-        <DismissKeyboard>
-          <ScrollView
-            style={styles.modalRoot}
-            contentContainerStyle={styles.modalContent}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            onScrollBeginDrag={Keyboard.dismiss}
-          >
+        <ScrollView
+          style={styles.modalRoot}
+          contentContainerStyle={styles.modalContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator
+          bounces
+          onScrollBeginDrag={Keyboard.dismiss}
+        >
           <Text style={styles.modalTitle}>Editar perfil deportivo</Text>
 
           <Text style={styles.fieldLabel}>Edad</Text>
@@ -373,8 +373,7 @@ export function AthleteProfileCard() {
               )}
             </Pressable>
           </View>
-          </ScrollView>
-        </DismissKeyboard>
+        </ScrollView>
       </Modal>
     </>
   );
@@ -398,7 +397,7 @@ const styles = StyleSheet.create({
   goalTagText: { fontSize: 11, color: Colors.primary, fontWeight: "600" },
   emptyText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
   modalRoot: { flex: 1, backgroundColor: Colors.background },
-  modalContent: { padding: 20, paddingBottom: 48 },
+  modalContent: { flexGrow: 1, padding: 20, paddingBottom: 48 },
   modalTitle: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 20 },
   fieldLabel: { fontSize: 13, fontWeight: "600", color: Colors.text, marginTop: 14, marginBottom: 6 },
   hint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },

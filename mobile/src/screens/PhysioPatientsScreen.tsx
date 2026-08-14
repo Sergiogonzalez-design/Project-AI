@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import React, { useCallback, useEffect, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,8 +31,8 @@ import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
-import { PHYSIO_EQUIPMENT_CATEGORIES } from "../lib/physio-equipment-options";
 import { supabase } from "../lib/supabase";
+import type { TabParamList } from "../navigation/AppTabs";
 
 type PhysioPatient = {
   id: string;
@@ -185,16 +187,13 @@ function BoldText({ text }: { text: string }) {
 }
 
 export function PhysioPatientsScreen() {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const [patients, setPatients] = useState<PhysioPatient[]>([]);
   const [unreadByPatient, setUnreadByPatient] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [equipment, setEquipment] = useState<string[]>([]);
-  const [equipmentNotes, setEquipmentNotes] = useState("");
-  const [equipmentOpen, setEquipmentOpen] = useState(false);
-  const [equipmentSaving, setEquipmentSaving] = useState(false);
 
   const [selectedPatient, setSelectedPatient] = useState<PhysioPatient | null>(null);
   const [reports, setReports] = useState<ClinicalReport[]>([]);
@@ -223,6 +222,12 @@ export function PhysioPatientsScreen() {
     setAttachedUri(null);
     setAttachedMime("image/jpeg");
   }
+
+  useLayoutEffect(() => {
+    const inSubView =
+      chatOpen || selectedPatient != null || reasoningReport != null;
+    navigation.setOptions({ headerShown: !inSubView });
+  }, [navigation, chatOpen, selectedPatient, reasoningReport]);
 
   function pickConsultPhoto() {
     Alert.alert("Adjuntar foto", undefined, [
@@ -303,21 +308,6 @@ export function PhysioPatientsScreen() {
     }
     setUnreadByPatient(counts);
     setLoading(false);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("clinic_equipment, clinic_equipment_notes")
-        .eq("id", user.id)
-        .maybeSingle();
-      const ids = (profile?.clinic_equipment as string[] | null) ?? [];
-      setEquipment(ids);
-      setEquipmentNotes((profile?.clinic_equipment_notes as string | null) ?? "");
-      if (ids.length === 0) setEquipmentOpen(true);
-    }
   }, []);
 
   useEffect(() => {
@@ -336,44 +326,6 @@ export function PhysioPatientsScreen() {
       return;
     }
     setInviteCode((data as string) ?? null);
-  }
-
-  function toggleEquipment(id: string) {
-    setEquipment((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  }
-
-  async function saveEquipment() {
-    if (equipment.length === 0) {
-      Alert.alert(
-        "Material",
-        "Selecciona al menos una opción (o «Solo material básico»)."
-      );
-      return;
-    }
-    setEquipmentSaving(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setEquipmentSaving(false);
-      return;
-    }
-    const { error: saveErr } = await supabase
-      .from("profiles")
-      .update({
-        clinic_equipment: equipment,
-        clinic_equipment_notes: equipmentNotes.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-    setEquipmentSaving(false);
-    if (saveErr) {
-      Alert.alert("Error", saveErr.message);
-      return;
-    }
-    Alert.alert("Guardado", "Physio ya puede usar tu material en la consulta.");
   }
 
   async function openPatient(patient: PhysioPatient) {
@@ -745,10 +697,7 @@ export function PhysioPatientsScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Consulta clínica con Physio</Text>
           <Pressable
-            onPress={() => {
-              setChatOpen(true);
-              setPhysioIntro(true);
-            }}
+            onPress={() => navigation.navigate("PhysioConsult")}
             style={({ pressed }) => [
               styles.primaryBtn,
               { marginTop: 12 },
@@ -757,88 +706,6 @@ export function PhysioPatientsScreen() {
           >
             <Text style={styles.primaryBtnText}>Abrir consulta</Text>
           </Pressable>
-        </View>
-
-        <View style={styles.card}>
-          <Pressable
-            onPress={() => setEquipmentOpen((v) => !v)}
-            style={styles.equipmentHeader}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>Material de tu consulta</Text>
-              {equipment.length === 0 ? (
-                <Text style={styles.equipmentWarn}>
-                  Aún no indicado — completa para mejores recomendaciones.
-                </Text>
-              ) : (
-                <Text style={styles.userMeta}>
-                  {equipment.length} ítem{equipment.length === 1 ? "" : "s"} guardado
-                  {equipment.length === 1 ? "" : "s"}
-                </Text>
-              )}
-            </View>
-            <Ionicons
-              name={equipmentOpen ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={Colors.textLight}
-            />
-          </Pressable>
-          {equipmentOpen ? (
-            <View style={{ marginTop: 12 }}>
-              <Text style={styles.helpSmall}>
-                Physio adapta recomendaciones a lo que tienes. Si falta algo, te
-                sugerirá derivar.
-              </Text>
-              {PHYSIO_EQUIPMENT_CATEGORIES.map((cat) => (
-                <View key={cat.id} style={{ marginTop: 12 }}>
-                  <Text style={styles.categoryTitle}>{cat.title}</Text>
-                  <View style={styles.chips}>
-                    {cat.options.map((opt) => {
-                      const selected = equipment.includes(opt.id);
-                      return (
-                        <Pressable
-                          key={opt.id}
-                          onPress={() => toggleEquipment(opt.id)}
-                          style={[styles.chip, selected && styles.chipSelected]}
-                        >
-                          <Text
-                            style={[
-                              styles.chipText,
-                              selected && styles.chipTextSelected,
-                            ]}
-                          >
-                            {opt.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              ))}
-              <TextInput
-                style={[styles.input, styles.notes]}
-                value={equipmentNotes}
-                onChangeText={setEquipmentNotes}
-                placeholder="Notas (opcional)"
-                placeholderTextColor={Colors.textLight}
-                multiline
-              />
-              <Pressable
-                onPress={() => void saveEquipment()}
-                disabled={equipmentSaving}
-                style={({ pressed }) => [
-                  styles.primaryBtn,
-                  { marginTop: 12 },
-                  pressed && { opacity: 0.9 },
-                  equipmentSaving && { opacity: 0.6 },
-                ]}
-              >
-                <Text style={styles.primaryBtnText}>
-                  {equipmentSaving ? "Guardando…" : "Guardar material"}
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
         </View>
 
         {error ? (
@@ -933,44 +800,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 12,
   },
-  equipmentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  equipmentWarn: {
-    marginTop: -6,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#B45309",
-  },
-  helpSmall: {
-    fontSize: 12,
-    lineHeight: 17,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  categoryTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: Colors.textLight,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 8,
-  },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderColor: Colors.borderStrong,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: Colors.white,
-  },
-  chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
-  chipTextSelected: { color: Colors.white },
-  notes: { minHeight: 72, textAlignVertical: "top", marginTop: 12 },
   codeDisplay: {
     fontSize: 28,
     fontWeight: "800",

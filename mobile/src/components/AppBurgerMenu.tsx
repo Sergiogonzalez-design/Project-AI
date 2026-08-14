@@ -1,0 +1,200 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import React, { useMemo, useState } from "react";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Colors } from "../lib/colors";
+import type { TabParamList } from "../navigation/AppTabs";
+
+type MenuItem = {
+  route: keyof TabParamList;
+  label: string;
+};
+
+type Props = {
+  isPhysio?: boolean;
+  isAdmin?: boolean;
+};
+
+export function AppBurgerMenu({ isPhysio = false, isAdmin = false }: Props) {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const route = useRoute();
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const [open, setOpen] = useState(false);
+  const drawerWidth = Math.min(280, windowWidth * 0.88);
+
+  const items = useMemo<MenuItem[]>(() => {
+    const primary: MenuItem[] = isPhysio
+      ? [
+          { route: "Patients", label: "Paciente" },
+          { route: "PhysioConsult", label: "Consulta" },
+        ]
+      : [
+          { route: "PhysioLink", label: "Paciente" },
+          { route: "AIInquiries", label: "Consulta" },
+        ];
+    return [
+      ...primary,
+      { route: "AboutUs", label: "About" },
+      { route: "Profile", label: "Profile" },
+      ...(isAdmin ? [{ route: "Admin" as const, label: "Admin" }] : []),
+    ];
+  }, [isPhysio, isAdmin]);
+
+  function navigateTo(target: keyof TabParamList) {
+    setOpen(false);
+    navigation.navigate(target);
+  }
+
+  return (
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+        accessibilityLabel="Abrir menú"
+        accessibilityRole="button"
+      >
+        <Ionicons name="menu" size={22} color={Colors.text} />
+      </Pressable>
+
+      <Modal
+        visible={open}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setOpen(false)}
+      >
+        <View style={styles.overlay}>
+          <Pressable
+            style={styles.backdrop}
+            onPress={() => setOpen(false)}
+            accessibilityLabel="Cerrar menú"
+          />
+          <View
+            style={[
+              styles.drawer,
+              {
+                width: drawerWidth,
+                paddingTop: Math.max(insets.top, 12) + 8,
+                paddingBottom: insets.bottom + 12,
+              },
+            ]}
+          >
+            <View style={styles.drawerHeader}>
+              <Text style={styles.drawerTitle}>Menú</Text>
+              <Pressable
+                onPress={() => setOpen(false)}
+                style={({ pressed }) => [styles.closeBtn, pressed && styles.iconBtnPressed]}
+                accessibilityLabel="Cerrar menú"
+              >
+                <Ionicons name="close" size={22} color={Colors.text} />
+              </Pressable>
+            </View>
+
+            <View style={styles.menuList}>
+              {items.map((item) => {
+                const active = route.name === item.route;
+                return (
+                  <Pressable
+                    key={item.route}
+                    onPress={() => navigateTo(item.route)}
+                    style={({ pressed }) => [
+                      styles.menuItem,
+                      active && styles.menuItemActive,
+                      pressed && styles.menuItemPressed,
+                    ]}
+                  >
+                    <Text style={[styles.menuItemText, active && styles.menuItemTextActive]}>
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 4,
+  },
+  iconBtnPressed: { opacity: 0.75 },
+  overlay: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
+  },
+  backdrop: { ...StyleSheet.absoluteFillObject },
+  drawer: {
+    backgroundColor: "#FAFAFA",
+    borderLeftWidth: 1,
+    borderLeftColor: Colors.border,
+    paddingHorizontal: 12,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: -4, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  drawerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
+    marginBottom: 8,
+  },
+  drawerTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuList: { gap: 4, paddingTop: 4 },
+  menuItem: {
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  menuItemActive: {
+    backgroundColor: Colors.primarySoft,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
+  },
+  menuItemPressed: { opacity: 0.9 },
+  menuItemText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.text,
+  },
+  menuItemTextActive: {
+    color: Colors.primary,
+    fontWeight: "700",
+  },
+});

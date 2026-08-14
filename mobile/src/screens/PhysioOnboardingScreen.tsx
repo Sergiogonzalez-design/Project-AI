@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -12,194 +12,139 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { DismissKeyboard } from "../components/DismissKeyboard";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { AuthBackBar } from "../components/AuthBackBar";
 import { Colors } from "../lib/colors";
-import { PHYSIO_EQUIPMENT_CATEGORIES } from "../lib/physio-equipment-options";
 import { supabase } from "../lib/supabase";
 
 type Props = { onComplete: () => void };
 
 export function PhysioOnboardingScreen({ onComplete }: Props) {
-  const [step, setStep] = useState<1 | 2>(1);
   const [fullName, setFullName] = useState("");
   const [clinicName, setClinicName] = useState("");
-  const [equipment, setEquipment] = useState<string[]>([]);
-  const [equipmentNotes, setEquipmentNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  function toggleEquipment(id: string) {
-    setEquipment((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  }
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      setUserId(data.session?.user?.id ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  function goNext() {
+  async function handleSubmit() {
     if (!fullName.trim()) {
       setError("Introduce tu nombre completo.");
       return;
     }
-    setError(null);
-    setStep(2);
-  }
-
-  async function handleSubmit() {
-    if (equipment.length === 0) {
-      setError(
-        "Selecciona al menos el material que tienes (o «Solo material básico»)."
-      );
+    if (!userId) {
+      setError("Sesión expirada. Cierra la app y vuelve a entrar.");
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Sesión expirada.");
-      const { error: saveErr } = await supabase.from("profiles").upsert({
-        id: user.id,
+      const payload = {
         display_name: fullName.trim(),
         clinic_name: clinicName.trim() || null,
-        clinic_equipment: equipment,
-        clinic_equipment_notes: equipmentNotes.trim() || null,
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
-      });
-      if (saveErr) throw new Error(saveErr.message);
+      };
+
+      const { error: saveErr } = await supabase
+        .from("profiles")
+        .update(payload)
+        .eq("id", userId);
+
+      if (saveErr) {
+        const { error: upsertErr } = await supabase.from("profiles").upsert({
+          id: userId,
+          account_type: "physio",
+          ...payload,
+        });
+        if (upsertErr) throw new Error(upsertErr.message);
+      }
+
       onComplete();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al guardar.");
-    } finally {
       setLoading(false);
     }
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <DismissKeyboard>
+    <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
+      <AuthBackBar onPress={() => void supabase.auth.signOut()} />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+      >
         <ScrollView
+          style={styles.flex}
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator
+          bounces
           onScrollBeginDrag={Keyboard.dismiss}
         >
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
           <Text style={styles.title}>Bienvenido, fisioterapeuta</Text>
           <Text style={styles.subtitle}>
-            {step === 1
-              ? "Paso 1 de 2 — Tus datos para el panel de pacientes"
-              : "Paso 2 de 2 — Material de tu consulta"}
+            Cuéntanos cómo te identifican tus pacientes. No necesitamos tu perfil
+            deportivo.
           </Text>
 
-          {step === 1 ? (
-            <>
-              <Text style={styles.label}>Nombre completo</Text>
-              <TextInput
-                style={styles.input}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Tu nombre y apellidos"
-                placeholderTextColor={Colors.textLight}
-              />
+          <Text style={styles.label}>Nombre completo</Text>
+          <TextInput
+            style={styles.input}
+            value={fullName}
+            onChangeText={setFullName}
+            placeholder="Tu nombre y apellidos"
+            placeholderTextColor={Colors.textLight}
+          />
 
-              <Text style={styles.label}>Clínica o centro (opcional)</Text>
-              <TextInput
-                style={styles.input}
-                value={clinicName}
-                onChangeText={setClinicName}
-                placeholder="Ej: Clínica AIKinora"
-                placeholderTextColor={Colors.textLight}
-              />
+          <Text style={styles.label}>Clínica o centro</Text>
+          <TextInput
+            style={styles.input}
+            value={clinicName}
+            onChangeText={setClinicName}
+            placeholder="Ej: Clínica AIKinora, Centro de fisioterapia…"
+            placeholderTextColor={Colors.textLight}
+          />
+          <Text style={styles.hint}>
+            Opcional — aparece en tu enlace de invitación para pacientes.
+          </Text>
 
-              {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-              <Pressable style={styles.primaryBtn} onPress={goNext}>
-                <Text style={styles.primaryBtnText}>Continuar</Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text style={styles.help}>
-                Marca el material que tienes. Physio adaptará recomendaciones; si
-                falta algo (p. ej. RX), te sugerirá derivar al paciente.
-              </Text>
-
-              {PHYSIO_EQUIPMENT_CATEGORIES.map((cat) => (
-                <View key={cat.id} style={styles.category}>
-                  <Text style={styles.categoryTitle}>{cat.title}</Text>
-                  <View style={styles.chips}>
-                    {cat.options.map((opt) => {
-                      const selected = equipment.includes(opt.id);
-                      return (
-                        <Pressable
-                          key={opt.id}
-                          onPress={() => toggleEquipment(opt.id)}
-                          style={[styles.chip, selected && styles.chipSelected]}
-                        >
-                          <Text
-                            style={[
-                              styles.chipText,
-                              selected && styles.chipTextSelected,
-                            ]}
-                          >
-                            {opt.label}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              ))}
-
-              <Text style={styles.label}>Otro material o notas (opcional)</Text>
-              <TextInput
-                style={[styles.input, styles.notes]}
-                value={equipmentNotes}
-                onChangeText={setEquipmentNotes}
-                placeholder="Ej: RX en el edificio de al lado…"
-                placeholderTextColor={Colors.textLight}
-                multiline
-              />
-
-              {error ? <Text style={styles.error}>{error}</Text> : null}
-
-              <View style={styles.row}>
-                <Pressable
-                  style={styles.secondaryBtn}
-                  onPress={() => {
-                    setError(null);
-                    setStep(1);
-                  }}
-                >
-                  <Text style={styles.secondaryBtnText}>Atrás</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.primaryBtn, styles.primaryBtnFlex]}
-                  onPress={() => void handleSubmit()}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.primaryBtnText}>Ir al panel</Text>
-                  )}
-                </Pressable>
-              </View>
-            </>
-          )}
+          <Pressable
+            style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
+            onPress={() => void handleSubmit()}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Ir al panel de pacientes</Text>
+            )}
+          </Pressable>
         </ScrollView>
-      </DismissKeyboard>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
-  container: { padding: 24, paddingBottom: 48 },
+  flex: { flex: 1 },
+  container: { flexGrow: 1, padding: 24, paddingTop: 56, paddingBottom: 64 },
   logo: { width: 64, height: 64, alignSelf: "center", marginBottom: 16, resizeMode: "contain" },
   title: { fontSize: 22, fontWeight: "700", color: Colors.text, textAlign: "center" },
   subtitle: {
@@ -208,14 +153,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
     marginBottom: 24,
-  },
-  help: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: Colors.textSecondary,
-    marginBottom: 16,
+    lineHeight: 20,
   },
   label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 8, marginTop: 8 },
+  hint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6, lineHeight: 17 },
   input: {
     borderWidth: 1.5,
     borderColor: Colors.border,
@@ -227,40 +168,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     marginBottom: 8,
   },
-  notes: { minHeight: 80, textAlignVertical: "top" },
-  category: { marginBottom: 16 },
-  categoryTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: Colors.textLight,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 8,
-  },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderColor: Colors.borderStrong,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: Colors.white,
-  },
-  chipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
-  chipTextSelected: { color: Colors.white },
   error: { marginTop: 12, fontSize: 13, color: Colors.danger, textAlign: "center" },
-  row: { flexDirection: "row", gap: 10, marginTop: 16 },
-  secondaryBtn: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  secondaryBtnText: { color: Colors.textSecondary, fontSize: 15, fontWeight: "700" },
   primaryBtn: {
     marginTop: 24,
     backgroundColor: Colors.primary,
@@ -268,6 +176,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
   },
-  primaryBtnFlex: { flex: 1, marginTop: 0 },
+  primaryBtnDisabled: { opacity: 0.85 },
   primaryBtnText: { color: Colors.white, fontSize: 16, fontWeight: "700" },
 });

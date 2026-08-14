@@ -1,8 +1,8 @@
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
+} from "./consulta-timing";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -205,6 +205,7 @@ export type ShoulderAdaptiveAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   localizacion_hombro: string[];
+  dolor_familiar: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
@@ -254,6 +255,7 @@ export function defaultShoulderAdaptiveAnswers(): ShoulderAdaptiveAnswers {
     mecanismo_otro: "",
     intensidad_dolor: 5,
     localizacion_hombro: [],
+    dolor_familiar: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
@@ -466,12 +468,20 @@ export const SHOULDER_QUESTIONS: ShoulderQuestionDef[] = [
   { id: "rf_luxacion_actual", section: "red_flags", label: "¿Sientes que el hombro está fuera de su sitio ahora mismo?", type: "single", options: YES_NO, required: true },
   { id: "rf_dolor_nocturno_sistemico", section: "red_flags", label: "¿Dolor nocturno constante que no mejora con reposo, con pérdida de peso no explicada?", type: "single", options: YES_NO, required: true, showIf: (a) => shouldShowSleepDependentQuestion("rf_dolor_nocturno_sistemico", a.evolucion) },
 
-  // Core clinical characterization
+  // Core clinical characterization — location + familiar pain before mechanism
+  { id: "localizacion_hombro", section: "core", label: "¿Dónde sientes el dolor en el hombro? (puedes marcar varias)", type: "multi", options: SHOULDER_ANATOMIC_LOCATION, required: true },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label: "¿Es el mismo dolor que notas al elevar el brazo, dormir de ese lado, lanzar o cruzar el brazo por delante?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
+    required: true,
+  },
   { id: "inicio", section: "core", label: "¿Cómo fue el inicio?", type: "single", options: ONSET_FORM_OPTIONS, required: true },
   { id: "mecanismo", section: "core", label: "¿Qué pudo provocarlo? (puedes marcar varias)", type: "multi", options: MECHANISM_OPTIONS, required: true },
   { id: "mecanismo_otro", section: "core", label: "Cuéntanos qué pasó o cómo empezó", type: "text", required: true, showIf: (a) => a.mecanismo.includes("Otro") },
   { id: "intensidad_dolor", section: "core", label: "Intensidad del dolor (1–10)", type: "slider", required: true },
-  { id: "localizacion_hombro", section: "core", label: "¿Dónde sientes el dolor en el hombro? (puedes marcar varias)", type: "multi", options: SHOULDER_ANATOMIC_LOCATION, required: true },
   { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: true },
   { id: "limitacion_funcional", section: "core", label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)", type: "multi", options: FUNCTIONAL_LIMIT_OPTIONS, required: true },
   { id: "irradiacion", section: "core", label: "¿El dolor se extiende hacia el brazo?", type: "single", options: YES_NO, required: true },
@@ -735,6 +745,7 @@ export function formatShoulderAdaptive(
     focus === "pectoral"
       ? `Localización anatómica pectoral/pecho: ${formatMulti(answers.localizacion_hombro)}`
       : `Localización anatómica hombro: ${formatMulti(answers.localizacion_hombro)}`,
+    `Dolor familiar (mismo al elevar/dormir/lanzar/cruzar): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -860,6 +871,8 @@ export const SHOULDER_LABEL_EN: Partial<Record<string, string>> = {
   mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_hombro: "Where do you feel the pain in the shoulder? (you can select several)",
+  dolor_familiar:
+    "Is it the same pain you notice when lifting the arm, sleeping on that side, throwing, or crossing the arm in front?",
   tipo_dolor: "How would you describe the pain?",
   limitacion_funcional: "How much does it limit you day to day?",
   irradiacion: "Does the pain spread down the arm?",
@@ -906,6 +919,9 @@ export const SHOULDER_OPTION_EN: Record<string, string> = {
   "Movimiento repetitivo": "Repetitive movement",
   "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   Otro: "Other",
+  "No estoy seguro": "I'm not sure",
+  "Sí, es el mismo": "Yes, it's the same",
+  "No, es otra molestia": "No, it's a different discomfort",
   "Parte delantera del hombro": "Front of the shoulder",
   "Parte lateral": "Side (lateral)",
   "Parte posterior": "Back (posterior)",

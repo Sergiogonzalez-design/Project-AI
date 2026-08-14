@@ -4,6 +4,7 @@ import {
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -18,7 +19,9 @@ import {
   authPasswordProps,
 } from "./AuthTextField";
 import { DismissKeyboard } from "./DismissKeyboard";
+import { AuthBackBar } from "./AuthBackBar";
 import { Colors } from "../lib/colors";
+import { WEB_APP_URL } from "../lib/admin-api";
 import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 
@@ -69,6 +72,9 @@ export function LoginScreen({ onSwitch }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
+      <AuthBackBar
+        onPress={() => void Linking.openURL(`${WEB_APP_URL}/sobre-nosotros`)}
+      />
       <DismissKeyboard>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -142,7 +148,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingTop: 72,
+    paddingBottom: 40,
   },
   header: { alignItems: "center", marginBottom: 28 },
   logo: {

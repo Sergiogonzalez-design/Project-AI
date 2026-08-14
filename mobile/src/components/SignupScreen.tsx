@@ -18,6 +18,7 @@ import {
   authPasswordProps,
 } from "./AuthTextField";
 import { DismissKeyboard } from "./DismissKeyboard";
+import { AuthBackBar } from "./AuthBackBar";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import { WEB_APP_URL } from "../lib/admin-api";
@@ -85,6 +86,7 @@ export function SignupScreen({ onSwitch }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
+      <AuthBackBar onPress={onSwitch} />
       <DismissKeyboard>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -207,7 +209,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingVertical: 48,
+    paddingTop: 72,
+    paddingBottom: 48,
   },
   header: {
     alignItems: "center",

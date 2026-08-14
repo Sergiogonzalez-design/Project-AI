@@ -144,12 +144,12 @@ export function PhysioReportView({
                 ]}
               >
                 <Text style={styles.reasoningBtnText}>
-                  Árbol de razonamiento clínico →
+                  Razonamiento clínico por pruebas →
                 </Text>
               </Pressable>
               <Text style={styles.reasoningHint}>
-                Recorre las pruebas una a una con Positivo / Negativo y obtén
-                hipótesis orientativas.
+                Aplica las maniobras una a una (Positivo / Negativo) y obtén
+                hipótesis orientativas según los hallazgos.
               </Text>
             </View>
           ) : null}

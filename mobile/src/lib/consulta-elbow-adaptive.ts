@@ -1,8 +1,8 @@
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
+} from "./consulta-timing";
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -160,6 +160,7 @@ export type ElbowAdaptiveAnswers = {
   mecanismo: string;
   intensidad_dolor: number;
   localizacion_codo: string[];
+  dolor_familiar: string;
   tipo_dolor: string[];
   movimientos_agravantes: string[];
   limitacion_funcional: string[];
@@ -222,6 +223,7 @@ export function defaultElbowAdaptiveAnswers(): ElbowAdaptiveAnswers {
     mecanismo: "",
     intensidad_dolor: 5,
     localizacion_codo: [],
+    dolor_familiar: "",
     tipo_dolor: [],
     movimientos_agravantes: [],
     limitacion_funcional: [],
@@ -425,12 +427,19 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
   { id: "rf_perdida_sensibilidad", section: "red_flags", label: "¿Pérdida de sensibilidad (entumecimiento marcado)?", type: "single", options: YES_NO, required: true },
   { id: "rf_dedos_frios", section: "red_flags", label: "¿Dedos fríos, pálidos o azulados tras la lesión?", type: "single", options: YES_NO, required: true },
 
-  // Core
-  
+  // Core — location + familiar pain before mechanism
+  { id: "localizacion_codo", section: "core", label: "¿Dónde sientes el dolor en el codo? (puedes marcar varias)", type: "multi", options: ELBOW_LOCATION_OPTIONS, required: true },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label: "¿Es el mismo dolor que notas al agarrar, usar el ratón, girar un pomo o al despertar con hormigueo?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
+    required: true,
+  },
   { id: "inicio", section: "core", label: "¿Cómo apareció el dolor?", type: "single", options: ONSET_FORM_OPTIONS, required: true },
   { id: "mecanismo", section: "core", label: "¿Cómo empezó el problema?", type: "single", options: MECHANISM_OPTIONS, required: true },
   { id: "intensidad_dolor", section: "core", label: "Intensidad actual del dolor (1–10)", type: "slider", required: true },
-  { id: "localizacion_codo", section: "core", label: "¿Dónde sientes el dolor en el codo? (puedes marcar varias)", type: "multi", options: ELBOW_LOCATION_OPTIONS, required: true },
   { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: true },
   { id: "movimientos_agravantes", section: "core", label: "¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: AGGRAVATING_MOVEMENT_OPTIONS, required: true },
   { id: "limitacion_funcional", section: "core", label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)", type: "multi", options: FUNCTIONAL_LIMIT_OPTIONS, required: true },
@@ -643,6 +652,7 @@ export function formatElbowAdaptive(
     `Mecanismo: ${answers.mecanismo}`,
     `Intensidad dolor actual: ${answers.intensidad_dolor}/10`,
     `Localización anatómica codo: ${formatMulti(answers.localizacion_codo)}`,
+    `Dolor familiar (agarrar/ratón/pomo/hormigueo nocturno): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Movimientos agravantes: ${formatMulti(answers.movimientos_agravantes)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
@@ -776,6 +786,8 @@ export const ELBOW_LABEL_EN: Partial<Record<string, string>> = {
   mecanismo: "How did the problem begin?",
   intensidad_dolor: "Current pain intensity (1–10)",
   localizacion_codo: "Where do you feel the pain in the elbow? (you can select several)",
+  dolor_familiar:
+    "Is it the same pain you notice when gripping, using a mouse, turning a doorknob, or waking with tingling?",
   tipo_dolor: "How would you describe the pain?",
   movimientos_agravantes: "Which movements make it worse? (you can select several)",
   limitacion_funcional: "How much does it limit you day to day?",
@@ -817,6 +829,8 @@ export const ELBOW_LABEL_EN: Partial<Record<string, string>> = {
 export const ELBOW_OPTION_EN: Record<string, string> = {
   No: "No",
   Sí: "Yes",
+  "Sí, es el mismo": "Yes, it's the same",
+  "No, es otra molestia": "No, it's a different discomfort",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",

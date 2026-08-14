@@ -1,12 +1,12 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
+} from "./consulta-timing";
 /**
  * Adaptive questionnaire for neck / cervical spine — same structure as shoulder
  * (urgency → core → mechanism branches → neuro → history).
  */
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -137,6 +137,7 @@ export type NeckAdaptiveAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   localizacion_cuello: string[];
+  dolor_familiar: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
@@ -181,6 +182,7 @@ export function defaultNeckAdaptiveAnswers(): NeckAdaptiveAnswers {
     mecanismo_otro: "",
     intensidad_dolor: 5,
     localizacion_cuello: [],
+    dolor_familiar: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
@@ -361,6 +363,23 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
 
   
   {
+    id: "localizacion_cuello",
+    section: "core",
+    label: "¿Dónde sientes el dolor en el cuello? (puedes marcar varias)",
+    type: "multi",
+    options: NECK_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿Es el mismo dolor que notas al girar/inclinar la cabeza, mirar al techo o cuando el síntoma baja al brazo?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
+    required: true,
+  },
+  {
     id: "inicio",
     section: "core",
     label: "¿Cómo fue el inicio?",
@@ -389,14 +408,6 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
     section: "core",
     label: "Intensidad del dolor (1–10)",
     type: "slider",
-    required: true,
-  },
-  {
-    id: "localizacion_cuello",
-    section: "core",
-    label: "¿Dónde sientes el dolor en el cuello? (puedes marcar varias)",
-    type: "multi",
-    options: NECK_LOCATION_OPTIONS,
     required: true,
   },
   {
@@ -752,6 +763,7 @@ export function formatNeckAdaptive(
     `Mecanismo: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización cuello: ${formatMulti(answers.localizacion_cuello)}`,
+    `Dolor familiar (girar/inclinar/brazo): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -868,6 +880,8 @@ export const NECK_LABEL_EN: Partial<Record<string, string>> = {
   mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_cuello: "Where do you feel the pain in the neck? (you can select several)",
+  dolor_familiar:
+    "Is it the same pain you notice when turning/tilting your head, looking up, or when symptoms go down the arm?",
   tipo_dolor: "How would you describe the pain?",
   limitacion_funcional: "How much does it limit you day to day?",
   irradiacion: "Does the pain spread to another area?",

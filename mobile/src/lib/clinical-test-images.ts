@@ -243,10 +243,87 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = TESTS.map(
 );
 
 export function illustratedClinicalTestsPromptBlock(): string {
-  const lines = CLINICAL_TEST_IMAGES.map((t) => `- ${t.title}`).join("\n");
+  const byId = new Map(CLINICAL_TEST_IMAGES.map((t) => [t.id, t]));
+  const groups: { label: string; ids: string[] }[] = [
+    {
+      label: "Rodilla",
+      ids: [
+        "lachman",
+        "anterior-drawer-knee",
+        "pivot-shift",
+        "mcmurray",
+        "thessaly",
+      ],
+    },
+    {
+      label: "Hombro",
+      ids: [
+        "neer",
+        "hawkins-kennedy",
+        "jobe-empty-can",
+        "apprehension",
+        "speed",
+        "yergason",
+        "drop-arm",
+        "painful-arc",
+      ],
+    },
+    {
+      label: "Cuello / neural miembro superior",
+      ids: ["spurling", "ultt"],
+    },
+    {
+      label: "Tobillo / pie",
+      ids: [
+        "thompson",
+        "matles",
+        "anterior-drawer-ankle",
+        "windlass",
+        "heel-raise",
+        "hop-test",
+      ],
+    },
+    {
+      label: "Cadera",
+      ids: ["faber", "fadir", "trendelenburg", "hop-test"],
+    },
+    {
+      label: "Muñeca / mano",
+      ids: ["phalen", "tinel"],
+    },
+    {
+      label: "Codo",
+      ids: ["cozen", "mill"],
+    },
+    {
+      label: "Columna lumbar / espalda",
+      ids: ["schober", "slr-lasegue", "kemp"],
+    },
+  ];
+  const groupText = groups
+    .map(({ label, ids }) => {
+      const lines = ids
+        .map((id) => byId.get(id)?.title)
+        .filter(Boolean)
+        .map((title) => `  - ${title}`)
+        .join("\n");
+      return `**${label}**\n${lines}`;
+    })
+    .join("\n");
+
   return `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
 Cuando listes pruebas/maniobras numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene imagen en Kinora; si inventas otro nombre, la imagen NO aparece.
-${lines}
+
+REGLA DE ZONA (CRÍTICO — error grave si se incumple):
+- Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, etc.).
+- En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
+- PROHIBIDO numerar tests de otra región. Ejemplos: dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
+- Signo de Tinel y Phalen del catálogo son de MUÑECA/MANO (imagen de muñeca). NO los numeres para pie/túnel tarsiano aunque el nombre “Tinel” se use en tobillo.
+- Si una maniobra útil no está en el grupo de esa zona (p. ej. Mulder/compresión interdigital para Morton, Tinel en túnel tarsiano), menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
+- Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
+
+Catálogo por zona:
+${groupText}
 - Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
 - Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.
 - Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;
@@ -291,7 +368,17 @@ export function findClinicalTestImage(line: string): ClinicalTestImage | null {
   }
 
   if (hits.length !== 1) return null;
-  return hits[0];
+  const hit = hits[0];
+
+  const footAnkleCue =
+    /\b(pie|plantar|dorso|tobillo|tarsiano|tarsal|ankle|foot|morton|aquiles|achilles|atfl)\b/.test(
+      normalized
+    );
+  if (footAnkleCue && (hit.id === "tinel" || hit.id === "phalen")) {
+    return null;
+  }
+
+  return hit;
 }
 
 export function shouldShowClinicalTestImage(opts: {

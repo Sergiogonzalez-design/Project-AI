@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { AthleteProfileCard } from "../components/AthleteProfileCard";
+import { PhysioProfileCard } from "../components/PhysioProfileCard";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import type { LanguagePreference } from "../lib/i18n/translations";
@@ -41,6 +42,7 @@ export function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [showAthleteProfile, setShowAthleteProfile] = useState(false);
+  const [accountType, setAccountType] = useState<"patient" | "physio" | null>(null);
   const [notificationsOn, setNotificationsOn] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
 
@@ -50,11 +52,14 @@ export function ProfileScreen() {
       if (data.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url")
+          .select("display_name, avatar_url, account_type")
           .eq("id", data.user.id)
           .single();
         setDisplayName(profile?.display_name ?? "");
         setAvatarUrl(profile?.avatar_url ?? null);
+        setAccountType(
+          profile?.account_type === "physio" ? "physio" : "patient"
+        );
       }
       setNotificationsOn(await getNotificationsEnabled());
       setLoading(false);
@@ -217,27 +222,31 @@ export function ProfileScreen() {
         </View>
       </View>
 
-      <View style={styles.card}>
-        <Pressable
-          onPress={() => setShowAthleteProfile((v) => !v)}
-          style={({ pressed }) => [styles.collapseBtn, pressed && { opacity: 0.9 }]}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons name="fitness" size={18} color={Colors.primary} />
-            <Text style={styles.collapseBtnText}>{t.profile.athleteProfile}</Text>
-          </View>
-          <Ionicons
-            name={showAthleteProfile ? "chevron-up" : "chevron-down"}
-            size={18}
-            color={Colors.textSecondary}
-          />
-        </Pressable>
-        {showAthleteProfile ? (
-          <View style={{ marginTop: 12 }}>
-            <AthleteProfileCard />
-          </View>
-        ) : null}
-      </View>
+      {accountType === "physio" ? (
+        <PhysioProfileCard />
+      ) : (
+        <View style={styles.card}>
+          <Pressable
+            onPress={() => setShowAthleteProfile((v) => !v)}
+            style={({ pressed }) => [styles.collapseBtn, pressed && { opacity: 0.9 }]}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Ionicons name="fitness" size={18} color={Colors.primary} />
+              <Text style={styles.collapseBtnText}>{t.profile.athleteProfile}</Text>
+            </View>
+            <Ionicons
+              name={showAthleteProfile ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={Colors.textSecondary}
+            />
+          </Pressable>
+          {showAthleteProfile ? (
+            <View style={{ marginTop: 12 }}>
+              <AthleteProfileCard />
+            </View>
+          ) : null}
+        </View>
+      )}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t.profile.account}</Text>

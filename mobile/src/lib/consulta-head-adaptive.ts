@@ -1,8 +1,8 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+} from "./consulta-timing";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 
 /**
  * Adaptive questionnaire for head / headache — separate from neck so multi-part
@@ -82,6 +82,7 @@ export type HeadAdaptiveAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   localizacion_cabeza: string[];
+  dolor_familiar: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   sintomas_asociados: string[];
@@ -105,6 +106,7 @@ export function defaultHeadAdaptiveAnswers(): HeadAdaptiveAnswers {
     mecanismo_otro: "",
     intensidad_dolor: 5,
     localizacion_cabeza: [],
+    dolor_familiar: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     sintomas_asociados: [],
@@ -229,6 +231,15 @@ export const HEAD_QUESTIONS: HeadQuestionDef[] = [
     label: "¿Dónde sientes el dolor en la cabeza? (puedes marcar varias)",
     type: "multi",
     options: HEAD_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿Es el mismo dolor de cabeza que notas ahora, al mover el cuello, con la luz o en tu patrón habitual?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
     required: true,
   },
   {
@@ -413,6 +424,7 @@ export function formatHeadAdaptive(answers: HeadAdaptiveAnswers, bodyMapText: st
     `Forma de inicio: ${answers.inicio}`,
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización: ${formatMulti(answers.localizacion_cabeza)}`,
+    `Dolor familiar (cuello/luz/patrón): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Síntomas asociados: ${formatMulti(answers.sintomas_asociados)}`,
@@ -468,6 +480,8 @@ export const HEAD_LABEL_EN: Partial<Record<string, string>> = {
   mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_cabeza: "Where do you feel the pain in the head? (you can select several)",
+  dolor_familiar:
+    "Is it the same headache you feel now, when moving your neck, with light, or in your usual pattern?",
   tipo_dolor: "How would you describe the pain?",
   limitacion_funcional: "How much does it limit you day to day?",
   sintomas_asociados: "What other symptoms do you notice?",

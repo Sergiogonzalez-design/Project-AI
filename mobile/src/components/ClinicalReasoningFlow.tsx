@@ -25,14 +25,55 @@ import {
 } from "../lib/clinical-reasoning";
 import type {
   ClinicalConclusionNode,
+  ClinicalHypothesis,
   ClinicalTestNode,
   HypothesisProbability,
 } from "../lib/clinical-reasoning/types";
 
+const PROBABILITY_ORDER: Record<HypothesisProbability, number> = {
+  alta: 0,
+  media: 1,
+  baja: 2,
+};
+
+function sortHypotheses(hypotheses: ClinicalHypothesis[]): ClinicalHypothesis[] {
+  return [...hypotheses].sort(
+    (a, b) => PROBABILITY_ORDER[a.probability] - PROBABILITY_ORDER[b.probability]
+  );
+}
+
 function probabilityBadge(p: HypothesisProbability) {
-  if (p === "alta") return { bg: "#FEE2E2", fg: "#991B1B", label: "Alta probabilidad" };
+  if (p === "alta") return { bg: "#DBEAFE", fg: "#1E40AF", label: "Alta probabilidad" };
   if (p === "media") return { bg: "#FEF3C7", fg: "#92400E", label: "Probabilidad media" };
   return { bg: "#F3F4F6", fg: "#374151", label: "Baja probabilidad" };
+}
+
+function ClinicalTestVideo({ src, title }: { src: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <View style={styles.videoWrap}>
+      {failed ? (
+        <View style={styles.videoError}>
+          <Text style={styles.videoErrorText}>
+            No se pudo cargar el vídeo demostrativo. Recarga la página o prueba otro
+            navegador.
+          </Text>
+        </View>
+      ) : (
+        <Video
+          key={src}
+          source={{ uri: src }}
+          style={styles.videoPlayer}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          isLooping={false}
+          onError={() => setFailed(true)}
+          accessibilityLabel={`Vídeo demostrativo: ${title}`}
+        />
+      )}
+    </View>
+  );
 }
 
 function TestCard({
@@ -44,57 +85,47 @@ function TestCard({
 }) {
   const image = CLINICAL_TEST_IMAGES.find((t) => t.id === node.testId);
   const videoSrc = getClinicalTestVideoSrc(node.testId);
+  const isRouteNode = node.testId.startsWith("route-");
+  const positiveTitle = isRouteNode ? "Sí" : "Positivo";
+  const negativeTitle = isRouteNode ? "No" : "Negativo";
 
   return (
     <View style={styles.cardInner}>
-      <Text style={styles.testTitle}>{node.title}</Text>
-      <Text style={styles.testDesc}>{node.description}</Text>
-      {node.evidenceNote ? (
-        <View style={styles.evidenceBox}>
-          <Text style={styles.evidenceText}>{node.evidenceNote}</Text>
+      <View style={styles.testHeader}>
+        <Text style={styles.testTitle}>{node.title}</Text>
+        <Text style={styles.testDesc}>{node.description}</Text>
+        {node.evidenceNote ? (
+          <View style={styles.evidenceBox}>
+            <Text style={styles.evidenceText}>{node.evidenceNote}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {!isRouteNode && (image || videoSrc) ? (
+        <View style={styles.mediaGroup}>
+          {!isRouteNode && image ? (
+            <View style={styles.imageWrap}>
+              <Image
+                source={{ uri: image.src }}
+                style={styles.testImage}
+                resizeMode="contain"
+                accessibilityLabel={image.title}
+              />
+            </View>
+          ) : null}
+
+          {!isRouteNode && videoSrc ? (
+            <ClinicalTestVideo src={videoSrc} title={node.title} />
+          ) : null}
         </View>
       ) : null}
-
-      {image ? (
-        <Image
-          source={{ uri: image.src }}
-          style={styles.testImage}
-          resizeMode="contain"
-          accessibilityLabel={image.title}
-        />
-      ) : (
-        <View style={styles.imagePlaceholder}>
-          <Text style={styles.placeholderText}>Ilustración no disponible</Text>
-        </View>
-      )}
-
-      {videoSrc ? (
-        <View style={styles.videoWrap}>
-          <Video
-            key={videoSrc}
-            source={{ uri: videoSrc }}
-            style={styles.videoPlayer}
-            useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
-            isLooping={false}
-            accessibilityLabel={`Vídeo demostrativo: ${node.title}`}
-          />
-        </View>
-      ) : (
-        <View style={styles.videoPlaceholder}>
-          <Text style={styles.videoLabel}>Vídeo demostrativo</Text>
-          <Text style={styles.placeholderText}>
-            Espacio reservado — podrás añadir el vídeo más adelante.
-          </Text>
-        </View>
-      )}
 
       <View style={styles.answerRow}>
         <Pressable
           style={({ pressed }) => [styles.positiveBtn, pressed && styles.pressed]}
           onPress={() => onAnswer("positive")}
         >
-          <Text style={styles.answerBtnTitle}>Positivo</Text>
+          <Text style={styles.answerBtnTitle}>{positiveTitle}</Text>
           {node.positive.label ? (
             <Text style={styles.answerBtnSub}>{node.positive.label}</Text>
           ) : null}
@@ -103,7 +134,7 @@ function TestCard({
           style={({ pressed }) => [styles.negativeBtn, pressed && styles.pressed]}
           onPress={() => onAnswer("negative")}
         >
-          <Text style={styles.answerBtnTitle}>Negativo</Text>
+          <Text style={styles.answerBtnTitle}>{negativeTitle}</Text>
           {node.negative.label ? (
             <Text style={styles.answerBtnSubDark}>{node.negative.label}</Text>
           ) : null}
@@ -111,6 +142,21 @@ function TestCard({
       </View>
     </View>
   );
+}
+
+function hypothesisCardStyle(p: HypothesisProbability, isFinal: boolean) {
+  const accent =
+    p === "alta"
+      ? { borderLeftColor: "#3B82F6", borderColor: "#BFDBFE" }
+      : p === "media"
+        ? { borderLeftColor: "#FBBF24", borderColor: "#FDE68A" }
+        : { borderLeftColor: "#9CA3AF", borderColor: "#E5E7EB" };
+  return {
+    ...styles.hypothesisCard,
+    ...(isFinal ? styles.hypothesisCardFinal : null),
+    borderLeftWidth: 4,
+    ...accent,
+  };
 }
 
 function ConclusionCard({
@@ -122,41 +168,79 @@ function ConclusionCard({
   onContinue: () => void;
   canContinue: boolean;
 }) {
+  const isFinal = !canContinue;
+
   return (
     <View style={styles.cardInner}>
+      {isFinal ? (
+        <View style={styles.finalBanner}>
+          <Text style={styles.finalBannerEyebrow}>Conclusión clínica final</Text>
+          <Text style={styles.finalBannerTitle}>
+            Secuencia exploratoria concluida — hipótesis más probables según los
+            hallazgos registrados
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.intermediateBanner}>
+          <Text style={styles.intermediateBannerTitle}>Conclusión parcial</Text>
+          <Text style={styles.intermediateBannerText}>
+            Continúa con otra maniobra para afinar el razonamiento diferencial.
+          </Text>
+        </View>
+      )}
+
       <Text style={styles.testTitle}>{node.title}</Text>
       <Text style={styles.testDesc}>{node.summary}</Text>
 
-      <Text style={styles.hypothesesLabel}>Hipótesis orientativas</Text>
-      {node.hypotheses.map((h) => {
-        const badge = probabilityBadge(h.probability);
-        return (
-          <View key={h.name} style={styles.hypothesisCard}>
-            <View style={styles.hypothesisHeader}>
-              <Text style={styles.hypothesisName}>{h.name}</Text>
-              <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-                <Text style={[styles.badgeText, { color: badge.fg }]}>
-                  {badge.label}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.hypothesisRationale}>{h.rationale}</Text>
+      <View style={[styles.hypothesesPanel, isFinal && styles.hypothesesPanelFinal]}>
+        <View style={styles.hypothesesHeader}>
+          <View style={[styles.hypothesesIcon, isFinal && styles.hypothesesIconFinal]}>
+            <Text style={styles.hypothesesIconText}>?</Text>
           </View>
-        );
-      })}
+          <Text style={[styles.hypothesesLabel, isFinal && styles.hypothesesLabelFinal]}>
+            Hipótesis orientativas
+          </Text>
+        </View>
+        {sortHypotheses(node.hypotheses).map((h) => {
+          const badge = probabilityBadge(h.probability);
+          return (
+            <View key={h.name} style={hypothesisCardStyle(h.probability, isFinal)}>
+              <View style={styles.hypothesisHeader}>
+                <Text style={[styles.hypothesisName, isFinal && styles.hypothesisNameFinal]}>
+                  {h.name}
+                </Text>
+                <View style={[styles.badge, { backgroundColor: badge.bg }]}>
+                  <Text style={[styles.badgeText, { color: badge.fg }]}>
+                    {badge.label}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.hypothesisRationale}>{h.rationale}</Text>
+            </View>
+          );
+        })}
+      </View>
 
       {canContinue ? (
         <Pressable
           style={({ pressed }) => [styles.continueBtn, pressed && styles.pressed]}
           onPress={onContinue}
         >
-          <Text style={styles.continueBtnText}>Continuar con otra prueba</Text>
+          <Text style={styles.continueBtnText}>Continuar con otra maniobra →</Text>
         </Pressable>
       ) : (
-        <Text style={styles.endNote}>
-          Has llegado al final de este recorrido. Puedes volver atrás o cerrar
-          para contrastar con el informe completo.
-        </Text>
+        <View style={styles.finalNote}>
+          <View style={styles.finalNoteHeader}>
+            <View style={styles.finalCheck}>
+              <Text style={styles.finalCheckText}>✓</Text>
+            </View>
+            <Text style={styles.finalNoteTitle}>Exploración concluida</Text>
+          </View>
+          <Text style={styles.finalNoteText}>
+            No quedan maniobras en esta secuencia. Puedes retroceder para revisar
+            hallazgos o cerrar y contrastar con el informe completo.
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -213,7 +297,7 @@ export function ClinicalReasoningFlow({
         </Pressable>
         <View style={styles.emptyCard}>
           <Text style={styles.testDesc}>
-            No hay un árbol de razonamiento clínico disponible para esta consulta.
+            No hay un flujo de razonamiento clínico disponible para esta consulta.
           </Text>
         </View>
       </View>
@@ -240,15 +324,16 @@ export function ClinicalReasoningFlow({
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.eyebrow}>Árbol de razonamiento clínico</Text>
+        <Text style={styles.eyebrow}>Razonamiento clínico por pruebas</Text>
         <Text style={styles.pageTitle}>{tree.title}</Text>
         <Text style={styles.meta}>
           {patientName ? `${patientName} · ` : ""}
           {bodyArea || bodyPartLabel(session.bodyPart)}
         </Text>
         <Text style={styles.disclaimer}>
-          Guía interactiva basada en las pruebas del informe. Orientativa — no
-          sustituye el juicio clínico.
+          Secuencia interactiva de pruebas especiales según el informe. Los
+          hallazgos orientan hipótesis probables — no sustituyen el juicio clínico
+          ni pruebas complementarias.
         </Text>
 
         <View style={styles.card}>
@@ -287,7 +372,7 @@ export function ClinicalReasoningFlow({
               })
             }
           >
-            <Text style={styles.secondaryBtnText}>Reiniciar árbol</Text>
+            <Text style={styles.secondaryBtnText}>Reiniciar secuencia</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -345,9 +430,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
   },
-  cardInner: { gap: 12 },
+  cardInner: { gap: 24 },
+  testHeader: { gap: 8 },
+  mediaGroup: { gap: 16 },
   emptyCard: {
     margin: 16,
     padding: 16,
@@ -364,51 +452,46 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   evidenceText: { fontSize: 12, lineHeight: 17, color: "#1E3A8A" },
+  imageWrap: {
+    overflow: "hidden",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+  },
   testImage: {
     width: "100%",
     height: 200,
-    borderRadius: 12,
     backgroundColor: "#F9FAFB",
-  },
-  imagePlaceholder: {
-    height: 140,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: Colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F9FAFB",
-  },
-  videoPlaceholder: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: Colors.border,
-    padding: 20,
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    gap: 4,
   },
   videoWrap: {
     overflow: "hidden",
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     backgroundColor: "#000",
   },
   videoPlayer: {
     width: "100%",
-    aspectRatio: 1,
+    aspectRatio: 16 / 9,
     backgroundColor: "#000",
   },
-  videoLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
-    color: Colors.textLight,
+  videoError: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#171717",
+    paddingHorizontal: 16,
+    paddingVertical: 32,
   },
-  placeholderText: { fontSize: 13, color: Colors.textLight, textAlign: "center" },
-  answerRow: { gap: 10, marginTop: 4 },
+  videoErrorText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#D4D4D4",
+    textAlign: "center",
+  },
+  answerRow: { gap: 12 },
   positiveBtn: {
     backgroundColor: "#059669",
     borderRadius: 16,
@@ -437,8 +520,89 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.4,
     textTransform: "uppercase",
-    color: Colors.primary,
-    marginTop: 4,
+    color: "#1E40AF",
+    flex: 1,
+  },
+  hypothesesLabelFinal: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  hypothesesPanel: {
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 16,
+    padding: 12,
+    gap: 10,
+  },
+  hypothesesPanelFinal: {
+    borderWidth: 2,
+    borderColor: "#93C5FD",
+    backgroundColor: "#F0F9FF",
+  },
+  hypothesesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#BFDBFE",
+  },
+  hypothesesIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#3B82F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hypothesesIconFinal: {
+    backgroundColor: "#2563EB",
+  },
+  hypothesesIconText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  finalBanner: {
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#93C5FD",
+    backgroundColor: "#2563EB",
+    padding: 16,
+    gap: 6,
+  },
+  finalBannerEyebrow: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#BFDBFE",
+  },
+  finalBannerTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 22,
+    color: "#fff",
+  },
+  intermediateBanner: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#BFDBFE",
+    backgroundColor: "#EFF6FF",
+    padding: 12,
+    gap: 4,
+  },
+  intermediateBannerTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1E40AF",
+  },
+  intermediateBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#1D4ED8",
   },
   hypothesisCard: {
     borderWidth: 1,
@@ -446,9 +610,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     gap: 6,
+    backgroundColor: "#fff",
+  },
+  hypothesisCardFinal: {
+    borderWidth: 2,
+    padding: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   hypothesisHeader: { gap: 6 },
   hypothesisName: { fontSize: 14, fontWeight: "700", color: Colors.text },
+  hypothesisNameFinal: { fontSize: 15 },
   badge: {
     alignSelf: "flex-start",
     borderRadius: 999,
@@ -465,13 +640,41 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   continueBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
-  endNote: {
+  finalNote: {
+    borderWidth: 2,
+    borderColor: "#6EE7B7",
+    backgroundColor: "#ECFDF5",
+    borderRadius: 16,
+    padding: 16,
+    gap: 8,
+  },
+  finalNoteHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  finalCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#059669",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  finalCheckText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  finalNoteTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#065F46",
+  },
+  finalNoteText: {
     fontSize: 13,
     lineHeight: 19,
-    color: Colors.textLight,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 12,
+    color: "#047857",
   },
   actionsRow: {
     flexDirection: "row",

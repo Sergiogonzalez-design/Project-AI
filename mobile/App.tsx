@@ -1,7 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { Session } from "@supabase/supabase-js";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LoginScreen } from "./src/components/LoginScreen";
@@ -32,43 +32,41 @@ function AppInner() {
   const [authView, setAuthView] = useState<"login" | "signup">("login");
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const [isPhysio, setIsPhysio] = useState(false);
+  /** Ignore stale profile checks that finish after the user already completed onboarding. */
+  const onboardingCheckSeq = useRef(0);
 
   const isAdmin = isAdminEmail(session?.user?.email);
 
+  const handleOnboardingComplete = useCallback(() => {
+    onboardingCheckSeq.current += 1;
+    setOnboardingDone(true);
+  }, []);
+
   const checkOnboarding = useCallback(
     async (userId: string, email: string | undefined) => {
+      const seq = ++onboardingCheckSeq.current;
       try {
         // Admin uses the same login; skip athlete onboarding only for that account
         if (isAdminEmail(email)) {
+          if (seq !== onboardingCheckSeq.current) return;
           setIsPhysio(false);
           setOnboardingDone(true);
           return;
         }
-        const { data: accountData } = await supabase
+        const { data: profile } = await supabase
           .from("profiles")
-          .select("account_type")
+          .select(`account_type, ${PHYSIO_PROFILE_COLUMNS}, ${ATHLETE_PROFILE_COLUMNS}`)
           .eq("id", userId)
           .maybeSingle();
-        const physio = accountData?.account_type === "physio";
+        if (seq !== onboardingCheckSeq.current) return;
+
+        const physio = profile?.account_type === "physio";
         setIsPhysio(physio);
-
-        if (physio) {
-          const { data } = await supabase
-            .from("profiles")
-            .select(PHYSIO_PROFILE_COLUMNS)
-            .eq("id", userId)
-            .maybeSingle();
-          setOnboardingDone(isPhysioProfileComplete(data));
-          return;
-        }
-
-        const { data } = await supabase
-          .from("profiles")
-          .select(ATHLETE_PROFILE_COLUMNS)
-          .eq("id", userId)
-          .maybeSingle();
-        setOnboardingDone(isAthleteProfileComplete(data));
+        setOnboardingDone(
+          physio ? isPhysioProfileComplete(profile) : isAthleteProfileComplete(profile)
+        );
       } catch {
+        if (seq !== onboardingCheckSeq.current) return;
         // Fail open to login/main flow rather than an endless spinner.
         setIsPhysio(false);
         setOnboardingDone(false);
@@ -168,9 +166,9 @@ function AppInner() {
       <>
         <StatusBar style="dark" />
         {isPhysio ? (
-          <PhysioOnboardingScreen onComplete={() => setOnboardingDone(true)} />
+          <PhysioOnboardingScreen onComplete={handleOnboardingComplete} />
         ) : (
-          <OnboardingScreen onComplete={() => setOnboardingDone(true)} />
+          <OnboardingScreen onComplete={handleOnboardingComplete} />
         )}
       </>
     );

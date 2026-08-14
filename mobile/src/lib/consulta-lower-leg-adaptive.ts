@@ -1,14 +1,14 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
-import type { AnkleFootFocus } from "@/lib/detect-body-part";
+} from "./consulta-timing";
+import type { AnkleFootFocus } from "./detect-body-part";
 /**
  * Adaptive questionnaire for lower leg / shin / calf / Achilles / ankle / foot
  * (ankle_foot region) — adapts labels and location options to region_focus
  * (foot vs ankle vs lower_leg) from the patient's initial complaint.
  */
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -24,6 +24,7 @@ export const EVOLUTION_OPTIONS = [
 export const ONSET_FORM_OPTIONS = ["Repentino", "Poco a poco"] as const;
 
 export const MECHANISM_OPTIONS = [
+  "Torcedura / inversión del tobillo",
   "Caída",
   "Golpe directo",
   "Entrenamiento o ejercicio",
@@ -182,6 +183,8 @@ export type LowerLegAdaptiveAnswers = {
   inicio_chasquido: string;
   intensidad_dolor: number;
   localizacion_pierna: string[];
+  dolor_familiar: string;
+  ottawa_dolor_oseo: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
   irradiacion: string;
@@ -241,6 +244,8 @@ export function defaultLowerLegAdaptiveAnswers(
     inicio_chasquido: "",
     intensidad_dolor: 5,
     localizacion_pierna: prefilledLocation,
+    dolor_familiar: "",
+    ottawa_dolor_oseo: "",
     tipo_dolor: [],
     limitacion_funcional: [],
     irradiacion: "",
@@ -310,6 +315,14 @@ export function withAnkleFootFocusFromText(
 
   if (/ca[ií]da|caer|fall/i.test(t) && !mecanismo.includes("Caída")) {
     mecanismo.push("Caída");
+  }
+  if (
+    /torc[ií]|inversi[oó]n|se me fue el tobillo|ankle\s*sprain|rolled\s*(my\s*)?ankle/i.test(
+      t
+    ) &&
+    !mecanismo.includes("Torcedura / inversión del tobillo")
+  ) {
+    mecanismo.push("Torcedura / inversión del tobillo");
   }
   if (/golpe|trauma/i.test(t) && !mecanismo.includes("Golpe directo")) {
     mecanismo.push("Golpe directo");
@@ -395,7 +408,11 @@ function hasSymptom(a: LowerLegAdaptiveAnswers, name: string): boolean {
 }
 
 function isTrauma(a: LowerLegAdaptiveAnswers): boolean {
-  return a.mecanismo.includes("Caída") || a.mecanismo.includes("Golpe directo");
+  return (
+    a.mecanismo.includes("Caída") ||
+    a.mecanismo.includes("Golpe directo") ||
+    a.mecanismo.includes("Torcedura / inversión del tobillo")
+  );
 }
 
 function hasNeuro(a: LowerLegAdaptiveAnswers): boolean {
@@ -504,8 +521,24 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     required: true,
   },
 
-  // Core clinical characterization
-  
+  // Core — location + familiar pain before mechanism (Physioguide)
+  {
+    id: "localizacion_pierna",
+    section: "core",
+    label: "¿Dónde sientes el dolor en la pierna baja? (puedes marcar varias)",
+    type: "multi",
+    options: LOWER_LEG_LOCATION_OPTIONS,
+    required: true,
+  },
+  {
+    id: "dolor_familiar",
+    section: "core",
+    label:
+      "¿Es el mismo dolor que notas al caminar, torcer el tobillo, ponerte de puntillas o al dar los primeros pasos por la mañana?",
+    type: "single",
+    options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
+    required: true,
+  },
   {
     id: "inicio",
     section: "core",
@@ -540,18 +573,20 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
     showIf: hasChasquidoQuestion,
   },
   {
+    id: "ottawa_dolor_oseo",
+    section: "core",
+    label:
+      "¿Duele al tocar el hueso del tobillo (maleolo por detrás o la punta), el hueso del empeine (navicular) o la base del 5.º metatarsiano (borde externo del pie)?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: isTrauma,
+  },
+  {
     id: "intensidad_dolor",
     section: "core",
     label: "Intensidad del dolor (1–10)",
     type: "slider",
-    required: true,
-  },
-  {
-    id: "localizacion_pierna",
-    section: "core",
-    label: "¿Dónde sientes el dolor en la pierna baja? (puedes marcar varias)",
-    type: "multi",
-    options: LOWER_LEG_LOCATION_OPTIONS,
     required: true,
   },
   {
@@ -1168,6 +1203,10 @@ export function formatLowerLegAdaptive(
       : "",
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización (${zoneLabel}): ${formatMulti(answers.localizacion_pierna)}`,
+    `Dolor familiar (caminar/torcer/puntillas/primeros pasos): ${answers.dolor_familiar || "—"}`,
+    answers.ottawa_dolor_oseo
+      ? `Ottawa — dolor óseo (maléolo/navicular/base 5.º MT): ${answers.ottawa_dolor_oseo}`
+      : "",
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional (caminar/apoyo): ${answers.limitacion_funcional.join(", ") || "—"}`,
     `Irradiación: ${answers.irradiacion}${answers.irradiacion === "Sí" && answers.irradiacion_detalle ? ` — ${answers.irradiacion_detalle}` : ""}`,
@@ -1275,6 +1314,10 @@ export const LOWER_LEG_LABEL_EN: Partial<Record<string, string>> = {
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_pierna:
     "Where do you feel the pain in the lower leg? (you can select several)",
+  dolor_familiar:
+    "Is it the same pain you notice when walking, twisting the ankle, going on tiptoes, or with the first steps in the morning?",
+  ottawa_dolor_oseo:
+    "Does it hurt to touch the ankle bone (behind or tip of the malleolus), the midfoot bone (navicular), or the base of the 5th metatarsal (outer border of the foot)?",
   tipo_dolor: "How would you describe the pain? (you can select several)",
   limitacion_funcional: "How much does it limit walking or weight-bearing?",
   irradiacion: "Does the pain spread to the foot, ankle, or another area?",
@@ -1321,7 +1364,11 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   Repentino: "Sudden",
   "Poco a poco": "Gradual",
   Caída: "Fall",
+  "Torcedura / inversión del tobillo": "Ankle twist / inversion",
   "Golpe directo": "Direct blow",
+  "Sí, es el mismo": "Yes, it's the same",
+  "No, es otra molestia": "No, it's a different discomfort",
+  "No estoy seguro": "I'm not sure",
   "Entrenamiento o ejercicio": "Training or exercise",
   "Movimiento repetitivo / correr": "Repetitive movement / running",
   "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",

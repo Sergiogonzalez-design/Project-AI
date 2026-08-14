@@ -1,7 +1,10 @@
 /**
  * Clinic equipment / materials a physiotherapist may have available.
- * Used in physio onboarding and injected into physio_chat AI context.
+ * UI temporarily hidden; AI context injection disabled via flag below.
  */
+
+/** When false, physio_chat ignores clinic_equipment (no adaptation by material). */
+export const PHYSIO_EQUIPMENT_AI_CONTEXT_ENABLED = false;
 
 export type PhysioEquipmentOption = {
   id: string;
@@ -95,7 +98,7 @@ export function buildPhysioEquipmentContext(profile: {
   clinic_equipment?: string[] | null;
   clinic_equipment_notes?: string | null;
 } | null): string {
-  if (!profile) return "";
+  if (!PHYSIO_EQUIPMENT_AI_CONTEXT_ENABLED || !profile) return "";
   const labels = formatPhysioEquipmentLabels(profile.clinic_equipment);
   const notes = profile.clinic_equipment_notes?.trim();
   if (!labels.length && !notes) return "";

@@ -17,7 +17,7 @@ import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
 import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
-import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
+import { redFlagsDetectedLabel, redFlagsUrgencyNote, skipQuestionnaireForUrgencyLabel } from "../lib/consulta-red-flags-copy";
 
 function ChipGroup({
   options,
@@ -206,6 +206,17 @@ export function ConsultaAdaptiveKnee({
     onChange({ ...answers, ...p });
   }
 
+  function handleSkipUrgency() {
+    if (currentSection !== "red_flags") return;
+    const issue = validateKneeSection("red_flags", answers);
+    if (issue) {
+      onSectionError(issue.message);
+      return;
+    }
+    onSectionError(null);
+    onChange({ ...answers, acortar_por_urgencia: true });
+  }
+
   function handleNext() {
     if (!currentSection) return;
     const issue = validateKneeSection(currentSection, answers);
@@ -254,6 +265,13 @@ export function ConsultaAdaptiveKnee({
         {!isLastSection && (
           <Pressable style={styles.navBtn} onPress={handleNext}>
             <Text style={styles.navBtnText}>Siguiente</Text>
+          </Pressable>
+        )}
+        {currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia && (
+          <Pressable style={styles.navBtnOutline} onPress={handleSkipUrgency}>
+            <Text style={styles.navBtnOutlineText}>
+              {skipQuestionnaireForUrgencyLabel(locale)}
+            </Text>
           </Pressable>
         )}
       </View>

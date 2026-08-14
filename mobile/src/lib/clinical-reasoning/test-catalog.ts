@@ -17,7 +17,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Rodilla ~20–30° de flexión, muslo estabilizado. Una mano fija el fémur y la otra tracciona la tibia hacia adelante comparando con la contralateral.",
     evidenceNote:
-      "Alta sensibilidad para lesión del LCA en fase aguda/subaguda (revisiones Cochrane / meta-análisis clínicos).",
+      "Benjaminse et al. JOSPT 2006: Lachman es el test físico más sensible para LCA; apoya el cluster, no confirma rotura completa. Guarda en agudo ↓ fiabilidad.",
   },
   "anterior-drawer-knee": {
     id: "anterior-drawer-knee",
@@ -25,7 +25,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Paciente en decúbito supino, rodilla ~90° (pie apoyado). Traccionar la tibia hacia adelante respecto al fémur.",
     evidenceNote:
-      "Útil en LCA; sensibilidad menor que Lachman en fase muy aguda por dolor/defensa.",
+      "Benjaminse JOSPT 2006: menos sensible que Lachman en agudo (dolor/defensa). No usar aislado.",
   },
   "pivot-shift": {
     id: "pivot-shift",
@@ -33,7 +33,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Valgo + flexión interna de cadera, tracción anterior de tibia y flexo-extensión progresiva de rodilla bajo valgo.",
     evidenceNote:
-      "Alta especificidad para inestabilidad rotatoria por LCA; a menudo difícil en consulta por dolor.",
+      "Más específico que sensible para inestabilidad rotatoria (Benjaminse 2006). Difícil en agudo; negativo no excluye LCA.",
   },
   mcmurray: {
     id: "mcmurray",
@@ -41,7 +41,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Rodilla máxima flexión, rotación tibial + valgo (menisco medial) o varo (lateral) mientras se extiende.",
     evidenceNote:
-      "Sensibilidad/especificidad moderadas para lesión meniscal; combinar con anamnesis mecánica.",
+      "Hegedus BJSM 2007/2015: precisión limitada aislado. Usar en cluster (línea articular + torsión ± bloqueo).",
   },
   thessaly: {
     id: "thessaly",
@@ -49,7 +49,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Paciente de pie, apoyo monopodal en la pierna afectada, rodilla ~5° y luego ~20° de flexión con rotación corporal.",
     evidenceNote:
-      "Mejor rendimiento que McMurray en algunos estudios para sospecha meniscal.",
+      "Evidencia MIXTA: Karachalios 2005 muy preciso; estudios posteriores y Hegedus BJSM mucho menor. Cluster, no regla de oro.",
   },
   neer: {
     id: "neer",
@@ -57,7 +57,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Estabilizar escápula y elevar pasivamente el brazo en flexión forzando acercamiento acromio-humeral.",
     evidenceNote:
-      "Sugiere conflicto subacromial / pinzamiento; baja especificidad aislada.",
+      "Hegedus BJSM 2008/2012: poca utilidad aislado. Cluster RCRSP (Lewis); no confirma pinzamiento.",
   },
   "hawkins-kennedy": {
     id: "hawkins-kennedy",
@@ -65,7 +65,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Flexión de hombro 90° y rotación interna forzada del antebrazo.",
     evidenceNote:
-      "Frecuente en tendinopatía del manguito / subacromial; combinar con Neer y exploración activa.",
+      "Hegedus BJSM: inespecífico aislado. Michener 2009: mejor en combinación con otros tests de manguito.",
   },
   "jobe-empty-can": {
     id: "jobe-empty-can",
@@ -73,7 +73,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Abducción 90° en plano escapular, pulgar hacia abajo. Resistencia a la abducción.",
     evidenceNote:
-      "Orienta a afectación del supraespinoso; correlación moderada con RM/eco.",
+      "Dolor → supraespinoso/RCRSP. Debilidad + drop arm → rotura ↑ (dolor puede imitar debilidad). Hegedus BJSM.",
   },
   apprehension: {
     id: "apprehension",
@@ -81,7 +81,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Abducción + rotación externa progresiva. Positivo si aprensión; relocation al presionar humeral anterior.",
     evidenceNote:
-      "Clásico en inestabilidad anterior de hombro / Bankart funcional.",
+      "Farber JBJS 2006: aprensión (miedo a que se salga) > dolor solo. Relocation refuerza. Historia de luxación pesa mucho.",
   },
   "drop-arm": {
     id: "drop-arm",
@@ -89,7 +89,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Abducción activa máxima y descenso controlado del brazo.",
     evidenceNote:
-      "Caída brusca sugiere rotura importante del manguito (p. ej. supraespinoso).",
+      "Caída/no control al bajar → rotura importante ↑. Más específico que sensible en síntesis (Hegedus). No indica tamaño.",
   },
   "painful-arc": {
     id: "painful-arc",
@@ -97,7 +97,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Abducción activa/pasiva observando dolor entre ~60° y 120°.",
     evidenceNote:
-      "Compatible con subacromial / tendinopatía del manguito.",
+      "Arco medio (~60–120°) → RCRSP en cluster (Park/Michener). Dolor solo al final + cruzar pecho → AC.",
   },
   spurling: {
     id: "spurling",
@@ -105,7 +105,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Extensión + inclinación + compresión axial cervical hacia el lado sintomático.",
     evidenceNote:
-      "Aumenta especificidad de radiculopatía cervical vs. dolor referido de hombro.",
+      "Tong/Wainner: más específico que sensible para radiculopatía. Negativo no excluye cuello. No es test de manguito.",
   },
   ultt: {
     id: "ultt",
@@ -113,7 +113,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Tensión neural del mediano (depression-humeral, extensión codo/muñeca/dedos).",
     evidenceNote:
-      "Sugiere irritación/neuropatía del mediano (túnel carpiano proximal).",
+      "Wainner Spine 2003: sensible, poco específico aislado. Cluster con Spurling/distracción. Tirantez ≠ hernia ni túnel carpiano.",
   },
   thompson: {
     id: "thompson",
@@ -121,7 +121,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Paciente prono o sentado, rodilla flexionada. Pellizcar gemelo: ausencia de flexión plantar sugiere rotura Aquiles.",
     evidenceNote:
-      "Alta sensibilidad para rotura del tendón de Aquiles completa.",
+      "Maffulli / JOSPT Achilles CPG: muy útil en rotura COMPLETA (no hay flexión plantar). Negativo no excluye parcial.",
   },
   matles: {
     id: "matles",
@@ -129,7 +129,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Decúbito prono, flexión de rodilla. Pie caído vs. contralateral.",
     evidenceNote:
-      "Complemento en sospecha de rotura Aquiles.",
+      "Complemento de Thompson (ángulo de reposo). Cluster: pop + no puntillas + Thompson. No usar solo.",
   },
   "anterior-drawer-ankle": {
     id: "anterior-drawer-ankle",
@@ -137,7 +137,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Tobillo ~20° plantarflexión, estabilizar tibia y traccionar calcáneo hacia adelante.",
     evidenceNote:
-      "Sugiere lesión ATFL en esguince lateral; combinar con palpación y mecanismo.",
+      "ATFL. van Dijk: más fiable a 4–5 días que en agudo. Dolor sin holgura ≠ cajón positivo. No inventar grado. Primero Ottawa.",
   },
   windlass: {
     id: "windlass",
@@ -145,7 +145,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Extensión activa/pasiva del hallux (dedo gordo) con pie en carga o sentado.",
     evidenceNote:
-      "Reproduce dolor en fascitis plantar / patología del arco media-pie.",
+      "JOSPT Heel Pain CPG; De Garceau 2003: aislado limitado (negativo no excluye). Cluster: primeros pasos + palpación calcáneo.",
   },
   "heel-raise": {
     id: "heel-raise",
@@ -153,7 +153,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Bilateral y monopodal: elevar talones. Valorar dolor, fuerza y simetría.",
     evidenceNote:
-      "Déficit monopodal sugiere patología Aquiles o gemelo; útil en carga funcional.",
+      "Imposible monopodal + pop + Thompson → rotura completa ↑. Dolor con Thompson conservado → tendinopatía (Silbernagel / JOSPT Achilles).",
   },
   "hop-test": {
     id: "hop-test",
@@ -161,7 +161,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Salto monopodal en la pierna afectada comparando dolor, control y distancia.",
     evidenceNote:
-      "Criterio funcional en retorno al deporte (LCA, esguince tobillo).",
+      "Post-trauma: NO si no puede apoyar. Imposible o dolor óseo intenso → fractura/avulsión ↑. También criterio RTS (no es test de labrum).",
   },
   faber: {
     id: "faber",
@@ -169,7 +169,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Flexión, abducción y rotación externa de cadera (figura 4). Dolor inguinal vs. lumbar.",
     evidenceNote:
-      "Dolor inguinal: cadera (FAI, labrum); dolor lumbar/sacral: SI/ lumbar.",
+      "Registra DÓNDE duele: ingle → cadera; posterior → SI/lumbar; lateral → GTPS. Inespecífico como diagnóstico único.",
   },
   fadir: {
     id: "fadir",
@@ -177,7 +177,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Flexión, aducción y rotación interna de cadera.",
     evidenceNote:
-      "Sugiere conflicto femoroacetabular / lesión labrum anterior.",
+      "Warwick Agreement (Griffin BJSM 2016): FADIR familiar inguinal profundo ↑ cadera; NO confirma FAI ni labrum. Baja especificidad.",
   },
   trendelenburg: {
     id: "trendelenburg",
@@ -185,7 +185,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Apoyo monopodal: caída de pelvis contralateral indica debilidad glútea media.",
     evidenceNote:
-      "Patología de cadera (glúteo medio) o radiculopatía L5.",
+      "Grimaldi & Fearon JOSPT 2015: cluster GTPS (palpación + carga monopodal). Caída pélvica ≠ rotura de glúteo; también L5.",
   },
   phalen: {
     id: "phalen",
@@ -193,7 +193,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Flexión máxima de muñeca sostenida 60 s (posición de rezo).",
     evidenceNote:
-      "Clásico en síndrome del túnel carpiano (sensibilidad moderada).",
+      "D’Arcy & McGee JAMA 2000; JOSPT CTS CPG 2019: precisión moderada/mixta. Cluster (noche, sacudir la mano) > Phalen aislado. Negativo no descarta.",
   },
   tinel: {
     id: "tinel",
@@ -201,7 +201,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Percusión sobre el nervio mediano en el túnel carpiano.",
     evidenceNote:
-      "Parestesias en territorio mediano sugieren STC.",
+      "Complemento de Phalen (a menudo menos sensible que la historia nocturna). Parestesias en territorio mediano, no dolor local. No confirma STC solo.",
   },
   cozen: {
     id: "cozen",
@@ -209,7 +209,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Extensión de muñeca resistida con codo extendido y antebrazo en pronación.",
     evidenceNote:
-      "Dolor en epicóndilo lateral sugiere epicondilitis lateral.",
+      "Cluster LET (palpación + carga). Zwerus: evidencia de precisión limitada. No confirma inflamación. Cribado cervical/PIN si hormigueo.",
   },
   mill: {
     id: "mill",
@@ -217,23 +217,39 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Extensión pasiva de codo con muñeca flexionada y antebrazo pronado.",
     evidenceNote:
-      "Complemento en epicondilitis lateral (extensor común).",
+      "Estiramiento del extensor común. Complemento de Cozen; aislado inespecífico. Cluster, no regla de oro.",
   },
   speed: {
     id: "speed",
     title: "Test de Speed",
     procedure:
-      "Extensión de codo resistida con antebrazo supinado.",
+      "Codo extendido, antebrazo supinado; flexión de hombro resistida (~60–90°). Dolor en surco bicipital.",
     evidenceNote:
-      "Dolor en inserción distal del bíceps / tendinopatía proximal-distal.",
+      "Dolor en surco bicipital → bíceps. Hegedus BJSM: NO confirma SLAP.",
+  },
+  "cross-body": {
+    id: "cross-body",
+    title: "Cross-body / aducción horizontal",
+    procedure:
+      "Aducción horizontal del brazo cruzando por delante del pecho hacia el hombro contralateral. Registrar si el dolor es en la puntita AC y familiar.",
+    evidenceNote:
+      "Chronopoulos / Walton: contribuye al diferencial AC. Positivo en la punta ≠ manguito; no inventa grado de separación AC.",
+  },
+  finkelstein: {
+    id: "finkelstein",
+    title: "Finkelstein (De Quervain)",
+    procedure:
+      "Desviación cubital del puño con el pulgar estabilizado (técnica de Finkelstein). Dolor en estiloides radial / 1.er compartimento familiar. No confundir con solo cerrar el puño sobre el pulgar (Eichhoff — más falsos +).",
+    evidenceNote:
+      "Cluster De Quervain: estiloides radial + uso del pulgar + palpación ± Finkelstein. Eichhoff aislado da falsos positivos.",
   },
   yergason: {
     id: "yergason",
     title: "Test de Yergason",
     procedure:
-      "Flexión de codo resistida con antebrazo supinado.",
+      "Codo a 90° pegado al tronco; supinación resistida (± rotación externa). Dolor o salto en surco bicipital.",
     evidenceNote:
-      "Dolor en surco bicipital radial sugiere inestabilidad/tendinopatía bicipital.",
+      "Dolor o salto en surco → bíceps/corredera. NO confirma SLAP (Hegedus / literatura labrum).",
   },
   schober: {
     id: "schober",
@@ -241,7 +257,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Marca L5 y 10 cm arriba; flexión lumbar. Incremento <5 cm sugiere limitación.",
     evidenceNote:
-      "Utilidad en espondiloartropatías / rigidez lumbar inflamatoria.",
+      "ASAS / Schober modificado: cribado de rigidez inflamatoria, no hernia ni lumbalgia inespecífica.",
   },
   "slr-lasegue": {
     id: "slr-lasegue",
@@ -249,7 +265,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Elevación pasiva de pierna recta. Dolor ciático / radicular antes de 60°.",
     evidenceNote:
-      "Sugiere irritación radicular L4-S1 o ciática; cruzado aumenta especificidad.",
+      "van der Windt Cochrane: sensible, poco específico. Ciática familiar (pierna), no tirón isquiotibial. Cruzado más específico. No confirma hernia.",
   },
   kemp: {
     id: "kemp",
@@ -257,7 +273,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     procedure:
       "Extensión + inclinación lateral y rotación hacia el lado doloroso.",
     evidenceNote:
-      "Reproduce dolor facetario / artrosis lumbar segmentaria.",
+      "Evidencia LIMITADA como test facetario. Dolor mecánico local en extensión; no confirma artrosis ni indica infiltración (JOSPT LBP CPG).",
   },
 };
 

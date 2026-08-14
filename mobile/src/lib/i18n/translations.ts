@@ -133,6 +133,8 @@ export const translations = {
       how3Body:
         "Haz preguntas adicionales y revisa tus consultas anteriores cuando quieras.",
       startConsulta: "Iniciar consulta",
+      goToPatients: "Ir al panel de pacientes",
+      goToPaciente: "Ir a Fisioterapia",
       disclaimer:
         "AIKinora proporciona orientación informativa, no diagnósticos médicos. Ante síntomas graves acude a urgencias o a tu médico.",
       newsTitle: "Últimas noticias",
@@ -353,6 +355,8 @@ export const translations = {
       how3Body:
         "Ask follow-up questions and review your previous consults whenever you want.",
       startConsulta: "Start consult",
+      goToPatients: "Go to patients panel",
+      goToPaciente: "Go to Physiotherapy",
       disclaimer:
         "AIKinora provides informational guidance, not medical diagnoses. For severe symptoms, go to emergency care or see your doctor.",
       newsTitle: "Latest news",

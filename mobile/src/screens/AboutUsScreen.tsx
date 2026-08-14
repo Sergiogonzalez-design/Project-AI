@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
   Image,
   Pressable,
@@ -17,6 +17,10 @@ import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import type { TabParamList } from "../navigation/AppTabs";
+import {
+  getPrimaryWorkspaceRoute,
+  navigateToPrimaryWorkspace,
+} from "../navigation/tab-navigation";
 
 type NewsPost = {
   id: string;
@@ -39,14 +43,35 @@ export function AboutUsScreen() {
   const [contactSuccess, setContactSuccess] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
 
+  const primaryWorkspace = getPrimaryWorkspaceRoute(navigation);
+  const startCtaLabel =
+    primaryWorkspace === "Patients"
+      ? t.about.goToPatients
+      : primaryWorkspace === "PhysioLink"
+        ? t.about.goToPaciente
+        : t.about.startConsulta;
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: !selectedNews,
+    });
+  }, [navigation, selectedNews]);
+
   useEffect(() => {
-    supabase
-      .from("news")
-      .select("id, title, body, published_at, image_url")
-      .order("published_at", { ascending: false })
-      .limit(6)
-      .then(({ data }) => setNews((data as NewsPost[]) ?? []))
-      .catch(() => setNews([]));
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("news")
+        .select("id, title, body, published_at, image_url")
+        .order("published_at", { ascending: false })
+        .limit(6);
+      if (!cancelled) {
+        setNews(error ? [] : ((data as NewsPost[]) ?? []));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleContactSubmit() {
@@ -272,9 +297,9 @@ export function AboutUsScreen() {
       </View>
       <Pressable
         style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaBtnPressed]}
-        onPress={() => navigation.navigate("AIInquiries")}
+        onPress={() => navigateToPrimaryWorkspace(navigation)}
       >
-        <Text style={styles.ctaBtnText}>{t.about.startConsulta}</Text>
+        <Text style={styles.ctaBtnText}>{startCtaLabel}</Text>
       </Pressable>
 
       {/* Disclaimer */}

@@ -3,11 +3,11 @@ import {
   MECHANISM_OPTIONS,
   ONSET_FORM_OPTIONS,
   YES_NO,
-} from "@/lib/consulta-shoulder-adaptive";
+} from "./consulta-shoulder-adaptive";
 import {
   missingQuestionIssue,
   type AdaptiveValidationIssue,
-} from "@/lib/consulta-validation";
+} from "./consulta-validation";
 
 export type GenericConsultaAnswers = {
   evolucion: string;

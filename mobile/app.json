@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.physioguidea.app",
-      "buildNumber": "3",
+      "buildNumber": "5",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "AIKinora usa el micrófono para que puedas dictar tu consulta por voz.",
@@ -59,7 +59,9 @@
         {
           "microphonePermission": "AIKinora usa el micrófono para que puedas dictar tu consulta por voz.",
           "speechRecognitionPermission": "AIKinora usa el reconocimiento de voz para convertir lo que dices en texto en el chat.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
         }
       ]
     ],
