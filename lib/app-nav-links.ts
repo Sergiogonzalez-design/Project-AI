@@ -4,16 +4,16 @@ export type AppNavLink = { href: string; label: string };
 export const PATIENT_NAV_LINKS: AppNavLink[] = [
   { href: "/consulta", label: "Consulta" },
   { href: "/fisioterapia", label: "Fisioterapia" },
-  { href: "/sobre-nosotros", label: "About" },
-  { href: "/perfil", label: "Profile" },
+  { href: "/sobre-nosotros", label: "Sobre nosotros" },
+  { href: "/perfil", label: "Perfil" },
 ];
 
 /** Physio dashboard navigation. */
 export const PHYSIO_NAV_LINKS: AppNavLink[] = [
-  { href: "/fisio", label: "Paciente" },
+  { href: "/fisio", label: "Clínica" },
   { href: "/fisio/consulta", label: "Consulta" },
-  { href: "/sobre-nosotros", label: "About" },
-  { href: "/perfil", label: "Profile" },
+  { href: "/sobre-nosotros", label: "Sobre nosotros" },
+  { href: "/perfil", label: "Perfil" },
 ];
 
 export function isNavLinkActive(pathname: string, href: string): boolean {

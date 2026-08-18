@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { requireOptionalNativeModule } from "expo";
 import { speechLocale } from "../lib/speech-utils";
 
 type Options = {
@@ -8,29 +9,29 @@ type Options = {
   keepAlive?: boolean;
 };
 
-type SpeechModule = {
-  ExpoSpeechRecognitionModule: {
-    getPermissionsAsync: () => Promise<{ granted: boolean }>;
-    requestPermissionsAsync: () => Promise<{ granted: boolean }>;
-    start: (opts: {
-      lang: string;
-      interimResults: boolean;
-      continuous: boolean;
-    }) => void;
-    stop: () => void;
-    abort: () => void;
-    addListener: (
-      event: string,
-      listener: (event: Record<string, unknown>) => void
-    ) => { remove: () => void };
-  };
+type SpeechNativeModule = {
+  getPermissionsAsync: () => Promise<{ granted: boolean }>;
+  requestPermissionsAsync: () => Promise<{ granted: boolean }>;
+  start: (opts: {
+    lang: string;
+    interimResults: boolean;
+    continuous: boolean;
+  }) => void;
+  stop: () => void;
+  abort: () => void;
+  addListener: (
+    event: string,
+    listener: (event: Record<string, unknown>) => void
+  ) => { remove: () => void };
 };
 
-function loadSpeechModule(): SpeechModule["ExpoSpeechRecognitionModule"] | null {
+function loadSpeechModule(): SpeechNativeModule | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("expo-speech-recognition") as SpeechModule;
-    return mod.ExpoSpeechRecognitionModule ?? null;
+    // Never `require("expo-speech-recognition")` unless native exists —
+    // that package calls requireNativeModule and LogBox-redboxes in Expo Go.
+    return requireOptionalNativeModule<SpeechNativeModule>(
+      "ExpoSpeechRecognition"
+    );
   } catch {
     return null;
   }

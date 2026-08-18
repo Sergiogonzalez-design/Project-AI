@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { DismissKeyboard } from "../components/DismissKeyboard";
+import { ScreenScrollView } from "../components/ScreenScrollView";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
 import { AIInquiriesScreen } from "./AIInquiriesScreen";
@@ -92,10 +93,11 @@ export function PhysioLinkScreen() {
 
   return (
     <DismissKeyboard>
-      <ScrollView
+      <ScreenScrollView
         style={{ flex: 1, backgroundColor: Colors.background }}
         contentContainerStyle={{ padding: 24, justifyContent: "center", flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
       >
         <Text style={{ fontSize: 22, fontWeight: "800", color: Colors.text }}>
           Código de tu fisioterapeuta
@@ -143,7 +145,7 @@ export function PhysioLinkScreen() {
             {busy ? "Vinculando…" : "Continuar a la consulta"}
           </Text>
         </Pressable>
-      </ScrollView>
+      </ScreenScrollView>
     </DismissKeyboard>
   );
 }

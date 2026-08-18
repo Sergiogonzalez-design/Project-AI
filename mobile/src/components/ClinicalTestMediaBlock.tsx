@@ -1,9 +1,10 @@
 import { useEventListener } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import type { ClinicalTestImage } from "../lib/clinical-test-images";
 import { getClinicalTestVideoSrc } from "../lib/clinical-test-videos";
+import { getWebMediaBaseUrl } from "../lib/web-media-url";
 import { Colors } from "../lib/colors";
 
 function ClinicalTestVideoPlayer({ src, title }: { src: string; title: string }) {
@@ -25,14 +26,24 @@ function ClinicalTestVideoPlayer({ src, title }: { src: string; title: string })
   );
 }
 
-/** Demo video for a named clinical test (never a still image when a video exists). */
+/** Demo video when shipped; illustration otherwise. */
 export function ClinicalTestMediaBlock({ test }: { test: ClinicalTestImage }) {
   const videoSrc = getClinicalTestVideoSrc(test.id);
-  if (!videoSrc) return null;
+  if (videoSrc) {
+    return (
+      <View style={styles.videoWrap}>
+        <ClinicalTestVideoPlayer src={videoSrc} title={test.title} />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.videoWrap}>
-      <ClinicalTestVideoPlayer src={videoSrc} title={test.title} />
+    <View style={styles.imageWrap}>
+      <Image
+        source={{ uri: `${getWebMediaBaseUrl()}${test.src}` }}
+        style={styles.image}
+        accessibilityLabel={test.title}
+      />
     </View>
   );
 }
@@ -52,5 +63,20 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 16 / 9,
     backgroundColor: "#000",
+  },
+  imageWrap: {
+    marginTop: 8,
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  image: {
+    width: "100%",
+    aspectRatio: 4 / 3,
+    backgroundColor: "#f5f5f5",
   },
 });

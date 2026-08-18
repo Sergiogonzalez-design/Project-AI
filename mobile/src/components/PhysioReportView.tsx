@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../lib/colors";
 import { hasClinicalReasoningForReport } from "../lib/clinical-reasoning";
-import { toCitedSource } from "../lib/source-links";
+import { hasWorkingSourceLink, toCitedSource } from "../lib/source-links";
 
 const SECTION_ORDER = [
   "Resultados de las pruebas funcionales ya realizadas",
@@ -58,7 +58,7 @@ function splitReportSections(content: string): {
     if (title === "Fuentes consultadas") {
       for (const line of body.split("\n")) {
         const item = line.replace(/^[-*•]\s*/, "").trim();
-        if (item) sources.push(item);
+        if (item && hasWorkingSourceLink(item)) sources.push(item);
       }
       continue;
     }
@@ -67,7 +67,7 @@ function splitReportSections(content: string): {
       const trimmed = line.trim();
       if (/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:/i.test(trimmed)) {
         const item = trimmed.replace(/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*/i, "").trim();
-        if (item) sources.push(item);
+        if (item && hasWorkingSourceLink(item)) sources.push(item);
         continue;
       }
       kept.push(line);

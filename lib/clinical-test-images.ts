@@ -264,6 +264,171 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "prueba de extension lumbar",
     ],
   },
+  {
+    id: "cross-body",
+    title: "Cross-body / aducción horizontal",
+    src: "/clinical-tests/cross-body.webp",
+    aliases: [
+      "cross body",
+      "cross-body",
+      "aduccion horizontal",
+      "aducción horizontal",
+      "test de cross body",
+    ],
+  },
+  {
+    id: "valgus-stress-mcl",
+    title: "Estrés en valgo (LCM)",
+    src: "/clinical-tests/valgus-stress-mcl.webp",
+    aliases: [
+      "estres en valgo",
+      "estrés en valgo",
+      "ligamento colateral medial",
+      "valgus stress",
+    ],
+  },
+  {
+    id: "varus-stress-lcl",
+    title: "Estrés en varo (LCL)",
+    src: "/clinical-tests/varus-stress-lcl.webp",
+    aliases: [
+      "estres en varo",
+      "estrés en varo",
+      "ligamento colateral lateral",
+      "varus stress",
+    ],
+  },
+  {
+    id: "posterior-drawer-pcl",
+    title: "Cajón posterior / sag (LCP)",
+    src: "/clinical-tests/posterior-drawer-pcl.webp",
+    aliases: [
+      "cajon posterior",
+      "cajón posterior",
+      "posterior drawer",
+      "posterior sag",
+      "godfrey",
+      "ligamento cruzado posterior",
+    ],
+  },
+  {
+    id: "resisted-wrist-flexion",
+    title: "Flexión de muñeca resistida (medial)",
+    src: "/clinical-tests/resisted-wrist-flexion.webp",
+    aliases: [
+      "flexion de muneca resistida",
+      "flexión de muñeca resistida",
+      "codo de golfista",
+      "epicondilalgia medial",
+    ],
+  },
+  {
+    id: "elbow-flexion-cubital",
+    title: "Test de flexión de codo (cubital)",
+    src: "/clinical-tests/elbow-flexion-cubital.webp",
+    aliases: [
+      "tunel cubital",
+      "túnel cubital",
+      "elbow flexion test",
+      "test de flexion de codo",
+      "test de flexión de codo",
+    ],
+  },
+  {
+    id: "cervical-distraction",
+    title: "Distracción cervical",
+    src: "/clinical-tests/cervical-distraction.webp",
+    aliases: [
+      "distraccion cervical",
+      "distracción cervical",
+      "traccion cervical",
+      "tracción cervical",
+      "cervical distraction",
+    ],
+  },
+  {
+    id: "thumb-ucl-stress",
+    title: "Estrés UCL del pulgar (valgo MCP)",
+    src: "/clinical-tests/thumb-ucl-stress.webp",
+    aliases: [
+      "ucl pulgar",
+      "skier",
+      "skier's thumb",
+      "gamekeeper",
+      "estres ucl",
+      "estrés ucl",
+    ],
+  },
+  {
+    id: "finkelstein",
+    title: "Finkelstein (De Quervain)",
+    src: "/clinical-tests/finkelstein.webp",
+    aliases: [
+      "finkelstein",
+      "test de finkelstein",
+      "de quervain",
+      "dequervain",
+    ],
+  },
+  {
+    id: "snuffbox-palpation",
+    title: "Palpación de la tabaquera anatómica",
+    src: "/clinical-tests/snuffbox-palpation.webp",
+    aliases: [
+      "tabaquera",
+      "tabaquera anatomica",
+      "tabaquera anatómica",
+      "snuffbox",
+      "escafoides palpacion",
+      "escafoides palpación",
+    ],
+  },
+  {
+    id: "thumb-axial-load",
+    title: "Carga axial del pulgar (escafoides)",
+    src: "/clinical-tests/thumb-axial-load.webp",
+    aliases: [
+      "carga axial",
+      "carga axial del pulgar",
+      "axial load thumb",
+    ],
+  },
+  {
+    id: "tfcc-ulnar-load",
+    title: "Carga cubital / fosa cubital (TFCC)",
+    src: "/clinical-tests/tfcc-ulnar-load.webp",
+    aliases: [
+      "tfcc",
+      "carga cubital",
+      "fosa cubital",
+      "fibrocartilago triangular",
+      "fibrocartílago triangular",
+    ],
+  },
+  {
+    id: "cmc-grind",
+    title: "Grind test CMC del pulgar",
+    src: "/clinical-tests/cmc-grind.webp",
+    aliases: [
+      "grind test",
+      "artrosis cmc",
+      "cmc grind",
+      "base del pulgar",
+    ],
+  },
+  {
+    id: "crossed-slr",
+    title: "SLR cruzado (well-leg)",
+    src: "/clinical-tests/crossed-slr.webp",
+    aliases: [
+      "slr cruzado",
+      "crossed slr",
+      "well leg",
+      "well-leg",
+      "lasegue cruzado",
+      "lasègue cruzado",
+    ],
+  },
 ] as const;
 
 /** Prefer longer aliases first so "cajon anterior del tobillo" beats "cajon anterior". */
@@ -287,6 +452,9 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "pivot-shift",
       "mcmurray",
       "thessaly",
+      "valgus-stress-mcl",
+      "varus-stress-lcl",
+      "posterior-drawer-pcl",
     ],
   },
   {
@@ -300,11 +468,12 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "yergason",
       "drop-arm",
       "painful-arc",
+      "cross-body",
     ],
   },
   {
     label: "Cuello / neural miembro superior",
-    ids: ["spurling", "ultt"],
+    ids: ["spurling", "ultt", "cervical-distraction"],
   },
   {
     label: "Tobillo / pie",
@@ -323,15 +492,24 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
   },
   {
     label: "Muñeca / mano",
-    ids: ["phalen", "tinel"],
+    ids: [
+      "phalen",
+      "tinel",
+      "finkelstein",
+      "snuffbox-palpation",
+      "thumb-axial-load",
+      "tfcc-ulnar-load",
+      "cmc-grind",
+      "thumb-ucl-stress",
+    ],
   },
   {
     label: "Codo",
-    ids: ["cozen", "mill"],
+    ids: ["cozen", "mill", "resisted-wrist-flexion", "elbow-flexion-cubital"],
   },
   {
     label: "Columna lumbar / espalda",
-    ids: ["schober", "slr-lasegue", "kemp"],
+    ids: ["schober", "slr-lasegue", "crossed-slr", "kemp"],
   },
 ];
 
@@ -351,12 +529,20 @@ export function illustratedClinicalTestsPromptBlock(): string {
   }).join("\n");
 
   return `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
-Cuando listes pruebas/maniobras numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene imagen en Kinora; si inventas otro nombre, la imagen NO aparece.
+Cuando listes pruebas/maniobras/tests/pruebas funcionales numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
+
+VÍDEOS (CRÍTICO — fuerza del producto):
+- Si el fisioterapeuta pide pruebas, tests, maniobras o «pruebas funcionales» de una zona, responde SIEMPRE con lista numerada usando EXACTAMENTE los nombres canónicos del grupo de ESA zona.
+- PROHIBIDO inventar nombres cotidianos o genéricos en líneas numeradas (Sentadilla, Marcha, Agarre, etc.).
+- Si pide N pruebas, elige las N más relevantes del catálogo de esa zona (si hay menos, lista todas las del grupo).
+- Si pide TODAS las pruebas / all tests / el catálogo de una zona, lista TODAS las del grupo de esa zona (una línea numerada por test, nombre canónico). Así la app muestra el vídeo de cada una.
+- Si pide todas las pruebas SIN zona, recorre CADA grupo con encabezado **Zona:** (p. ej. **Lumbar:**, **Rodilla:**) y lista todas las de ese grupo. NUNCA mezcles tests de rodilla bajo **Lumbar:**.
+- Lumbar/espalda: SOLO Schober, SLR / Lasègue, SLR cruzado (well-leg), Kemp. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
 
 REGLA DE ZONA (CRÍTICO — error grave si se incumple):
-- Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, etc.).
-- En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
-- PROHIBIDO numerar tests de otra región. Ejemplos: dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
+- Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, lumbar/espalda, etc.).
+- En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, pruebas funcionales, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
+- PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
 - Signo de Tinel y Phalen del catálogo son de MUÑECA/MANO (imagen de muñeca). NO los numeres para pie/túnel tarsiano aunque el nombre “Tinel” se use en tobillo.
 - Si una maniobra útil no está en el grupo de esa zona (p. ej. Mulder/compresión interdigital para Morton, Tinel en túnel tarsiano), menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
@@ -368,6 +554,172 @@ ${groups}
 - Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;
 }
 
+/** True when the message is asking for a list of tests / functional pruebas. */
+export function isClinicalPruebasListRequest(text: string): boolean {
+  const n = normalizeForMatch(text);
+  if (!n) return false;
+  return (
+    /\b(pruebas?|tests?|maniobras?|exploracion)\b/.test(n) ||
+    /\bpruebas?\s+funcionales?\b/.test(n) ||
+    /\bfunctional\s+tests?\b/.test(n)
+  );
+}
+
+/** True when the physio wants the full catalog (not a short sample). */
+export function isAllClinicalPruebasRequest(text: string): boolean {
+  const n = normalizeForMatch(text);
+  if (!n) return false;
+  return /\b(todas|todos|all|completas?|catalogo|el catalogo)\b/.test(n);
+}
+
+const ZONE_QUERY_PATTERNS: readonly { ids: readonly string[]; re: RegExp }[] = [
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) =>
+      g.label.startsWith("Columna")
+    )!.ids,
+    re: /\b(espalda|lumbar(?:es)?|lumbalgia|lumbago|lumbosacr\w*|ciatic\w*|back)\b/,
+  },
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label.startsWith("Muñeca"))!
+      .ids,
+    re: /\b(muneca|wrist|mano|hand|carpo|carpal)\b/,
+  },
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label === "Codo")!.ids,
+    re: /\b(codo|elbow|epicondil)/,
+  },
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label === "Hombro")!.ids,
+    re: /\b(hombro|shoulder|manguito|cuff)\b/,
+  },
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label === "Rodilla")!.ids,
+    re: /\b(rodilla|knee|menisc)\b/,
+  },
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label.startsWith("Tobillo"))!
+      .ids,
+    re: /\b(tobillo|ankle|pie|foot|aquiles|achilles|plantar|fascitis)\b/,
+  },
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label === "Cadera")!.ids,
+    re: /\b(cadera|hip|ingle|groin|muslo|thigh|isquio)\b/,
+  },
+  {
+    ids: CLINICAL_TEST_REGION_GROUPS.find((g) =>
+      g.label.startsWith("Cuello")
+    )!.ids,
+    re: /\b(cuello|cervical|neck)\b/,
+  },
+];
+
+export function clinicalTestsForRegionIds(
+  ids: readonly string[]
+): ClinicalTestImage[] {
+  const seen = new Set<string>();
+  const out: ClinicalTestImage[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const t = CLINICAL_TEST_IMAGES.find((x) => x.id === id);
+    if (t) out.push(t);
+  }
+  return out;
+}
+
+export function allIllustratedClinicalTests(): ClinicalTestImage[] {
+  return clinicalTestsForRegionIds(
+    CLINICAL_TEST_REGION_GROUPS.flatMap((g) => [...g.ids])
+  );
+}
+
+/** Region catalog ids for a section heading such as **Lumbar:**. */
+export function clinicalTestRegionIdsForHeading(
+  text: string
+): readonly string[] | null {
+  const n = normalizeForMatch(text);
+  if (!n) return null;
+  for (const { ids, re } of ZONE_QUERY_PATTERNS) {
+    if (re.test(n)) return ids;
+  }
+  return null;
+}
+
+/** True for a short region label line (Lumbar:, Rodilla), not a sentence that mentions the zone. */
+export function isClinicalRegionSectionLabel(text: string): boolean {
+  const n = normalizeForMatch(text);
+  if (!n || n.length > 40 || n.split(" ").length > 5) return false;
+  if (
+    /\b(evaluar|dolor|paciente|capacidad|carrera|sentadilla|marcha|prueba|test)\b/.test(
+      n
+    )
+  ) {
+    return false;
+  }
+  return clinicalTestRegionIdsForHeading(text) !== null;
+}
+
+/**
+ * When a physio asks for pruebas of a body region, return catalog tests for
+ * that zone (so the UI can still show videos if the model invents names).
+ * “Todas las pruebas” without a zone returns the full illustrated catalog.
+ */
+export function illustratedTestsForPruebasQuery(
+  userText: string
+): ClinicalTestImage[] {
+  if (!isClinicalPruebasListRequest(userText)) return [];
+  const normalized = normalizeForMatch(userText);
+  for (const { ids, re } of ZONE_QUERY_PATTERNS) {
+    if (!re.test(normalized)) continue;
+    return clinicalTestsForRegionIds(ids);
+  }
+  if (isAllClinicalPruebasRequest(userText)) {
+    return allIllustratedClinicalTests();
+  }
+  return [];
+}
+
+export function nextIllustratedFallbackTest(
+  fallbackTests: ClinicalTestImage[],
+  shownIds: Set<string>,
+  regionIds: readonly string[] | null
+): ClinicalTestImage | null {
+  const pool = regionIds
+    ? fallbackTests.length > 0
+      ? fallbackTests.filter((t) => regionIds.includes(t.id))
+      : clinicalTestsForRegionIds(regionIds)
+    : fallbackTests;
+  return pool.find((t) => !shownIds.has(t.id)) ?? null;
+}
+
+export function leftoverIllustratedTests(
+  fallbackTests: ClinicalTestImage[],
+  shownIds: Set<string>,
+  regionIds: readonly string[] | null
+): ClinicalTestImage[] {
+  if (fallbackTests.length === 0) return [];
+  const pool = regionIds
+    ? fallbackTests.filter((t) => regionIds.includes(t.id))
+    : fallbackTests;
+  return pool.filter((t) => !shownIds.has(t.id));
+}
+
+/**
+ * Pick how many catalog tests to surface for a pruebas request (honours “dime 2”).
+ * Without an explicit number — or with “todas” — return the full zone (or catalog).
+ */
+export function pickIllustratedTestsForPruebasQuery(
+  userText: string
+): ClinicalTestImage[] {
+  const all = illustratedTestsForPruebasQuery(userText);
+  if (all.length === 0) return [];
+  if (isAllClinicalPruebasRequest(userText)) return all;
+  const m = /\b(\d{1,2})\b/.exec(userText);
+  if (!m) return all;
+  const n = Math.min(Math.max(Number(m[1]), 1), all.length);
+  return all.slice(0, n);
+}
+
 /**
  * Find the best matching clinical-test illustration for a line of assistant text.
  * Returns null when nothing matches, or when several different tests are named
@@ -377,11 +729,26 @@ export function findClinicalTestImage(line: string): ClinicalTestImage | null {
   const normalized = normalizeForMatch(line);
   if (!normalized) return null;
 
+  const ankleCue =
+    normalized.includes("tobillo") ||
+    normalized.includes("ankle") ||
+    normalized.includes("atfl");
+
+  // Posterior drawer is knee/LCP — never treat it as lumbar.
+  if (
+    !ankleCue &&
+    (normalized.includes("cajon posterior") ||
+      normalized.includes("posterior drawer") ||
+      normalized.includes("posterior sag"))
+  ) {
+    return (
+      CLINICAL_TEST_IMAGES.find((t) => t.id === "posterior-drawer-pcl") ?? null
+    );
+  }
+
   // Prefer ankle drawer when the line mentions ankle/tobillo together with drawer.
   if (
-    (normalized.includes("tobillo") ||
-      normalized.includes("ankle") ||
-      normalized.includes("atfl")) &&
+    ankleCue &&
     (normalized.includes("cajon") || normalized.includes("drawer"))
   ) {
     return (

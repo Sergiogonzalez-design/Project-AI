@@ -51,6 +51,30 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     evidenceNote:
       "Evidencia MIXTA: Karachalios 2005 muy preciso; estudios posteriores y Hegedus BJSM mucho menor. Cluster, no regla de oro.",
   },
+  "valgus-stress-mcl": {
+    id: "valgus-stress-mcl",
+    title: "Estrés en valgo (LCM)",
+    procedure:
+      "Supino. Valgo suave a ~30° (aísla más LCM) y a 0° (cápsula/LCA si holgura). Comparar con contralateral. Registrar dolor familiar en LCM y/o apertura medial.",
+    evidenceNote:
+      "JOSPT CPG knee ligament (Logerstedt): dolor/holgura → LCM ↑. No inventar grado I–III por dolor solo. Coexiste a menudo con menisco/LCA (tríada).",
+  },
+  "varus-stress-lcl": {
+    id: "varus-stress-lcl",
+    title: "Estrés en varo (LCL)",
+    procedure:
+      "Supino. Varo a 0° y ~30°. Comparar con contralateral. Registrar dolor LCL familiar y/o apertura lateral.",
+    evidenceNote:
+      "JOSPT CPG knee ligament: LCL ↑. Varo + hiperextensión → pensar PLC. No confundir con ITB (sobreuso, sin trauma).",
+  },
+  "posterior-drawer-pcl": {
+    id: "posterior-drawer-pcl",
+    title: "Cajón posterior / sag (LCP)",
+    procedure:
+      "Supino, rodilla ~90°. Observar sag tibial; empujar tibia hacia atrás. No confundir con cajón anterior (falsa «corrección»).",
+    evidenceNote:
+      "JOSPT CPG: LCP ↑ si mecanismo tibia anterior + rodilla flexionada (salpicadero). Agudo doloroso poco fiable.",
+  },
   neer: {
     id: "neer",
     title: "Test de Neer",
@@ -219,6 +243,38 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     evidenceNote:
       "Estiramiento del extensor común. Complemento de Cozen; aislado inespecífico. Cluster, no regla de oro.",
   },
+  "resisted-wrist-flexion": {
+    id: "resisted-wrist-flexion",
+    title: "Flexión de muñeca resistida (medial)",
+    procedure:
+      "Codo extendido o semiflexionado, palma hacia arriba. Resistencia a la flexión de muñeca y/o pronación. Registrar si el dolor en epicóndilo medial es familiar.",
+    evidenceNote:
+      "Cluster medial epicondylalgia (palpación + carga). Menos estudiado que LET. Cribado cubital (4.º–5.º) obligatorio. No confirma rotura.",
+  },
+  "elbow-flexion-cubital": {
+    id: "elbow-flexion-cubital",
+    title: "Test de flexión de codo (cubital)",
+    procedure:
+      "Flexión máxima de codo sostenida (± percusión Tinel en canal cubital detrás del epicóndilo medial). Positivo si reproduce parestesias familiares en anular y meñique.",
+    evidenceNote:
+      "Buehler/Thayer; Novak/Mackinnon: precisión aislada limitada. Cluster: 4.º–5.º + empeora al apoyar/flexionar el codo. No es STC.",
+  },
+  "cervical-distraction": {
+    id: "cervical-distraction",
+    title: "Distracción cervical",
+    procedure:
+      "Tracción axial suave (supino o sentado). Positivo si alivia el dolor/hormigueo familiar del brazo.",
+    evidenceNote:
+      "Wainner Spine 2003: parte del cluster (ULTT + Spurling + distracción + rotación <60°). No usar sola. Contraindicada si trauma/inestabilidad no cribados.",
+  },
+  "thumb-ucl-stress": {
+    id: "thumb-ucl-stress",
+    title: "Estrés UCL del pulgar (valgo MCP)",
+    procedure:
+      "Pulgar en ligera flexión MCP (~30°). Estrés en valgo en la MCP comparando con el contralateral. Registrar dolor familiar e inestabilidad.",
+    evidenceNote:
+      "Skier's/gamekeeper thumb. Dolor + laxitud vs contralateral apoyan UCL en cluster; no confirma grado. RX si sospecha avulsión.",
+  },
   speed: {
     id: "speed",
     title: "Test de Speed",
@@ -242,6 +298,46 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
       "Desviación cubital del puño con el pulgar estabilizado (técnica de Finkelstein). Dolor en estiloides radial / 1.er compartimento familiar. No confundir con solo cerrar el puño sobre el pulgar (Eichhoff — más falsos +).",
     evidenceNote:
       "Cluster De Quervain: estiloides radial + uso del pulgar + palpación ± Finkelstein. Eichhoff aislado da falsos positivos.",
+  },
+  "snuffbox-palpation": {
+    id: "snuffbox-palpation",
+    title: "Palpación de la tabaquera anatómica",
+    procedure:
+      "Con el pulgar en extensión, palpar el valle entre EPL y EPB/APL en la cara radial de la muñeca. Registrar si el dolor es familiar.",
+    evidenceNote:
+      "FOOSH + tabaquera dolorosa → sospecha escafoides ↑. No confirma fractura; RX inicial puede ser normal. No «solo esguince».",
+  },
+  "thumb-axial-load": {
+    id: "thumb-axial-load",
+    title: "Carga axial del pulgar (escafoides)",
+    procedure:
+      "Compresión axial a lo largo del metacarpiano del pulgar hacia el escafoides. Positivo si reproduce dolor en tabaquera/muñeca radial familiar.",
+    evidenceNote:
+      "Complemento de tabaquera post-FOOSH. Apoya cribado óseo; no confirma. Imagen si cluster positivo.",
+  },
+  "tfcc-ulnar-load": {
+    id: "tfcc-ulnar-load",
+    title: "Carga cubital / fosa cubital (TFCC)",
+    procedure:
+      "Desviación cubital ± carga axial en muñeca en pronación/supinación. Palpar fosa cubital (entre cúbito y piramidal). Positivo si dolor cubital dorsal/familiar.",
+    evidenceNote:
+      "Cluster TFCC clínico (dolor lado meñique + torsión/apoyo). No confirma rotura; imagen si trauma + persistencia.",
+  },
+  "cmc-grind": {
+    id: "cmc-grind",
+    title: "Grind test CMC del pulgar",
+    procedure:
+      "Sujetar metacarpiano del pulgar y aplicar compresión axial + rotación en la CMC. Positivo si dolor/crepitación en base del pulgar familiar.",
+    evidenceNote:
+      "Compatible con artrosis CMC. Diferencial con De Quervain (estiloides vs base). No confirma grado radiológico.",
+  },
+  "crossed-slr": {
+    id: "crossed-slr",
+    title: "SLR cruzado (well-leg)",
+    procedure:
+      "Supino. Elevación de la pierna asintomática. Positivo si reproduce ciática familiar en la pierna dolorosa.",
+    evidenceNote:
+      "van der Windt Cochrane / Devillé: más específico y menos sensible que SLR ipsilateral. Apoya, no confirma hernia. Negativo no excluye.",
   },
   yergason: {
     id: "yergason",

@@ -5,11 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { NavBackButton } from "@/components/nav-back-button";
 import { clearPatientModeCookie } from "@/components/fisio-patient-mode";
 import {
   isNavLinkActive,
-  isPacienteLandingPath,
   PATIENT_NAV_LINKS,
   PHYSIO_NAV_LINKS,
   type AppNavLink,
@@ -117,7 +115,6 @@ export function SiteNavbar() {
   }, [isAdmin, usePhysioLinks]);
 
   const homeHref = usePhysioLinks ? "/fisio" : "/fisioterapia";
-  const showBack = !isPacienteLandingPath(pathname);
 
   function handleSignOut() {
     setSigningOut(true);
@@ -165,7 +162,16 @@ export function SiteNavbar() {
                 })}
               </nav>
 
-              <div className="shrink-0 border-t border-slate-200/80 p-3">
+              <div className="shrink-0 space-y-2 border-t border-slate-200/80 p-3">
+                <p className="px-1 text-center text-xs text-slate-500">
+                  <Link
+                    href="/privacidad"
+                    onClick={() => setMenuOpen(false)}
+                    className="font-medium text-blue-600 hover:underline"
+                  >
+                    Privacidad y términos
+                  </Link>
+                </p>
                 <button
                   type="button"
                   onClick={handleSignOut}
@@ -184,8 +190,7 @@ export function SiteNavbar() {
   return (
     <>
       <header className="sticky top-0 z-[110] w-full border-b border-slate-200/70 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6">
-          {showBack ? <NavBackButton fallbackHref={homeHref} /> : null}
+        <div className="flex h-14 w-full items-center gap-2 px-4 sm:px-6">
           <Link
             href={homeHref}
             className="flex min-w-0 flex-1 items-center gap-2.5"
@@ -207,14 +212,14 @@ export function SiteNavbar() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="btn-icon !h-10 !w-10 text-slate-800"
+              className="rounded-lg p-2 text-neutral-700 transition-colors hover:bg-neutral-100"
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
               aria-expanded={menuOpen}
             >
               <svg
-                width="20"
-                height="20"
+                width="22"
+                height="22"
                 fill="none"
                 viewBox="0 0 24 24"
                 aria-hidden

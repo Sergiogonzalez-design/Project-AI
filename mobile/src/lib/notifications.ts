@@ -4,17 +4,25 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const NOTIFICATIONS_ENABLED_KEY = "AIKinora_notifications_enabled";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+let handlerConfigured = false;
+
+/** Defer until first use so a bad native module init cannot white-screen the app. */
+export function ensureNotificationHandler(): void {
+  if (handlerConfigured) return;
+  handlerConfigured = true;
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export async function getNotificationsEnabled(): Promise<boolean> {
+  ensureNotificationHandler();
   const value = await AsyncStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
   return value === "1";
 }
@@ -34,6 +42,7 @@ export async function ensureAndroidChannel(): Promise<void> {
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
+  ensureNotificationHandler();
   await ensureAndroidChannel();
   const current = await Notifications.getPermissionsAsync();
   if (current.granted || current.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {

@@ -20,6 +20,7 @@ import {
 } from "./AuthTextField";
 import { DismissKeyboard } from "./DismissKeyboard";
 import { AuthBackBar } from "./AuthBackBar";
+import { LegalDocumentView } from "./LegalDocumentView";
 import { Colors } from "../lib/colors";
 import { WEB_APP_URL } from "../lib/admin-api";
 import { useI18n } from "../lib/i18n";
@@ -40,11 +41,12 @@ function translateAuthError(message: string): string {
 }
 
 export function LoginScreen({ onSwitch }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showLegal, setShowLegal] = useState(false);
   const passwordRef = useRef<TextInput>(null);
 
   async function handleLogin() {
@@ -64,6 +66,10 @@ export function LoginScreen({ onSwitch }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (showLegal) {
+    return <LegalDocumentView onClose={() => setShowLegal(false)} />;
   }
 
   return (
@@ -135,6 +141,14 @@ export function LoginScreen({ onSwitch }: Props) {
               <Text style={styles.switchLink}>{t.auth.signup}</Text>
             </Text>
           </Pressable>
+
+          <View style={styles.legalRow}>
+            <Pressable onPress={() => setShowLegal(true)} hitSlop={8}>
+              <Text style={styles.legalLink}>
+                {locale === "en" ? "Privacy & terms" : "Privacidad y términos"}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
       </DismissKeyboard>
@@ -212,4 +226,11 @@ const styles = StyleSheet.create({
   switchRow: { marginTop: 24, alignItems: "center" },
   switchText: { fontSize: 14, color: Colors.textSecondary },
   switchLink: { color: Colors.primary, fontWeight: "700" },
+  legalRow: {
+    marginTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  legalLink: { fontSize: 12, fontWeight: "600", color: Colors.primary },
 });

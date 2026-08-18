@@ -1171,7 +1171,7 @@ function differentialGuidanceForLocations(
 
   if (hasExactLoc(answers, "Muslo / encima de la rodilla") || hasLoc(answers, "Thigh", "muslo", "isquio", "cuádriceps")) {
     lines.push(
-      "- Muslo / encima de la rodilla + correr o movimiento repetitivo → sobrecarga / distensión de **cuádriceps** (recto femoral) o **isquiotibiales** (si es posterior). Hipótesis locales del MUSLO.",
+      "- Muslo / encima de la rodilla + correr o movimiento repetitivo → sobrecarga / lesión muscular de **cuádriceps** (recto femoral) o **isquiotibiales** (si es posterior). Hipótesis locales del MUSLO.",
       "- Muslo anterior + dolor al chutar, sentadilla o extensión resistida → cuádriceps / tendón cuadricipital.",
       "- Muslo posterior + pedrada al correr o dolor al estirar con rodilla estirada → isquiotibiales.",
       "- PROHIBIDO proponer gemelos, Aquiles, periostitis tibial o fractura por estrés de tibia: el paciente localizó el **muslo**."

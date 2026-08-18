@@ -817,7 +817,7 @@ export function formatShoulderAdaptive(
     ...(focus === "pectoral"
       ? [
           "- Latigazo en press banca/aperturas + hematoma axilar + debilidad de aducción → sospecha rotura de pectoral mayor.",
-          "- Dolor en vientre/inserción del pectoral al juntar los brazos o en flexiones → distensión / tendinopatía de pectoral.",
+          "- Dolor en vientre/inserción del pectoral al juntar los brazos o en flexiones → lesión muscular / tendinopatía de pectoral.",
           "- Dolor torácico + dificultad respiratoria / sudor frío / náuseas → descartar urgencia cardiológica (no orientar solo como músculo).",
           "- Dolor pecho + síntomas cervicales que empeoran al girar la cabeza → posible dolor referido; no forzar solo pectoral.",
           "- Si el tiempo de evolución es 'Ha sido ahora' o 'Reciente (1-4 horas)': NO uses patrones de dolor nocturno / dormir / rigidez matutina.",

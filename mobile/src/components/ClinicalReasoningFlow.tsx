@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,11 +7,10 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { ResizeMode, Video } from "expo-av";
 import { Colors } from "../lib/colors";
 import { bodyPartLabel } from "../lib/body-parts";
+import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { CLINICAL_TEST_IMAGES } from "../lib/clinical-test-images";
-import { getClinicalTestVideoSrc } from "../lib/clinical-test-videos";
 import {
   advanceFromConclusion,
   applyAnswer,
@@ -48,34 +46,6 @@ function probabilityBadge(p: HypothesisProbability) {
   return { bg: "#F3F4F6", fg: "#374151", label: "Baja probabilidad" };
 }
 
-function ClinicalTestVideo({ src, title }: { src: string; title: string }) {
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <View style={styles.videoWrap}>
-      {failed ? (
-        <View style={styles.videoError}>
-          <Text style={styles.videoErrorText}>
-            No se pudo cargar el vídeo demostrativo. Recarga la página o prueba otro
-            navegador.
-          </Text>
-        </View>
-      ) : (
-        <Video
-          key={src}
-          source={{ uri: src }}
-          style={styles.videoPlayer}
-          useNativeControls
-          resizeMode={ResizeMode.CONTAIN}
-          isLooping={false}
-          onError={() => setFailed(true)}
-          accessibilityLabel={`Vídeo demostrativo: ${title}`}
-        />
-      )}
-    </View>
-  );
-}
-
 function TestCard({
   node,
   onAnswer,
@@ -84,7 +54,6 @@ function TestCard({
   onAnswer: (result: "positive" | "negative") => void;
 }) {
   const image = CLINICAL_TEST_IMAGES.find((t) => t.id === node.testId);
-  const videoSrc = getClinicalTestVideoSrc(node.testId);
   const isRouteNode = node.testId.startsWith("route-");
   const positiveTitle = isRouteNode ? "Sí" : "Positivo";
   const negativeTitle = isRouteNode ? "No" : "Negativo";
@@ -101,23 +70,8 @@ function TestCard({
         ) : null}
       </View>
 
-      {!isRouteNode && (image || videoSrc) ? (
-        <View style={styles.mediaGroup}>
-          {!isRouteNode && image ? (
-            <View style={styles.imageWrap}>
-              <Image
-                source={{ uri: image.src }}
-                style={styles.testImage}
-                resizeMode="contain"
-                accessibilityLabel={image.title}
-              />
-            </View>
-          ) : null}
-
-          {!isRouteNode && videoSrc ? (
-            <ClinicalTestVideo src={videoSrc} title={node.title} />
-          ) : null}
-        </View>
+      {!isRouteNode && image ? (
+        <ClinicalTestMediaBlock test={image} />
       ) : null}
 
       <View style={styles.answerRow}>
@@ -435,7 +389,6 @@ const styles = StyleSheet.create({
   },
   cardInner: { gap: 24 },
   testHeader: { gap: 8 },
-  mediaGroup: { gap: 16 },
   emptyCard: {
     margin: 16,
     padding: 16,
@@ -452,45 +405,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   evidenceText: { fontSize: 12, lineHeight: 17, color: "#1E3A8A" },
-  imageWrap: {
-    overflow: "hidden",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
-  },
-  testImage: {
-    width: "100%",
-    height: 200,
-    backgroundColor: "#F9FAFB",
-  },
-  videoWrap: {
-    overflow: "hidden",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#000",
-  },
-  videoPlayer: {
-    width: "100%",
-    aspectRatio: 16 / 9,
-    backgroundColor: "#000",
-  },
-  videoError: {
-    width: "100%",
-    aspectRatio: 16 / 9,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#171717",
-    paddingHorizontal: 16,
-    paddingVertical: 32,
-  },
-  videoErrorText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#D4D4D4",
-    textAlign: "center",
-  },
   answerRow: { gap: 12 },
   positiveBtn: {
     backgroundColor: "#059669",

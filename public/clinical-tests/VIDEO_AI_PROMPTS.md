@@ -1,15 +1,21 @@
-# AI video prompts — 31 clinical tests
+# AI video prompts — clinical tests
 # Image folder: public/clinical-tests/
 # Save videos as: public/clinical-tests/videos/<id>.mp4
 #
-# How to use (Kling / Runway / Luma / Sora):
+# How to use (Kling / Runway / Luma / Sora / DaVinci):
 # 1. Upload the matching .webp as image reference
 # 2. Paste the PROMPT below
 # 3. Duration 8–12s, no music, no text overlays
 # 4. Export as <id>.mp4
+# 5. Fit to 8.00s demo + 2.00s Kinora logo (10.00s total):
+#      powershell -File scripts/append-kinora-logo-outro.ps1
+#
+# Batch 1: tests 1–31 (original)
+# Batch 2: tests 32–45 (new trees — collaterals, wrist, neck/back extras)
 
 COMMON_SUFFIX:
 Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+# After export, every video is fit to 8.00s of demo plus the same 2.00s Kinora logo card (10.00s total).
 
 ---
 
@@ -198,3 +204,91 @@ IMAGE: public/clinical-tests/kemp.webp
 FILE OUT: kemp.mp4
 PROMPT:
 Using this illustration as reference, animate Kemp's / lumbar quadrant test: patient standing, clinician guides the trunk into extension, side-bending and rotation toward the painful side. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate careful spinal movement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+---
+
+# BATCH 2 — 14 new tests (after tree expansion)
+
+## 32. cross-body
+IMAGE: public/clinical-tests/cross-body.webp
+FILE OUT: cross-body.mp4
+PROMPT:
+Using this illustration as reference, animate the cross-body adduction test (Physiotutors / Chronopoulos): elevate the arm to 90° of forward flexion, then passively guide maximum horizontal adduction across the chest toward the opposite shoulder (elbow ~90° flexed, scarf position). Positive finding is pain on top of the shoulder at the AC joint. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 33. valgus-stress-mcl
+IMAGE: public/clinical-tests/valgus-stress-mcl.webp
+FILE OUT: valgus-stress-mcl.mp4
+PROMPT:
+Using this illustration as reference, animate the valgus stress test for the MCL (Physiotutors): patient supine and relaxed; one hand grips the leg just above the ankle, the other stabilizes the femur/lateral knee (thenar near fibular head); apply slight tibial external rotation and passive abduction/valgus to open the medial joint line. Show first in full extension, then repeat at 20–30° knee flexion. Look for medial gapping and pain reproduction. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 34. varus-stress-lcl
+IMAGE: public/clinical-tests/varus-stress-lcl.webp
+FILE OUT: varus-stress-lcl.mp4
+PROMPT:
+Using this illustration as reference, animate the knee varus stress test for the LCL: patient supine, knee flexed about 30 degrees, clinician applies gentle varus force opening the lateral joint line. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 35. posterior-drawer-pcl
+IMAGE: public/clinical-tests/posterior-drawer-pcl.webp
+FILE OUT: posterior-drawer-pcl.mp4
+PROMPT:
+Using this illustration as reference, animate the posterior drawer / sag test for the PCL: patient supine, knee flexed about 90 degrees, clinician pushes the proximal tibia posteriorly relative to the femur. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 36. resisted-wrist-flexion
+IMAGE: public/clinical-tests/resisted-wrist-flexion.webp
+FILE OUT: resisted-wrist-flexion.mp4
+PROMPT:
+Using this illustration as reference, animate resisted wrist flexion for medial epicondylalgia: elbow nearly extended, palm up, patient flexes the wrist against the clinician's resistance while the medial epicondyle is assessed. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 37. elbow-flexion-cubital
+IMAGE: public/clinical-tests/elbow-flexion-cubital.webp
+FILE OUT: elbow-flexion-cubital.mp4
+PROMPT:
+Using this illustration as reference, animate the elbow flexion test for cubital tunnel: patient holds the elbow in maximal flexion for several seconds; optional gentle tapping over the ulnar nerve behind the medial epicondyle. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 38. cervical-distraction
+IMAGE: public/clinical-tests/cervical-distraction.webp
+FILE OUT: cervical-distraction.mp4
+PROMPT:
+Using this illustration as reference, animate cervical distraction: patient seated or supine, clinician gently applies axial traction lifting the head to unload the cervical spine and assess relief of arm symptoms. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate careful hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 39. thumb-ucl-stress
+IMAGE: public/clinical-tests/thumb-ucl-stress.webp
+FILE OUT: thumb-ucl-stress.mp4
+PROMPT:
+Using this illustration as reference, animate ulnar collateral ligament stress of the thumb MCP: clinician stabilizes the metacarpal and applies gentle valgus stress to the proximal phalanx of the thumb. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 40. finkelstein
+IMAGE: public/clinical-tests/finkelstein.webp
+FILE OUT: finkelstein.mp4
+PROMPT:
+Using this illustration as reference, animate the true Finkelstein test for De Quervain: clinician stabilizes the thumb and ulnar-deviates the wrist (not merely closing the fist over the thumb). Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 41. snuffbox-palpation
+IMAGE: public/clinical-tests/snuffbox-palpation.webp
+FILE OUT: snuffbox-palpation.mp4
+PROMPT:
+Using this illustration as reference, animate anatomical snuffbox palpation: thumb extended, clinician presses gently into the hollow between the extensor tendons on the radial wrist over the scaphoid. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 42. thumb-axial-load
+IMAGE: public/clinical-tests/thumb-axial-load.webp
+FILE OUT: thumb-axial-load.mp4
+PROMPT:
+Using this illustration as reference, animate axial load of the thumb for scaphoid screening: clinician compresses along the thumb metacarpal toward the wrist/scaphoid. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 43. tfcc-ulnar-load
+IMAGE: public/clinical-tests/tfcc-ulnar-load.webp
+FILE OUT: tfcc-ulnar-load.mp4
+PROMPT:
+Using this illustration as reference, animate ulnar load / TFCC provocation: wrist in ulnar deviation with axial load through the hand, clinician assessing the ulnar fovea region. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 44. cmc-grind
+IMAGE: public/clinical-tests/cmc-grind.webp
+FILE OUT: cmc-grind.mp4
+PROMPT:
+Using this illustration as reference, animate the CMC grind test of the thumb: clinician grips the thumb metacarpal, applies axial compression and rotates at the carpometacarpal joint. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+## 45. crossed-slr
+IMAGE: public/clinical-tests/crossed-slr.webp
+FILE OUT: crossed-slr.mp4
+PROMPT:
+Using this illustration as reference, animate the crossed straight leg raise (well-leg raise): patient supine, clinician raises the asymptomatic straight leg while the symptomatic leg remains on the table. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.

@@ -921,7 +921,7 @@ export function formatBackAdaptive(
     "NOTA: El sistema recopila variables clínicas para estimar estructuras afectadas (discos, facetas, músculos, nervios, ligamentos), no para diagnosticar.",
     "",
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
-    "- Flexión + levantamiento + chasquido + irradiación pierna → sospecha discogénica (hernia/protrusión) vs distensión muscular; la postura al levantar (espalda flexionada/con giro) apoya el mecanismo discogénico.",
+    "- Flexión + levantamiento + chasquido + irradiación pierna → sospecha discogénica (hernia/protrusión) vs lesión muscular muscular; la postura al levantar (espalda flexionada/con giro) apoya el mecanismo discogénico.",
     "- Lumbar baja + extensión + estar de pie + (si el perfil indica edad avanzada) → artrosis facetaria vs estenosis lumbar.",
     "- Irradiación pierna + peor sentado + mejor caminar + debajo rodilla → ciática / radiculopatía L5-S1 vs piramidal.",
     "- Claudicación neurogénica (empeora de pie/caminando, mejora al inclinarse o sentarse) → sospecha de estenosis de canal lumbar; diferenciar de claudicación vascular (esa no mejora al inclinarse).",

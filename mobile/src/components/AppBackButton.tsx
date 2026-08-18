@@ -12,14 +12,16 @@ function getLandingRoute(
   const names = navigation.getState()?.routeNames ?? [];
   if (names.includes("Patients")) return "Patients";
   if (names.includes("PhysioLink")) return "PhysioLink";
-  return "AIInquiries";
+  if (names.includes("AIInquiries")) return "AIInquiries";
+  if (names.includes("PhysioConsult")) return "PhysioConsult";
+  return (names[0] as keyof TabParamList | undefined) ?? "Profile";
 }
 
 type Props = {
   onPress?: () => void;
 };
 
-/** Header back: custom handler, home tab, or navigation stack. Hidden on Paciente landing. */
+/** Header back: custom handler, home tab, or navigation stack. Hidden on Fisioterapia / physio landing. */
 export function AppBackButton({ onPress }: Props) {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const route = useRoute();

@@ -36,7 +36,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [preference, setPreferenceState] = useState<LanguagePreference>(
     detectDeviceLocale()
   );
-  const [ready, setReady] = useState(false);
+  // Start ready so a hung AsyncStorage read cannot pin the native splash.
+  const [ready, setReady] = useState(true);
 
   useEffect(() => {
     AsyncStorage.getItem(LANGUAGE_KEY)

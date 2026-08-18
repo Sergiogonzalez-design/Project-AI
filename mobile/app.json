@@ -14,11 +14,14 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.physioguidea.app",
-      "buildNumber": "6",
+      "buildNumber": "10",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "AIKinora usa el micrófono para que puedas dictar tu consulta por voz.",
-        "NSSpeechRecognitionUsageDescription": "AIKinora usa el reconocimiento de voz para convertir lo que dices en texto en el chat."
+        "NSSpeechRecognitionUsageDescription": "AIKinora usa el reconocimiento de voz para convertir lo que dices en texto en el chat.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {
@@ -30,6 +33,7 @@
       },
       "package": "com.physioguidea.app",
       "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.RECORD_AUDIO"
@@ -41,6 +45,16 @@
     "plugins": [
       "expo-secure-store",
       "expo-localization",
+      "expo-video",
+      "expo-document-picker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#F8FAFF",
+          "resizeMode": "contain"
+        }
+      ],
       [
         "expo-notifications",
         {

@@ -1,9 +1,20 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { Session } from "@supabase/supabase-js";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  ActivityIndicator,
+  Image,
+  Keyboard,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppErrorBoundary } from "./src/components/AppErrorBoundary";
 import { LoginScreen } from "./src/components/LoginScreen";
 import { SignupScreen } from "./src/components/SignupScreen";
 import { Colors } from "./src/lib/colors";
@@ -22,8 +33,51 @@ import {
   isPhysioProfileComplete,
 } from "./src/lib/physio-profile-complete";
 
-/** Don't leave testers on an infinite splash if Auth/network hangs. */
-const BOOT_TIMEOUT_MS = 12_000;
+function hideNativeSplash() {
+  SplashScreen.hideAsync().catch(() => {});
+}
+
+// Do not call preventAutoHideAsync — if JS/Auth hangs, iOS would keep the logo forever.
+setTimeout(hideNativeSplash, 400);
+
+/** Don't leave testers on an infinite spinner if Auth/network hangs. */
+const SESSION_TIMEOUT_MS = 4_000;
+const BOOT_TIMEOUT_MS = 5_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(fallback);
+      }
+    );
+  });
+}
+
+function hideSplash() {
+  hideNativeSplash();
+}
+
+function BootSplash() {
+  return (
+    <View style={styles.splash}>
+      <Image
+        source={require("./assets/logo.png")}
+        style={styles.logo}
+        resizeMode="contain"
+        accessibilityLabel="AIKinora"
+      />
+      <ActivityIndicator size="large" color={Colors.primary} style={styles.spinner} />
+      <Text style={styles.bootText}>Cargando…</Text>
+    </View>
+  );
+}
 
 function AppInner() {
   const { ready } = useI18n();
@@ -32,10 +86,14 @@ function AppInner() {
   const [authView, setAuthView] = useState<"login" | "signup">("login");
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const [isPhysio, setIsPhysio] = useState(false);
-  /** Ignore stale profile checks that finish after the user already completed onboarding. */
   const onboardingCheckSeq = useRef(0);
 
   const isAdmin = isAdminEmail(session?.user?.email);
+  const booting = !ready || loading || (session !== null && onboardingDone === null);
+
+  useEffect(() => {
+    hideSplash();
+  }, []);
 
   const handleOnboardingComplete = useCallback(() => {
     onboardingCheckSeq.current += 1;
@@ -46,7 +104,6 @@ function AppInner() {
     async (userId: string, email: string | undefined) => {
       const seq = ++onboardingCheckSeq.current;
       try {
-        // Admin uses the same login; skip athlete onboarding only for that account
         if (isAdminEmail(email)) {
           if (seq !== onboardingCheckSeq.current) return;
           setIsPhysio(false);
@@ -67,7 +124,6 @@ function AppInner() {
         );
       } catch {
         if (seq !== onboardingCheckSeq.current) return;
-        // Fail open to login/main flow rather than an endless spinner.
         setIsPhysio(false);
         setOnboardingDone(false);
       }
@@ -84,11 +140,15 @@ function AppInner() {
 
     const boot = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await withTimeout(
+          supabase.auth.getSession(),
+          SESSION_TIMEOUT_MS,
+          { data: { session: null }, error: null }
+        );
         if (cancelled) return;
         setSession(data.session);
         if (data.session?.user) {
-          await checkOnboarding(data.session.user.id, data.session.user.email);
+          void checkOnboarding(data.session.user.id, data.session.user.email);
         } else {
           setOnboardingDone(null);
         }
@@ -98,6 +158,7 @@ function AppInner() {
           setOnboardingDone(null);
         }
       } finally {
+        hideSplash();
         finishLoading();
       }
     };
@@ -105,16 +166,18 @@ function AppInner() {
     void boot();
 
     const timeout = setTimeout(() => {
-      // Network/Auth/profile stall — leave splash instead of spinning forever.
       finishLoading();
       setOnboardingDone((done) => (done === null ? false : done));
     }, BOOT_TIMEOUT_MS);
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      (_event, newSession) => {
         setSession(newSession);
         if (newSession?.user) {
-          await checkOnboarding(newSession.user.id, newSession.user.email);
+          const { id, email } = newSession.user;
+          setTimeout(() => {
+            void checkOnboarding(id, email);
+          }, 0);
         } else {
           setOnboardingDone(null);
         }
@@ -140,12 +203,8 @@ function AppInner() {
     );
   }
 
-  if (!ready || loading || (session && onboardingDone === null)) {
-    return (
-      <View style={styles.splash}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
+  if (booting) {
+    return <BootSplash />;
   }
 
   if (!session) {
@@ -175,42 +234,72 @@ function AppInner() {
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="dark" />
-      {/* Remount tabs when admin/physio status changes so tabs never leak between roles */}
-      <AppTabs
-        key={isAdmin ? "admin" : isPhysio ? "physio" : "user"}
-        isAdmin={isAdmin}
-        isPhysio={isPhysio}
-      />
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <StatusBar style="dark" />
+        <AppTabs
+          key={`${isPhysio ? "physio" : "user"}-${isAdmin ? "admin" : ""}`}
+          isAdmin={isAdmin}
+          isPhysio={isPhysio}
+        />
+      </NavigationContainer>
+    </GestureHandlerRootView>
+  );
+}
+
+function AppDisclaimer() {
+  const insets = useSafeAreaInsets();
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setKeyboardOpen(true)
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardOpen(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  if (keyboardOpen) return null;
+
+  return (
+    <View
+      style={[
+        styles.disclaimer,
+        { paddingBottom: Math.max(insets.bottom, 8) },
+      ]}
+    >
+      <Text style={styles.disclaimerText}>
+        AIKinora es una IA orientativa: no sustituye el criterio clínico ni un
+        diagnóstico médico presencial.
+      </Text>
+    </View>
   );
 }
 
 export default function App() {
+  useEffect(() => {
+    hideSplash();
+  }, []);
+
   return (
     <SafeAreaProvider>
-      <I18nProvider>
-        <View style={{ flex: 1 }}>
+      <AppErrorBoundary>
+        <I18nProvider>
           <View style={{ flex: 1 }}>
-            <AppInner />
+            <View style={{ flex: 1 }}>
+              <AppInner />
+            </View>
+            <AppDisclaimer />
           </View>
-          <View
-            style={{
-              borderTopWidth: StyleSheet.hairlineWidth,
-              borderTopColor: Colors.border,
-              backgroundColor: "#fff",
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-            }}
-          >
-            <Text style={{ fontSize: 11, lineHeight: 15, color: Colors.textLight }}>
-              AIKinora es una IA orientativa: no sustituye el criterio clínico ni un
-              diagnóstico médico presencial.
-            </Text>
-          </View>
-        </View>
-      </I18nProvider>
+        </I18nProvider>
+      </AppErrorBoundary>
     </SafeAreaProvider>
   );
 }
@@ -221,6 +310,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     alignItems: "center",
     justifyContent: "center",
+    padding: 24,
+  },
+  logo: {
+    width: 160,
+    height: 64,
+    marginBottom: 24,
+  },
+  spinner: {
+    marginBottom: 12,
+  },
+  bootText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
   },
   configError: {
     flex: 1,
@@ -241,5 +343,17 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 20,
+  },
+  disclaimer: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingTop: 6,
+  },
+  disclaimerText: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: Colors.textLight,
   },
 });

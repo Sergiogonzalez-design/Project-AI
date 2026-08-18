@@ -1102,8 +1102,8 @@ export const KNEE_PROTOCOL: FunctionalProtocol = {
     {
       id: "test_step_down",
       question: {
-        es: "Al bajar un escalón despacio con la pierna afectada, ¿duele delante, dentro o fuera de la rodilla?",
-        en: "When stepping down slowly on the affected leg, does it hurt at the front, inside, or outside of the knee?",
+        es: "Al bajar un escalón despacio con la pierna afectada, ¿te duele la rodilla?",
+        en: "When stepping down slowly on the affected leg, does your knee hurt?",
       },
     },
     {
@@ -1165,8 +1165,8 @@ export const HIP_PROTOCOL: FunctionalProtocol = {
     {
       id: "hx_groin_deep",
       question: {
-        es: "¿El dolor es profundo en la ingle o en el costado de la cadera (trocanter)?",
-        en: "Is the pain deep in the groin or on the side of the hip (trochanter)?",
+        es: "¿El dolor principal es profundo en la ingle (parte delantera)?",
+        en: "Is the main pain deep in the groin (front of the hip)?",
       },
     },
   ],
@@ -1196,8 +1196,8 @@ export const HIP_PROTOCOL: FunctionalProtocol = {
     {
       id: "test_socks_cross_legs",
       question: {
-        es: "¿Duele más al cruzar las piernas o al ponerte los calcetines?",
-        en: "Does it hurt more when crossing the legs or putting on socks?",
+        es: "¿Duele al cruzar las piernas o al ponerte los calcetines?",
+        en: "Does it hurt when crossing the legs or putting on socks?",
       },
     },
     {
@@ -1245,8 +1245,8 @@ export const LUMBAR_PROTOCOL: FunctionalProtocol = {
     {
       id: "hx_leg_radiation",
       question: {
-        es: "¿El dolor baja por la nalga o la pierna (ciática) o se queda solo en la espalda baja?",
-        en: "Does the pain go down the buttock or leg (sciatica), or stay only in the low back?",
+        es: "¿El dolor baja por la nalga o la pierna (más allá de la espalda baja)?",
+        en: "Does the pain go down into the buttock or leg (beyond the low back)?",
       },
     },
   ],

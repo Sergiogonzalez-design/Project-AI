@@ -81,7 +81,7 @@ export const FUNCTIONAL_TEST_QUESTIONS: Record<FunctionalRegionId, string[]> = {
   pelvis: [
     "Al apoyar solo una pierna, ¿hay inestabilidad o dolor en ingle/nalga/SI? (SÍ/NO)",
     "¿Duele al levantar una pierna estirada 20–30 cm tumbado? (SÍ/NO)",
-    "Al subir un escalón, ¿duele más al impulsar o al recibir el peso? (SÍ/NO)",
+    "Al subir un escalón, ¿aumenta el dolor en la pelvis o la ingle? (SÍ/NO)",
   ],
   hip: [
     "¿Puedes hacer una sentadilla parcial sin dolor fuerte en la ingle? (SÍ/NO)",
@@ -92,7 +92,7 @@ export const FUNCTIONAL_TEST_QUESTIONS: Record<FunctionalRegionId, string[]> = {
   ],
   knee: [
     "¿Puedes flexionar y extender la rodilla completa vs la otra? (SÍ/NO)",
-    "Al bajar un escalón despacio, ¿duele delante, dentro o fuera? (SÍ/NO)",
+    "Al bajar un escalón despacio con la pierna afectada, ¿te duele la rodilla? (SÍ/NO)",
     "¿Aguantas 20–30 s a la pata coja sin que ‘falle’? (SÍ/NO)",
     "¿La rodilla se bloquea o no puedes estirarla del todo? (SÍ/NO)",
     "¿Duele también al ponerte calcetines o girar la cadera? (SÍ/NO)",

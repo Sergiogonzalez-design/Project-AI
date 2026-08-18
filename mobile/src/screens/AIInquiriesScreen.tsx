@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useHeaderHeight } from "@react-navigation/elements";
+import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -221,9 +222,19 @@ import {
   type ConsultLanguage,
 } from "../lib/consult-language";
 import {
-  photoOnlyCaption,
+  consultAttachmentCaption,
+  consultAttachmentHistoryNote,
+  consultVisionUrl,
+  isConsultImageMime,
+  isConsultPdfUrl,
+  MAX_CONSULT_ATTACHMENT_BYTES,
   uploadConsultPhotoFromUri,
 } from "../lib/consult-photo";
+import {
+  canStartNewFisioConsult,
+  fisioNewConsultCooldownMessage,
+  fisioNewConsultHoursRemaining,
+} from "../lib/fisio-consult-cooldown";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import { getNotificationsEnabled } from "../lib/notifications";
@@ -483,6 +494,7 @@ export function AIInquiriesScreen({
   const [chatInput, setChatInput] = useState("");
   const [attachedUri, setAttachedUri] = useState<string | null>(null);
   const [attachedMime, setAttachedMime] = useState("image/jpeg");
+  const [attachedName, setAttachedName] = useState<string | null>(null);
   const [caseImageUrl, setCaseImageUrl] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [loadingModal, setLoadingModal] = useState(false);
@@ -941,7 +953,32 @@ export function AIInquiriesScreen({
     setOpeningConversation(false);
   }
 
-  function handleAnotherPhysioLinked(physio: LinkedPhysioInfo) {
+  async function handleAnotherPhysioLinked(physio: LinkedPhysioInfo) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user && physio.physio_id) {
+      const { data: lastReport } = await supabase
+        .from("clinical_reports")
+        .select("created_at")
+        .eq("patient_id", user.id)
+        .eq("physio_id", physio.physio_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const hoursLeft = fisioNewConsultHoursRemaining(lastReport?.created_at);
+      if (!canStartNewFisioConsult(lastReport?.created_at)) {
+        Alert.alert(
+          locale === "en" ? "Please wait" : "Espera un poco",
+          fisioNewConsultCooldownMessage(hoursLeft, locale === "en" ? "en" : "es")
+        );
+        setShowPhysioCodeEntry(false);
+        setPhysioCodeInput("");
+        setPhysioCodeError(null);
+        return;
+      }
+    }
+
     onLinkedPhysioChange?.(physio);
     setShowPhysioCodeEntry(false);
     setPhysioCodeInput("");
@@ -1047,46 +1084,81 @@ export function AIInquiriesScreen({
   function clearAttachment() {
     setAttachedUri(null);
     setAttachedMime("image/jpeg");
+    setAttachedName(null);
   }
 
-  function pickConsultPhoto() {
-    Alert.alert(t.consulta.attachPhoto, undefined, [
-      {
-        text: t.consulta.takePhoto,
-        onPress: () => {
-          void (async () => {
-            const permission = await ImagePicker.requestCameraPermissionsAsync();
-            if (!permission.granted) {
-              Alert.alert(t.common.error, t.consulta.photoPermission);
-              return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ["images"],
-              quality: 0.8,
-            });
-            if (result.canceled || !result.assets[0]) return;
-            setAttachedUri(result.assets[0].uri);
-            setAttachedMime(result.assets[0].mimeType ?? "image/jpeg");
-          })();
-        },
-      },
+  function applyPickedAsset(uri: string, mimeType?: string | null, name?: string | null) {
+    setAttachedUri(uri);
+    setAttachedMime(mimeType ?? "image/jpeg");
+    setAttachedName(name ?? null);
+  }
+
+  async function takeConsultPhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t.common.error, t.consulta.photoPermission);
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    applyPickedAsset(result.assets[0].uri, result.assets[0].mimeType ?? "image/jpeg");
+  }
+
+  async function pickFromGallery() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t.common.error, t.consulta.photoPermission);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    applyPickedAsset(
+      result.assets[0].uri,
+      result.assets[0].mimeType ?? "image/jpeg",
+      result.assets[0].fileName
+    );
+  }
+
+  async function pickConsultFile() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      if (asset.size && asset.size > MAX_CONSULT_ATTACHMENT_BYTES) {
+        Alert.alert(t.common.error, t.consulta.fileTooLarge);
+        return;
+      }
+      const mime =
+        asset.mimeType ??
+        (asset.name?.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
+      applyPickedAsset(asset.uri, mime, asset.name);
+    } catch {
+      Alert.alert(t.common.error, locale === "en" ? "Could not open the file." : "No se pudo abrir el archivo.");
+    }
+  }
+
+  function pickConsultAttachment() {
+    Alert.alert(t.consulta.attachFile, undefined, [
       {
         text: t.consulta.choosePhoto,
         onPress: () => {
-          void (async () => {
-            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (!permission.granted) {
-              Alert.alert(t.common.error, t.consulta.photoPermission);
-              return;
-            }
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ["images"],
-              quality: 0.8,
-            });
-            if (result.canceled || !result.assets[0]) return;
-            setAttachedUri(result.assets[0].uri);
-            setAttachedMime(result.assets[0].mimeType ?? "image/jpeg");
-          })();
+          void pickFromGallery();
+        },
+      },
+      {
+        text: t.consulta.chooseFile,
+        onPress: () => {
+          void pickConsultFile();
         },
       },
       { text: t.consulta.cancel, style: "cancel" },
@@ -1106,7 +1178,13 @@ export function AIInquiriesScreen({
     imageUrl?: string | null,
     language: ConsultLanguage = consultLanguage
   ) {
-    const answer = await respondToUserMessage(text, triage, imageUrl, language, fisioEdgeExtras);
+    const answer = await respondToUserMessage(
+      text,
+      triage,
+      consultVisionUrl(imageUrl),
+      language,
+      fisioEdgeExtras
+    );
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
@@ -1586,7 +1664,7 @@ export function AIInquiriesScreen({
   async function handleIntroSubmit() {
     const text =
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
-      (attachedUri ? photoOnlyCaption(locale) : "");
+      (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
     pendingVoiceTextRef.current = null;
     if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading) {
       if (conversationModeRef.current) resumeConversationListening();
@@ -1598,7 +1676,8 @@ export function AIInquiriesScreen({
     setFormError(null);
 
     try {
-      const imageUrl = await uploadOutgoingPhoto();
+      const attachmentUrl = await uploadOutgoingPhoto();
+      const imageUrl = consultVisionUrl(attachmentUrl);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = detectConsultLanguage(text, locale || consultLanguage);
@@ -1606,7 +1685,7 @@ export function AIInquiriesScreen({
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: imageUrl },
+        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
       ]);
       scrollToBottomAfterPaint();
 
@@ -1619,7 +1698,7 @@ export function AIInquiriesScreen({
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
-          imageUrl,
+          attachmentUrl,
           lang
         );
         return;
@@ -1635,7 +1714,7 @@ export function AIInquiriesScreen({
             intent: "general",
             answer: vagueArmClarifyMessage(lang),
           },
-          imageUrl,
+          attachmentUrl,
           lang
         );
         return;
@@ -1670,7 +1749,7 @@ export function AIInquiriesScreen({
         return;
       }
 
-      await respondToInitialMessage(text, triage, imageUrl, lang);
+      await respondToInitialMessage(text, triage, attachmentUrl, lang);
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       setFormError(
@@ -2036,7 +2115,7 @@ export function AIInquiriesScreen({
 
         let conversationId = activeId;
         if (!conversationId) {
-          if (conversations.length > 0) {
+          if (conversations.length > 0 && !fisioNewConsultDraft) {
             throw new Error(
               locale === "en"
                 ? "You can't open new chats in Fisioterapia. Continue an existing one or use the Consulta tab."
@@ -2309,7 +2388,7 @@ export function AIInquiriesScreen({
   async function handleFollowupSubmit() {
     const text =
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
-      (attachedUri ? photoOnlyCaption(locale) : "");
+      (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
     pendingVoiceTextRef.current = null;
     if ((!text && !attachedUri) || phase !== "followup" || chatLoading || !activeId) {
       if (conversationModeRef.current) resumeConversationListening();
@@ -2320,11 +2399,12 @@ export function AIInquiriesScreen({
     setChatLoading(true);
 
     try {
-      const imageUrl = await uploadOutgoingPhoto();
+      const attachmentUrl = await uploadOutgoingPhoto();
+      const imageUrl = consultVisionUrl(attachmentUrl);
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: imageUrl },
+        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2337,7 +2417,7 @@ export function AIInquiriesScreen({
           conversation_id: activeId,
           role: "user",
           content: text,
-          image_url: imageUrl,
+          image_url: attachmentUrl,
         });
         userSaved = true;
       }
@@ -2461,13 +2541,13 @@ export function AIInquiriesScreen({
               .map((m) => ({
                 role: m.role,
                 content: m.image_url
-                  ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                  ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url, locale)}`
                   : m.content,
               })),
             {
               role: "user" as const,
-              content: imageUrl
-                ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+              content: attachmentUrl
+                ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
                 : text,
             },
           ].slice(-10);
@@ -2579,13 +2659,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .map((m) => ({
               role: m.role,
               content: m.image_url
-                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url, locale)}`
                 : m.content,
             })),
           {
             role: "user" as const,
-            content: imageUrl
-              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+            content: attachmentUrl
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
               : text,
           },
         ].slice(-10);
@@ -2700,13 +2780,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .map((m) => ({
               role: m.role,
               content: m.image_url
-                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url, locale)}`
                 : m.content,
             })),
           {
             role: "user" as const,
-            content: imageUrl
-              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+            content: attachmentUrl
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
               : text,
           },
         ].slice(-10);
@@ -2795,13 +2875,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .map((m) => ({
               role: m.role,
               content: m.image_url
-                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url, locale)}`
                 : m.content,
             })),
           {
             role: "user" as const,
-            content: imageUrl
-              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+            content: attachmentUrl
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
               : text,
           },
         ].slice(-10);
@@ -2857,13 +2937,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           .map((m) => ({
             role: m.role,
             content: m.image_url
-              ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+              ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url, locale)}`
               : m.content,
           })),
         {
           role: "user" as const,
-          content: imageUrl
-            ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+          content: attachmentUrl
+            ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
             : text,
         },
       ].slice(-10);
@@ -3181,11 +3261,18 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 {msg.role === "user" ? (
                   <View>
                     {msg.image_url ? (
-                      <Image
-                        source={{ uri: msg.image_url }}
-                        style={styles.bubbleImage}
-                        resizeMode="cover"
-                      />
+                      isConsultPdfUrl(msg.image_url) ? (
+                        <View style={styles.fileChipUser}>
+                          <Ionicons name="document-text-outline" size={18} color={Colors.white} />
+                          <Text style={styles.fileChipTextUser}>PDF</Text>
+                        </View>
+                      ) : (
+                        <Image
+                          source={{ uri: msg.image_url }}
+                          style={styles.bubbleImage}
+                          resizeMode="cover"
+                        />
+                      )
                     ) : null}
                     {msg.content ? (
                       <Text style={[styles.bubbleText, styles.bubbleTextUser]}>{msg.content}</Text>
@@ -3598,8 +3685,8 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             }}
           >
             {locale === "en"
-              ? "You can't open new chats in Fisioterapia. Open one from the list or use the Consulta tab for other questions."
-              : "En Fisioterapia no puedes abrir chats nuevos. Abre una consulta de la lista o usa la pestaña Consulta para otras preguntas."}
+              ? "You can open a new Fisioterapia consultation 24 hours after the last report sent to your physiotherapist. Until then, open one from the list or tap Enter another code once that time has passed. For other questions, use the Consulta tab."
+              : "En Fisioterapia solo puedes abrir una consulta nueva 24 horas después del último informe enviado a tu fisioterapeuta. Mientras tanto, abre una de la lista o pulsa Introducir otro código cuando haya pasado ese tiempo. Para otras preguntas usa la pestaña Consulta."}
           </Text>
         </View>
       ) : (
@@ -3647,11 +3734,18 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 {msg.role === "user" ? (
                   <View>
                     {msg.image_url ? (
-                      <Image
-                        source={{ uri: msg.image_url }}
-                        style={styles.bubbleImage}
-                        resizeMode="cover"
-                      />
+                      isConsultPdfUrl(msg.image_url) ? (
+                        <View style={styles.fileChipUser}>
+                          <Ionicons name="document-text-outline" size={18} color={Colors.white} />
+                          <Text style={styles.fileChipTextUser}>PDF</Text>
+                        </View>
+                      ) : (
+                        <Image
+                          source={{ uri: msg.image_url }}
+                          style={styles.bubbleImage}
+                          resizeMode="cover"
+                        />
+                      )
                     ) : null}
                     {msg.content ? (
                       <Text style={[styles.bubbleText, styles.bubbleTextUser]}>{msg.content}</Text>
@@ -3990,7 +4084,16 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         <View style={styles.inputBarWrap}>
           {attachedUri ? (
             <View style={styles.attachPreviewRow}>
-              <Image source={{ uri: attachedUri }} style={styles.attachPreview} />
+              {isConsultImageMime(attachedMime) ? (
+                <Image source={{ uri: attachedUri }} style={styles.attachPreview} />
+              ) : (
+                <View style={styles.fileChipPreview}>
+                  <Ionicons name="document-text-outline" size={22} color={Colors.text} />
+                  <Text style={styles.fileChipPreviewText} numberOfLines={1}>
+                    {attachedName ?? "PDF"}
+                  </Text>
+                </View>
+              )}
               <Pressable onPress={clearAttachment} hitSlop={8}>
                 <Text style={styles.removePhotoText}>{t.consulta.removePhoto}</Text>
               </Pressable>
@@ -4004,9 +4107,9 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   chatLoading && styles.sendBtnDisabled,
                   pressed && styles.attachBtnPressed,
                 ]}
-                onPress={pickConsultPhoto}
+                onPress={pickConsultAttachment}
                 disabled={chatLoading}
-                accessibilityLabel={t.consulta.attachPhoto}
+                accessibilityLabel={t.consulta.attachFile}
               >
                 <Ionicons name="add" size={24} color={Colors.textSecondary} />
               </Pressable>
@@ -4063,25 +4166,39 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               </Pressable>
             ) : null}
             {!conversationMode ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.sendBtn,
-                  (chatLoading || (!chatInput.trim() && !attachedUri)) &&
-                    styles.sendBtnDisabled,
-                  pressed && styles.sendBtnPressed,
-                ]}
-                onPress={() => {
-                  if (!chatInput.trim() && !attachedUri) return;
-                  stopMic();
-                  cancelSpeech();
-                  if (phase === "intro") handleIntroSubmit();
-                  else handleFollowupSubmit();
-                }}
-                disabled={chatLoading || (!chatInput.trim() && !attachedUri)}
-                accessibilityLabel="Enviar"
-              >
-                <Ionicons name="arrow-up" size={20} color={Colors.white} />
-              </Pressable>
+              <>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.micIconBtn,
+                    chatLoading && styles.sendBtnDisabled,
+                    pressed && styles.attachBtnPressed,
+                  ]}
+                  onPress={() => void takeConsultPhoto()}
+                  disabled={chatLoading}
+                  accessibilityLabel={t.consulta.takePhoto}
+                >
+                  <Ionicons name="camera-outline" size={22} color={Colors.textSecondary} />
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.sendBtn,
+                    (chatLoading || (!chatInput.trim() && !attachedUri)) &&
+                      styles.sendBtnDisabled,
+                    pressed && styles.sendBtnPressed,
+                  ]}
+                  onPress={() => {
+                    if (!chatInput.trim() && !attachedUri) return;
+                    stopMic();
+                    cancelSpeech();
+                    if (phase === "intro") handleIntroSubmit();
+                    else handleFollowupSubmit();
+                  }}
+                  disabled={chatLoading || (!chatInput.trim() && !attachedUri)}
+                  accessibilityLabel="Enviar"
+                >
+                  <Ionicons name="arrow-up" size={20} color={Colors.white} />
+                </Pressable>
+              </>
             ) : null}
           </View>
           {(conversationMode || sttError) && (
@@ -4430,6 +4547,38 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
   },
+  fileChipUser: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    alignSelf: "flex-start",
+    marginBottom: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  fileChipTextUser: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.white,
+  },
+  fileChipPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    maxWidth: "70%",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: Colors.primarySoft,
+  },
+  fileChipPreviewText: {
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.text,
+  },
   bubbleBold: { color: Colors.primary, fontWeight: '700' },
   bubbleDisclaimer: { marginTop: 8, fontSize: 11, color: Colors.textLight, lineHeight: 15 },
   loadingBubble: { paddingVertical: 14, paddingHorizontal: 20 },
@@ -4471,7 +4620,7 @@ const styles = StyleSheet.create({
   inputBarWrap: {
     backgroundColor: "rgba(248,250,252,0.82)",
     borderTopWidth: 0,
-    paddingBottom: 4,
+    paddingBottom: 0,
   },
   attachPreviewRow: {
     flexDirection: "row",
@@ -4495,7 +4644,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 8,
     marginHorizontal: 12,
-    marginBottom: 4,
+    marginBottom: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: Colors.white,

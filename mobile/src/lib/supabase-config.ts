@@ -3,8 +3,19 @@ export const SUPABASE_PROJECT_URL =
   process.env.EXPO_PUBLIC_SUPABASE_URL ??
   "https://klxlzzgrymkexvuelzex.supabase.co";
 
-export const SUPABASE_PUBLISHABLE_KEY =
-  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+/** Legacy anon JWT — Auth on device is unreliable with sb_publishable_ keys. */
+const LEGACY_ANON_JWT =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtseGx6emdyeW1rZXh2dWVsemV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MTIyODEsImV4cCI6MjA5MDM4ODI4MX0.5hzENXbdJYndGlGIi4QnnV-g3EW7K5vh_TYEsQsnVPU";
+
+function resolvePublishableKey(raw: string | undefined): string {
+  const key = (raw ?? "").trim();
+  if (!key || key.startsWith("sb_publishable_")) return LEGACY_ANON_JWT;
+  return key;
+}
+
+export const SUPABASE_PUBLISHABLE_KEY = resolvePublishableKey(
+  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+);
 
 /** Only this email sees the Admin tab after regular login. */
 export const ADMIN_EMAIL = (

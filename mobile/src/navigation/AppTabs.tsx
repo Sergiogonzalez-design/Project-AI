@@ -29,7 +29,10 @@ type AppTabsProps = {
   isPhysio?: boolean;
 };
 
-export function AppTabs({ isAdmin = false, isPhysio = false }: AppTabsProps) {
+export function AppTabs({
+  isAdmin = false,
+  isPhysio = false,
+}: AppTabsProps) {
   const { t } = useI18n();
 
   const screenOptions = {
@@ -49,13 +52,18 @@ export function AppTabs({ isAdmin = false, isPhysio = false }: AppTabsProps) {
     },
     headerShadowVisible: false,
     headerLeft: () => <AppBackButton />,
-    headerRight: () => <AppBurgerMenu isPhysio={isPhysio} isAdmin={isAdmin} />,
+    headerRight: () => (
+      <AppBurgerMenu
+        isPhysio={isPhysio}
+        isAdmin={isAdmin}
+      />
+    ),
     tabBarStyle: { display: "none" as const },
   };
 
   return (
     <Tab.Navigator
-      initialRouteName={isPhysio ? "Patients" : "AIInquiries"}
+      initialRouteName={isPhysio ? "Patients" : "PhysioLink"}
       screenOptions={screenOptions}
     >
       {isPhysio ? (
@@ -63,12 +71,12 @@ export function AppTabs({ isAdmin = false, isPhysio = false }: AppTabsProps) {
           <Tab.Screen
             name="Patients"
             component={PhysioPatientsScreen}
-            options={{ title: "Paciente" }}
+            options={{ title: "Clínica" }}
           />
           <Tab.Screen
             name="PhysioConsult"
             component={PhysioConsultScreen}
-            options={{ title: "Consulta" }}
+            options={{ title: "Consulta", headerLeft: () => null }}
           />
         </>
       ) : (
@@ -76,12 +84,12 @@ export function AppTabs({ isAdmin = false, isPhysio = false }: AppTabsProps) {
           <Tab.Screen
             name="PhysioLink"
             component={PhysioLinkScreen}
-            options={{ title: "Paciente" }}
+            options={{ title: "Fisioterapia" }}
           />
           <Tab.Screen
             name="AIInquiries"
             component={AIInquiriesScreen}
-            options={{ title: t.headers.consulta }}
+            options={{ title: t.headers.consulta, headerLeft: () => null }}
           />
         </>
       )}

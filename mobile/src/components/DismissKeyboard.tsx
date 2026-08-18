@@ -1,28 +1,18 @@
 import React from "react";
-import {
-  Keyboard,
-  Pressable,
-  StyleSheet,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 type Props = {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
-/** Tap empty space to dismiss the keyboard without blocking child presses. */
+/**
+ * Layout wrapper only. A full-screen Pressable here steals taps from
+ * buttons on Android / Expo Go. Screens already dismiss the keyboard
+ * with keyboardShouldPersistTaps + keyboardDismissMode on ScrollView.
+ */
 export function DismissKeyboard({ children, style }: Props) {
-  return (
-    <Pressable
-      style={[styles.fill, style]}
-      onPress={Keyboard.dismiss}
-      accessible={false}
-    >
-      {children}
-    </Pressable>
-  );
+  return <View style={[styles.fill, style]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({

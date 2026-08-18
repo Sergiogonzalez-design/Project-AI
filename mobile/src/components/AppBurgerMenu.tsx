@@ -24,7 +24,10 @@ type Props = {
   isAdmin?: boolean;
 };
 
-export function AppBurgerMenu({ isPhysio = false, isAdmin = false }: Props) {
+export function AppBurgerMenu({
+  isPhysio = false,
+  isAdmin = false,
+}: Props) {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const route = useRoute();
   const insets = useSafeAreaInsets();
@@ -35,12 +38,12 @@ export function AppBurgerMenu({ isPhysio = false, isAdmin = false }: Props) {
   const items = useMemo<MenuItem[]>(() => {
     const primary: MenuItem[] = isPhysio
       ? [
-          { route: "Patients", label: "Paciente" },
+          { route: "Patients", label: "Clínica" },
           { route: "PhysioConsult", label: "Consulta" },
         ]
       : [
-          { route: "PhysioLink", label: "Paciente" },
           { route: "AIInquiries", label: "Consulta" },
+          { route: "PhysioLink", label: "Fisioterapia" },
         ];
     return [
       ...primary,
@@ -52,6 +55,8 @@ export function AppBurgerMenu({ isPhysio = false, isAdmin = false }: Props) {
 
   function navigateTo(target: keyof TabParamList) {
     setOpen(false);
+    const names = navigation.getState()?.routeNames ?? [];
+    if (!names.includes(target)) return;
     navigation.navigate(target);
   }
 

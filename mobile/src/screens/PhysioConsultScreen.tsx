@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
+  Alert,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,11 +12,26 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AssistantMessageWithSources } from "../components/AssistantMessageWithSources";
+import { PhysioAssistantBody } from "../components/PhysioAssistantBody";
 import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
 import { TypingIndicator } from "../components/TypingIndicator";
+import {
+  composerBottomInset,
+  useKeyboardHeight,
+} from "../hooks/useKeyboardHeight";
 import { Colors } from "../lib/colors";
-import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
+import { pickIllustratedTestsForPruebasQuery } from "../lib/clinical-test-images";
+import {
+  consultAttachmentCaption,
+  consultVisionUrl,
+  isConsultImageMime,
+  isConsultPdfUrl,
+  MAX_CONSULT_ATTACHMENT_BYTES,
+  uploadConsultPhotoFromUri,
+} from "../lib/consult-photo";
 import { supabase } from "../lib/supabase";
 
 type ChatMessage = {
@@ -31,6 +46,9 @@ const WELCOME_MESSAGE =
 
 /** Physio-facing clinical AI chat (matches web /fisio/consulta). */
 export function PhysioConsultScreen() {
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
+  const bottomInset = composerBottomInset(keyboardHeight, insets.bottom);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { id: "welcome", role: "assistant", content: WELCOME_MESSAGE },
   ]);
@@ -39,14 +57,34 @@ export function PhysioConsultScreen() {
   const [physioIntro, setPhysioIntro] = useState(true);
   const [attachedUri, setAttachedUri] = useState<string | null>(null);
   const [attachedMime, setAttachedMime] = useState("image/jpeg");
+  const [attachedName, setAttachedName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function clearAttachment() {
     setAttachedUri(null);
     setAttachedMime("image/jpeg");
+    setAttachedName(null);
   }
 
-  async function pickConsultPhoto() {
+  async function takeConsultPhoto() {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) return;
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setAttachedUri(result.assets[0].uri);
+        setAttachedMime(result.assets[0].mimeType ?? "image/jpeg");
+        setAttachedName(null);
+      }
+    } catch {
+      // ignore picker errors
+    }
+  }
+
+  async function pickFromGallery() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) return;
@@ -57,10 +95,43 @@ export function PhysioConsultScreen() {
       if (!result.canceled && result.assets[0]) {
         setAttachedUri(result.assets[0].uri);
         setAttachedMime(result.assets[0].mimeType ?? "image/jpeg");
+        setAttachedName(result.assets[0].fileName ?? null);
       }
     } catch {
       // ignore picker errors
     }
+  }
+
+  async function pickConsultFile() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      if (asset.size && asset.size > MAX_CONSULT_ATTACHMENT_BYTES) {
+        Alert.alert("Error", "El archivo es demasiado grande (máx. 10 MB).");
+        return;
+      }
+      const mime =
+        asset.mimeType ??
+        (asset.name?.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
+      setAttachedUri(asset.uri);
+      setAttachedMime(mime);
+      setAttachedName(asset.name ?? null);
+    } catch {
+      // ignore picker errors
+    }
+  }
+
+  function pickConsultAttachment() {
+    Alert.alert("Adjuntar", undefined, [
+      { text: "Foto de la galería", onPress: () => void pickFromGallery() },
+      { text: "Archivo o PDF", onPress: () => void pickConsultFile() },
+      { text: "Cancelar", style: "cancel" },
+    ]);
   }
 
   async function uploadOutgoingPhoto() {
@@ -71,18 +142,21 @@ export function PhysioConsultScreen() {
   }
 
   async function sendClinicalChat() {
-    const text = chatInput.trim() || (attachedUri ? photoOnlyCaption("es") : "");
+    const text =
+      chatInput.trim() ||
+      (attachedUri ? consultAttachmentCaption("es", attachedMime, attachedName) : "");
     if ((!text && !attachedUri) || chatLoading) return;
     setChatInput("");
     setChatLoading(true);
     setError(null);
     try {
-      const imageUrl = await uploadOutgoingPhoto();
+      const attachmentUrl = await uploadOutgoingPhoto();
+      const imageUrl = consultVisionUrl(attachmentUrl);
       const userMsg: ChatMessage = {
         id: `${Date.now()}-u`,
         role: "user",
         content: text,
-        image_url: imageUrl,
+        image_url: attachmentUrl,
       };
       setChatMessages((prev) => [...prev, userMsg]);
       const history = [...chatMessages, userMsg]
@@ -113,11 +187,7 @@ export function PhysioConsultScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
-    >
+    <View style={[styles.root, { paddingBottom: bottomInset }]}>
       {physioIntro ? (
         <PhysioIntro
           greeting="¡Hola! Soy Physio. Esta consulta es técnica, pensada para fisioterapeutas. ¿En qué puedo ayudarte?"
@@ -130,7 +200,17 @@ export function PhysioConsultScreen() {
             contentContainerStyle={styles.messages}
             keyboardShouldPersistTaps="handled"
           >
-            {chatMessages.map((m) => (
+            {chatMessages.map((m, msgIndex) => {
+              const prevUser =
+                m.role === "assistant"
+                  ? [...chatMessages.slice(0, msgIndex)]
+                      .reverse()
+                      .find((x) => x.role === "user")
+                  : undefined;
+              const pruebasFallback = prevUser
+                ? pickIllustratedTestsForPruebasQuery(prevUser.content)
+                : [];
+              return (
               <View
                 key={m.id}
                 style={[
@@ -150,22 +230,38 @@ export function PhysioConsultScreen() {
                   {m.role === "user" ? (
                     <View>
                       {m.image_url ? (
-                        <Image
-                          source={{ uri: m.image_url }}
-                          style={styles.chatImage}
-                          resizeMode="cover"
-                        />
+                        isConsultPdfUrl(m.image_url) ? (
+                          <View style={styles.fileChipUser}>
+                            <Ionicons name="document-text-outline" size={16} color={Colors.white} />
+                            <Text style={styles.fileChipTextUser}>PDF</Text>
+                          </View>
+                        ) : (
+                          <Image
+                            source={{ uri: m.image_url }}
+                            style={styles.chatImage}
+                            resizeMode="cover"
+                          />
+                        )
                       ) : null}
                       {m.content ? (
                         <Text style={styles.chatUserText}>{m.content}</Text>
                       ) : null}
                     </View>
                   ) : (
-                    <Text style={styles.chatAssistantText}>{m.content}</Text>
+                    <AssistantMessageWithSources
+                      content={m.content}
+                      renderBody={(body) => (
+                        <PhysioAssistantBody
+                          text={body}
+                          fallbackTests={pruebasFallback}
+                        />
+                      )}
+                    />
                   )}
                 </View>
               </View>
-            ))}
+              );
+            })}
             {chatLoading ? (
               <View style={[styles.chatRow, styles.chatRowAssistant]}>
                 <PhysioAvatar size={32} style={{ marginRight: 8 }} />
@@ -179,13 +275,34 @@ export function PhysioConsultScreen() {
           <View style={styles.chatInputWrap}>
             {attachedUri ? (
               <View style={styles.attachPreviewRow}>
-                <Image source={{ uri: attachedUri }} style={styles.attachPreview} />
+                {isConsultImageMime(attachedMime) ? (
+                  <Image source={{ uri: attachedUri }} style={styles.attachPreview} />
+                ) : (
+                  <View style={styles.fileChipPreview}>
+                    <Ionicons name="document-text-outline" size={20} color={Colors.text} />
+                    <Text style={styles.fileChipPreviewText} numberOfLines={1}>
+                      {attachedName ?? "PDF"}
+                    </Text>
+                  </View>
+                )}
                 <Pressable onPress={clearAttachment} hitSlop={8}>
-                  <Text style={styles.removePhotoText}>Quitar foto</Text>
+                  <Text style={styles.removePhotoText}>Quitar</Text>
                 </Pressable>
               </View>
             ) : null}
             <View style={styles.chatInputBar}>
+              <Pressable
+                onPress={pickConsultAttachment}
+                disabled={chatLoading}
+                style={({ pressed }) => [
+                  styles.attachBtn,
+                  pressed && { backgroundColor: Colors.primarySoft },
+                  chatLoading && { opacity: 0.5 },
+                ]}
+                accessibilityLabel="Adjuntar"
+              >
+                <Ionicons name="add" size={22} color={Colors.text} />
+              </Pressable>
               <TextInput
                 value={chatInput}
                 onChangeText={setChatInput}
@@ -194,14 +311,14 @@ export function PhysioConsultScreen() {
                 style={styles.input}
               />
               <Pressable
-                onPress={() => void pickConsultPhoto()}
+                onPress={() => void takeConsultPhoto()}
                 disabled={chatLoading}
                 style={({ pressed }) => [
                   styles.attachBtn,
                   pressed && { backgroundColor: Colors.primarySoft },
                   chatLoading && { opacity: 0.5 },
                 ]}
-                accessibilityLabel="Adjuntar foto"
+                accessibilityLabel="Hacer foto"
               >
                 <Ionicons name="camera-outline" size={20} color={Colors.text} />
               </Pressable>
@@ -220,7 +337,7 @@ export function PhysioConsultScreen() {
           </View>
         </>
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -239,7 +356,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   chatUserText: { color: Colors.white, fontSize: 15, lineHeight: 21 },
-  chatAssistantText: { color: Colors.text, fontSize: 15, lineHeight: 21 },
   chatImage: {
     width: 180,
     height: 120,
@@ -255,7 +371,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 12,
+    paddingBottom: 0,
   },
   attachPreviewRow: {
     flexDirection: "row",
@@ -264,6 +380,29 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   attachPreview: { width: 56, height: 56, borderRadius: 10 },
+  fileChipUser: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginBottom: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  fileChipTextUser: { color: Colors.white, fontSize: 13, fontWeight: "600" },
+  fileChipPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    maxWidth: "70%",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: Colors.primarySoft,
+  },
+  fileChipPreviewText: { flexShrink: 1, fontSize: 13, fontWeight: "600", color: Colors.text },
   removePhotoText: { color: Colors.primary, fontWeight: "600", fontSize: 13 },
   chatInputBar: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
   input: {

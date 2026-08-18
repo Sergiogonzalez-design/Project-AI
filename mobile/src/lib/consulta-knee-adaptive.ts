@@ -446,7 +446,7 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
   {
     id: "rf_no_apoyo",
     section: "red_flags",
-    label: "¿No puedes apoyar peso o caminar?",
+    label: "¿Te resulta imposible apoyar peso o caminar?",
     type: "single",
     options: YES_NO,
     required: true,
@@ -1423,7 +1423,7 @@ export function isLastKneeSection(
 
 export const KNEE_LABEL_EN: Partial<Record<string, string>> = {
   rf_deformidad: "Is there an obvious deformity in the knee?",
-  rf_no_apoyo: "Are you unable to bear weight or walk?",
+  rf_no_apoyo: "Is it impossible for you to put weight on the knee or walk?",
   rf_bloqueo: "Is the knee locked or unable to fully straighten?",
   rf_hinchazon_subita: "Sudden, intense swelling of the knee?",
   rf_fiebre: "Do you have a fever along with the pain?",

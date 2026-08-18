@@ -16,7 +16,7 @@ REGLAS:
 - Diferenciar UBICACIÓN: isquion (sentarse duro + estirar isquio) vs glúteo profundo (sentarse + posible ciática) vs lumbar referido.
 
 CLUSTER ISQUIOTIBIAL PROXIMAL (compatibilidad clínica, no inventar scores):
-dolor isquion/posterior + dolor al sentarse (superficie dura) + dolor al estirar isquiotibial (familiar) + mecanismo sobrecarga/sprint si aplica → tendinopatía/distensión isquiotibial proximal ↑.
+dolor isquion/posterior + dolor al sentarse (superficie dura) + dolor al estirar isquiotibial (familiar) + mecanismo sobrecarga/sprint si aplica → tendinopatía proximal de isquiotibiales / lesión muscular ↑.
 
 CLUSTER DEEP GLUTEAL / CIÁTICO:
 dolor glúteo profundo + empeora sentado (silla dura) + posible parestesia + patrón menos claro de estiramiento isquio → deep gluteal / irritación ciática ↑ (diferenciar lumbar).
@@ -26,7 +26,7 @@ SLR positivo familiar + síntomas lumbares + distribución neural → radiculopa
 
 DIFERENCIAL OBLIGATORIO:
 - tendinopatía isquiotibial proximal
-- distensión isquiotibial aguda
+- lesión muscular aguda de isquiotibiales
 - deep gluteal syndrome
 - piriformis-related (diagnóstico de exclusión)
 - ischiofemoral impingement

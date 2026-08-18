@@ -19,6 +19,7 @@ import {
 } from "./AuthTextField";
 import { DismissKeyboard } from "./DismissKeyboard";
 import { AuthBackBar } from "./AuthBackBar";
+import { LegalDocumentView } from "./LegalDocumentView";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import { WEB_APP_URL } from "../lib/admin-api";
@@ -29,13 +30,16 @@ type Props = {
 };
 
 export function SignupScreen({ onSwitch }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [legalSection, setLegalSection] = useState<"privacy" | "terms" | null>(
+    null
+  );
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
 
@@ -78,6 +82,15 @@ export function SignupScreen({ onSwitch }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (legalSection) {
+    return (
+      <LegalDocumentView
+        onClose={() => setLegalSection(null)}
+        initialSection={legalSection}
+      />
+    );
   }
 
   return (
@@ -172,6 +185,46 @@ export function SignupScreen({ onSwitch }: Props) {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
+          <Text style={styles.legalAccept}>
+            {locale === "en" ? (
+              <>
+                By creating an account you accept the{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => setLegalSection("privacy")}
+                >
+                  Privacy policy
+                </Text>{" "}
+                and{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => setLegalSection("terms")}
+                >
+                  Terms of use
+                </Text>
+                .
+              </>
+            ) : (
+              <>
+                Al crear la cuenta aceptas la{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => setLegalSection("privacy")}
+                >
+                  Política de privacidad
+                </Text>{" "}
+                y los{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => setLegalSection("terms")}
+                >
+                  Términos de uso
+                </Text>
+                .
+              </>
+            )}
+          </Text>
+
           <Pressable
             style={({ pressed }) => [
               styles.button,
@@ -250,6 +303,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.danger,
     textAlign: "center",
+  },
+  legalAccept: {
+    marginTop: 16,
+    fontSize: 12,
+    lineHeight: 18,
+    color: Colors.textSecondary,
+    textAlign: "center",
+  },
+  legalLink: {
+    color: Colors.primary,
+    fontWeight: "700",
   },
   roleLabel: {
     fontSize: 13,

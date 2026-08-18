@@ -11,10 +11,26 @@ import { useKeyboardOverlap } from "@/hooks/use-keyboard-overlap";
 import { useSpeechSynthesis } from "@/hooks/use-speech-synthesis";
 import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
-import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
-import { PHOTO_ONLY_CAPTION, uploadConsultPhoto } from "@/lib/consult-photo";
+import {
+  clinicalTestRegionIdsForHeading,
+  isClinicalRegionSectionLabel,
+  leftoverIllustratedTests,
+  nextIllustratedFallbackTest,
+  pickIllustratedTestsForPruebasQuery,
+  shouldShowClinicalTestImage,
+  type ClinicalTestImage,
+} from "@/lib/clinical-test-images";
+import {
+  consultAttachmentCaption,
+  consultVisionUrl,
+  isConsultImageFile,
+  isConsultPdfFile,
+  isConsultPdfUrl,
+  MAX_CONSULT_ATTACHMENT_BYTES,
+  uploadConsultPhoto,
+} from "@/lib/consult-photo";
 import { createClient } from "@/lib/supabase/client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 
 type Message = {
@@ -62,11 +78,24 @@ function parseNumberedLine(
 ): { title: string; body: string | null } | null {
   const plain = stripMarkdownStars(text.trim().replace(/^\*\s+/, "• "));
   if (!/^\d+[.)]\s+\S/.test(plain)) return null;
-  const withBody = /^(\d+[.)]\s+[^:]+):\s+(.+)$/.exec(plain);
-  if (withBody) {
-    return { title: `${withBody[1]}:`, body: withBody[2] };
+  const withColon = /^(\d+[.)]\s+[^:]+):\s+(.+)$/.exec(plain);
+  if (withColon) {
+    return { title: `${withColon[1]}:`, body: withColon[2] };
+  }
+  // Long parenthetical is a description, not part of the title
+  // (short bits like "(LCP)" stay on the title).
+  const withParen = /^(\d+[.)]\s+.+?)\s+(\([^)]{12,}\)\.?)\s*$/.exec(plain);
+  if (withParen) {
+    return { title: withParen[1].trim(), body: withParen[2] };
   }
   return { title: plain, body: null };
+}
+
+function isShortSectionTitle(text: string): boolean {
+  const plain = stripMarkdownStars(text).trim();
+  if (!plain || plain.length > 60) return false;
+  if ((plain.match(/,/g) ?? []).length >= 2) return false;
+  return true;
 }
 
 function renderInlineParts(text: string) {
@@ -81,10 +110,38 @@ function renderInlineParts(text: string) {
   );
 }
 
-function renderAssistantContent(content: string) {
+function renderAssistantContent(
+  content: string,
+  fallbackTests: ClinicalTestImage[] = []
+) {
   const shownTestIds = new Set<string>();
+  let currentRegionIds: readonly string[] | null = null;
+  const nodes: ReactNode[] = [];
 
-  return content.split("\n").map((line, li) => {
+  function mediaFor(test: ClinicalTestImage) {
+    return <ClinicalTestMediaBlock test={test} />;
+  }
+
+  function pushLeftovers(regionIds: readonly string[] | null, keyPrefix: string) {
+    const leftover = leftoverIllustratedTests(
+      fallbackTests,
+      shownTestIds,
+      regionIds
+    );
+    leftover.forEach((t) => {
+      shownTestIds.add(t.id);
+      nodes.push(
+        <div key={`${keyPrefix}-${t.id}`} className="mt-3">
+          <p className="text-neutral-900">
+            <strong className="font-bold text-blue-700">{t.title}</strong>
+          </p>
+          {mediaFor(t)}
+        </div>
+      );
+    });
+  }
+
+  content.split("\n").forEach((line, li) => {
     const trimmed = line.trim().replace(/^\*\s+/, "• ");
     if (
       /^Fuente:/i.test(trimmed) ||
@@ -92,11 +149,10 @@ function renderAssistantContent(content: string) {
       /^Source:/i.test(trimmed) ||
       /^- Source:/i.test(trimmed)
     ) {
-      return null;
+      return;
     }
     const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
     const headingText = headingMatch?.[2] ?? null;
-    // Whole-line bold, e.g. **1. Exploración física**
     const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
     const numberedText =
       headingText && /^\d+[.)]\s+\S/.test(headingText)
@@ -107,28 +163,65 @@ function renderAssistantContent(content: string) {
             ? stripMarkdownStars(trimmed)
             : null;
 
-    const testImage = shouldShowClinicalTestImage({
+    const headingCandidate =
+      !numberedText
+        ? (headingText ??
+          wholeBoldMatch?.[1] ??
+          (isClinicalRegionSectionLabel(trimmed)
+            ? stripMarkdownStars(trimmed)
+            : null))
+        : null;
+    if (headingCandidate) {
+      const nextIds = clinicalTestRegionIdsForHeading(headingCandidate);
+      if (nextIds && nextIds.join(",") !== currentRegionIds?.join(",")) {
+        if (currentRegionIds) {
+          pushLeftovers(currentRegionIds, `flush-${li}`);
+        }
+        currentRegionIds = nextIds;
+      }
+    }
+
+    const matched = shouldShowClinicalTestImage({
       numberedText,
       headingText,
       wholeBoldText: wholeBoldMatch?.[1] ?? null,
     });
-    const showImage =
-      testImage && !shownTestIds.has(testImage.id) ? testImage : null;
+    let showImage =
+      matched && !shownTestIds.has(matched.id) ? matched : null;
+    if (
+      showImage &&
+      currentRegionIds &&
+      !currentRegionIds.includes(showImage.id)
+    ) {
+      showImage = null;
+    }
     if (showImage) shownTestIds.add(showImage.id);
+    if (!showImage && numberedText && currentRegionIds) {
+      showImage = nextIllustratedFallbackTest(
+        fallbackTests,
+        shownTestIds,
+        currentRegionIds
+      );
+      if (showImage) shownTestIds.add(showImage.id);
+    }
 
-    const mediaBlock = showImage ? (
-      <ClinicalTestMediaBlock test={showImage} />
-    ) : null;
+    const mediaBlock = showImage ? mediaFor(showImage) : null;
 
     if (numberedText) {
       const parsed = parseNumberedLine(trimmed) ?? {
         title: stripMarkdownStars(numberedText),
         body: null,
       };
-      return (
+      const displayTitle = showImage
+        ? parsed.title.replace(
+            /^(\d+[.)]\s+)[^:]+(:?)/,
+            `$1${showImage.title}$2`
+          )
+        : parsed.title;
+      nodes.push(
         <div key={li} className={li > 0 ? "mt-3" : undefined}>
           <p className="text-neutral-900">
-            <strong className="font-bold text-blue-700">{parsed.title}</strong>
+            <strong className="font-bold text-blue-700">{displayTitle}</strong>
             {parsed.body ? (
               <span className="text-neutral-900"> {parsed.body}</span>
             ) : null}
@@ -136,41 +229,88 @@ function renderAssistantContent(content: string) {
           {mediaBlock}
         </div>
       );
+      return;
     }
 
     if (wholeBoldMatch && !numberedText) {
-      return (
+      const title = stripMarkdownStars(wholeBoldMatch[1]);
+      nodes.push(
         <div key={li} className={li > 0 ? "mt-3" : undefined}>
           <p>
-            <strong className="font-bold text-blue-700">
-              {stripMarkdownStars(wholeBoldMatch[1])}
+            <strong
+              className={
+                isShortSectionTitle(title)
+                  ? "font-bold text-blue-700"
+                  : "font-bold text-neutral-900"
+              }
+            >
+              {title}
             </strong>
           </p>
           {mediaBlock}
         </div>
       );
+      return;
     }
 
     if (headingText) {
-      return (
+      const title = stripMarkdownStars(headingText);
+      nodes.push(
         <div key={li} className={li > 0 ? "mt-3" : undefined}>
           <p>
-            <strong className="font-bold text-blue-700">
-              {stripMarkdownStars(headingText)}
+            <strong
+              className={
+                isShortSectionTitle(title)
+                  ? "font-bold text-blue-700"
+                  : "font-bold text-neutral-900"
+              }
+            >
+              {title}
             </strong>
           </p>
           {mediaBlock}
         </div>
       );
+      return;
     }
 
-    return (
+    const regionLabel = isClinicalRegionSectionLabel(trimmed)
+      ? stripMarkdownStars(trimmed)
+      : null;
+    if (regionLabel && isShortSectionTitle(regionLabel)) {
+      nodes.push(
+        <div key={li} className={li > 0 ? "mt-3" : undefined}>
+          <p>
+            <strong className="font-bold text-blue-700">{regionLabel}</strong>
+          </p>
+          {mediaBlock}
+        </div>
+      );
+      return;
+    }
+
+    nodes.push(
       <div key={li} className={li > 0 ? "mt-2" : undefined}>
         <p className="text-neutral-900">{renderInlineParts(trimmed)}</p>
         {mediaBlock}
       </div>
     );
   });
+
+  pushLeftovers(currentRegionIds, "end-region");
+  leftoverIllustratedTests(fallbackTests, shownTestIds, null).forEach((t) => {
+    shownTestIds.add(t.id);
+    nodes.push(
+      <div key={`end-all-${t.id}`} className="mt-3">
+        <p className="text-neutral-900">
+          <strong className="font-bold text-blue-700">{t.title}</strong>
+        </p>
+        {mediaFor(t)}
+      </div>
+    );
+  });
+
+  return nodes;
 }
 
 /**
@@ -197,6 +337,7 @@ export function FisioChatInterface() {
   const messagesRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const autoSpokenIdsRef = useRef<Set<string>>(new Set());
   const [conversationMode, setConversationMode] = useState(false);
   const conversationModeRef = useRef(false);
@@ -317,22 +458,26 @@ export function FisioChatInterface() {
     if (attachedPreview?.startsWith("blob:")) URL.revokeObjectURL(attachedPreview);
     setAttachedPreview(null);
     if (photoInputRef.current) photoInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   }
 
-  function onPhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  function onAttachmentSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Selecciona una imagen (JPG, PNG o WebP).");
+    const isImage = isConsultImageFile(file);
+    const isPdf = isConsultPdfFile(file);
+    if (!isImage && !isPdf) {
+      alert("Selecciona una foto (JPG, PNG, WebP) o un PDF.");
       return;
     }
-    if (file.size > 12 * 1024 * 1024) {
-      alert("La imagen es demasiado grande (máx. ~12 MB).");
+    if (file.size > MAX_CONSULT_ATTACHMENT_BYTES) {
+      alert("El archivo es demasiado grande (máx. 10 MB).");
       return;
     }
     if (attachedPreview?.startsWith("blob:")) URL.revokeObjectURL(attachedPreview);
     setAttachedFile(file);
-    setAttachedPreview(URL.createObjectURL(file));
+    setAttachedPreview(isImage ? URL.createObjectURL(file) : null);
   }
 
   async function uploadOutgoingPhoto(): Promise<string | null> {
@@ -429,7 +574,7 @@ export function FisioChatInterface() {
     e?.preventDefault();
     const text =
       (pendingVoiceTextRef.current ?? input).trim() ||
-      (attachedFile ? PHOTO_ONLY_CAPTION : "");
+      (attachedFile ? consultAttachmentCaption(attachedFile) : "");
     pendingVoiceTextRef.current = null;
     if ((!text && !attachedFile) || loading) {
       if (conversationModeRef.current) resumeConversationListening();
@@ -444,7 +589,8 @@ export function FisioChatInterface() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada.");
 
-      const imageUrl = await uploadOutgoingPhoto();
+      const attachmentUrl = await uploadOutgoingPhoto();
+      const imageUrl = consultVisionUrl(attachmentUrl);
 
       let conversationId = activeId;
       if (!conversationId) {
@@ -471,7 +617,7 @@ export function FisioChatInterface() {
         conversation_id: conversationId,
         role: "user" as const,
         content: text,
-        image_url: imageUrl ?? null,
+        image_url: attachmentUrl ?? null,
       };
       const { data: savedUser } = await supabase
         .from("messages")
@@ -485,7 +631,7 @@ export function FisioChatInterface() {
           id: crypto.randomUUID(),
           role: "user",
           content: text,
-          image_url: imageUrl,
+          image_url: attachmentUrl,
         },
       ];
       setMessages(uiMessages);
@@ -690,8 +836,17 @@ export function FisioChatInterface() {
               <PhysioIntro greeting={INTRO_GREETING} onSkip={skipPhysioIntro} />
             ) : (
               <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-4 pb-4 sm:space-y-6 sm:px-6 lg:px-8">
-                {messages.map((msg) => {
+                {messages.map((msg, msgIndex) => {
                   const time = formatTime(msg.created_at);
+                  const prevUser =
+                    msg.role === "assistant"
+                      ? [...messages.slice(0, msgIndex)]
+                          .reverse()
+                          .find((m) => m.role === "user")
+                      : undefined;
+                  const pruebasFallback = prevUser
+                    ? pickIllustratedTestsForPruebasQuery(prevUser.content)
+                    : [];
                   return (
                     <div
                       key={msg.id}
@@ -723,12 +878,18 @@ export function FisioChatInterface() {
                           {msg.role === "user" ? (
                             <div className="space-y-2">
                               {msg.image_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={msg.image_url}
-                                  alt="Foto clínica"
-                                  className="max-h-56 w-full rounded-xl object-cover"
-                                />
+                                isConsultPdfUrl(msg.image_url) ? (
+                                  <div className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold">
+                                    PDF
+                                  </div>
+                                ) : (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={msg.image_url}
+                                    alt="Foto clínica"
+                                    className="max-h-56 w-full rounded-xl object-cover"
+                                  />
+                                )
                               ) : null}
                               {msg.content ? (
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -751,7 +912,10 @@ export function FisioChatInterface() {
                                   content={visibleText}
                                   renderBody={(body) => (
                                     <div className="whitespace-pre-wrap">
-                                      {renderAssistantContent(body)}
+                                      {renderAssistantContent(
+                                        body,
+                                        pruebasFallback
+                                      )}
                                     </div>
                                   )}
                                 />
@@ -807,21 +971,29 @@ export function FisioChatInterface() {
             }}
           >
             <div className="mx-auto w-full max-w-3xl">
-              {attachedPreview ? (
+              {attachedFile ? (
                 <div className="mb-2 flex items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={attachedPreview}
-                    alt="Vista previa"
-                    className="h-14 w-14 rounded-[16px] object-cover ring-1 ring-slate-200"
-                  />
+                  {attachedPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={attachedPreview}
+                      alt="Vista previa"
+                      className="h-14 w-14 rounded-[16px] object-cover ring-1 ring-slate-200"
+                    />
+                  ) : (
+                    <div className="flex h-14 max-w-[70%] items-center gap-2 rounded-[16px] bg-slate-100 px-3 ring-1 ring-slate-200">
+                      <span className="truncate text-xs font-semibold text-slate-700">
+                        {attachedFile.name}
+                      </span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={clearAttachment}
                     disabled={loading}
                     className="text-xs font-semibold text-slate-500 hover:text-slate-800"
                   >
-                    Quitar foto
+                    Quitar
                   </button>
                 </div>
               ) : null}
@@ -835,8 +1007,8 @@ export function FisioChatInterface() {
                     type="button"
                     onClick={() => photoInputRef.current?.click()}
                     disabled={loading}
-                    title="Adjuntar foto"
-                    aria-label="Adjuntar foto"
+                    title="Adjuntar foto, PDF o archivo"
+                    aria-label="Adjuntar foto, PDF o archivo"
                     className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
@@ -874,10 +1046,17 @@ export function FisioChatInterface() {
                 <input
                   ref={photoInputRef}
                   type="file"
+                  accept="image/*,.pdf,application/pdf"
+                  className="hidden"
+                  onChange={onAttachmentSelected}
+                />
+                <input
+                  ref={cameraInputRef}
+                  type="file"
                   accept="image/*"
                   capture="environment"
                   className="hidden"
-                  onChange={onPhotoSelected}
+                  onChange={onAttachmentSelected}
                 />
                 <div className="mb-0.5 flex shrink-0 items-center gap-0.5">
                   <VoiceConversationButton
@@ -886,6 +1065,21 @@ export function FisioChatInterface() {
                     disabled={loading && !conversationMode}
                     onToggle={toggleConversationMode}
                   />
+                  {!conversationMode ? (
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      disabled={loading}
+                      title="Hacer foto"
+                      aria-label="Hacer foto"
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                        <path d="M4 8h3l1.5-2h7L17 8h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" strokeLinejoin="round" />
+                        <circle cx="12" cy="14.5" r="3.2" />
+                      </svg>
+                    </button>
+                  ) : null}
                   {!conversationMode && (input.trim() || attachedFile) ? (
                     <button
                       type="submit"

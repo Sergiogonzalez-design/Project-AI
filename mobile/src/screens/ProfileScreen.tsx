@@ -6,12 +6,12 @@ import {
   Alert,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
   View,
 } from "react-native";
+import { ScreenScrollView } from "../components/ScreenScrollView";
 import { AthleteProfileCard } from "../components/AthleteProfileCard";
 import { PhysioProfileCard } from "../components/PhysioProfileCard";
 import { Colors } from "../lib/colors";
@@ -127,7 +127,10 @@ export function ProfileScreen() {
         onPress: async () => {
           setSigningOut(true);
           await cancelAllReminders();
-          await supabase.auth.signOut();
+          await Promise.race([
+            supabase.auth.signOut({ scope: "local" }),
+            new Promise((resolve) => setTimeout(resolve, 1500)),
+          ]);
         },
       },
     ]);
@@ -153,7 +156,7 @@ export function ProfileScreen() {
       : "U";
 
   return (
-    <ScrollView
+    <ScreenScrollView
       style={styles.root}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
@@ -278,7 +281,7 @@ export function ProfileScreen() {
           <Text style={styles.signOutText}>{t.profile.signOut}</Text>
         )}
       </Pressable>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }
 

@@ -213,9 +213,20 @@ import { ConsultaCompleteCard } from "@/components/consulta-complete-card";
 import { ConsultaNewConsultaPrompt } from "@/components/consulta-new-consulta-prompt";
 import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import {
-  PHOTO_ONLY_CAPTION,
+  consultAttachmentCaption,
+  consultAttachmentHistoryNote,
+  consultVisionUrl,
+  isConsultImageFile,
+  isConsultPdfFile,
+  isConsultPdfUrl,
+  MAX_CONSULT_ATTACHMENT_BYTES,
   uploadConsultPhoto,
 } from "@/lib/consult-photo";
+import {
+  canStartNewFisioConsult,
+  fisioNewConsultCooldownMessage,
+  fisioNewConsultHoursRemaining,
+} from "@/lib/fisio-consult-cooldown";
 import {
   detectConsultLanguage,
   type ConsultLanguage,
@@ -474,6 +485,7 @@ export function ChatInterface({
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const questionnaireRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -766,22 +778,26 @@ export function ChatInterface({
     if (attachedPreview?.startsWith("blob:")) URL.revokeObjectURL(attachedPreview);
     setAttachedPreview(null);
     if (photoInputRef.current) photoInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   }
 
-  function onPhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  function onAttachmentSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Selecciona una imagen (JPG, PNG o WebP).");
+    const isImage = isConsultImageFile(file);
+    const isPdf = isConsultPdfFile(file);
+    if (!isImage && !isPdf) {
+      alert("Selecciona una foto (JPG, PNG, WebP) o un PDF.");
       return;
     }
-    if (file.size > 12 * 1024 * 1024) {
-      alert("La imagen es demasiado grande (máx. ~12 MB).");
+    if (file.size > MAX_CONSULT_ATTACHMENT_BYTES) {
+      alert("El archivo es demasiado grande (máx. 10 MB).");
       return;
     }
     if (attachedPreview?.startsWith("blob:")) URL.revokeObjectURL(attachedPreview);
     setAttachedFile(file);
-    setAttachedPreview(URL.createObjectURL(file));
+    setAttachedPreview(isImage ? URL.createObjectURL(file) : null);
   }
 
   async function uploadOutgoingPhoto(): Promise<string | null> {
@@ -1583,6 +1599,7 @@ export function ChatInterface({
     imageUrl?: string | null,
     language: ConsultLanguage = consultLanguage
   ) {
+    const visionUrl = consultVisionUrl(imageUrl);
     let answer = triage.answer?.trim() ?? "";
 
     if (!answer) {
@@ -1592,7 +1609,7 @@ export function ChatInterface({
             mode: "clinical_screen",
             message: text,
             bodyArea: bodyAreaLabelFromText(text),
-            ...(imageUrl ? { imageUrl } : {}),
+            ...(visionUrl ? { imageUrl: visionUrl } : {}),
           },
           language
         );
@@ -1601,7 +1618,7 @@ export function ChatInterface({
           {
             mode: "general_chat",
             message: text,
-            ...(imageUrl ? { imageUrl } : {}),
+            ...(visionUrl ? { imageUrl: visionUrl } : {}),
           },
           language
         );
@@ -1705,7 +1722,7 @@ export function ChatInterface({
   async function handleIntroSubmit() {
     const text =
       (pendingVoiceTextRef.current ?? input).trim() ||
-      (attachedFile ? PHOTO_ONLY_CAPTION : "");
+      (attachedFile ? consultAttachmentCaption(attachedFile) : "");
     pendingVoiceTextRef.current = null;
     if ((!text && !attachedFile) || loading || phase !== "intro" || physioIntro) {
       if (conversationModeRef.current) resumeConversationListening();
@@ -1716,7 +1733,8 @@ export function ChatInterface({
     setLoading(true);
 
     try {
-      const imageUrl = await uploadOutgoingPhoto();
+      const attachmentUrl = await uploadOutgoingPhoto();
+      const imageUrl = consultVisionUrl(attachmentUrl);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = detectConsultLanguage(text, consultLanguage);
@@ -1724,7 +1742,7 @@ export function ChatInterface({
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: imageUrl },
+        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
       ]);
       scrollToBottomAfterPaint();
 
@@ -1737,7 +1755,7 @@ export function ChatInterface({
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
-          imageUrl,
+          attachmentUrl,
           lang
         );
         return;
@@ -1753,7 +1771,7 @@ export function ChatInterface({
             intent: "general",
             answer: vagueArmClarifyMessage(lang),
           },
-          imageUrl,
+          attachmentUrl,
           lang
         );
         return;
@@ -1788,7 +1806,7 @@ export function ChatInterface({
         return;
       }
 
-      await respondToInitialMessage(text, triage, imageUrl, lang);
+      await respondToInitialMessage(text, triage, attachmentUrl, lang);
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       alert(err instanceof Error ? err.message : "Error al procesar tu mensaje.");
@@ -2168,7 +2186,7 @@ export function ChatInterface({
               isNew: false,
             };
           }
-          if (conversations.length > 0) {
+          if (conversations.length > 0 && !fisioNewConsultDraft) {
             throw new Error(
               "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
             );
@@ -2441,7 +2459,7 @@ export function ChatInterface({
   async function handleFollowupSubmit() {
     const text =
       (pendingVoiceTextRef.current ?? input).trim() ||
-      (attachedFile ? PHOTO_ONLY_CAPTION : "");
+      (attachedFile ? consultAttachmentCaption(attachedFile) : "");
     pendingVoiceTextRef.current = null;
     if ((!text && !attachedFile) || loading || phase !== "followup" || !activeId) {
       if (conversationModeRef.current) resumeConversationListening();
@@ -2452,11 +2470,12 @@ export function ChatInterface({
     setLoading(true);
 
     try {
-      const imageUrl = await uploadOutgoingPhoto();
+      const attachmentUrl = await uploadOutgoingPhoto();
+      const imageUrl = consultVisionUrl(attachmentUrl);
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: imageUrl },
+        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2469,7 +2488,7 @@ export function ChatInterface({
           conversation_id: activeId,
           role: "user",
           content: text,
-          image_url: imageUrl,
+          image_url: attachmentUrl,
         });
         userSaved = true;
       }
@@ -2594,13 +2613,13 @@ export function ChatInterface({
               .map((m) => ({
                 role: m.role,
                 content: m.image_url
-                  ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                  ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url)}`
                   : m.content,
               })),
             {
               role: "user" as const,
-              content: imageUrl
-                ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+              content: attachmentUrl
+                ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
                 : text,
             },
           ].slice(-10);
@@ -2712,13 +2731,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .map((m) => ({
               role: m.role,
               content: m.image_url
-                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url)}`
                 : m.content,
             })),
           {
             role: "user" as const,
-            content: imageUrl
-              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+            content: attachmentUrl
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
               : text,
           },
         ].slice(-10);
@@ -2840,13 +2859,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .map((m) => ({
               role: m.role,
               content: m.image_url
-                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url)}`
                 : m.content,
             })),
           {
             role: "user" as const,
-            content: imageUrl
-              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+            content: attachmentUrl
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
               : text,
           },
         ].slice(-10);
@@ -2932,13 +2951,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             .map((m) => ({
               role: m.role,
               content: m.image_url
-                ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+                ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url)}`
                 : m.content,
             })),
           {
             role: "user" as const,
-            content: imageUrl
-              ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+            content: attachmentUrl
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
               : text,
           },
         ].slice(-10);
@@ -2990,13 +3009,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           .map((m) => ({
             role: m.role,
             content: m.image_url
-              ? `${m.content}\n[El paciente adjuntó una foto de la lesión]`
+              ? `${m.content}\n${consultAttachmentHistoryNote(m.image_url)}`
               : m.content,
           })),
         {
           role: "user" as const,
-          content: imageUrl
-            ? `${text}\n[El paciente adjuntó una foto de la lesión]`
+          content: attachmentUrl
+            ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
             : text,
         },
       ].slice(-10);
@@ -3072,7 +3091,27 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
     setOpeningConversation(false);
   }
 
-  function handleAnotherPhysioLinked(physio: LinkedPhysioInfo) {
+  async function handleAnotherPhysioLinked(physio: LinkedPhysioInfo) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user && physio.physio_id) {
+      const { data: lastReport } = await supabase
+        .from("clinical_reports")
+        .select("created_at")
+        .eq("patient_id", user.id)
+        .eq("physio_id", physio.physio_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const hoursLeft = fisioNewConsultHoursRemaining(lastReport?.created_at);
+      if (!canStartNewFisioConsult(lastReport?.created_at)) {
+        window.alert(fisioNewConsultCooldownMessage(hoursLeft, "es"));
+        setShowPhysioCodeEntry(false);
+        return;
+      }
+    }
+
     onLinkedPhysioChange?.(physio);
     setShowPhysioCodeEntry(false);
     setActiveTitle(`Consulta con ${physioDisplayName(physio.physio_name)}`);
@@ -3471,10 +3510,14 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 Elige una consulta de tu fisioterapeuta
               </p>
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                En Fisioterapia no puedes abrir chats nuevos. Abre una consulta de la
-                lista (asignada por tu fisioterapeuta) o ve a la pestaña{" "}
-                <span className="font-semibold text-slate-700">Consulta</span> para
-                otras preguntas.
+                En Fisioterapia solo puedes abrir una consulta nueva 24 horas después
+                del último informe enviado a tu fisioterapeuta. Mientras tanto, abre
+                una consulta de la lista o pulsa{" "}
+                <span className="font-semibold text-slate-700">
+                  Introducir otro código
+                </span>{" "}
+                cuando haya pasado ese tiempo. Para otras preguntas usa la pestaña{" "}
+                <span className="font-semibold text-slate-700">Consulta</span>.
               </p>
             </div>
           ) : (
@@ -3510,12 +3553,22 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                       {msg.role === "user" ? (
                         <div className="space-y-2">
                           {msg.image_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={msg.image_url}
-                              alt="Foto de la lesión"
-                              className="max-h-56 w-full rounded-xl object-cover"
-                            />
+                            isConsultPdfUrl(msg.image_url) ? (
+                              <div className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
+                                  <path d="M14 3v5h5" strokeLinejoin="round" />
+                                </svg>
+                                PDF
+                              </div>
+                            ) : (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={msg.image_url}
+                                alt="Foto de la lesión"
+                                className="max-h-56 w-full rounded-xl object-cover"
+                              />
+                            )
                           ) : null}
                           {msg.content ? (
                             <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -3920,21 +3973,33 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             }}
           >
             <div className="mx-auto w-full max-w-3xl">
-            {attachedPreview ? (
+            {attachedFile ? (
               <div className="animate-fade-in-up mb-2 flex items-center gap-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={attachedPreview}
-                  alt="Vista previa"
-                  className="h-14 w-14 rounded-[16px] object-cover ring-1 ring-slate-200"
-                />
+                {attachedPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={attachedPreview}
+                    alt="Vista previa"
+                    className="h-14 w-14 rounded-[16px] object-cover ring-1 ring-slate-200"
+                  />
+                ) : (
+                  <div className="flex h-14 max-w-[70%] items-center gap-2 rounded-[16px] bg-slate-100 px-3 ring-1 ring-slate-200">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 text-slate-600" aria-hidden>
+                      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
+                      <path d="M14 3v5h5" strokeLinejoin="round" />
+                    </svg>
+                    <span className="truncate text-xs font-semibold text-slate-700">
+                      {attachedFile.name}
+                    </span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={clearAttachment}
                   disabled={loading}
                   className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800"
                 >
-                  Quitar foto
+                  Quitar
                 </button>
               </div>
             ) : null}
@@ -3948,8 +4013,8 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   type="button"
                   onClick={() => photoInputRef.current?.click()}
                   disabled={loading}
-                  title="Adjuntar foto de la lesión"
-                  aria-label="Adjuntar foto de la lesión"
+                  title="Adjuntar foto, PDF o archivo"
+                  aria-label="Adjuntar foto, PDF o archivo"
                   className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
@@ -3988,10 +4053,17 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               <input
                 ref={photoInputRef}
                 type="file"
+                accept="image/*,.pdf,application/pdf"
+                className="hidden"
+                onChange={onAttachmentSelected}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
                 accept="image/*"
                 capture="environment"
                 className="hidden"
-                onChange={onPhotoSelected}
+                onChange={onAttachmentSelected}
               />
               <div className="mb-0.5 flex shrink-0 items-center gap-0.5">
                 <VoiceConversationButton
@@ -4000,6 +4072,21 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   disabled={loading && !conversationMode}
                   onToggle={toggleConversationMode}
                 />
+                {!conversationMode ? (
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={loading}
+                    title="Hacer foto"
+                    aria-label="Hacer foto"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+                      <path d="M4 8h3l1.5-2h7L17 8h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" strokeLinejoin="round" />
+                      <circle cx="12" cy="14.5" r="3.2" />
+                    </svg>
+                  </button>
+                ) : null}
                 {!conversationMode && (input.trim() || attachedFile) ? (
                   <button
                     type="button"
