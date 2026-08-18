@@ -10,7 +10,7 @@ export default function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-[calc(100dvh-2.75rem)] bg-neutral-100">
       <AdminHeaderBar />
       {children}
     </div>

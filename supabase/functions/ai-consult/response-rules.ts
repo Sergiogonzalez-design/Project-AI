@@ -202,7 +202,7 @@ REGLAS:
 - Diferenciar UBICACIÓN: isquion (sentarse duro + estirar isquio) vs glúteo profundo (sentarse + posible ciática) vs lumbar referido.
 
 CLUSTER ISQUIOTIBIAL PROXIMAL (compatibilidad clínica, no inventar scores):
-dolor isquion/posterior + dolor al sentarse (superficie dura) + dolor al estirar isquiotibial (familiar) + mecanismo sobrecarga/sprint si aplica → tendinopatía/distensión isquiotibial proximal ↑.
+dolor isquion/posterior + dolor al sentarse (superficie dura) + dolor al estirar isquiotibial (familiar) + mecanismo sobrecarga/sprint si aplica → tendinopatía proximal de isquiotibiales / lesión muscular ↑.
 
 CLUSTER DEEP GLUTEAL / CIÁTICO:
 dolor glúteo profundo + empeora sentado (silla dura) + posible parestesia + patrón menos claro de estiramiento isquio → deep gluteal / irritación ciática ↑ (diferenciar lumbar).
@@ -212,7 +212,7 @@ SLR positivo familiar + síntomas lumbares + distribución neural → radiculopa
 
 DIFERENCIAL OBLIGATORIO:
 - tendinopatía isquiotibial proximal
-- distensión isquiotibial aguda
+- lesión muscular aguda de isquiotibiales
 - deep gluteal syndrome
 - piriformis-related (diagnóstico de exclusión)
 - ischiofemoral impingement
@@ -1062,8 +1062,8 @@ trauma (caída/golpe) + no apoyo o deformidad → URGENT.
 CLUSTER AVULSIÓN / ROTURA PROXIMAL:
 pop + mecanismo explosivo + no pudo continuar + palpación ósea (sobre todo joven) → avulsión/rotura ↑.
 
-CLUSTER DISTENSIÓN:
-sprint/chute + puede apoyar (aunque cojee) + dolor local muscular + debilidad del gesto → distensión flexor/recto/aductor/isquio según ZONA.
+CLUSTER LESIÓN MUSCULAR:
+sprint/chute + puede apoyar (aunque cojee) + dolor local muscular + debilidad del gesto → lesión muscular de flexor/recto/aductor/isquio según ZONA.
 
 CLUSTER LABRUM TRAUMÁTICO:
 pivote + pop inguinal + puede apoyar + chasquido/bloqueo → labrum traumático ↑ (distinto de FAI crónico).
@@ -1083,7 +1083,7 @@ PRUEBAS (lenguaje cotidiano; solo si puede apoyar y no hay deformidad):
 
 FRACTURA ESTRÉS (si NO hay trauma único): corredor + ingle progresiva + hop óseo → no trates como tendinitis.
 
-LENGUAJE: «compatible con distensión», «aumenta la sospecha de fractura/avulsión». Evitar diagnóstico definitivo.`;
+LENGUAJE: «compatible con lesión muscular», «aumenta la sospecha de fractura/avulsión». Evitar diagnóstico definitivo.`;
 
 /**
  * Mandatory clinical pipeline for every consult.
@@ -1119,6 +1119,8 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
 - Lista 3–6 pruebas numeradas, fáciles de hacer en casa. Cada una es UNA pregunta de SÍ/NO: empieza por ¿ y terminar en ? (español).
 - FORMATO SÍ/NO (CRÍTICO — el paciente responde con botones, no con texto):
   · NO pidas escalas 1–10, ni “dónde duele”, ni comparar con el otro lado en texto libre, ni “qué pasa en cada una”.
+  · NUNCA formules preguntas de localización o elección múltiple disfrazadas de SÍ/NO (MAL: “¿duele delante, dentro o fuera?”, “¿es en la ingle o en el costado?”, “¿baja por la pierna o se queda en la espalda?”). Cada ítem debe admitir solo Sí o No como respuesta completa.
+  · Si necesitas localizar, haz UNA pregunta binaria concreta (BIEN: “¿te duele la rodilla al bajar un escalón?”, “¿el dolor baja por la pierna?”).
   · Una sola frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una.»
   · En **Qué debes hacer ahora** no pidas que escriba detalles de las pruebas.
 - CALIDAD CLÍNICA (CRÍTICO — investiga, no copies sin pensar): el banco/protocolo local de abajo es un MÍNIMO de referencia, no el techo. Antes de listar las pruebas, razona qué estructuras/diferenciales concretos maneja ESTE caso (mecanismo, localización exacta, agravantes, banderas ya vistas) y elige o adapta las pruebas con mejor capacidad discriminativa para ESE caso — apóyate en CLUSTER (historia + localización + familiar pain + 1–2 tests) y en documentos RAG «Physioguide —»; no inventes sensibilidad, especificidad, LR ni porcentajes. No te quedes con las 3-5 preguntas más obvias/genéricas si hay una prueba más específica que discrimine mejor entre las hipótesis planteadas.
@@ -1227,6 +1229,7 @@ REGLAS DE FORMATO:
   Solo el nombre o destino clave, no frases enteras.
 - Listas con guiones (-)
 - NO emitas diagnóstico definitivo
+- NOMENCLATURA (CRÍTICO — PROHIBIDO): nunca uses «distensión», «distensiones» ni «distension» (ni en títulos ni en el texto). Aunque otra regla o documento las mencione, NO las copies. Usa **lesión muscular**, **esguince**, **rotura fibrilar / parcial**, **contusión**, o el cuadro concreto (p. ej. **tendinopatía proximal de isquiotibiales**).
 - Lenguaje sencillo, tono cercano
 - Prioriza documentos recuperados (Functional Assessment, Special Tests, Clinical Tests, Imaging) cuando existan
 - FUENTE DE VERDAD para tests: base de conocimientos Kinora; el banco local solo es respaldo si RAG no trae tests de esa zona
@@ -1352,6 +1355,7 @@ export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PR
 - Cuando nombres la lesión o cuadro orientativo (conclusión), escríbelo en negrita: **síndrome del pronador**, **epicondilitis lateral**, etc. Solo el nombre, no la frase entera.
 - Destaca también en negrita adónde ir o qué prueba: **fisioterapeuta**, **médico**, **urgencias**, **hospital**, **ecografía**, **resonancia**, etc.
 - Cita fuentes bajo conclusiones nuevas: línea "Fuente: …"
+- NUNCA uses «distensión» / «distension» para nombrar o describir una lesión; usa lesión muscular, esguince, rotura fibrilar/parcial, contusión o el cuadro concreto.
 - NO diagnóstico definitivo`;
 
 /** Emoji guidance for AI-generated patient-facing text only (not app UI). Keep in sync with lib/ai-consult-rules.ts */
@@ -1421,20 +1425,51 @@ export function formatRagContext(chunks: RagChunk[] | null | undefined): {
   };
 }
 
+function hasWorkingCitationLink(label: string): boolean {
+  const t = label.trim();
+  if (
+    /criterio cl[ií]nico general/i.test(t) ||
+    /^Physioguide\s*[—–-]/i.test(t) ||
+    /\b(?:ai)?kinora\b/i.test(t)
+  ) {
+    return false;
+  }
+  if (/https?:\/\//i.test(t)) return true;
+  if (/\b(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i.test(t)) return true;
+  if (/\bPMC\d{5,8}\b/i.test(t) || /\bPMID[:\s]*\d{5,8}\b/i.test(t)) return true;
+  if (/jospt\.\d{4}\.\d{4}/i.test(t)) return true;
+  if (/\.pdf$/i.test(t)) return true;
+  if (/\s+[—–-]\s+[a-z0-9.-]+\.[a-z]{2,}\s*$/i.test(t)) return true;
+  return false;
+}
+
+export function rewriteBannedLesionTerms(text: string): string {
+  return text
+    .replace(/\b[Dd]istensiones\b/g, "lesiones musculares")
+    .replace(/\bDistensión\b/g, "Lesión muscular")
+    .replace(/\bdistensión\b/g, "lesión muscular")
+    .replace(/\bDISTENSIÓN\b/g, "LESIÓN MUSCULAR")
+    .replace(/\b[Dd]istensions\b/g, "muscle injuries")
+    .replace(/\bDistension\b/g, "Muscle injury")
+    .replace(/\bdistension\b/gi, "muscle injury");
+}
+
 export function appendSourcesFooter(
   answer: string,
   sources: string[],
   language: "es" | "en" = "es"
 ): string {
-  if (!sources.length) return answer;
+  answer = rewriteBannedLesionTerms(answer);
+  const external = sources.filter((s) => hasWorkingCitationLink(s));
+  if (!external.length) return answer;
   const heading =
     language === "en" ? "**Sources consulted**" : "**Fuentes consultadas**";
   if (/Fuentes consultadas|Sources consulted/i.test(answer)) {
-    const missing = sources.filter((s) => !answer.includes(s));
+    const missing = external.filter((s) => !answer.includes(s));
     if (!missing.length) return answer;
     return `${answer.trim()}\n${missing.map((s) => `- ${s}`).join("\n")}`;
   }
-  const list = sources.map((s) => `- ${s}`).join("\n");
+  const list = external.map((s) => `- ${s}`).join("\n");
   return `${answer.trim()}\n\n${heading}\n${list}`;
 }
 
@@ -1553,7 +1588,7 @@ const FUNCTIONAL_BY_HINT: { match: RegExp; questions: string[] }[] = [
     match: /rodilla|knee/i,
     questions: [
       "¿Flexión/extensión completa vs la otra rodilla? (SÍ/NO)",
-      "Al bajar un escalón despacio, ¿duele delante, dentro o fuera? (SÍ/NO)",
+      "Al bajar un escalón despacio con la pierna afectada, ¿te duele la rodilla? (SÍ/NO)",
       "¿Aguantas 20–30 s a la pata coja sin que ‘falle’? (SÍ/NO)",
       "¿La rodilla se bloquea o no puedes estirarla del todo? (SÍ/NO)",
       "¿Duele también al ponerte calcetines o girar la cadera? (SÍ/NO)",
@@ -1947,12 +1982,20 @@ export function buildPhysioEquipmentContext(profile: {
 
 /** Closed illustrated-maneuver catalog for Fisioterapia numbered lists. Keep in sync with lib/clinical-test-images.ts. */
 export const AI_ILLUSTRATED_CLINICAL_TESTS_RULES = `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
-Cuando listes pruebas/maniobras numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene imagen en Kinora; si inventas otro nombre, la imagen NO aparece.
+Cuando listes pruebas/maniobras/tests/pruebas funcionales numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
+
+VÍDEOS (CRÍTICO — fuerza del producto):
+- Si el fisioterapeuta pide pruebas, tests, maniobras o «pruebas funcionales» de una zona, responde SIEMPRE con lista numerada usando EXACTAMENTE los nombres canónicos del grupo de ESA zona.
+- PROHIBIDO inventar nombres cotidianos o genéricos en líneas numeradas (Sentadilla, Marcha, Agarre, etc.).
+- Si pide N pruebas, elige las N más relevantes del catálogo de esa zona (si hay menos, lista todas las del grupo).
+- Si pide TODAS las pruebas / all tests / el catálogo de una zona, lista TODAS las del grupo de esa zona (una línea numerada por test, nombre canónico). Así la app muestra el vídeo de cada una.
+- Si pide todas las pruebas SIN zona, recorre CADA grupo con encabezado **Zona:** (p. ej. **Lumbar:**, **Rodilla:**) y lista todas las de ese grupo. NUNCA mezcles tests de rodilla bajo **Lumbar:**.
+- Lumbar/espalda: SOLO Schober, SLR / Lasègue, SLR cruzado (well-leg), Kemp. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
 
 REGLA DE ZONA (CRÍTICO — error grave si se incumple):
-- Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, etc.).
-- En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
-- PROHIBIDO numerar tests de otra región. Ejemplos: dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
+- Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, lumbar/espalda, etc.).
+- En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, pruebas funcionales, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
+- PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
 - Signo de Tinel y Phalen del catálogo son de MUÑECA/MANO (imagen de muñeca). NO los numeres para pie/túnel tarsiano aunque el nombre “Tinel” se use en tobillo.
 - Si una maniobra útil no está en el grupo de esa zona (p. ej. Mulder/compresión interdigital para Morton, Tinel en túnel tarsiano), menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
@@ -1964,6 +2007,9 @@ Catálogo por zona:
   - Pivot Shift
   - Test de McMurray
   - Test de Thessaly
+  - Estrés en valgo (LCM)
+  - Estrés en varo (LCL)
+  - Cajón posterior / sag (LCP)
 **Hombro**
   - Test de Neer
   - Hawkins-Kennedy
@@ -1973,9 +2019,11 @@ Catálogo por zona:
   - Test de Yergason
   - Drop arm
   - Painful arc
+  - Cross-body / aducción horizontal
 **Cuello / neural miembro superior**
   - Test de Spurling
   - ULTT / ULNT
+  - Distracción cervical
 **Tobillo / pie**
   - Test de Thompson
   - Test de Matles
@@ -1987,15 +2035,25 @@ Catálogo por zona:
   - FABER / Patrick
   - FADIR
   - Test de Trendelenburg
+  - Hop test
 **Muñeca / mano**
   - Test de Phalen
   - Signo de Tinel
+  - Finkelstein (De Quervain)
+  - Palpación de la tabaquera anatómica
+  - Carga axial del pulgar (escafoides)
+  - Carga cubital / fosa cubital (TFCC)
+  - Grind test CMC del pulgar
+  - Estrés UCL del pulgar (valgo MCP)
 **Codo**
   - Test de Cozen
   - Test de Mill
+  - Flexión de muñeca resistida (medial)
+  - Test de flexión de codo (cubital)
 **Columna lumbar / espalda**
   - Test de Schober
   - SLR / Lasègue
+  - SLR cruzado (well-leg)
   - Test de Kemp / cuadrante lumbar
 - Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
 - Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.

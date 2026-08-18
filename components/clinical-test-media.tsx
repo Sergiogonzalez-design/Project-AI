@@ -8,15 +8,34 @@ import { useState } from "react";
 type VideoPlayerProps = {
   src: string;
   title: string;
+  poster?: string;
   className?: string;
 };
 
 export function ClinicalTestVideoPlayer({
   src,
   title,
+  poster,
   className,
 }: VideoPlayerProps) {
   const [failed, setFailed] = useState(false);
+
+  if (failed && poster) {
+    return (
+      <div
+        className={`overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 ${className ?? ""}`}
+      >
+        <Image
+          src={poster}
+          alt={title}
+          width={640}
+          height={480}
+          className="h-auto w-full max-w-md object-cover"
+          sizes="(max-width: 768px) 100vw, 28rem"
+        />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -30,6 +49,7 @@ export function ClinicalTestVideoPlayer({
         <video
           key={src}
           src={src}
+          poster={poster}
           controls
           playsInline
           preload="metadata"
@@ -37,7 +57,6 @@ export function ClinicalTestVideoPlayer({
           aria-label={`Vídeo demostrativo: ${title}`}
           onError={() => setFailed(true)}
         >
-          <track kind="captions" />
           Tu navegador no puede reproducir este vídeo.
         </video>
       )}
@@ -58,6 +77,7 @@ export function ClinicalTestMediaBlock({ test, className }: MediaBlockProps) {
       <ClinicalTestVideoPlayer
         src={videoSrc}
         title={test.title}
+        poster={test.src}
         className={className ?? "mt-2 max-w-md"}
       />
     );

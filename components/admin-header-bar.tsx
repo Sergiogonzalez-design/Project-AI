@@ -24,6 +24,12 @@ export function AdminHeaderBar() {
           </p>
         </div>
         <Link
+          href="/privacidad"
+          className="hidden shrink-0 text-sm font-medium text-neutral-500 hover:text-neutral-800 sm:inline"
+        >
+          Privacidad
+        </Link>
+        <Link
           href="/consulta"
           className="hidden shrink-0 text-sm font-medium text-neutral-500 hover:text-neutral-800 sm:inline"
         >

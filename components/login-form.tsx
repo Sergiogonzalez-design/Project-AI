@@ -88,6 +88,12 @@ export function LoginForm({ nextPath }: LoginFormProps) {
           Crear cuenta
         </Link>
       </p>
+
+      <p className="mt-4 text-center text-xs text-slate-400">
+        <Link href="/privacidad" className="font-medium text-blue-600 hover:underline">
+          Privacidad y términos
+        </Link>
+      </p>
     </form>
   );
 }

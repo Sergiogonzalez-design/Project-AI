@@ -4,6 +4,7 @@ import {
   resolveBodyPartFromArea,
 } from "@/lib/clinical-reasoning/parse-report";
 import { CLINICAL_REASONING_TREES } from "@/lib/clinical-reasoning/trees";
+import { isThighOrHamstringComplaint } from "@/lib/detect-body-part";
 import type {
   ClinicalReasoningNode,
   ClinicalReasoningTree,
@@ -30,11 +31,38 @@ export function hasClinicalReasoningForReport(opts: {
 
 export function resolveEntryNodeId(
   tree: ClinicalReasoningTree,
-  physioReport: string
+  physioReport: string,
+  bodyArea: string | null = null
 ): string {
+  // Muslo/isquio: no saltar a Hop/trauma por maniobras de tobillo mal listadas en el informe.
+  if (
+    bodyArea &&
+    tree.bodyPart === "hip" &&
+    isThighOrHamstringComplaint(bodyArea)
+  ) {
+    if (
+      /isquio|hamstring|posterior|gl[uú]teo|muslo\s*posterior/i.test(bodyArea) &&
+      tree.nodes.hp_route_posterior
+    ) {
+      return "hp_route_posterior";
+    }
+    return tree.entryNodeId;
+  }
+
   const maniobras = extractManiobrasFromReport(physioReport);
   for (const line of maniobras) {
     if (!line.testId) continue;
+    // Ignore ankle/foot-only shortcuts when this tree is not ankle_foot
+    if (
+      tree.bodyPart !== "ankle_foot" &&
+      (line.testId === "anterior-drawer-ankle" ||
+        line.testId === "thompson" ||
+        line.testId === "windlass" ||
+        line.testId === "heel-raise" ||
+        line.testId === "matles")
+    ) {
+      continue;
+    }
     const mapped = tree.entryByTestId?.[line.testId];
     if (mapped && tree.nodes[mapped]) return mapped;
   }
@@ -51,7 +79,7 @@ export function createSession(opts: {
   const tree = getTreeForBodyPart(bodyPart);
   if (!tree) return null;
 
-  const entryNodeId = resolveEntryNodeId(tree, opts.physioReport);
+  const entryNodeId = resolveEntryNodeId(tree, opts.physioReport, opts.bodyArea);
   if (!tree.nodes[entryNodeId]) return null;
 
   return {

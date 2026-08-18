@@ -1,6 +1,10 @@
 import { BODY_PARTS, type BodyPartId } from "@/lib/body-parts";
 import { findClinicalTestImage } from "@/lib/clinical-test-images";
-import { detectBodyPartsFromText } from "@/lib/detect-body-part";
+import {
+  detectBodyPartsFromText,
+  isInnerThighOrAdductorComplaint,
+  isThighOrHamstringComplaint,
+} from "@/lib/detect-body-part";
 import type { ParsedManiobraLine } from "@/lib/clinical-reasoning/types";
 
 const MANIOBRAS_HEADING = "Pruebas/maniobras a realizar en la cita";
@@ -67,29 +71,44 @@ export function hasManiobrasSection(content: string): boolean {
   return extractManiobrasFromReport(content).length > 0;
 }
 
-/** Map stored `body_area` label (Spanish) to canonical BodyPartId. */
+/** Map stored `body_area` label (Spanish) to canonical BodyPartId for clinical trees. */
 export function resolveBodyPartFromArea(area: string | null): BodyPartId | null {
   if (!area) return null;
   const n = normalizeText(area);
 
-  for (const part of BODY_PARTS) {
-    const labelN = normalizeText(part.label);
-    if (n.includes(labelN) || labelN.includes(n)) return part.id;
+  // Muslo / isquio / cuádriceps → árbol de cadera (rama posterior/isquio).
+  // En consulta el cuestionario vive bajo ankle_foot+focus thigh; el árbol de tobillo NO aplica.
+  if (isThighOrHamstringComplaint(area) || isInnerThighOrAdductorComplaint(area)) {
+    return "hip";
   }
 
-  const detected = detectBodyPartsFromText(area);
-  if (detected.length === 1) return detected[0];
-  if (detected.length > 1) return detected[0];
+  for (const part of BODY_PARTS) {
+    const labelN = normalizeText(part.label);
+    if (n === labelN || n.includes(labelN)) return part.id;
+  }
+
+  const detected = detectBodyPartsFromText(area).filter((id) => {
+    // Never trust ankle_foot when the label is clearly thigh/hamstring
+    if (id === "ankle_foot" && isThighOrHamstringComplaint(area)) return false;
+    return true;
+  });
+  if (detected.length >= 1) return detected[0];
 
   if (/rodilla|knee|menisco/.test(n)) return "knee";
-  if (/tobillo|pie|pierna|talon|aquiles|gemelo|espinilla/.test(n)) return "ankle_foot";
+  if (
+    /tobillo|\bpie\b|talon|aquiles|gemelo|espinilla|pantorrilla|pierna\s*baja|fascitis/.test(
+      n
+    )
+  ) {
+    return "ankle_foot";
+  }
   if (/hombro|manguito/.test(n)) return "shoulder";
   if (/codo|epicondilo/.test(n)) return "elbow";
   if (/muneca|mano|carpo/.test(n)) return "wrist_hand";
   if (/dedo|pulgar/.test(n)) return "finger";
   if (/cuello|cervical/.test(n)) return "neck";
   if (/espalda|lumbar|dorsal|ciatica/.test(n)) return "back";
-  if (/cadera|ingle|gluteo/.test(n)) return "hip";
+  if (/cadera|ingle|gluteo|isquio|muslo/.test(n)) return "hip";
   if (/cabeza|cefalea|migrana/.test(n)) return "head";
 
   return null;

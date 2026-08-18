@@ -35,19 +35,18 @@ export default async function NewsDetailPage({ params }: PageProps) {
   if (!post) notFound();
 
   return (
-    <div className="w-full px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-      <div className="mx-auto w-full max-w-7xl">
+    <div className="w-full bg-slate-50 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <div className="mx-auto w-full max-w-3xl">
         <Link
           href="/sobre-nosotros"
-          className="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
         >
           ← Volver a Sobre Nosotros
         </Link>
 
-        <article className="mt-5 w-full overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
+        <article className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[var(--shadow-elevated)]">
           {post.image_url ? (
-            <div className="flex w-full justify-center bg-slate-50">
-              {/* Native size — no forced crop / aspect ratio */}
+            <div className="flex w-full justify-center bg-slate-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={post.image_url}
@@ -56,23 +55,23 @@ export default async function NewsDetailPage({ params }: PageProps) {
               />
             </div>
           ) : (
-            <div className="flex min-h-48 w-full items-center justify-center bg-blue-50 py-16">
-              <Newspaper className="h-12 w-12 text-blue-200" strokeWidth={1.5} />
+            <div className="flex min-h-48 w-full items-center justify-center bg-slate-100 py-16">
+              <Newspaper className="h-12 w-12 text-slate-300" strokeWidth={1.5} />
             </div>
           )}
 
-          <div className="px-5 py-6 sm:px-8 sm:py-8 lg:px-10">
-            <time className="text-xs font-medium text-blue-500">
+          <div className="px-6 py-8 sm:px-10 sm:py-10">
+            <time className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
               {new Date(post.published_at).toLocaleDateString("es-ES", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
               })}
             </time>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               {post.title}
             </h1>
-            <p className="mt-5 max-w-none whitespace-pre-wrap text-base leading-relaxed text-slate-600 sm:text-lg">
+            <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed text-slate-600 sm:text-lg">
               {post.body}
             </p>
           </div>

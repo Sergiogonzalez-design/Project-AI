@@ -10,7 +10,7 @@ export default function FisioLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-100">
+    <div className="flex min-h-[calc(100dvh-2.75rem)] flex-col bg-neutral-100">
       <FisioHeaderBar />
       <div className="min-h-0 flex-1">{children}</div>
     </div>

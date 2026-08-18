@@ -3,7 +3,12 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 
-export function ContactInquiryForm() {
+type ContactInquiryFormProps = {
+  /** `glass` sits on a dark hero. `card` is a white form for light layouts. */
+  variant?: "glass" | "card";
+};
+
+export function ContactInquiryForm({ variant = "glass" }: ContactInquiryFormProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [age, setAge] = useState("");
@@ -11,6 +16,8 @@ export function ContactInquiryForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const card = variant === "card";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,18 +78,31 @@ export function ContactInquiryForm() {
     }
   }
 
+  const wrap = card
+    ? "rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-[var(--shadow-elevated)] sm:p-8"
+    : "rounded-2xl border border-white/20 bg-white/10 px-5 py-6 text-left backdrop-blur-sm sm:px-6";
+  const title = card ? "text-slate-900" : "text-white";
+  const body = card ? "text-slate-500" : "text-blue-50";
+  const label = card ? "text-slate-700" : "text-white";
+  const input = card
+    ? "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+    : "w-full rounded-xl border border-white/25 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40";
+  const errorClass = card ? "text-red-600" : "text-red-100";
+  const submit = card
+    ? "w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-[var(--shadow-primary)] transition hover:bg-blue-700 disabled:opacity-60"
+    : "w-full rounded-xl bg-white py-3.5 text-sm font-bold text-blue-700 shadow transition hover:bg-blue-50 disabled:opacity-60";
+  const again = card
+    ? "mt-4 text-sm font-semibold text-blue-600 underline-offset-2 hover:underline"
+    : "mt-4 text-sm font-semibold text-white underline-offset-2 hover:underline";
+
   if (success) {
     return (
-      <div className="rounded-2xl border border-white/20 bg-white/10 px-5 py-6 text-left backdrop-blur-sm">
-        <p className="text-base font-semibold text-white">Mensaje enviado</p>
-        <p className="mt-2 text-sm leading-relaxed text-blue-50">
+      <div className={wrap}>
+        <p className={`text-base font-semibold ${title}`}>Mensaje enviado</p>
+        <p className={`mt-2 text-sm leading-relaxed ${body}`}>
           Gracias por escribirnos. Revisaremos tu consulta y te responderemos lo antes posible.
         </p>
-        <button
-          type="button"
-          onClick={() => setSuccess(false)}
-          className="mt-4 text-sm font-semibold text-white underline-offset-2 hover:underline"
-        >
+        <button type="button" onClick={() => setSuccess(false)} className={again}>
           Enviar otra consulta
         </button>
       </div>
@@ -90,12 +110,9 @@ export function ContactInquiryForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-white/20 bg-white/10 px-5 py-6 text-left backdrop-blur-sm sm:px-6"
-    >
+    <form onSubmit={handleSubmit} className={wrap}>
       <div className="mb-4">
-        <label htmlFor="contact-full-name" className="mb-1.5 block text-sm font-semibold text-white">
+        <label htmlFor="contact-full-name" className={`mb-1.5 block text-sm font-semibold ${label}`}>
           Nombre completo
         </label>
         <input
@@ -107,50 +124,51 @@ export function ContactInquiryForm() {
           maxLength={120}
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-xl border border-white/25 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40"
+          className={input}
           placeholder="Tu nombre y apellidos"
         />
       </div>
 
-      <div className="mb-4">
-        <label htmlFor="contact-email" className="mb-1.5 block text-sm font-semibold text-white">
-          Email
-        </label>
-        <input
-          id="contact-email"
-          type="email"
-          name="email"
-          autoComplete="email"
-          required
-          maxLength={254}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-xl border border-white/25 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40"
-          placeholder="tu@correo.com"
-        />
-      </div>
-
-      <div className="mb-4">
-        <label htmlFor="contact-age" className="mb-1.5 block text-sm font-semibold text-white">
-          Edad
-        </label>
-        <input
-          id="contact-age"
-          type="number"
-          name="age"
-          inputMode="numeric"
-          min={1}
-          max={120}
-          required
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-          className="w-full rounded-xl border border-white/25 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40"
-          placeholder="Ej. 28"
-        />
+      <div className="mb-4 grid gap-4 sm:grid-cols-[1fr_7rem]">
+        <div>
+          <label htmlFor="contact-email" className={`mb-1.5 block text-sm font-semibold ${label}`}>
+            Email
+          </label>
+          <input
+            id="contact-email"
+            type="email"
+            name="email"
+            autoComplete="email"
+            required
+            maxLength={254}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={input}
+            placeholder="tu@correo.com"
+          />
+        </div>
+        <div>
+          <label htmlFor="contact-age" className={`mb-1.5 block text-sm font-semibold ${label}`}>
+            Edad
+          </label>
+          <input
+            id="contact-age"
+            type="number"
+            name="age"
+            inputMode="numeric"
+            min={1}
+            max={120}
+            required
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            className={input}
+            placeholder="28"
+          />
+        </div>
       </div>
 
       <div className="mb-5">
-        <label htmlFor="contact-inquiry" className="mb-1.5 block text-sm font-semibold text-white">
+        <label htmlFor="contact-inquiry" className={`mb-1.5 block text-sm font-semibold ${label}`}>
           Consulta
         </label>
         <textarea
@@ -161,22 +179,18 @@ export function ContactInquiryForm() {
           maxLength={4000}
           value={inquiry}
           onChange={(e) => setInquiry(e.target.value)}
-          className="w-full resize-y rounded-xl border border-white/25 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40"
+          className={`${input} resize-y`}
           placeholder="Cuéntanos en qué podemos ayudarte…"
         />
       </div>
 
       {error ? (
-        <p className="mb-4 text-sm font-medium text-red-100" role="alert">
+        <p className={`mb-4 text-sm font-medium ${errorClass}`} role="alert">
           {error}
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-xl bg-white py-3.5 text-sm font-bold text-blue-700 shadow transition hover:bg-blue-50 disabled:opacity-60"
-      >
+      <button type="submit" disabled={loading} className={submit}>
         {loading ? "Enviando…" : "Enviar mensaje"}
       </button>
     </form>

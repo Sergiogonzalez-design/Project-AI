@@ -88,6 +88,8 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     pathname === "/login" ||
     pathname === "/signup" ||
+    pathname === "/privacidad" ||
+    pathname === "/terminos" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/supabase-health" ||
@@ -180,7 +182,9 @@ export async function middleware(request: NextRequest) {
         pathname === "/perfil" ||
         pathname.startsWith("/perfil/") ||
         pathname === "/sobre-nosotros" ||
-        pathname.startsWith("/sobre-nosotros/");
+        pathname.startsWith("/sobre-nosotros/") ||
+        pathname === "/privacidad" ||
+        pathname === "/terminos";
       if (!onPhysioArea && !onSharedSite) {
         return NextResponse.redirect(new URL("/fisio", request.url));
       }

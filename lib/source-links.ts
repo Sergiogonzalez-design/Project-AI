@@ -66,11 +66,20 @@ function hostSearchUrl(title: string, host: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(`${title} site:${host}`)}`;
 }
 
-function isInternalSource(label: string): boolean {
+/** Internal / product knowledge — used for RAG, never shown as public citations. */
+export function isInternalSource(label: string): boolean {
+  const t = label.trim();
   return (
-    /criterio cl[ií]nico general/i.test(label) ||
-    /^Physioguide —/i.test(label.trim())
+    /criterio cl[ií]nico general/i.test(t) ||
+    /^Physioguide\s*[—–-]/i.test(t) ||
+    /\b(?:ai)?kinora\b/i.test(t)
   );
+}
+
+/** True when the citation can open a real external URL (not plain internal titles). */
+export function hasWorkingSourceLink(raw: string): boolean {
+  if (isInternalSource(raw)) return false;
+  return resolveSourceHref(raw) != null;
 }
 
 export function resolveSourceHref(raw: string): string | null {
@@ -120,9 +129,11 @@ function uniqueSources(labels: string[]): CitedSource[] {
   for (const label of labels) {
     const trimmed = label.trim();
     if (!trimmed || HEADING_LINE.test(trimmed.replace(/\*/g, ""))) continue;
+    if (isInternalSource(trimmed)) continue;
     const source = toCitedSource(trimmed);
-    const key = source.title.toLowerCase();
-    if (!key || seen.has(key)) continue;
+    if (!source.href) continue;
+    const key = source.href.toLowerCase();
+    if (seen.has(key)) continue;
     seen.add(key);
     sources.push(source);
   }

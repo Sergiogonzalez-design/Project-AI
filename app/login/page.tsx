@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
   }
 
   return (
-    <AuthPageShell fallbackHref="/sobre-nosotros">
+    <AuthPageShell>
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
         <LoginForm nextPath={sp.next} />
       </main>

@@ -22,8 +22,8 @@ trauma (caída/golpe) + no apoyo o deformidad → URGENT.
 CLUSTER AVULSIÓN / ROTURA PROXIMAL:
 pop + mecanismo explosivo + no pudo continuar + palpación ósea (sobre todo joven) → avulsión/rotura ↑.
 
-CLUSTER DISTENSIÓN:
-sprint/chute + puede apoyar (aunque cojee) + dolor local muscular + debilidad del gesto → distensión flexor/recto/aductor/isquio según ZONA.
+CLUSTER LESIÓN MUSCULAR:
+sprint/chute + puede apoyar (aunque cojee) + dolor local muscular + debilidad del gesto → lesión muscular de flexor/recto/aductor/isquio según ZONA.
 
 CLUSTER LABRUM TRAUMÁTICO:
 pivote + pop inguinal + puede apoyar + chasquido/bloqueo → labrum traumático ↑ (distinto de FAI crónico).
@@ -43,4 +43,4 @@ PRUEBAS (lenguaje cotidiano; solo si puede apoyar y no hay deformidad):
 
 FRACTURA ESTRÉS (si NO hay trauma único): corredor + ingle progresiva + hop óseo → no trates como tendinitis.
 
-LENGUAJE: «compatible con distensión», «aumenta la sospecha de fractura/avulsión». Evitar diagnóstico definitivo.`;
+LENGUAJE: «compatible con lesión muscular», «aumenta la sospecha de fractura/avulsión». Evitar diagnóstico definitivo.`;

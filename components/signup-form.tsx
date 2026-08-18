@@ -110,6 +110,18 @@ export function SignupForm() {
 
       {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
 
+      <p className="mb-4 text-xs leading-relaxed text-slate-500">
+        Al crear la cuenta aceptas la{" "}
+        <Link href="/privacidad" className="font-semibold text-blue-600 hover:underline">
+          Política de privacidad
+        </Link>{" "}
+        y los{" "}
+        <Link href="/privacidad#terminos" className="font-semibold text-blue-600 hover:underline">
+          Términos de uso
+        </Link>{" "}
+        de AIKinora.
+      </p>
+
       <button
         type="submit" disabled={loading}
         className="btn-primary w-full"

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AuthCodeErrorPage() {
   return (
-    <AuthPageShell fallbackHref="/login">
+    <AuthPageShell>
       <main className="flex min-h-full flex-1 flex-col items-center justify-center bg-neutral-50 px-6 py-16">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold text-neutral-900">No se pudo completar el acceso</h1>

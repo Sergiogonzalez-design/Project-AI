@@ -38,6 +38,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# clinical-test video encode backups
+/public/clinical-tests/videos/.pre-logo-backup/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

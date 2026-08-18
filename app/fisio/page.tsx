@@ -186,7 +186,7 @@ export default function FisioPatientsPage() {
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  d="M4 6h16M4 12h16M4 18h16"
+                  d="M12 6h.01M12 12h.01M12 18h.01"
                 />
               )}
             </svg>
@@ -302,7 +302,7 @@ export default function FisioPatientsPage() {
                         </p>
                         {unread > 0 ? (
                           <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                            {unread} nuevo{unread === 1 ? "" : "s"}
+                            {unread} nuevo{unread === 1 ? " informe" : "s informes"}
                           </span>
                         ) : null}
                       </div>

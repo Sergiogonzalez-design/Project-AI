@@ -47,7 +47,15 @@ function probabilityLabel(p: HypothesisProbability): string {
   return "Baja probabilidad";
 }
 
-function ClinicalTestVideo({ src, title }: { src: string; title: string }) {
+function ClinicalTestVideo({
+  src,
+  title,
+  poster,
+}: {
+  src: string;
+  title: string;
+  poster?: string;
+}) {
   const [failed, setFailed] = useState(false);
 
   return (
@@ -61,6 +69,7 @@ function ClinicalTestVideo({ src, title }: { src: string; title: string }) {
         <video
           key={src}
           src={src}
+          poster={poster}
           controls
           playsInline
           preload="metadata"
@@ -68,7 +77,6 @@ function ClinicalTestVideo({ src, title }: { src: string; title: string }) {
           aria-label={`Vídeo demostrativo: ${title}`}
           onError={() => setFailed(true)}
         >
-          <track kind="captions" />
           Tu navegador no puede reproducir este vídeo.
         </video>
       )}
@@ -119,7 +127,11 @@ function TestScreen({
           ) : null}
 
           {!isRouteNode && videoSrc ? (
-            <ClinicalTestVideo src={videoSrc} title={node.title} />
+            <ClinicalTestVideo
+              src={videoSrc}
+              title={node.title}
+              poster={image?.src}
+            />
           ) : null}
         </div>
       ) : null}

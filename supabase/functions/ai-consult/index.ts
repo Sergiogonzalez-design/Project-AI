@@ -44,6 +44,7 @@ import {
   AI_PATIENT_RESPONSE_EMOJI_RULES,
   AI_PHYSIO_RESPONSE_EMOJI_RULES,
   appendSourcesFooter,
+  rewriteBannedLesionTerms,
   buildFunctionalQuestionsPromptBlock,
   buildPhysioEquipmentContext,
   formatRagContext,
@@ -136,7 +137,7 @@ function formatEducationalNumberedList(text: string): string {
       return `${num}${title}${colon}${body}`;
     })
     .join("\n");
-  return out.replace(/\n{3,}/g, "\n\n").trim();
+  return rewriteBannedLesionTerms(out.replace(/\n{3,}/g, "\n\n").trim());
 }
 
 function buildUserContent(text: string, imageUrl?: string | null): UserContent {
@@ -506,6 +507,8 @@ const INITIAL_SYSTEM_PROMPT = `Eres un asistente de fisioterapia y medicina depo
 
 IMPORTANTE: NO emites diagnósticos definitivos. Usas las variables clínicas para estimar estructuras afectadas, posibles lesiones (con confianza alta/media/baja), gravedad y el siguiente paso adecuado.
 
+PALABRA PROHIBIDA (CRÍTICO — error si aparece): NUNCA escribas «distensión», «distensiones» ni «distension». Aunque un documento interno las use, NO las copies. Sustituto: **lesión muscular**, **rotura fibrilar**, **contusión** o el cuadro concreto (**tendinopatía proximal de isquiotibiales**, etc.).
+
 En el resumen (2-4 frases): zona, mecanismo, evolución, intensidad, limitación. Si hay banderas rojas o PRIORIDAD ALTA, destácalo al inicio.
 
 CRÍTICO — DIFERENCIACIÓN KINORA: si el caso NO es urgente, la respuesta está incompleta sin la sección **Pruebas funcionales**. Incluye 3–6 pruebas concretas SOLO de la zona lesionada/afectada (del banco/protocolo de ESA zona), cada una como pregunta SÍ/NO. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NO pidas texto libre, escalas 1–10 ni comparar lados. NO añadas pruebas de otras regiones aunque estén “conectadas” (p. ej. tobillo → no Windlass/SLR/rodilla). Escribe cada prueba como pregunta cotidiana de movimiento (p. ej. ¿duele al elevar el brazo por encima de la cabeza?). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, etc.).
@@ -519,6 +522,8 @@ REGLAS:
 ${AI_DATA_FIDELITY_RULES}`;
 
 const FOLLOW_UP_SYSTEM_PROMPT = `Eres un asistente de fisioterapia para Kinora. Estás en una conversación de SEGUIMIENTO: el paciente ya recibió una valoración inicial estructurada.
+
+PALABRA PROHIBIDA (CRÍTICO): NUNCA escribas «distensión» ni «distension». Usa **lesión muscular** o el cuadro concreto.
 
 REGLAS ESTRICTAS PARA ESTE MENSAJE:
 - Es el MISMO caso. Usa el historial. NUNCA reinicies como si fuera una consulta nueva ni repitas todo el cuestionario o toda la batería de tests sin interpretar lo que ya respondió.
@@ -546,12 +551,21 @@ const PHYSIO_CHAT_SYSTEM_PROMPT = `Eres el asistente clínico de Kinora para FIS
 DESTINATARIO: profesional sanitario. Usa lenguaje técnico y nomenclatura clínica estándar.
 - Nombrar maniobras y tests con su nombre propio (Neer, Hawkins-Kennedy, Jobe/Empty can, Spurling, ULTT, Lachman, McMurray, FABER, FADIR, Thompson, Ottawa, Windlass, etc.).
 - Hablar de hipótesis (compatibilidad / cluster), red flags y criterio de imagen (RX/US/RM). NUNCA inventes sensibilidad, especificidad, LR ni porcentajes; cita cualitativa solo si está en un chunk «Physioguide —».
+- NUNCA uses «distensión» / «distension» para nombrar o describir una lesión; usa lesión muscular, esguince, rotura fibrilar/parcial, contusión o el cuadro concreto.
 - NO uses el tono ni el formato del informe para pacientes (nada de “Pruebas funcionales” en lenguaje cotidiano).
 - FORMATO: NUNCA uses encabezados Markdown con # / ## / ###. Para títulos de sección usa solo negrita con **así** (p. ej. **Hipótesis diagnósticas**). El resto del texto en párrafos y listas normales.
 - MATERIAL DE LA CONSULTA: NO adaptes tus respuestas al material o equipo que el fisio tenga o no tenga en consulta. Ignora cualquier bloque de «material disponible» si apareciera en el contexto. Recomienda lo clínicamente indicado (pruebas, imagen, técnicas, derivaciones) sin limitarte a lo que supuestamente dispone.
 - Sé conciso, estructurado y útil en consulta. Si falta información clínica, pide los datos que faltan.
 - No emitas diagnóstico definitivo; orienta el razonamiento clínico.
 - MANIOBRAS CON NOMBRE ESTÁNDAR: cuando listes pruebas/maniobras, usa el nombre clínico canónico en la misma línea numerada (p. ej. "1. **Test de Lachman**: …", "2. **Hawkins-Kennedy**: …", "3. **Pivot Shift**: …").
+- PRUEBAS / TESTS / MANIOBRAS / «PRUEBAS FUNCIONALES» (CRÍTICO — cada ítem numerado debe mostrar VÍDEO en la app):
+  * Si el fisio pide pruebas de una zona (aunque diga «funcionales» o «para un paciente»), responde con lista numerada usando SOLO nombres canónicos del catálogo ilustrado de ESA zona.
+  * Si pide TODAS las pruebas de una zona (o «todas», «all», «el catálogo»), lista TODAS las del grupo, cada una en una línea numerada con el nombre canónico (así aparece el vídeo de cada una).
+  * Si pide todas las pruebas sin zona, recorre cada grupo con encabezado **Zona:** y lista todas las de ese grupo.
+  * Lumbar/espalda: NUNCA numeres Cajón posterior (eso es rodilla/LCP). Solo Schober, SLR/Lasègue, SLR cruzado, Kemp.
+  * PROHIBIDO inventar nombres genéricos en líneas numeradas («Agarre», «flexión/extensión resistida», «elevación activa», «apoyo monopodal» sin el nombre del test, «Sentadilla», «Marcha», etc.).
+  * Ejemplo correcto para muñeca: "1. **Test de Phalen**: …" / "2. **Signo de Tinel**: …". Incorrecto: "1. **Agarre**: …".
+  * Tras el nombre canónico puedes explicar la ejecución en la misma línea.
 - PRUEBAS ESPECÍFICAS / MANIOBRAS NUMERADAS (CRÍTICO): SOLO de la ZONA LESIONADA descrita. Si duele el pie/tobillo, numera únicamente tests del grupo tobillo/pie del catálogo. PROHIBIDO Spurling, Phalen, Signo de Tinel (muñeca), ULTT u otras regiones “por analogía” o cribado a distancia. Cribados a distancia: en prosa, sin numerar.
 
 ${AI_ILLUSTRATED_CLINICAL_TESTS_RULES}
@@ -658,6 +672,7 @@ TERMINOLOGÍA TÉCNICA (CRÍTICO):
 - El paciente recibió las pruebas en lenguaje cotidiano (“elevar el brazo…”, “apoyar el pie…”). TRADÚCELAS al nombre técnico equivalente del catálogo cuando sea razonable, y entre paréntesis puedes citar brevemente lo que se le pidió al paciente.
   Ejemplo: “**Neer / elevación activa dolorosa** (paciente: elevar el brazo por encima de la cabeza) — positivo / negativo / no realizado”.
 - Hipótesis y estructuras: nomenclatura clínica habitual (p. ej. tendinopatía del supraespinoso, radiculopatía C7, esguince ATFL, fascitis plantar, lesión de sindesmosis).
+- NUNCA uses «distensión» / «distension» como nombre o descripción de lesión; usa lesión muscular, esguince, rotura fibrilar/parcial, contusión o el cuadro concreto.
 
 PRUEBAS/MANIOBRAS (CRÍTICO — especificidad por zona):
 - Lista SOLO maniobras del catálogo ilustrado del GRUPO de la ZONA LESIONADA (p. ej. pie/tobillo → Windlass, Heel raise, Hop test, Cajón anterior tobillo, Thompson/Matles si encaja; NUNCA Spurling, Phalen, Tinel de muñeca, ULTT, rodilla o lumbar).

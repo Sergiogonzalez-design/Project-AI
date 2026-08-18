@@ -1,5 +1,6 @@
 /** Shared instructions so the model does not confuse profile sport with injury mechanism. */
 import { AI_EVIDENCE_DB_RULES } from "@/lib/physioguide-evidence-db-rules";
+import { hasWorkingSourceLink } from "@/lib/source-links";
 import { AI_KNEE_ANTERIOR_PAIN_RULES } from "@/lib/physioguide-knee-anterior-rules";
 import { AI_KNEE_INSTABILITY_ACL_RULES } from "@/lib/physioguide-knee-instability-acl-rules";
 import { AI_KNEE_LATERAL_PAIN_RULES } from "@/lib/physioguide-knee-lateral-rules";
@@ -96,6 +97,8 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
 - Lista 3–6 pruebas numeradas, fáciles de hacer en casa. Cada una es UNA pregunta de SÍ/NO: empieza por ¿ y termina en ? (español).
 - FORMATO SÍ/NO (CRÍTICO — el paciente responde con botones, no con texto):
   · NO pidas escalas 1–10, ni “dónde duele”, ni comparar con el otro lado en texto libre, ni “qué pasa en cada una”.
+  · NUNCA formules preguntas de localización o elección múltiple disfrazadas de SÍ/NO (MAL: “¿duele delante, dentro o fuera?”, “¿es en la ingle o en el costado?”, “¿baja por la pierna o se queda en la espalda?”). Cada ítem debe admitir solo Sí o No como respuesta completa.
+  · Si necesitas localizar, haz UNA pregunta binaria concreta (BIEN: “¿te duele la rodilla al bajar un escalón?”, “¿el dolor baja por la pierna?”).
   · Una sola frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una.»
   · En **Qué debes hacer ahora** no pidas que escriba detalles de las pruebas.
 - LENGUAJE DE LAS PRUEBAS (CRÍTICO — el paciente NO es un fisioterapeuta):
@@ -203,6 +206,7 @@ REGLAS DE FORMATO:
   Solo el nombre o destino clave, no frases enteras.
 - Listas con guiones (-)
 - NO emitas diagnóstico definitivo
+- NOMENCLATURA (CRÍTICO — PROHIBIDO): nunca uses «distensión», «distensiones» ni «distension» (ni en títulos ni en el texto). Aunque otra regla o documento las mencione, NO las copies. Usa **lesión muscular**, **esguince**, **rotura fibrilar / parcial**, **contusión**, o el cuadro concreto (p. ej. **tendinopatía proximal de isquiotibiales**).
 - Lenguaje sencillo, tono cercano
 - Prioriza documentos recuperados (Functional Assessment, Special Tests, Clinical Tests, Imaging) cuando existan
 - FUENTE DE VERDAD para tests: base de conocimientos Kinora; el banco local solo es respaldo si RAG no trae tests de esa zona
@@ -307,6 +311,7 @@ export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PR
 - Cuando nombres la lesión o cuadro orientativo (conclusión), escríbelo en negrita: **síndrome del pronador**, **epicondilitis lateral**, etc. Solo el nombre, no la frase entera.
 - Destaca también en negrita adónde ir o qué prueba: **fisioterapeuta**, **médico**, **urgencias**, **hospital**, **ecografía**, **resonancia**, etc.
 - Cita fuentes bajo conclusiones nuevas: línea "Fuente: …"
+- NUNCA uses «distensión» / «distension» para nombrar o describir una lesión; usa lesión muscular, esguince, rotura fibrilar/parcial, contusión o el cuadro concreto.
 - NO diagnóstico definitivo`;
 
 /** Emoji guidance for AI-generated patient-facing text only (not app UI). Keep in sync with response-rules.ts */
@@ -381,14 +386,15 @@ export function appendSourcesFooter(
   sources: string[],
   language: "es" | "en" = "es"
 ): string {
-  if (!sources.length) return answer;
+  const external = sources.filter((s) => hasWorkingSourceLink(s));
+  if (!external.length) return answer;
   const heading =
     language === "en" ? "**Sources consulted**" : "**Fuentes consultadas**";
   if (/Fuentes consultadas|Sources consulted/i.test(answer)) {
-    const missing = sources.filter((s) => !answer.includes(s));
+    const missing = external.filter((s) => !answer.includes(s));
     if (!missing.length) return answer;
     return `${answer.trim()}\n${missing.map((s) => `- ${s}`).join("\n")}`;
   }
-  const list = sources.map((s) => `- ${s}`).join("\n");
+  const list = external.map((s) => `- ${s}`).join("\n");
   return `${answer.trim()}\n\n${heading}\n${list}`;
 }

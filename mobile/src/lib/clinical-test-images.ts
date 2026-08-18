@@ -1,12 +1,14 @@
 /**
  * Maps clinical special-test names (physio chat) to educational illustrations
- * in /public/clinical-tests/. Used to show an image under each named maneuver.
+ * on the public clinical-tests Storage CDN.
  */
+
+import { CLINICAL_TEST_CDN } from "./clinical-test-cdn";
 
 export type ClinicalTestImage = {
   id: string;
   title: string;
-  /** Public URL path served from /public */
+  /** Public CDN URL for the illustration */
   src: string;
   /** Lowercase, accent-stripped substrings to match in assistant text */
   aliases: readonly string[];
@@ -26,13 +28,13 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "lachman",
     title: "Test de Lachman",
-    src: "/clinical-tests/lachman.webp",
+    src: `${CLINICAL_TEST_CDN}/lachman.webp`,
     aliases: ["lachman", "test de lachman"],
   },
   {
     id: "anterior-drawer-knee",
     title: "Cajón anterior (rodilla)",
-    src: "/clinical-tests/anterior-drawer-knee.webp",
+    src: `${CLINICAL_TEST_CDN}/anterior-drawer-knee.webp`,
     aliases: [
       "cajon anterior de la rodilla",
       "cajon anterior rodilla",
@@ -45,43 +47,43 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "pivot-shift",
     title: "Pivot Shift",
-    src: "/clinical-tests/pivot-shift.webp",
+    src: `${CLINICAL_TEST_CDN}/pivot-shift.webp`,
     aliases: ["pivot shift", "pivot-shift", "test de pivot"],
   },
   {
     id: "mcmurray",
     title: "Test de McMurray",
-    src: "/clinical-tests/mcmurray.webp",
+    src: `${CLINICAL_TEST_CDN}/mcmurray.webp`,
     aliases: ["mcmurray", "mc murray", "test de mcmurray"],
   },
   {
     id: "thessaly",
     title: "Test de Thessaly",
-    src: "/clinical-tests/thessaly.webp",
+    src: `${CLINICAL_TEST_CDN}/thessaly.webp`,
     aliases: ["thessaly", "test de thessaly"],
   },
   {
     id: "neer",
     title: "Test de Neer",
-    src: "/clinical-tests/neer.webp",
+    src: `${CLINICAL_TEST_CDN}/neer.webp`,
     aliases: ["neer", "test de neer", "neer's"],
   },
   {
     id: "hawkins-kennedy",
     title: "Hawkins-Kennedy",
-    src: "/clinical-tests/hawkins-kennedy.webp",
+    src: `${CLINICAL_TEST_CDN}/hawkins-kennedy.webp`,
     aliases: ["hawkins", "hawkins-kennedy", "hawkins kennedy"],
   },
   {
     id: "jobe-empty-can",
     title: "Jobe / Empty can",
-    src: "/clinical-tests/jobe-empty-can.webp",
+    src: `${CLINICAL_TEST_CDN}/jobe-empty-can.webp`,
     aliases: ["jobe", "empty can", "empty-can", "lata vacia", "lata vacía"],
   },
   {
     id: "apprehension",
     title: "Apprehension / Relocation",
-    src: "/clinical-tests/apprehension.webp",
+    src: `${CLINICAL_TEST_CDN}/apprehension.webp`,
     aliases: [
       "apprehension",
       "aprension",
@@ -94,37 +96,37 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "speed",
     title: "Test de Speed",
-    src: "/clinical-tests/speed.webp",
+    src: `${CLINICAL_TEST_CDN}/speed.webp`,
     aliases: ["speed", "test de speed"],
   },
   {
     id: "yergason",
     title: "Test de Yergason",
-    src: "/clinical-tests/yergason.webp",
+    src: `${CLINICAL_TEST_CDN}/yergason.webp`,
     aliases: ["yergason", "test de yergason"],
   },
   {
     id: "drop-arm",
     title: "Drop arm",
-    src: "/clinical-tests/drop-arm.webp",
+    src: `${CLINICAL_TEST_CDN}/drop-arm.webp`,
     aliases: ["drop arm", "drop-arm", "caida del brazo", "caída del brazo"],
   },
   {
     id: "painful-arc",
     title: "Painful arc",
-    src: "/clinical-tests/painful-arc.webp",
+    src: `${CLINICAL_TEST_CDN}/painful-arc.webp`,
     aliases: ["painful arc", "arco doloroso", "arco doloroso de abduccion"],
   },
   {
     id: "spurling",
     title: "Test de Spurling",
-    src: "/clinical-tests/spurling.webp",
+    src: `${CLINICAL_TEST_CDN}/spurling.webp`,
     aliases: ["spurling", "test de spurling"],
   },
   {
     id: "ultt",
     title: "ULTT / ULNT",
-    src: "/clinical-tests/ultt.webp",
+    src: `${CLINICAL_TEST_CDN}/ultt.webp`,
     aliases: [
       "ultt",
       "ulnt",
@@ -136,19 +138,19 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "thompson",
     title: "Test de Thompson",
-    src: "/clinical-tests/thompson.webp",
+    src: `${CLINICAL_TEST_CDN}/thompson.webp`,
     aliases: ["thompson", "test de thompson", "squeeze test", "simmonds"],
   },
   {
     id: "matles",
     title: "Test de Matles",
-    src: "/clinical-tests/matles.webp",
+    src: `${CLINICAL_TEST_CDN}/matles.webp`,
     aliases: ["matles", "test de matles"],
   },
   {
     id: "anterior-drawer-ankle",
     title: "Cajón anterior (tobillo)",
-    src: "/clinical-tests/anterior-drawer-ankle.webp",
+    src: `${CLINICAL_TEST_CDN}/anterior-drawer-ankle.webp`,
     aliases: [
       "cajon anterior del tobillo",
       "cajón anterior del tobillo",
@@ -160,13 +162,13 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "windlass",
     title: "Test de Windlass",
-    src: "/clinical-tests/windlass.webp",
+    src: `${CLINICAL_TEST_CDN}/windlass.webp`,
     aliases: ["windlass", "test de windlass"],
   },
   {
     id: "heel-raise",
     title: "Heel raise / elevación de talones",
-    src: "/clinical-tests/heel-raise.webp",
+    src: `${CLINICAL_TEST_CDN}/heel-raise.webp`,
     aliases: [
       "heel raise",
       "heel-rise",
@@ -180,25 +182,25 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "hop-test",
     title: "Hop test",
-    src: "/clinical-tests/hop-test.webp",
+    src: `${CLINICAL_TEST_CDN}/hop-test.webp`,
     aliases: ["hop test", "hop-test", "salto monopodal", "single leg hop"],
   },
   {
     id: "faber",
     title: "FABER / Patrick",
-    src: "/clinical-tests/faber.webp",
+    src: `${CLINICAL_TEST_CDN}/faber.webp`,
     aliases: ["faber", "patrick", "figure 4", "figura 4"],
   },
   {
     id: "fadir",
     title: "FADIR",
-    src: "/clinical-tests/fadir.webp",
+    src: `${CLINICAL_TEST_CDN}/fadir.webp`,
     aliases: ["fadir", "faddir", "impingement de cadera"],
   },
   {
     id: "trendelenburg",
     title: "Test de Trendelenburg",
-    src: "/clinical-tests/trendelenburg.webp",
+    src: `${CLINICAL_TEST_CDN}/trendelenburg.webp`,
     aliases: [
       "trendelenburg",
       "test de trendelenburg",
@@ -210,37 +212,37 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "phalen",
     title: "Test de Phalen",
-    src: "/clinical-tests/phalen.webp",
+    src: `${CLINICAL_TEST_CDN}/phalen.webp`,
     aliases: ["phalen", "test de phalen", "posicion de rezo", "posición de rezo"],
   },
   {
     id: "tinel",
     title: "Signo de Tinel",
-    src: "/clinical-tests/tinel.webp",
+    src: `${CLINICAL_TEST_CDN}/tinel.webp`,
     aliases: ["tinel", "signo de tinel", "test de tinel"],
   },
   {
     id: "cozen",
     title: "Test de Cozen",
-    src: "/clinical-tests/cozen.webp",
+    src: `${CLINICAL_TEST_CDN}/cozen.webp`,
     aliases: ["cozen", "test de cozen"],
   },
   {
     id: "mill",
     title: "Test de Mill",
-    src: "/clinical-tests/mill.webp",
+    src: `${CLINICAL_TEST_CDN}/mill.webp`,
     aliases: ["mill", "test de mill", "mills", "test de mills"],
   },
   {
     id: "schober",
     title: "Test de Schober",
-    src: "/clinical-tests/schober.webp",
+    src: `${CLINICAL_TEST_CDN}/schober.webp`,
     aliases: ["schober", "test de schober"],
   },
   {
     id: "slr-lasegue",
     title: "SLR / Lasègue",
-    src: "/clinical-tests/slr-lasegue.webp",
+    src: `${CLINICAL_TEST_CDN}/slr-lasegue.webp`,
     aliases: [
       "lasegue",
       "lasègue",
@@ -254,7 +256,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "kemp",
     title: "Test de Kemp / cuadrante lumbar",
-    src: "/clinical-tests/kemp.webp",
+    src: `${CLINICAL_TEST_CDN}/kemp.webp`,
     aliases: [
       "kemp",
       "test de kemp",
@@ -267,7 +269,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "cross-body",
     title: "Cross-body / aducción horizontal",
-    src: "/clinical-tests/cross-body.webp",
+    src: `${CLINICAL_TEST_CDN}/cross-body.webp`,
     aliases: [
       "cross body",
       "cross-body",
@@ -279,7 +281,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "valgus-stress-mcl",
     title: "Estrés en valgo (LCM)",
-    src: "/clinical-tests/valgus-stress-mcl.webp",
+    src: `${CLINICAL_TEST_CDN}/valgus-stress-mcl.webp`,
     aliases: [
       "estres en valgo",
       "estrés en valgo",
@@ -290,7 +292,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "varus-stress-lcl",
     title: "Estrés en varo (LCL)",
-    src: "/clinical-tests/varus-stress-lcl.webp",
+    src: `${CLINICAL_TEST_CDN}/varus-stress-lcl.webp`,
     aliases: [
       "estres en varo",
       "estrés en varo",
@@ -301,7 +303,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "posterior-drawer-pcl",
     title: "Cajón posterior / sag (LCP)",
-    src: "/clinical-tests/posterior-drawer-pcl.webp",
+    src: `${CLINICAL_TEST_CDN}/posterior-drawer-pcl.webp`,
     aliases: [
       "cajon posterior",
       "cajón posterior",
@@ -314,7 +316,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "resisted-wrist-flexion",
     title: "Flexión de muñeca resistida (medial)",
-    src: "/clinical-tests/resisted-wrist-flexion.webp",
+    src: `${CLINICAL_TEST_CDN}/resisted-wrist-flexion.webp`,
     aliases: [
       "flexion de muneca resistida",
       "flexión de muñeca resistida",
@@ -325,7 +327,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "elbow-flexion-cubital",
     title: "Test de flexión de codo (cubital)",
-    src: "/clinical-tests/elbow-flexion-cubital.webp",
+    src: `${CLINICAL_TEST_CDN}/elbow-flexion-cubital.webp`,
     aliases: [
       "tunel cubital",
       "túnel cubital",
@@ -337,7 +339,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "cervical-distraction",
     title: "Distracción cervical",
-    src: "/clinical-tests/cervical-distraction.webp",
+    src: `${CLINICAL_TEST_CDN}/cervical-distraction.webp`,
     aliases: [
       "distraccion cervical",
       "distracción cervical",
@@ -349,7 +351,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "thumb-ucl-stress",
     title: "Estrés UCL del pulgar (valgo MCP)",
-    src: "/clinical-tests/thumb-ucl-stress.webp",
+    src: `${CLINICAL_TEST_CDN}/thumb-ucl-stress.webp`,
     aliases: [
       "ucl pulgar",
       "skier",
@@ -362,7 +364,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "finkelstein",
     title: "Finkelstein (De Quervain)",
-    src: "/clinical-tests/finkelstein.webp",
+    src: `${CLINICAL_TEST_CDN}/finkelstein.webp`,
     aliases: [
       "finkelstein",
       "test de finkelstein",
@@ -373,7 +375,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "snuffbox-palpation",
     title: "Palpación de la tabaquera anatómica",
-    src: "/clinical-tests/snuffbox-palpation.webp",
+    src: `${CLINICAL_TEST_CDN}/snuffbox-palpation.webp`,
     aliases: [
       "tabaquera",
       "tabaquera anatomica",
@@ -386,7 +388,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "thumb-axial-load",
     title: "Carga axial del pulgar (escafoides)",
-    src: "/clinical-tests/thumb-axial-load.webp",
+    src: `${CLINICAL_TEST_CDN}/thumb-axial-load.webp`,
     aliases: [
       "carga axial",
       "carga axial del pulgar",
@@ -396,7 +398,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "tfcc-ulnar-load",
     title: "Carga cubital / fosa cubital (TFCC)",
-    src: "/clinical-tests/tfcc-ulnar-load.webp",
+    src: `${CLINICAL_TEST_CDN}/tfcc-ulnar-load.webp`,
     aliases: [
       "tfcc",
       "carga cubital",
@@ -408,7 +410,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "cmc-grind",
     title: "Grind test CMC del pulgar",
-    src: "/clinical-tests/cmc-grind.webp",
+    src: `${CLINICAL_TEST_CDN}/cmc-grind.webp`,
     aliases: [
       "grind test",
       "artrosis cmc",
@@ -419,7 +421,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "crossed-slr",
     title: "SLR cruzado (well-leg)",
-    src: "/clinical-tests/crossed-slr.webp",
+    src: `${CLINICAL_TEST_CDN}/crossed-slr.webp`,
     aliases: [
       "slr cruzado",
       "crossed slr",

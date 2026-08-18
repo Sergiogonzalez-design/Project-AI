@@ -35,7 +35,7 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <AuthPageShell fallbackHref="/login">
+    <AuthPageShell>
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
         {isPhysio ? <PhysioOnboardingForm /> : <OnboardingForm />}
       </main>

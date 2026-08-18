@@ -4,7 +4,7 @@ import React from "react";
 import { Image, StyleSheet, View } from "react-native";
 import type { ClinicalTestImage } from "../lib/clinical-test-images";
 import { getClinicalTestVideoSrc } from "../lib/clinical-test-videos";
-import { getWebMediaBaseUrl } from "../lib/web-media-url";
+import { clinicalTestMediaUri } from "../lib/clinical-test-cdn";
 import { Colors } from "../lib/colors";
 
 function ClinicalTestVideoPlayer({ src, title }: { src: string; title: string }) {
@@ -40,7 +40,7 @@ export function ClinicalTestMediaBlock({ test }: { test: ClinicalTestImage }) {
   return (
     <View style={styles.imageWrap}>
       <Image
-        source={{ uri: `${getWebMediaBaseUrl()}${test.src}` }}
+        source={{ uri: clinicalTestMediaUri(test.src) }}
         style={styles.image}
         accessibilityLabel={test.title}
       />

@@ -9,12 +9,14 @@ import {
   PHYSIO_NAV_LINKS,
   type AppNavLink,
 } from "@/lib/app-nav-links";
+import { signOutToLogin } from "@/lib/sign-out-client";
 
-/** Slide-out ☰ menu: Paciente, Consulta, About, Profile (physio). */
+/** Slide-out ☰ menu: Clínica, Consulta, About, Profile (physio). */
 export function FisioNavBurger() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const menuId = useId();
 
   useEffect(() => {
@@ -39,25 +41,44 @@ export function FisioNavBurger() {
     };
   }, [open]);
 
+  function handleSignOut() {
+    setSigningOut(true);
+    setOpen(false);
+    signOutToLogin();
+  }
+
   const menu =
     mounted && open
       ? createPortal(
-          <div className="fixed inset-0 z-[100]" role="presentation">
+          <div
+            className="pointer-events-none fixed inset-0 z-[100]"
+            role="presentation"
+          >
             <button
               type="button"
-              className="absolute inset-0 top-14 bg-black/40"
+              className="pointer-events-auto absolute inset-0 top-14 bg-black/40"
               aria-label="Cerrar menú"
               onClick={() => setOpen(false)}
             />
             <aside
               id={menuId}
-              className="absolute bottom-0 right-0 top-14 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
+              className="pointer-events-auto absolute bottom-0 right-0 top-14 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
               style={{ animation: "slideInRight 180ms ease-out" }}
               role="dialog"
               aria-modal="true"
               aria-label="Menú de navegación"
             >
               <NavLinks links={PHYSIO_NAV_LINKS} pathname={pathname} onNavigate={() => setOpen(false)} />
+              <div className="shrink-0 border-t border-slate-200/80 p-3">
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className="w-full rounded-[14px] px-4 py-3 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-[#F1F5F9] disabled:opacity-60"
+                >
+                  {signingOut ? "Saliendo…" : "Cerrar sesión"}
+                </button>
+              </div>
             </aside>
           </div>,
           document.body
