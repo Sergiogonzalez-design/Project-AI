@@ -10,7 +10,7 @@ import {
 import { Colors } from "../lib/colors";
 
 type Props = TextInputProps & {
-  label: string;
+  label?: string;
   error?: boolean;
 };
 
@@ -21,15 +21,15 @@ export const AuthTextField = forwardRef<TextInput, Props>(function AuthTextField
 ) {
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>{label}</Text>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
         ref={ref}
-        {...props}
-        style={[styles.input, error && styles.inputError, style]}
-        placeholderTextColor={Colors.textLight}
         autoCorrect={false}
         spellCheck={false}
         blurOnSubmit={false}
+        {...props}
+        style={[styles.input, error && styles.inputError, style]}
+        placeholderTextColor={Colors.textLight}
       />
     </View>
   );

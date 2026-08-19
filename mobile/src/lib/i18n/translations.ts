@@ -46,6 +46,11 @@ export const translations = {
       signOutConfirm: "¿Seguro que quieres cerrar sesión?",
       cancel: "Cancelar",
       avatarA11y: "Foto de perfil",
+      deleteAccount: "Eliminar cuenta",
+      deleteAccountTitle: "Eliminar cuenta",
+      deleteAccountConfirm:
+        "Se borrará tu cuenta, consultas, fotos e informes asociados. Esta acción no se puede deshacer.",
+      deleteAccountError: "No se pudo eliminar la cuenta. Inténtalo de nuevo.",
     },
     admin: {
       title: "Administración",
@@ -278,6 +283,11 @@ export const translations = {
       signOutConfirm: "Are you sure you want to sign out?",
       cancel: "Cancel",
       avatarA11y: "Profile photo",
+      deleteAccount: "Delete account",
+      deleteAccountTitle: "Delete account",
+      deleteAccountConfirm:
+        "Your account, consults, photos, and related reports will be deleted. This cannot be undone.",
+      deleteAccountError: "Could not delete the account. Please try again.",
     },
     admin: {
       title: "Administration",

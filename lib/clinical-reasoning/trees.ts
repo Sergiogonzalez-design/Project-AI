@@ -2624,21 +2624,38 @@ const HIP_TREE: ClinicalReasoningTree = {
     ),
     hp_route_posterior: conclusionNode(
       "hp_route_posterior",
-      "Rama posterior — isquio / glúteo / ciática",
-      "Diferenciar isquiotibial proximal vs deep gluteal vs lumbar/radicular.",
+      "Rama posterior — muslo / isquiotibiales",
+      "Quédate en la zona que localizó el paciente (muslo posterior / isquion). No pases a cadera lateral (GTPS) ni a lumbar salvo un dolor ciático o lumbar DISTINTO al tirón de isquios.",
       [
         {
-          name: "Isquiotibial proximal",
-          probability: "media",
-          rationale: "Isquion + sentarse + estirar isquio.",
+          name: "Isquiotibial proximal / muslo posterior",
+          probability: "alta",
+          rationale: "El paciente localizó muslo / isquiotibiales o isquion.",
         },
         {
           name: "Deep gluteal / radicular",
-          probability: "media",
-          rationale: "Glúteo profundo sentado o SLR familiar.",
+          probability: "baja",
+          rationale: "Solo si hay ciática o dolor lumbar distinto al tirón de isquios.",
         },
       ],
-      { nextNodeId: "hp_posterior_slr" }
+      { nextNodeId: "hp_hamstring_local_gate" }
+    ),
+    hp_hamstring_local_gate: testNode(
+      "hp_hamstring_local_gate",
+      "route-hip-hamstring-local",
+      branch(
+        "hp_posterior_hamstring",
+        "Es el dolor de muslo / isquiotibiales del paciente"
+      ),
+      branch("hp_posterior_slr", "Hay ciática o dolor lumbar distinto"),
+      {
+        title: "¿El dolor que exploras es el del muslo / isquiotibiales?",
+        description:
+          "Si duele donde el paciente señaló (muslo posterior, isquios, isquion), continúa como lesión/tendinopatía de isquiotibiales. Solo usa SLR/lumbar si hay un dolor tipo nervio o lumbar diferente de ese tirón.",
+        procedure: "Enrutado por localización del paciente (no es un test de cadera).",
+        evidenceNote:
+          "Tirón isquiotibial ≠ ciática. No enrutar a Trendelenburg/GTPS si el dolor es el muslo que ya nombró.",
+      }
     ),
     hp_faber: testNode(
       "hp_faber",
@@ -2672,18 +2689,24 @@ const HIP_TREE: ClinicalReasoningTree = {
     hp_posterior_slr: testNode(
       "hp_posterior_slr",
       "slr-lasegue",
-      branch("hp_posterior_radicular", "Reproduce dolor posterior/ciático"),
-      branch("hp_posterior_hamstring", "SLR negativo o no familiar")
+      branch(
+        "hp_posterior_radicular",
+        "Reproduce ciática / dolor tipo nervio (no el tirón de isquios)"
+      ),
+      branch(
+        "hp_posterior_hamstring",
+        "Solo tirón o dolor de isquiotibiales (el del paciente)"
+      )
     ),
     hp_posterior_radicular: conclusionNode(
       "hp_posterior_radicular",
       "Compatible con irritación ciática / radicular",
-      "SLR positivo familiar → lumbar/radicular o deep gluteal con componente neural; exploración neurológica completa.",
+      "SLR reproduce un dolor tipo nervio distinto al tirón de isquios → cribado lumbar/neural. No sustituye por GTPS ni por cadera lateral.",
       [
         {
           name: "Radiculopatía lumbar / ciática",
           probability: "alta",
-          rationale: "SLR familiar + posible síntomas lumbares.",
+          rationale: "SLR familiar de ciática, no de isquiotibiales.",
         },
         {
           name: "Deep gluteal syndrome",
@@ -2693,33 +2716,31 @@ const HIP_TREE: ClinicalReasoningTree = {
         {
           name: "Isquiotibial proximal",
           probability: "baja",
-          rationale: "Si patrón isquial claro predomina sobre neural.",
+          rationale: "Si el patrón sigue siendo el muslo/isquion del paciente.",
         },
-      ],
-      { nextNodeId: "hp_extraarticular" }
+      ]
     ),
     hp_posterior_hamstring: conclusionNode(
       "hp_posterior_hamstring",
-      "Compatible con isquiotibial proximal",
-      "SLR negativo + sentarse/estirar isquio/flexión resistida → tendinopatía proximal de isquiotibiales / lesión muscular ↑.",
+      "Compatible con isquiotibial / muslo posterior",
+      "El dolor está en la zona que el paciente nombró (muslo / isquiotibiales). No continuar hacia cadera lateral (Trendelenburg/GTPS) ni concluir lumbar si no hay un patrón ciático distinto.",
       [
         {
           name: "Tendinopatía isquiotibial proximal",
           probability: "alta",
-          rationale: "Dolor isquion + sentarse + estirar isquio + carga.",
+          rationale: "Dolor isquion / muslo posterior + sentarse o estirar isquio + carga.",
         },
         {
-          name: "Distensión isquiotibial aguda",
+          name: "Lesión muscular de isquiotibiales",
           probability: "media",
           rationale: "Si mecanismo sprint/chute reciente.",
         },
         {
           name: "Deep gluteal / ciático",
           probability: "baja",
-          rationale: "Si dolor glúteo profundo predomina sobre isquion.",
+          rationale: "Solo si el dolor glúteo/neural predomina sobre el muslo.",
         },
-      ],
-      { nextNodeId: "hp_lateral_branch" }
+      ]
     ),
     hp_posterior_deep_gluteal: conclusionNode(
       "hp_posterior_deep_gluteal",

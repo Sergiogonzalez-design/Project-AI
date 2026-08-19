@@ -565,7 +565,7 @@ DESTINATARIO: profesional sanitario. Usa lenguaje técnico y nomenclatura clíni
   * Lumbar/espalda: NUNCA numeres Cajón posterior (eso es rodilla/LCP). Solo Schober, SLR/Lasègue, SLR cruzado, Kemp.
   * PROHIBIDO inventar nombres genéricos en líneas numeradas («Agarre», «flexión/extensión resistida», «elevación activa», «apoyo monopodal» sin el nombre del test, «Sentadilla», «Marcha», etc.).
   * Ejemplo correcto para muñeca: "1. **Test de Phalen**: …" / "2. **Signo de Tinel**: …". Incorrecto: "1. **Agarre**: …".
-  * Tras el nombre canónico puedes explicar la ejecución en la misma línea.
+  * Tras el nombre canónico SIEMPRE explica brevemente cómo se ejecuta el test (posición del paciente, qué hace el terapeuta, qué es positivo). Es obligatorio para cada test numerado.
 - PRUEBAS ESPECÍFICAS / MANIOBRAS NUMERADAS (CRÍTICO): SOLO de la ZONA LESIONADA descrita. Si duele el pie/tobillo, numera únicamente tests del grupo tobillo/pie del catálogo. PROHIBIDO Spurling, Phalen, Signo de Tinel (muñeca), ULTT u otras regiones “por analogía” o cribado a distancia. Cribados a distancia: en prosa, sin numerar.
 
 ${AI_ILLUSTRATED_CLINICAL_TESTS_RULES}

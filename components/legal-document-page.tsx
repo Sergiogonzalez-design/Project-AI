@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   getPrivacyPolicy,
   getTermsOfUse,
@@ -56,9 +57,12 @@ function DocBody({ doc }: { doc: DocBlock }) {
 /** Privacy + terms on one page; language matches browser (or user toggle). */
 export function LegalDocumentsView({
   initialLocale = "es",
+  backTo,
 }: {
   initialLocale?: LegalLocale;
+  backTo?: "login" | "signup";
 }) {
+  const router = useRouter();
   const [locale, setLocale] = useState<LegalLocale>(initialLocale);
 
   useEffect(() => {
@@ -78,10 +82,38 @@ export function LegalDocumentsView({
   const ui = legalUiCopy(locale);
   const privacy = useMemo(() => getPrivacyPolicy(locale), [locale]);
   const terms = useMemo(() => getTermsOfUse(locale), [locale]);
+  const backHref =
+    backTo === "signup" ? "/signup" : backTo === "login" ? "/login" : null;
+  const backLabel =
+    backTo === "signup"
+      ? "Volver a crear cuenta"
+      : backTo === "login"
+        ? "Volver al inicio de sesión"
+        : locale === "en"
+          ? "Back"
+          : "Volver";
+
+  function handleBack() {
+    if (backHref) {
+      router.push(backHref);
+      return;
+    }
+    router.back();
+  }
 
   return (
     <div className="flex-1 px-4 py-8 sm:px-6 sm:py-10">
       <article className="mx-auto w-full max-w-3xl rounded-2xl bg-slate-100 px-5 py-8 sm:px-8 sm:py-10">
+      <button
+        type="button"
+        onClick={handleBack}
+        className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800"
+      >
+        <span aria-hidden className="text-lg leading-none">
+          ←
+        </span>
+        {backLabel}
+      </button>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
           {ui.kicker}

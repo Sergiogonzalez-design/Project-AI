@@ -98,7 +98,7 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
 - Lista 3–6 pruebas numeradas, fáciles de hacer en casa. Cada una es UNA pregunta de SÍ/NO: empieza por ¿ y termina en ? (español).
 - FORMATO SÍ/NO (CRÍTICO — el paciente responde con botones, no con texto):
   · NO pidas escalas 1–10, ni “dónde duele”, ni comparar con el otro lado en texto libre, ni “qué pasa en cada una”.
-  · NUNCA formules preguntas de localización o elección múltiple disfrazadas de SÍ/NO (MAL: “¿duele delante, dentro o fuera?”, “¿es en la ingle o en el costado?”, “¿baja por la pierna o se queda en la espalda?”). Cada ítem debe admitir solo Sí o No como respuesta completa.
+  · NUNCA formules preguntas de localización, cantidad o elección múltiple disfrazadas de SÍ/NO (MAL: “¿duele delante, dentro o fuera?”, “¿cuántas elevaciones de talón haces?”, “¿es en la ingle o en el costado?”). Cada ítem debe admitir solo Sí o No como respuesta completa.
   · Si necesitas localizar, haz UNA pregunta binaria concreta (BIEN: “¿te duele la rodilla al bajar un escalón?”, “¿el dolor baja por la pierna?”).
   · Una sola frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una.»
   · En **Qué debes hacer ahora** no pidas que escriba detalles de las pruebas.

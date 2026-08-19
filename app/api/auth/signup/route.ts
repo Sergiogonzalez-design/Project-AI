@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
+import { isGuestUser } from "@/lib/guest-account";
+import { getSupabaseUrl } from "@/lib/supabase/env";
 
 function getServiceRoleKey(): string | null {
   return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || null;
@@ -8,7 +9,7 @@ function getServiceRoleKey(): string | null {
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "content-type",
+  "Access-Control-Allow-Headers": "content-type, authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -37,7 +38,6 @@ export async function POST(request: NextRequest) {
     };
     const email = body.email?.trim().toLowerCase() ?? "";
     const password = body.password ?? "";
-    const accountType = body.accountType === "physio" ? "physio" : "patient";
 
     if (!email || password.length < 6) {
       return NextResponse.json(
@@ -49,6 +49,41 @@ export async function POST(request: NextRequest) {
     const adminClient = createSupabaseClient(getSupabaseUrl(), serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    const authHeader = request.headers.get("authorization");
+    const bearer =
+      authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+
+    if (bearer) {
+      const { data: guestData } = await adminClient.auth.getUser(bearer);
+      if (guestData.user && isGuestUser(guestData.user)) {
+        const { error: updateError } = await adminClient.auth.admin.updateUserById(
+          guestData.user.id,
+          {
+            email,
+            password,
+            email_confirm: true,
+            app_metadata: { is_guest: false, account_type: "patient" },
+          }
+        );
+        if (updateError) {
+          return NextResponse.json(
+            { error: updateError.message },
+            { status: 400, headers: CORS }
+          );
+        }
+        await adminClient
+          .from("profiles")
+          .update({
+            onboarding_completed: false,
+            account_type: "patient",
+          })
+          .eq("id", guestData.user.id);
+        return NextResponse.json({ ok: true, converted: true }, { headers: CORS });
+      }
+    }
+
+    const accountType = body.accountType === "physio" ? "physio" : "patient";
 
     const { data, error } = await adminClient.auth.admin.createUser({
       email,

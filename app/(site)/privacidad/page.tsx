@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function PrivacidadPage() {
-  return <LegalDocumentsView initialLocale="es" />;
+export default async function PrivacidadPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const { from } = await searchParams;
+  const backTo = from === "signup" || from === "login" ? from : undefined;
+  return <LegalDocumentsView initialLocale="es" backTo={backTo} />;
 }

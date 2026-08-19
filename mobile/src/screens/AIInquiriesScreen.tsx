@@ -414,11 +414,15 @@ type LinkedPhysioInfo = {
 type AIInquiriesScreenProps = {
   linkedPhysio?: LinkedPhysioInfo | null;
   onLinkedPhysioChange?: (physio: LinkedPhysioInfo) => void;
+  guestMode?: boolean;
+  onCreateAccount?: () => void;
 };
 
 export function AIInquiriesScreen({
   linkedPhysio = null,
   onLinkedPhysioChange,
+  guestMode = false,
+  onCreateAccount,
 }: AIInquiriesScreenProps) {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
@@ -426,7 +430,7 @@ export function AIInquiriesScreen({
   const composerInset = composerBottomInset(keyboardHeight, insets.bottom);
   const { t, locale } = useI18n();
   const welcomeText = linkedPhysio
-    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name)
+    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name, { guest: guestMode })
     : WELCOME_MESSAGE;
   const introGreeting = linkedPhysio
     ? buildPhysioLinkedIntroGreeting(linkedPhysio.physio_name)
@@ -2728,7 +2732,9 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         });
         if (sent) setPhysioReportSentBanner(true);
 
-        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name);
+        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
+          guest: guestMode,
+        });
         const { data: aiMsg } = await supabase
           .from("messages")
           .insert({
@@ -3100,7 +3106,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 <Text style={styles.historyNewBtnText}>{t.consulta.newConsulta}</Text>
               </Pressable>
             )}
-            {linkedPhysio && (
+            {linkedPhysio && !guestMode && (
               <Text style={styles.historyHintText}>
                 {locale === "en"
                   ? "This chat is for what your physiotherapist asked. For other questions, use the Consulta tab."
@@ -3108,7 +3114,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               </Text>
             )}
 
-            {linkedPhysio && (
+            {linkedPhysio && !guestMode && (
               <Pressable
                 style={({ pressed }) => [
                   styles.historyCodeBtn,
@@ -3930,10 +3936,31 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   textAlign: "center",
                 }}
               >
-                {locale === "en"
-                  ? "If you want to keep using the AI, open the Consulta tab."
-                  : "Si quieres seguir usando la IA, abre la pestaña Consulta."}
+                {guestMode
+                  ? locale === "en"
+                    ? "If you want to keep talking with the AI, create an account."
+                    : "Si quieres seguir hablando con la IA, crea una cuenta."
+                  : locale === "en"
+                    ? "If you want to keep using the AI, open the Consulta tab."
+                    : "Si quieres seguir usando la IA, abre la pestaña Consulta."}
               </Text>
+              {guestMode ? (
+                <Pressable
+                  onPress={onCreateAccount}
+                  style={{
+                    marginTop: 18,
+                    backgroundColor: Colors.text,
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    paddingHorizontal: 22,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: Colors.white, fontWeight: "700", fontSize: 15 }}>
+                    {locale === "en" ? "Create an account" : "Crear cuenta"}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : !linkedPhysio && phase === "complete" ? (
             <View

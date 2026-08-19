@@ -9,11 +9,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../lib/colors";
 import { bodyPartLabel } from "../lib/body-parts";
+import { isThighOrHamstringComplaint } from "../lib/detect-body-part";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { CLINICAL_TEST_IMAGES } from "../lib/clinical-test-images";
 import {
   advanceFromConclusion,
   applyAnswer,
+  countCompletedManiobras,
   createSession,
   getNode,
   getTreeForSession,
@@ -117,12 +119,20 @@ function ConclusionCard({
   node,
   onContinue,
   canContinue,
+  hadPriorManiobra,
 }: {
   node: ClinicalConclusionNode;
   onContinue: () => void;
   canContinue: boolean;
+  hadPriorManiobra: boolean;
 }) {
   const isFinal = !canContinue;
+  const continueLabel = hadPriorManiobra
+    ? "Continuar con otra maniobra →"
+    : "Continuar con maniobra →";
+  const continueHint = hadPriorManiobra
+    ? "Continúa con otra maniobra para afinar el razonamiento diferencial."
+    : "Continúa con una maniobra para afinar el razonamiento diferencial.";
 
   return (
     <View style={styles.cardInner}>
@@ -137,9 +147,7 @@ function ConclusionCard({
       ) : (
         <View style={styles.intermediateBanner}>
           <Text style={styles.intermediateBannerTitle}>Conclusión parcial</Text>
-          <Text style={styles.intermediateBannerText}>
-            Continúa con otra maniobra para afinar el razonamiento diferencial.
-          </Text>
+          <Text style={styles.intermediateBannerText}>{continueHint}</Text>
         </View>
       )}
 
@@ -180,7 +188,7 @@ function ConclusionCard({
           style={({ pressed }) => [styles.continueBtn, pressed && styles.pressed]}
           onPress={onContinue}
         >
-          <Text style={styles.continueBtnText}>Continuar con otra maniobra →</Text>
+          <Text style={styles.continueBtnText}>{continueLabel}</Text>
         </Pressable>
       ) : (
         <View style={styles.finalNote}>
@@ -279,7 +287,11 @@ export function ClinicalReasoningFlow({
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.eyebrow}>Razonamiento clínico por pruebas</Text>
-        <Text style={styles.pageTitle}>{tree.title}</Text>
+        <Text style={styles.pageTitle}>
+          {bodyArea && isThighOrHamstringComplaint(bodyArea)
+            ? `Razonamiento clínico — ${bodyArea}`
+            : tree.title}
+        </Text>
         <Text style={styles.meta}>
           {patientName ? `${patientName} · ` : ""}
           {bodyArea || bodyPartLabel(session.bodyPart)}
@@ -298,6 +310,7 @@ export function ClinicalReasoningFlow({
               node={currentNode}
               onContinue={handleContinue}
               canContinue={canContinue}
+              hadPriorManiobra={countCompletedManiobras(session, tree) > 0}
             />
           )}
         </View>

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../lib/colors";
@@ -60,13 +61,19 @@ export function LegalDocumentView({
   return (
     <View style={styles.root}>
       <View style={styles.topBar}>
-        <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button">
-          <Text style={styles.back}>{ui.back}</Text>
+        <Pressable
+          onPress={onClose}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={ui.back}
+          style={styles.backBtn}
+        >
+          <Ionicons name="arrow-back" size={22} color={Colors.text} />
         </Pressable>
         <Text style={styles.topTitle} numberOfLines={1}>
           {ui.privacy}
         </Text>
-        <View style={{ width: 72 }} />
+        <View style={styles.backBtn} />
       </View>
       <ScrollView
         ref={scrollRef}
@@ -106,7 +113,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
-  back: { fontSize: 15, fontWeight: "600", color: Colors.primary, width: 72 },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   topTitle: {
     flex: 1,
     textAlign: "center",

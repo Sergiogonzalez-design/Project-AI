@@ -1,5 +1,6 @@
 import { AuthPageShell } from "@/components/auth-page-shell";
 import { LoginForm } from "@/components/login-form";
+import { extractInviteCodeFromSearch } from "@/lib/physio-invite";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { Metadata } from "next";
 
@@ -9,11 +10,15 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams?: Promise<{ next?: string }>;
+  searchParams?: Promise<{ next?: string; code?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const sp = (await searchParams) ?? {};
+  const initialCode = extractInviteCodeFromSearch({
+    code: sp.code,
+    next: sp.next,
+  });
 
   if (!isSupabaseConfigured()) {
     return (
@@ -33,7 +38,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
   return (
     <AuthPageShell>
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
-        <LoginForm nextPath={sp.next} />
+        <LoginForm nextPath={sp.next} initialCode={initialCode} />
       </main>
     </AuthPageShell>
   );

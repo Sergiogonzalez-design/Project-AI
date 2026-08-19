@@ -1,11 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { requireAdmin } from "@/lib/admin-auth";
+import { getOpenAI } from "@/lib/openai";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Increase body size limit for large chunk batches
 export const maxDuration = 60;
@@ -40,6 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const openai = getOpenAI();
     const body = await request.json() as { chunks: string[]; sourceName: string };
     const { chunks, sourceName } = body;
 

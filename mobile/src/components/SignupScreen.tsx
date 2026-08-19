@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -23,6 +23,7 @@ import { LegalDocumentView } from "./LegalDocumentView";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 import { WEB_APP_URL } from "../lib/admin-api";
+import { isGuestUser } from "../lib/guest-account";
 import { supabase } from "../lib/supabase";
 
 type Props = {
@@ -40,8 +41,15 @@ export function SignupScreen({ onSwitch }: Props) {
   const [legalSection, setLegalSection] = useState<"privacy" | "terms" | null>(
     null
   );
+  const [convertingGuest, setConvertingGuest] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => {
+      setConvertingGuest(isGuestUser(data.user));
+    });
+  }, []);
 
   async function handleSignup() {
     setError(null);
@@ -60,10 +68,22 @@ export function SignupScreen({ onSwitch }: Props) {
     setLoading(true);
     try {
       const emailNorm = email.trim().toLowerCase();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const converting = isGuestUser(session?.user);
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (converting && session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
       const res = await fetch(`${WEB_APP_URL}/api/auth/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailNorm, password, accountType }),
+        headers,
+        body: JSON.stringify({
+          email: emailNorm,
+          password,
+          accountType: converting ? "patient" : accountType,
+        }),
       });
       const payload = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -71,6 +91,9 @@ export function SignupScreen({ onSwitch }: Props) {
         return;
       }
 
+      if (converting) {
+        await supabase.auth.signOut({ scope: "local" });
+      }
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: emailNorm,
         password,
@@ -111,10 +134,16 @@ export function SignupScreen({ onSwitch }: Props) {
         <View style={styles.header}>
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
           <Text style={styles.title}>{t.auth.signupTitle}</Text>
-          <Text style={styles.subtitle}>Crea tu cuenta</Text>
+          <Text style={styles.subtitle}>
+            {convertingGuest
+              ? "Crea tu cuenta para seguir usando la IA"
+              : "Crea tu cuenta"}
+          </Text>
         </View>
 
         <View style={styles.card}>
+          {convertingGuest ? null : (
+            <>
           <Text style={styles.roleLabel}>Soy...</Text>
           <View style={styles.roleRow}>
             <Pressable
@@ -144,8 +173,9 @@ export function SignupScreen({ onSwitch }: Props) {
               </Text>
             </Pressable>
           </View>
-
           <View style={{ height: 12 }} />
+            </>
+          )}
 
           <AuthTextField
             label="Correo electrónico"

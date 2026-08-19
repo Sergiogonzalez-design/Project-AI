@@ -3,6 +3,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import React, { useMemo, useState } from "react";
 import {
+  Alert,
   Modal,
   Pressable,
   StyleSheet,
@@ -12,6 +13,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../lib/colors";
+import { supabase } from "../lib/supabase";
+import { cancelAllReminders } from "../lib/notifications";
 import type { TabParamList } from "../navigation/AppTabs";
 
 type MenuItem = {
@@ -41,10 +44,7 @@ export function AppBurgerMenu({
           { route: "Patients", label: "Clínica" },
           { route: "PhysioConsult", label: "Consulta" },
         ]
-      : [
-          { route: "AIInquiries", label: "Consulta" },
-          { route: "PhysioLink", label: "Fisioterapia" },
-        ];
+      : [{ route: "AIInquiries", label: "Consulta" }, { route: "PhysioLink", label: "Fisioterapia" }];
     return [
       ...primary,
       { route: "AboutUs", label: "About" },
@@ -124,6 +124,32 @@ export function AppBurgerMenu({
                 );
               })}
             </View>
+
+            <View style={{ flex: 1 }} />
+
+            <Pressable
+              onPress={() => {
+                setOpen(false);
+                Alert.alert("Cerrar sesión", "¿Seguro que quieres cerrar sesión?", [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Cerrar sesión",
+                    style: "destructive",
+                    onPress: async () => {
+                      await cancelAllReminders();
+                      await Promise.race([
+                        supabase.auth.signOut({ scope: "local" }),
+                        new Promise((r) => setTimeout(r, 1500)),
+                      ]);
+                    },
+                  },
+                ]);
+              }}
+              style={({ pressed }) => [styles.signOutItem, pressed && { opacity: 0.8 }]}
+            >
+              <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
+              <Text style={styles.signOutText}>Cerrar sesión</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -149,6 +175,7 @@ const styles = StyleSheet.create({
   },
   backdrop: { ...StyleSheet.absoluteFillObject },
   drawer: {
+    height: "100%",
     backgroundColor: "#FAFAFA",
     borderLeftWidth: 1,
     borderLeftColor: Colors.border,
@@ -180,6 +207,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  signOutItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    marginTop: 8,
+  },
+  signOutText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.danger,
   },
   menuList: { gap: 4, paddingTop: 4 },
   menuItem: {

@@ -11,8 +11,8 @@ function getLandingRoute(
 ): keyof TabParamList {
   const names = navigation.getState()?.routeNames ?? [];
   if (names.includes("Patients")) return "Patients";
-  if (names.includes("PhysioLink")) return "PhysioLink";
   if (names.includes("AIInquiries")) return "AIInquiries";
+  if (names.includes("PhysioLink")) return "PhysioLink";
   if (names.includes("PhysioConsult")) return "PhysioConsult";
   return (names[0] as keyof TabParamList | undefined) ?? "Profile";
 }

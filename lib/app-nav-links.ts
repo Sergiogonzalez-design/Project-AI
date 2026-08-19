@@ -25,5 +25,5 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
 
 /** First tab / home screen — back arrow has nowhere useful to go. */
 export function isPacienteLandingPath(pathname: string): boolean {
-  return pathname === "/fisioterapia" || pathname === "/fisio";
+  return pathname === "/consulta" || pathname === "/fisio";
 }

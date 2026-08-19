@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { formatAthleteProfileContext } from "@/lib/format-athlete-profile";
+import { getOpenAI } from "@/lib/openai";
 import {
   AI_DATA_FIDELITY_RULES,
   AI_EVIDENCE_AND_SEVERITY_RULES,
@@ -13,8 +13,6 @@ import {
 } from "@/lib/ai-consult-rules";
 import { buildFunctionalQuestionsPromptBlock } from "@/lib/consulta-functional-tests";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -37,6 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const openai = getOpenAI();
   const body = await request.json() as {
     bodyArea: string;
     onsetType: string;

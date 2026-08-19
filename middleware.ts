@@ -6,6 +6,7 @@ import {
   isSupabaseConfigured,
 } from "@/lib/supabase/env";
 import { isAdminEmail } from "@/lib/admin-auth";
+import { isGuestUser } from "@/lib/guest-account";
 import {
   ATHLETE_PROFILE_COLUMNS,
   isAthleteProfileComplete,
@@ -23,8 +24,24 @@ const PROFILE_COLUMNS =
 type RoutingProfile = AthleteProfileFields &
   PhysioProfileFields & { account_type?: string | null };
 
+function isGuestAllowedPath(pathname: string): boolean {
+  return (
+    pathname === "/fisioterapia" ||
+    pathname.startsWith("/fisioterapia/") ||
+    pathname === "/signup" ||
+    pathname === "/privacidad" ||
+    pathname === "/terminos" ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/api/")
+  );
+}
+
 /** Where a logged-in, non-admin user should land based on their account type + profile. */
-function destinationFor(profile: RoutingProfile | null | undefined): string {
+function destinationFor(
+  profile: RoutingProfile | null | undefined,
+  guest = false
+): string {
+  if (guest) return "/fisioterapia";
   if (profile?.account_type === "physio") {
     return isPhysioProfileComplete(profile) ? "/fisio" : "/onboarding";
   }
@@ -84,6 +101,7 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const search = request.nextUrl.search;
+  const guestUser = isGuestUser(user);
 
   const isPublic =
     pathname === "/login" ||
@@ -97,11 +115,23 @@ export async function middleware(request: NextRequest) {
 
   if (!user && !isPublic) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", `${pathname}${search}`);
+    const code = request.nextUrl.searchParams.get("code");
+    if (
+      (pathname === "/fisioterapia" || pathname.startsWith("/fisioterapia/")) &&
+      code
+    ) {
+      loginUrl.searchParams.set("code", code);
+    } else {
+      loginUrl.searchParams.set("next", `${pathname}${search}`);
+    }
     return NextResponse.redirect(loginUrl);
   }
 
   const isAdminUser = isAdminEmail(user?.email);
+
+  if (user && pathname === "/signup" && guestUser) {
+    return supabaseResponse;
+  }
 
   if (user && (pathname === "/login" || pathname === "/signup")) {
     // Same login for everyone — land on the app; admin sees Admin in the nav
@@ -115,13 +145,17 @@ export async function middleware(request: NextRequest) {
       );
     }
 
+    if (guestUser) {
+      return NextResponse.redirect(new URL("/fisioterapia", request.url));
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select(PROFILE_COLUMNS)
       .eq("id", user.id)
       .maybeSingle();
 
-    const destination = safeNext ?? destinationFor(profile);
+    const destination = safeNext ?? destinationFor(profile, false);
     return NextResponse.redirect(new URL(destination, request.url));
   }
 
@@ -142,7 +176,7 @@ export async function middleware(request: NextRequest) {
 
   // Physio dashboard: only accounts with account_type = 'physio'
   if (isPhysioPath) {
-    if (!user) {
+    if (!user || guestUser) {
       return NextResponse.redirect(new URL("/fisio/access-denied", request.url));
     }
     const { data: profile } = await supabase
@@ -163,13 +197,20 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/api/") &&
     !isAdminUser
   ) {
+    if (guestUser) {
+      if (!isGuestAllowedPath(pathname)) {
+        return NextResponse.redirect(new URL("/fisioterapia", request.url));
+      }
+      return supabaseResponse;
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select(PROFILE_COLUMNS)
       .eq("id", user.id)
       .maybeSingle();
 
-    const destination = destinationFor(profile);
+    const destination = destinationFor(profile, false);
     if (destination === "/onboarding") {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
@@ -195,13 +236,16 @@ export async function middleware(request: NextRequest) {
     if (isAdminUser) {
       return NextResponse.redirect(new URL("/consulta", request.url));
     }
+    if (guestUser) {
+      return NextResponse.redirect(new URL("/fisioterapia", request.url));
+    }
     const { data: profile } = await supabase
       .from("profiles")
       .select(PROFILE_COLUMNS)
       .eq("id", user.id)
       .maybeSingle();
 
-    const destination = destinationFor(profile);
+    const destination = destinationFor(profile, false);
     if (destination !== "/onboarding") {
       return NextResponse.redirect(new URL(destination, request.url));
     }

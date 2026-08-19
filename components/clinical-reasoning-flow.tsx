@@ -6,6 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 import {
   applyAnswer,
   advanceFromConclusion,
+  countCompletedManiobras,
   createSession,
   getNode,
   getTreeForSession,
@@ -16,6 +17,7 @@ import {
 import { CLINICAL_TEST_IMAGES } from "@/lib/clinical-test-images";
 import { getClinicalTestVideoSrc } from "@/lib/clinical-test-videos";
 import { bodyPartLabel } from "@/lib/body-parts";
+import { isThighOrHamstringComplaint } from "@/lib/detect-body-part";
 import type {
   ClinicalConclusionNode,
   ClinicalHypothesis,
@@ -183,12 +185,20 @@ function ConclusionScreen({
   node,
   onContinue,
   canContinue,
+  hadPriorManiobra,
 }: {
   node: ClinicalConclusionNode;
   onContinue: () => void;
   canContinue: boolean;
+  hadPriorManiobra: boolean;
 }) {
   const isFinal = !canContinue;
+  const continueLabel = hadPriorManiobra
+    ? "Continuar con otra maniobra →"
+    : "Continuar con maniobra →";
+  const continueHint = hadPriorManiobra
+    ? "Continúa con otra maniobra para afinar el razonamiento diferencial."
+    : "Continúa con una maniobra para afinar el razonamiento diferencial.";
 
   return (
     <div className="flex flex-col gap-5">
@@ -207,9 +217,7 @@ function ConclusionScreen({
           <p className="text-xs font-semibold text-blue-800">
             Conclusión parcial
           </p>
-          <p className="mt-0.5 text-sm text-blue-700/90">
-            Continúa con otra maniobra para afinar el razonamiento diferencial.
-          </p>
+          <p className="mt-0.5 text-sm text-blue-700/90">{continueHint}</p>
         </div>
       )}
 
@@ -265,7 +273,7 @@ function ConclusionScreen({
           onClick={onContinue}
           className="btn-primary w-full justify-center py-3.5 text-base shadow-md"
         >
-          Continuar con otra maniobra →
+          {continueLabel}
         </button>
       ) : (
         <div className="rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-50 px-5 py-4 shadow-sm">
@@ -374,7 +382,9 @@ export function ClinicalReasoningFlow({
             Razonamiento clínico por pruebas
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
-            {tree.title}
+            {bodyArea && isThighOrHamstringComplaint(bodyArea)
+              ? `Razonamiento clínico — ${bodyArea}`
+              : tree.title}
           </h1>
           <p className="mt-1 text-sm text-neutral-600">
             {patientName ? `${patientName} · ` : ""}
@@ -400,6 +410,7 @@ export function ClinicalReasoningFlow({
             node={currentNode}
             onContinue={handleContinue}
             canContinue={canContinue}
+            hadPriorManiobra={countCompletedManiobras(session, tree) > 0}
           />
         )}
       </div>

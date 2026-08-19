@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { isGuestUser } from "@/lib/guest-account";
 
 export function SignupForm() {
   const router = useRouter();
@@ -13,6 +14,14 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [convertingGuest, setConvertingGuest] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.auth.getUser().then(({ data }) => {
+      setConvertingGuest(isGuestUser(data.user));
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,10 +29,22 @@ export function SignupForm() {
     setLoading(true);
     try {
       const emailNorm = email.trim().toLowerCase();
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token && isGuestUser(session.user)) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
       const res = await fetch("/api/auth/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailNorm, password, accountType }),
+        headers,
+        body: JSON.stringify({
+          email: emailNorm,
+          password,
+          accountType: isGuestUser(session?.user) ? "patient" : accountType,
+        }),
       });
       const payload = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -31,7 +52,9 @@ export function SignupForm() {
         return;
       }
 
-      const supabase = createClient();
+      if (isGuestUser(session?.user)) {
+        await supabase.auth.signOut({ scope: "local" });
+      }
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: emailNorm,
         password,
@@ -56,10 +79,15 @@ export function SignupForm() {
         <Image src="/logo-icon.png" alt="AIKinora" width={56} height={56} className="object-contain" />
         <div>
           <h1 className="text-xl font-bold text-slate-800">Crear cuenta</h1>
-          <p className="mt-1 text-sm text-slate-500">Regístrate para usar AIKinora</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {convertingGuest
+              ? "Crea tu cuenta para seguir usando la IA"
+              : "Regístrate para usar AIKinora"}
+          </p>
         </div>
       </div>
 
+      {convertingGuest ? null : (
       <div className="mb-5 flex flex-col gap-1.5">
         <label className="text-sm font-semibold text-slate-700">Soy...</label>
         <div className="grid grid-cols-2 gap-2">
@@ -87,6 +115,7 @@ export function SignupForm() {
           </button>
         </div>
       </div>
+      )}
 
       <div className="mb-4 flex flex-col gap-1.5">
         <label className="text-sm font-semibold text-slate-700">Correo electrónico</label>
@@ -112,11 +141,11 @@ export function SignupForm() {
 
       <p className="mb-4 text-xs leading-relaxed text-slate-500">
         Al crear la cuenta aceptas la{" "}
-        <Link href="/privacidad" className="font-semibold text-blue-600 hover:underline">
+        <Link href="/privacidad?from=signup" className="font-semibold text-blue-600 hover:underline">
           Política de privacidad
         </Link>{" "}
         y los{" "}
-        <Link href="/privacidad#terminos" className="font-semibold text-blue-600 hover:underline">
+        <Link href="/privacidad?from=signup#terminos" className="font-semibold text-blue-600 hover:underline">
           Términos de uso
         </Link>{" "}
         de AIKinora.

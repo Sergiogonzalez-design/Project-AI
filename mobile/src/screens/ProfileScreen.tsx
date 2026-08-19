@@ -24,6 +24,7 @@ import {
   setNotificationsEnabled,
 } from "../lib/notifications";
 import { refreshSmartReminders } from "../lib/smart-reminders";
+import { deleteOwnAccount } from "../lib/delete-account";
 import { supabase } from "../lib/supabase";
 
 const LANGUAGE_OPTIONS: {
@@ -41,7 +42,9 @@ export function ProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showAthleteProfile, setShowAthleteProfile] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [accountType, setAccountType] = useState<"patient" | "physio" | null>(null);
   const [notificationsOn, setNotificationsOn] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
@@ -116,6 +119,27 @@ export function ProfileScreen() {
     } finally {
       setNotifBusy(false);
     }
+  }
+
+  async function handleDeleteAccount() {
+    Alert.alert(t.profile.deleteAccountTitle, t.profile.deleteAccountConfirm, [
+      { text: t.profile.cancel, style: "cancel" },
+      {
+        text: t.profile.deleteAccount,
+        style: "destructive",
+        onPress: async () => {
+          setDeleting(true);
+          const error = await deleteOwnAccount();
+          if (error) {
+            setDeleting(false);
+            Alert.alert(t.profile.deleteAccountTitle, t.profile.deleteAccountError);
+            return;
+          }
+          await cancelAllReminders();
+          await supabase.auth.signOut({ scope: "local" });
+        },
+      },
+    ]);
   }
 
   async function handleSignOut() {
@@ -273,7 +297,9 @@ export function ProfileScreen() {
           signingOut && { opacity: 0.6 },
         ]}
         onPress={handleSignOut}
-        disabled={signingOut}
+        disabled={signingOut || deleting}
+        accessibilityRole="button"
+        accessibilityLabel={t.profile.signOut}
       >
         {signingOut ? (
           <ActivityIndicator color={Colors.danger} />
@@ -281,6 +307,54 @@ export function ProfileScreen() {
           <Text style={styles.signOutText}>{t.profile.signOut}</Text>
         )}
       </Pressable>
+
+      <View style={styles.card}>
+        <Pressable
+          onPress={() => setShowPrivacy((v) => !v)}
+          style={({ pressed }) => [styles.collapseBtn, pressed && { opacity: 0.9 }]}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
+            <Text style={styles.collapseBtnText}>{t.profile.valuePrivacy}</Text>
+          </View>
+          <Ionicons
+            name={showPrivacy ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={Colors.textSecondary}
+          />
+        </Pressable>
+        {showPrivacy ? (
+          <View style={{ marginTop: 12, gap: 10 }}>
+            <Pressable
+              onPress={() => {
+                const { Linking } = require("react-native");
+                Linking.openURL("https://aikinora.com/privacidad");
+              }}
+              style={({ pressed }) => [styles.privacyLinkBtn, pressed && { opacity: 0.8 }]}
+            >
+              <Ionicons name="document-text-outline" size={16} color={Colors.primary} />
+              <Text style={styles.privacyLinkText}>
+                {locale === "en" ? "Privacy Policy" : "Política de privacidad"}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                pressed && styles.deleteBtnPressed,
+                deleting && { opacity: 0.6 },
+              ]}
+              onPress={handleDeleteAccount}
+              disabled={signingOut || deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator color={Colors.danger} />
+              ) : (
+                <Text style={styles.deleteBtnText}>{t.profile.deleteAccount}</Text>
+              )}
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
     </ScreenScrollView>
   );
 }
@@ -380,8 +454,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primarySoft,
   },
   langChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: "#6B7280",
+    borderColor: "#6B7280",
   },
   langChipText: {
     fontSize: 13,
@@ -426,4 +500,30 @@ const styles = StyleSheet.create({
   },
   signOutBtnPressed: { backgroundColor: "#FEE2E2" },
   signOutText: { fontSize: 15, fontWeight: "700", color: Colors.danger },
+  privacyLinkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.primarySoft,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  privacyLinkText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.primary,
+  },
+  deleteBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  deleteBtnPressed: { backgroundColor: "#FEF2F2" },
+  deleteBtnText: { fontSize: 15, fontWeight: "700", color: Colors.danger },
 });

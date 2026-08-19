@@ -4,7 +4,6 @@ import {
   Image,
   Keyboard,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -19,11 +18,10 @@ import {
   authPasswordProps,
 } from "./AuthTextField";
 import { DismissKeyboard } from "./DismissKeyboard";
-import { AuthBackBar } from "./AuthBackBar";
-import { LegalDocumentView } from "./LegalDocumentView";
 import { Colors } from "../lib/colors";
 import { WEB_APP_URL } from "../lib/admin-api";
 import { useI18n } from "../lib/i18n";
+import { parsePastedInviteCode } from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
 
 type Props = {
@@ -41,13 +39,16 @@ function translateAuthError(message: string): string {
 }
 
 export function LoginScreen({ onSwitch }: Props) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showLegal, setShowLegal] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [guestError, setGuestError] = useState<string | null>(null);
+  const [guestLoading, setGuestLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
+  const busy = loading || guestLoading;
 
   async function handleLogin() {
     setError(null);
@@ -68,8 +69,66 @@ export function LoginScreen({ onSwitch }: Props) {
     }
   }
 
-  if (showLegal) {
-    return <LegalDocumentView onClose={() => setShowLegal(false)} />;
+  async function handleGuestCode() {
+    setError(null);
+    setGuestError(null);
+    Keyboard.dismiss();
+    const normalized = parsePastedInviteCode(inviteCode);
+    if (normalized.length < 6) {
+      setGuestError("Introduce el código que te ha dado tu fisioterapeuta.");
+      return;
+    }
+    setGuestLoading(true);
+    try {
+      let email: string | undefined;
+      let password: string | undefined;
+      let apiError: string | undefined;
+
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        "guest-physio",
+        { body: { code: normalized } }
+      );
+      const fnPayload = fnData as { error?: string; email?: string; password?: string } | null;
+      if (!fnError && fnPayload?.email && fnPayload?.password) {
+        email = fnPayload.email;
+        password = fnPayload.password;
+      } else {
+        const res = await fetch(`${WEB_APP_URL}/api/auth/guest-physio`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: normalized }),
+        });
+        const payload = (await res.json()) as {
+          error?: string;
+          email?: string;
+          password?: string;
+        };
+        if (res.ok && payload.email && payload.password) {
+          email = payload.email;
+          password = payload.password;
+        } else {
+          apiError =
+            payload.error ??
+            fnPayload?.error ??
+            fnError?.message ??
+            "No se pudo empezar la consulta.";
+        }
+      }
+
+      if (!email || !password) {
+        setGuestError(apiError ?? "No se pudo empezar la consulta.");
+        return;
+      }
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signError) setGuestError(translateAuthError(signError.message));
+    } catch {
+      setGuestError("No se pudo empezar la consulta. Inténtalo de nuevo.");
+    } finally {
+      setGuestLoading(false);
+    }
   }
 
   return (
@@ -78,9 +137,6 @@ export function LoginScreen({ onSwitch }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
-      <AuthBackBar
-        onPress={() => void Linking.openURL(`${WEB_APP_URL}/sobre-nosotros`)}
-      />
       <DismissKeyboard>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -100,7 +156,7 @@ export function LoginScreen({ onSwitch }: Props) {
             label={t.auth.email}
             value={email}
             onChangeText={setEmail}
-            editable={!loading}
+            editable={!busy}
             {...authEmailProps}
             onSubmitEditing={() => passwordRef.current?.focus()}
           />
@@ -111,7 +167,7 @@ export function LoginScreen({ onSwitch }: Props) {
             label={t.auth.password}
             value={password}
             onChangeText={setPassword}
-            editable={!loading}
+            editable={!busy}
             {...authPasswordProps}
             ref={passwordRef}
             onSubmitEditing={handleLogin}
@@ -123,10 +179,10 @@ export function LoginScreen({ onSwitch }: Props) {
             style={({ pressed }) => [
               styles.button,
               pressed && styles.buttonPressed,
-              loading && styles.buttonDisabled,
+              busy && styles.buttonDisabled,
             ]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={busy}
           >
             {loading ? (
               <ActivityIndicator color={Colors.white} />
@@ -135,20 +191,53 @@ export function LoginScreen({ onSwitch }: Props) {
             )}
           </Pressable>
 
-          <Pressable style={styles.switchRow} onPress={onSwitch} disabled={loading}>
+          <Pressable style={styles.switchRow} onPress={onSwitch} disabled={busy}>
             <Text style={styles.switchText}>
               {t.auth.noAccount}
               <Text style={styles.switchLink}>{t.auth.signup}</Text>
             </Text>
           </Pressable>
 
-          <View style={styles.legalRow}>
-            <Pressable onPress={() => setShowLegal(true)} hitSlop={8}>
-              <Text style={styles.legalLink}>
-                {locale === "en" ? "Privacy & terms" : "Privacidad y términos"}
-              </Text>
-            </Pressable>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>o</Text>
+            <View style={styles.dividerLine} />
           </View>
+
+          <Text style={styles.guestTitle}>Código de tu fisioterapeuta</Text>
+          <AuthTextField
+            label="Código"
+            value={inviteCode}
+            onChangeText={(v) => setInviteCode(parsePastedInviteCode(v))}
+            editable={!busy}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            textContentType="none"
+            importantForAutofill="no"
+            placeholder="Ej. K7M2P9QX"
+            returnKeyType="done"
+            blurOnSubmit
+            onSubmitEditing={() => void handleGuestCode()}
+          />
+          {guestError ? <Text style={styles.error}>{guestError}</Text> : null}
+          <Pressable
+            style={({ pressed }) => [
+              styles.guestButton,
+              pressed && styles.guestButtonPressed,
+              busy && styles.buttonDisabled,
+            ]}
+            onPress={() => void handleGuestCode()}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel="Empezar consulta previa con código de fisioterapeuta"
+          >
+            {guestLoading ? (
+              <ActivityIndicator color={Colors.primary} />
+            ) : (
+            <Text style={styles.guestButtonText}>Empezar consulta previa</Text>
+          )}
+        </Pressable>
         </View>
       </ScrollView>
       </DismissKeyboard>
@@ -226,6 +315,47 @@ const styles = StyleSheet.create({
   switchRow: { marginTop: 24, alignItems: "center" },
   switchText: { fontSize: 14, color: Colors.textSecondary },
   switchLink: { color: Colors.primary, fontWeight: "700" },
+  dividerRow: {
+    marginTop: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: Colors.border },
+  dividerText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.textLight,
+    textTransform: "uppercase",
+  },
+  guestTitle: {
+    marginTop: 18,
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.text,
+  },
+  guestHint: {
+    marginTop: 6,
+    marginBottom: 12,
+    fontSize: 13,
+    lineHeight: 18,
+    color: Colors.textSecondary,
+  },
+  guestButton: {
+    marginTop: 16,
+    backgroundColor: Colors.primarySoft,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  guestButtonPressed: { opacity: 0.85 },
+  guestButtonText: {
+    color: Colors.primary,
+    fontSize: 15,
+    fontWeight: "700",
+  },
   legalRow: {
     marginTop: 20,
     flexDirection: "row",

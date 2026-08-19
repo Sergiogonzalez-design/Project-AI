@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 
 type LinkedPhysio = {
@@ -36,7 +37,7 @@ export function PhysioCodeGate({
 
   async function linkWithCode(rawCode: string) {
     setError(null);
-    const normalized = rawCode.trim().toUpperCase().replace(/\s+/g, "");
+    const normalized = parsePastedInviteCode(rawCode);
     if (normalized.length < 6) {
       setError("Introduce el código que te ha dado tu fisioterapeuta.");
       return;
@@ -129,7 +130,7 @@ export function PhysioCodeGate({
         </label>
         <input
           value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          onChange={(e) => setCode(parsePastedInviteCode(e.target.value))}
           placeholder="Ej. K7M2P9QX"
           autoCapitalize="characters"
           autoCorrect="off"

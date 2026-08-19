@@ -12,6 +12,7 @@ export type {
 export {
   applyAnswer,
   advanceFromConclusion,
+  countCompletedManiobras,
   createSession,
   getNode,
   getTreeForBodyPart,

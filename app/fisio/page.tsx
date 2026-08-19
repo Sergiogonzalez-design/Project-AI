@@ -23,6 +23,7 @@ export default function FisioPatientsPage() {
   const [codeBusy, setCodeBusy] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
+  const [physioName, setPhysioName] = useState<string | null>(null);
   const codeMenuRef = useRef<HTMLDivElement>(null);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
@@ -32,6 +33,16 @@ export default function FisioPatientsPage() {
     setError(null);
     try {
       const supabase = createClient();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", user.id)
+          .single();
+        setPhysioName(profile?.display_name ?? null);
+      }
 
       const { data: code, error: codeError } = await supabase.rpc(
         "physio_get_or_create_invite_code"
@@ -148,14 +159,9 @@ export default function FisioPatientsPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-        Panel del fisioterapeuta
+      <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+        Bienvenido/a{physioName ? `, ${physioName}` : ""}
       </h1>
-      <p className="mt-2 text-sm text-neutral-600">
-        Comparte tu código o un enlace con el paciente. Él crea su propia cuenta,
-        se vincula y, al terminar la consulta con la IA, recibes el informe
-        clínico aquí.
-      </p>
 
       {error ? (
         <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -306,9 +312,6 @@ export default function FisioPatientsPage() {
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-neutral-500">
-                        {patient.email}
-                      </p>
                     </div>
                     <span className="text-neutral-400">→</span>
                   </Link>

@@ -1,11 +1,9 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { Session } from "@supabase/supabase-js";
-import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Keyboard,
   Platform,
   StyleSheet,
@@ -16,14 +14,12 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppErrorBoundary } from "./src/components/AppErrorBoundary";
 import { LoginScreen } from "./src/components/LoginScreen";
-import { SignupScreen } from "./src/components/SignupScreen";
 import { Colors } from "./src/lib/colors";
-import { I18nProvider, useI18n } from "./src/lib/i18n";
+import { isGuestEmail, isGuestUser } from "./src/lib/guest-account";
+import { hideNativeSplash, startSplashHideWatchdog } from "./src/lib/hide-splash";
+import { I18nProvider } from "./src/lib/i18n";
 import { isAdminEmail, isSupabaseConfigured } from "./src/lib/supabase-config";
 import { supabase } from "./src/lib/supabase";
-import { AppTabs } from "./src/navigation/AppTabs";
-import { OnboardingScreen } from "./src/screens/OnboardingScreen";
-import { PhysioOnboardingScreen } from "./src/screens/PhysioOnboardingScreen";
 import {
   ATHLETE_PROFILE_COLUMNS,
   isAthleteProfileComplete,
@@ -33,16 +29,8 @@ import {
   isPhysioProfileComplete,
 } from "./src/lib/physio-profile-complete";
 
-function hideNativeSplash() {
-  SplashScreen.hideAsync().catch(() => {});
-}
-
-// Do not call preventAutoHideAsync — if JS/Auth hangs, iOS would keep the logo forever.
-setTimeout(hideNativeSplash, 400);
-
-/** Don't leave testers on an infinite spinner if Auth/network hangs. */
-const SESSION_TIMEOUT_MS = 4_000;
-const BOOT_TIMEOUT_MS = 5_000;
+const SESSION_TIMEOUT_MS = 2_500;
+const PROFILE_TIMEOUT_MS = 2_500;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
@@ -60,39 +48,57 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   });
 }
 
-function hideSplash() {
-  hideNativeSplash();
-}
+const AppTabs = React.lazy(() =>
+  import("./src/navigation/AppTabs").then((mod) => ({ default: mod.AppTabs }))
+);
 
-function BootSplash() {
+const GuestPhysioNavigator = React.lazy(() =>
+  import("./src/navigation/GuestPhysioNavigator").then((mod) => ({
+    default: mod.GuestPhysioNavigator,
+  }))
+);
+
+// Signup/onboarding pull @expo/vector-icons → expo-font → native ExpoFontLoader.
+// Keep them off the first require("./App") path so login can paint even if fonts fail.
+const SignupScreen = React.lazy(() =>
+  import("./src/components/SignupScreen").then((mod) => ({
+    default: mod.SignupScreen,
+  }))
+);
+
+const OnboardingScreen = React.lazy(() =>
+  import("./src/screens/OnboardingScreen").then((mod) => ({
+    default: mod.OnboardingScreen,
+  }))
+);
+
+const PhysioOnboardingScreen = React.lazy(() =>
+  import("./src/screens/PhysioOnboardingScreen").then((mod) => ({
+    default: mod.PhysioOnboardingScreen,
+  }))
+);
+
+function TabsFallback() {
   return (
-    <View style={styles.splash}>
-      <Image
-        source={require("./assets/logo.png")}
-        style={styles.logo}
-        resizeMode="contain"
-        accessibilityLabel="AIKinora"
-      />
-      <ActivityIndicator size="large" color={Colors.primary} style={styles.spinner} />
-      <Text style={styles.bootText}>Cargando…</Text>
+    <View style={styles.loading}>
+      <ActivityIndicator size="large" color={Colors.primary} />
     </View>
   );
 }
 
 function AppInner() {
-  const { ready } = useI18n();
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
   const [authView, setAuthView] = useState<"login" | "signup">("login");
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [onboardingDone, setOnboardingDone] = useState(false);
   const [isPhysio, setIsPhysio] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+  const [guestSignup, setGuestSignup] = useState(false);
   const onboardingCheckSeq = useRef(0);
 
   const isAdmin = isAdminEmail(session?.user?.email);
-  const booting = !ready || loading || (session !== null && onboardingDone === null);
 
   useEffect(() => {
-    hideSplash();
+    return startSplashHideWatchdog();
   }, []);
 
   const handleOnboardingComplete = useCallback(() => {
@@ -104,20 +110,31 @@ function AppInner() {
     async (userId: string, email: string | undefined) => {
       const seq = ++onboardingCheckSeq.current;
       try {
-        if (isAdminEmail(email)) {
+        if (isAdminEmail(email) || isGuestEmail(email)) {
           if (seq !== onboardingCheckSeq.current) return;
           setIsPhysio(false);
           setOnboardingDone(true);
           return;
         }
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select(`account_type, ${PHYSIO_PROFILE_COLUMNS}, ${ATHLETE_PROFILE_COLUMNS}`)
-          .eq("id", userId)
-          .maybeSingle();
+        const { data: profile } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select(`account_type, ${PHYSIO_PROFILE_COLUMNS}, ${ATHLETE_PROFILE_COLUMNS}`)
+            .eq("id", userId)
+            .maybeSingle(),
+          PROFILE_TIMEOUT_MS,
+          { data: null, error: null }
+        );
         if (seq !== onboardingCheckSeq.current) return;
 
-        const physio = profile?.account_type === "physio";
+        if (!profile) {
+          // Fail open so a hung profiles query cannot pin the launch screen.
+          setIsPhysio(false);
+          setOnboardingDone(true);
+          return;
+        }
+
+        const physio = profile.account_type === "physio";
         setIsPhysio(physio);
         setOnboardingDone(
           physio ? isPhysioProfileComplete(profile) : isAthleteProfileComplete(profile)
@@ -125,7 +142,7 @@ function AppInner() {
       } catch {
         if (seq !== onboardingCheckSeq.current) return;
         setIsPhysio(false);
-        setOnboardingDone(false);
+        setOnboardingDone(true);
       }
     },
     []
@@ -133,10 +150,6 @@ function AppInner() {
 
   useEffect(() => {
     let cancelled = false;
-
-    const finishLoading = () => {
-      if (!cancelled) setLoading(false);
-    };
 
     const boot = async () => {
       try {
@@ -147,46 +160,41 @@ function AppInner() {
         );
         if (cancelled) return;
         setSession(data.session);
+        setIsGuest(isGuestUser(data.session?.user));
         if (data.session?.user) {
           void checkOnboarding(data.session.user.id, data.session.user.email);
-        } else {
-          setOnboardingDone(null);
         }
       } catch {
-        if (!cancelled) {
-          setSession(null);
-          setOnboardingDone(null);
-        }
+        if (!cancelled) setSession(null);
       } finally {
-        hideSplash();
-        finishLoading();
+        hideNativeSplash();
       }
     };
 
     void boot();
 
-    const timeout = setTimeout(() => {
-      finishLoading();
-      setOnboardingDone((done) => (done === null ? false : done));
-    }, BOOT_TIMEOUT_MS);
-
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
+        if (!newSession) setAuthView("login");
+        setIsGuest(isGuestUser(newSession?.user));
         if (newSession?.user) {
+          if (!isGuestUser(newSession.user)) setGuestSignup(false);
           const { id, email } = newSession.user;
           setTimeout(() => {
             void checkOnboarding(id, email);
           }, 0);
         } else {
-          setOnboardingDone(null);
+          setOnboardingDone(false);
+          setIsPhysio(false);
+          setIsGuest(false);
+          setGuestSignup(false);
         }
       }
     );
 
     return () => {
       cancelled = true;
-      clearTimeout(timeout);
       listener.subscription.unsubscribe();
     };
   }, [checkOnboarding]);
@@ -203,10 +211,6 @@ function AppInner() {
     );
   }
 
-  if (booting) {
-    return <BootSplash />;
-  }
-
   if (!session) {
     return (
       <>
@@ -214,9 +218,35 @@ function AppInner() {
         {authView === "login" ? (
           <LoginScreen onSwitch={() => setAuthView("signup")} />
         ) : (
-          <SignupScreen onSwitch={() => setAuthView("login")} />
+          <Suspense fallback={<TabsFallback />}>
+            <SignupScreen onSwitch={() => setAuthView("login")} />
+          </Suspense>
         )}
       </>
+    );
+  }
+
+  if (isGuest && guestSignup) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <Suspense fallback={<TabsFallback />}>
+          <SignupScreen onSwitch={() => setGuestSignup(false)} />
+        </Suspense>
+      </>
+    );
+  }
+
+  if (isGuest) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <NavigationContainer>
+          <StatusBar style="dark" />
+          <Suspense fallback={<TabsFallback />}>
+            <GuestPhysioNavigator onCreateAccount={() => setGuestSignup(true)} />
+          </Suspense>
+        </NavigationContainer>
+      </GestureHandlerRootView>
     );
   }
 
@@ -224,11 +254,13 @@ function AppInner() {
     return (
       <>
         <StatusBar style="dark" />
-        {isPhysio ? (
-          <PhysioOnboardingScreen onComplete={handleOnboardingComplete} />
-        ) : (
-          <OnboardingScreen onComplete={handleOnboardingComplete} />
-        )}
+        <Suspense fallback={<TabsFallback />}>
+          {isPhysio ? (
+            <PhysioOnboardingScreen onComplete={handleOnboardingComplete} />
+          ) : (
+            <OnboardingScreen onComplete={handleOnboardingComplete} />
+          )}
+        </Suspense>
       </>
     );
   }
@@ -237,11 +269,13 @@ function AppInner() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
         <StatusBar style="dark" />
-        <AppTabs
-          key={`${isPhysio ? "physio" : "user"}-${isAdmin ? "admin" : ""}`}
-          isAdmin={isAdmin}
-          isPhysio={isPhysio}
-        />
+        <Suspense fallback={<TabsFallback />}>
+          <AppTabs
+            key={`${isPhysio ? "physio" : "user"}-${isAdmin ? "admin" : ""}`}
+            isAdmin={isAdmin}
+            isPhysio={isPhysio}
+          />
+        </Suspense>
       </NavigationContainer>
     </GestureHandlerRootView>
   );
@@ -266,7 +300,23 @@ function AppDisclaimer() {
     };
   }, []);
 
-  if (keyboardOpen) return null;
+  if (keyboardOpen) {
+    return (
+      <View
+        style={[
+          styles.disclaimer,
+          { paddingBottom: Math.max(insets.bottom, 8), opacity: 0 },
+        ]}
+        pointerEvents="none"
+        accessibilityElementsHidden
+      >
+        <Text style={styles.disclaimerText}>
+          AIKinora es una IA orientativa: no sustituye el criterio clínico ni un
+          diagnóstico médico presencial.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -285,7 +335,7 @@ function AppDisclaimer() {
 
 export default function App() {
   useEffect(() => {
-    hideSplash();
+    return startSplashHideWatchdog();
   }, []);
 
   return (
@@ -305,24 +355,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  splash: {
+  loading: {
     flex: 1,
     backgroundColor: Colors.background,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
-  },
-  logo: {
-    width: 160,
-    height: 64,
-    marginBottom: 24,
-  },
-  spinner: {
-    marginBottom: 12,
-  },
-  bootText: {
-    fontSize: 15,
-    color: Colors.textSecondary,
   },
   configError: {
     flex: 1,

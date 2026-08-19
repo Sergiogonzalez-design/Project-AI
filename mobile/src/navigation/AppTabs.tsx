@@ -63,7 +63,7 @@ export function AppTabs({
 
   return (
     <Tab.Navigator
-      initialRouteName={isPhysio ? "Patients" : "PhysioLink"}
+      initialRouteName={isPhysio ? "Patients" : "AIInquiries"}
       screenOptions={screenOptions}
     >
       {isPhysio ? (
@@ -82,14 +82,14 @@ export function AppTabs({
       ) : (
         <>
           <Tab.Screen
-            name="PhysioLink"
-            component={PhysioLinkScreen}
-            options={{ title: "Fisioterapia" }}
-          />
-          <Tab.Screen
             name="AIInquiries"
             component={AIInquiriesScreen}
             options={{ title: t.headers.consulta, headerLeft: () => null }}
+          />
+          <Tab.Screen
+            name="PhysioLink"
+            component={PhysioLinkScreen}
+            options={{ title: "Fisioterapia" }}
           />
         </>
       )}

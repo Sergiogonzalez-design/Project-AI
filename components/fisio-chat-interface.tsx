@@ -581,7 +581,21 @@ export function FisioChatInterface() {
       return;
     }
     setInput("");
-    setLoading(true);
+
+    const optimisticId = crypto.randomUUID();
+    const optimisticUser: Message = {
+      id: optimisticId,
+      role: "user",
+      content: text,
+      image_url: attachedPreview ?? undefined,
+    };
+    const base = messages.length === 0 ? [welcomeMessage()] : messages;
+    const uiMessages: Message[] = [...base, optimisticUser];
+    flushSync(() => {
+      setMessages(uiMessages);
+      setLoading(true);
+    });
+    requestAnimationFrame(() => scrollToBottom());
 
     try {
       const {
@@ -591,6 +605,14 @@ export function FisioChatInterface() {
 
       const attachmentUrl = await uploadOutgoingPhoto();
       const imageUrl = consultVisionUrl(attachmentUrl);
+
+      if (attachmentUrl) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === optimisticId ? { ...m, image_url: attachmentUrl } : m
+          )
+        );
+      }
 
       let conversationId = activeId;
       if (!conversationId) {
@@ -625,16 +647,11 @@ export function FisioChatInterface() {
         .select("id, role, content, created_at, image_url")
         .single();
 
-      const uiMessages: Message[] = [
-        ...(messages.length === 0 ? [welcomeMessage()] : messages),
-        (savedUser as Message) ?? {
-          id: crypto.randomUUID(),
-          role: "user",
-          content: text,
-          image_url: attachmentUrl,
-        },
-      ];
-      setMessages(uiMessages);
+      if (savedUser) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === optimisticId ? (savedUser as Message) : m))
+        );
+      }
 
       const history = uiMessages
         .filter((m) => m.id !== WELCOME_ID)
@@ -817,13 +834,6 @@ export function FisioChatInterface() {
             </svg>
           </button>
           <p className="flex-1 truncate text-sm font-semibold text-slate-800">{activeTitle}</p>
-          <button
-            type="button"
-            onClick={() => void startNewConsultation()}
-            className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-          >
-            + Nueva
-          </button>
         </div>
 
         <div className="relative min-h-0 flex-1">

@@ -60,7 +60,7 @@ export function FisioPatientReports({
 
       const list = (data as ClinicalReport[]) ?? [];
       setReports(list);
-      if (list.length > 0) setExpandedId((prev) => prev ?? list[0].id);
+      // All reports start collapsed; user clicks to open.
 
       // Opening this page = accessing the informes → clear "nuevo" badges.
       const newIds = list.filter((r) => r.status === "new").map((r) => r.id);

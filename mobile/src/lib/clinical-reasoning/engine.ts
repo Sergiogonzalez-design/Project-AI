@@ -151,3 +151,19 @@ export function getTreeForSession(
 ): ClinicalReasoningTree | null {
   return getTreeForBodyPart(session.bodyPart);
 }
+
+/** Special tests already answered — excludes route/branch questions. */
+export function countCompletedManiobras(
+  session: ReasoningSession,
+  tree: ClinicalReasoningTree
+): number {
+  let n = 0;
+  for (const step of session.steps) {
+    if (!step.result) continue;
+    const node = tree.nodes[step.nodeId];
+    if (node?.type !== "test") continue;
+    if (node.testId.startsWith("route-")) continue;
+    n += 1;
+  }
+  return n;
+}

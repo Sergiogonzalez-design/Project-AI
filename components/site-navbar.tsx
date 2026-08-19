@@ -13,6 +13,7 @@ import {
   type AppNavLink,
 } from "@/lib/app-nav-links";
 import { isClientAdminEmail } from "@/lib/is-admin-client";
+import { isGuestUser } from "@/lib/guest-account";
 import { signOutToLogin } from "@/lib/sign-out-client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -23,6 +24,7 @@ export function SiteNavbar() {
   const [mounted, setMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPhysioAccount, setIsPhysioAccount] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -35,6 +37,7 @@ export function SiteNavbar() {
         data: { user },
       } = await supabase.auth.getUser();
       setUserEmail(user?.email ?? null);
+      setIsGuest(isGuestUser(user));
       if (!user) {
         setIsPhysioAccount(false);
         clearPatientModeCookie();
@@ -52,11 +55,13 @@ export function SiteNavbar() {
     void loadUser().catch(() => {
       setUserEmail(null);
       setIsPhysioAccount(false);
+      setIsGuest(false);
       clearPatientModeCookie();
     });
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUserEmail(session?.user?.email ?? null);
+        setIsGuest(isGuestUser(session?.user));
         if (!session?.user) {
           setIsPhysioAccount(false);
           clearPatientModeCookie();
@@ -103,6 +108,7 @@ export function SiteNavbar() {
   const usePhysioLinks = isPhysioAccount;
 
   const links = useMemo(() => {
+    if (isGuest) return [];
     const base: AppNavLink[] = usePhysioLinks
       ? [...PHYSIO_NAV_LINKS]
       : [...PATIENT_NAV_LINKS];
@@ -112,9 +118,9 @@ export function SiteNavbar() {
       { href: "/admin", label: "Admin" },
       base[base.length - 1],
     ];
-  }, [isAdmin, usePhysioLinks]);
+  }, [isAdmin, usePhysioLinks, isGuest]);
 
-  const homeHref = usePhysioLinks ? "/fisio" : "/fisioterapia";
+  const homeHref = usePhysioLinks ? "/fisio" : isGuest ? "/fisioterapia" : "/consulta";
 
   function handleSignOut() {
     setSigningOut(true);
@@ -140,6 +146,15 @@ export function SiteNavbar() {
               aria-label="Menú de navegación"
             >
               <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 pt-4">
+                {isGuest ? (
+                  <Link
+                    href="/signup"
+                    onClick={() => setMenuOpen(false)}
+                    className="rounded-[14px] px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-[#F1F5F9]"
+                  >
+                    Crear cuenta
+                  </Link>
+                ) : null}
                 {links.map(({ href, label }) => {
                   const active =
                     href === "/admin"
@@ -178,7 +193,11 @@ export function SiteNavbar() {
                   disabled={signingOut}
                   className="btn-secondary w-full !justify-start !text-sm"
                 >
-                  {signingOut ? "Saliendo…" : "Cerrar sesión"}
+                  {signingOut
+                    ? "Saliendo…"
+                    : isGuest
+                      ? "Volver a inicio"
+                      : "Cerrar sesión"}
                 </button>
               </div>
             </aside>
@@ -210,6 +229,14 @@ export function SiteNavbar() {
           </Link>
 
           <div className="flex items-center gap-2">
+            {isGuest ? (
+              <Link
+                href="/signup"
+                className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+              >
+                Crear cuenta
+              </Link>
+            ) : null}
             <button
               type="button"
               className="rounded-lg p-2 text-neutral-700 transition-colors hover:bg-neutral-100"

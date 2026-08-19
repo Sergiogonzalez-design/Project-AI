@@ -83,8 +83,9 @@ export function PhysioPatientsScreen() {
   const [codeBusy, setCodeBusy] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
+  const [physioName, setPhysioName] = useState<string | null>(null);
   const inviteLink = inviteCode
-    ? `${WEB_APP_URL}/fisioterapia?code=${encodeURIComponent(inviteCode)}`
+    ? `${WEB_APP_URL}/login?code=${encodeURIComponent(inviteCode)}`
     : null;
 
   const [selectedPatient, setSelectedPatient] = useState<PhysioPatient | null>(null);
@@ -190,6 +191,16 @@ export function PhysioPatientsScreen() {
     setLoading(true);
     setError(null);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .single();
+      setPhysioName(profile?.display_name ?? null);
+    }
+
     const { data: code, error: codeError } = await supabase.rpc(
       "physio_get_or_create_invite_code"
     );
@@ -288,7 +299,6 @@ export function PhysioPatientsScreen() {
       .order("created_at", { ascending: false });
     const list = (data as ClinicalReport[]) ?? [];
     setReports(list);
-    if (list.length > 0) setExpandedReportId(list[0].id);
     setReportsLoading(false);
 
     // Opening this patient's informes clears the "nuevo" badge on the list.
@@ -611,11 +621,8 @@ export function PhysioPatientsScreen() {
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={Keyboard.dismiss}
       >
-        <Text style={styles.title}>Panel fisio</Text>
-        <Text style={styles.subtitle}>
-          Comparte tu código. El paciente crea su cuenta, lo introduce y al
-          terminar la consulta (incluido las pruebas funcionales) recibes el
-          informe clínico aquí.
+        <Text style={styles.title}>
+          Bienvenido/a{physioName ? `, ${physioName}` : ""}
         </Text>
         <AiOrientationDisclaimer style={{ marginBottom: 12 }} />
 
@@ -769,9 +776,6 @@ export function PhysioPatientsScreen() {
                       </View>
                     )}
                   </View>
-                  <Text style={styles.userMeta}>
-                    {patient.email}
-                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
               </Pressable>

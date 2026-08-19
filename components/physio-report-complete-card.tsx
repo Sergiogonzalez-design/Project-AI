@@ -6,9 +6,14 @@ import { physioDisplayName } from "@/lib/physio-linked-welcome";
 type Props = {
   physioName?: string | null;
   clinicName?: string | null;
+  guestMode?: boolean;
 };
 
-export function PhysioReportCompleteCard({ physioName, clinicName }: Props) {
+export function PhysioReportCompleteCard({
+  physioName,
+  clinicName,
+  guestMode = false,
+}: Props) {
   const name = physioDisplayName(physioName);
   const subtitle = clinicName?.trim()
     ? `${name} · ${clinicName.trim()}`
@@ -37,17 +42,32 @@ export function PhysioReportCompleteCard({ physioName, clinicName }: Props) {
           recibido toda la información sobre tu molestia y podrá prepararse mejor
           para tu tratamiento.
         </p>
-        <p className="mt-4 text-sm leading-relaxed text-slate-500">
-          Si quieres seguir usando la IA (dudas, orientación, ejercicios…), abre
-          la pestaña <span className="font-semibold text-slate-700">Consulta</span>.
-        </p>
-
-        <Link
-          href="/consulta"
-          className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-        >
-          Ir a Consulta
-        </Link>
+        {guestMode ? (
+          <>
+            <p className="mt-4 text-sm leading-relaxed text-slate-500">
+              Si quieres seguir hablando con la IA, crea una cuenta.
+            </p>
+            <Link
+              href="/signup"
+              className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            >
+              Crear cuenta
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="mt-4 text-sm leading-relaxed text-slate-500">
+              Si quieres seguir usando la IA (dudas, orientación, ejercicios…), abre
+              la pestaña <span className="font-semibold text-slate-700">Consulta</span>.
+            </p>
+            <Link
+              href="/consulta"
+              className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            >
+              Ir a Consulta
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

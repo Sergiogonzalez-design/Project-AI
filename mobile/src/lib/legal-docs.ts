@@ -16,8 +16,8 @@ export type LegalDocument = {
 
 export const LEGAL_META = {
   product: "AIKinora",
-  lastUpdatedEs: "15 de agosto de 2026",
-  lastUpdatedEn: "15 August 2026",
+  lastUpdatedEs: "19 de agosto de 2026",
+  lastUpdatedEn: "19 August 2026",
 } as const;
 
 const PRIVACY_ES: LegalDocument = {
@@ -42,6 +42,7 @@ const PRIVACY_ES: LegalDocument = {
       heading: "3. Datos que recogemos",
       paragraphs: [
         "Cuenta: correo electrónico, contraseña (almacenada de forma cifrada por el proveedor de autenticación), tipo de cuenta (paciente/atleta o fisioterapeuta) y datos de perfil que indiques (p. ej. nombre visible, deporte, clínica).",
+        "Consulta previa con código (sin cuenta completa): si introduces el código de un fisioterapeuta sin registrarte, creamos una sesión temporal de invitado para esa consulta. Recogemos el mismo tipo de datos de consulta/salud y los enviamos al fisioterapeuta vinculado. Esa sesión se puede convertir en cuenta o eliminarse (al cerrar o al usar Eliminar cuenta).",
         "Consulta y salud orientativa: textos que escribes o dictas en el chat, respuestas a cuestionarios, fotos de la zona que adjuntes voluntariamente, e informes clínicos generados para un fisioterapeuta si te vinculas con un código/enlace de invitación.",
         "Permisos del dispositivo (solo si los activas): micrófono y reconocimiento de voz (dictado), cámara/galería (fotos de lesión), notificaciones push (recordatorios de retest u otras alertas que configures).",
         "Datos técnicos: identificadores de sesión, logs de seguridad/errores, tipo de dispositivo/app, y datos de uso agregados necesarios para mantener el servicio.",
@@ -121,7 +122,15 @@ const PRIVACY_ES: LegalDocument = {
       ],
     },
     {
-      heading: "14. Contacto",
+      heading: "14. Eliminación de la cuenta",
+      paragraphs: [
+        "Si has creado una cuenta, puedes eliminarla desde Perfil → Eliminar cuenta (app o web). Eso borra el registro de cuenta y los datos personales asociados (consultas, fotos, perfil), salvo retenciones legales (por ejemplo, un informe ya enviado a tu fisioterapeuta que deba conservarlo para tu tratamiento, o obligaciones de seguridad).",
+        "Las sesiones de invitado (código del fisioterapeuta) también se pueden eliminar: al cerrar esa consulta temporal o, si conviertes la sesión en cuenta, con Eliminar cuenta.",
+        "La eliminación suele completarse de inmediato. Si algún dato debe retenerse por ley, te lo indicaremos.",
+      ],
+    },
+    {
+      heading: "15. Contacto",
       paragraphs: [
         "Privacidad y soporte: formulario de contacto en Sobre nosotros (app o sitio web).",
       ],
@@ -226,6 +235,7 @@ const PRIVACY_EN: LegalDocument = {
       heading: "3. Data we collect",
       paragraphs: [
         "Account: email, password (stored encrypted by the authentication provider), account type (patient/athlete or physiotherapist), and profile details you provide (e.g. display name, sport, clinic).",
+        "Pre-appointment code (no full account): if you enter a physiotherapist’s code without signing up, we create a temporary guest session for that consult. We collect the same kind of consult/health data and send it to the linked physiotherapist. You can convert that session into an account or delete it (when you close or use Delete account).",
         "Consult and orientative health data: text you type or dictate in chat, questionnaire answers, injury photos you optionally attach, and clinical reports generated for a physiotherapist if you link with an invite code/link.",
         "Device permissions (only if you enable them): microphone and speech recognition (dictation), camera/gallery (injury photos), push notifications (retest reminders or other alerts you configure).",
         "Technical data: session identifiers, security/error logs, device/app type, and aggregated usage data needed to run the service.",
@@ -305,7 +315,15 @@ const PRIVACY_EN: LegalDocument = {
       ],
     },
     {
-      heading: "14. Contact",
+      heading: "14. Account deletion",
+      paragraphs: [
+        "If you created an account, you can delete it from Profile → Delete account (app or website). That removes the account record and associated personal data (consults, photos, profile), except legal retentions (for example, a report already sent to your physiotherapist that they must keep for your treatment, or security obligations).",
+        "Guest sessions (physiotherapist code) can also be deleted: when you close that temporary consult, or, if you convert the session into an account, with Delete account.",
+        "Deletion is usually completed immediately. If any data must be retained by law, we will tell you.",
+      ],
+    },
+    {
+      heading: "15. Contact",
       paragraphs: [
         "Privacy and support: contact form in About us (app or website).",
       ],

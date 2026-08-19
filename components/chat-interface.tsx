@@ -468,15 +468,18 @@ type ChatInterfaceProps = {
   linkedPhysio?: LinkedPhysioInfo | null;
   /** Called when the patient links another physio via invite code. */
   onLinkedPhysioChange?: (physio: LinkedPhysioInfo) => void;
+  /** Pre-appointment guest (invite code, no full account). */
+  guestMode?: boolean;
 };
 
 export function ChatInterface({
   linkedPhysio = null,
   onLinkedPhysioChange,
+  guestMode = false,
 }: ChatInterfaceProps) {
   const supabase = createClient();
   const welcomeText = linkedPhysio
-    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name)
+    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name, { guest: guestMode })
     : WELCOME_MESSAGE;
   const introGreeting = linkedPhysio
     ? buildPhysioLinkedIntroGreeting(linkedPhysio.physio_name)
@@ -2807,7 +2810,9 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           );
         }
 
-        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name);
+        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
+          guest: guestMode,
+        });
         const { data: aiMsg } = await supabase
           .from("messages")
           .insert({
@@ -3190,14 +3195,14 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
             Nueva consulta
           </button>
         )}
-        {linkedPhysio && (
+        {linkedPhysio && !guestMode && (
           <p className="mb-4 rounded-[16px] border border-blue-100 bg-blue-50/80 px-3.5 py-3 text-[12px] leading-snug text-blue-800">
             Este chat es para lo que te ha pedido tu fisioterapeuta. Para otras preguntas, usa la pestaña{" "}
             <span className="font-semibold">Consulta</span>.
           </p>
         )}
 
-        {linkedPhysio && (
+        {linkedPhysio && !guestMode && (
           <button
             type="button"
             onClick={() => setShowPhysioCodeEntry(true)}
@@ -3663,6 +3668,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               <PhysioReportCompleteCard
                 physioName={linkedPhysio.physio_name}
                 clinicName={linkedPhysio.clinic_name}
+                guestMode={guestMode}
               />
             ) : !linkedPhysio && phase === "complete" ? (
               <ConsultaCompleteCard

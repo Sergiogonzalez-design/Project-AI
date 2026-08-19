@@ -31,14 +31,18 @@ export function buildPhysioLinkedIntroGreeting(
 
 /** First assistant bubble once the chat opens. */
 export function buildPhysioLinkedWelcome(
-  physioName: string | null | undefined
+  physioName: string | null | undefined,
+  opts?: { guest?: boolean }
 ): string {
   const name = physioDisplayName(physioName);
+  const keepTalking = opts?.guest
+    ? "Si quieres seguir hablando con la IA después, podrás crear una cuenta al terminar."
+    : "Si tienes otras dudas generales o quieres hablar libremente con la IA, usa la pestaña **Consulta**.";
   return `Hola. Soy Physio, el asistente de AIKinora. Tu fisioterapeuta **${name}** te ha enviado aquí para preparar un **informe clínico** que verá en su panel antes de la cita.
 
 Cuéntame qué te molesta (dónde, cuándo empezó y cómo te afecta), te haré preguntas y te pediré unas **pruebas funcionales** sencillas. Cuando me envíes esos resultados, generaré el informe para **${name}**.
 
-Si tienes otras dudas generales o quieres hablar libremente con la IA, usa la pestaña **Consulta**.
+${keepTalking}
 
 Cuando quieras, empieza describiendo tu molestia.
 
@@ -118,14 +122,18 @@ export function buildPhysioLinkedFunctionalTestsPrompt(
 
 /** Short chat bubble saved after the physio report is sent (patient does not see clinical summary). */
 export function buildPhysioLinkedCompletionMessage(
-  physioName: string | null | undefined
+  physioName: string | null | undefined,
+  opts?: { guest?: boolean }
 ): string {
   const name = physioDisplayName(physioName);
+  const keepTalking = opts?.guest
+    ? "Si quieres seguir hablando con la IA, crea una cuenta."
+    : "Si quieres seguir usando la IA, abre la pestaña **Consulta**.";
   return `¡Gracias por tu tiempo!
 
 **${name}** ya ha recibido la información de tu molestia **y los resultados de las pruebas funcionales**, y podrá prepararse mejor para tu tratamiento.
 
-Si quieres seguir usando la IA, abre la pestaña **Consulta**.
+${keepTalking}
 
 AIKinora es una IA orientativa: no sustituye una valoración presencial.`;
 }

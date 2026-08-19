@@ -3,6 +3,7 @@
 import { AthleteProfileSection } from "@/components/athlete-profile-section";
 import { PhysioProfileSection } from "@/components/physio-profile-section";
 import { createClient } from "@/lib/supabase/client";
+import { signOutToLogin } from "@/lib/sign-out-client";
 import { Camera, Check, Loader2, Mail, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -29,6 +30,7 @@ export function ProfileForm() {
   const [loading, setLoading] = useState(true);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -159,6 +161,28 @@ export function ProfileForm() {
       setError(err instanceof Error ? err.message : "Error al guardar.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    const ok = window.confirm(
+      "Se borrará tu cuenta, consultas, fotos e informes asociados. Esta acción no se puede deshacer. ¿Continuar?"
+    );
+    if (!ok) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/delete-account", { method: "POST" });
+      const payload = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(payload.error ?? "No se pudo eliminar la cuenta.");
+        setDeleting(false);
+        return;
+      }
+      signOutToLogin();
+    } catch {
+      setError("No se pudo eliminar la cuenta. Inténtalo de nuevo.");
+      setDeleting(false);
     }
   }
 
@@ -333,6 +357,22 @@ export function ProfileForm() {
           ) : (
             <AthleteProfileSection />
           )}
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-red-100 bg-white p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-800">Zona de peligro</h2>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500">
+            Eliminar la cuenta borra tu perfil, consultas, fotos e informes. No se
+            puede deshacer.
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleDeleteAccount()}
+            disabled={deleting || saving}
+            className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+          >
+            {deleting ? "Eliminando…" : "Eliminar cuenta"}
+          </button>
         </div>
       </div>
     </div>

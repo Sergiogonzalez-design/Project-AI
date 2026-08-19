@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-nativ
 import { DismissKeyboard } from "../components/DismissKeyboard";
 import { ScreenScrollView } from "../components/ScreenScrollView";
 import { Colors } from "../lib/colors";
+import { parsePastedInviteCode } from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
 import { AIInquiriesScreen } from "./AIInquiriesScreen";
 
@@ -41,7 +42,7 @@ export function PhysioLinkScreen() {
 
   async function handleSubmit() {
     setError(null);
-    const normalized = code.trim().toUpperCase();
+    const normalized = parsePastedInviteCode(code);
     if (normalized.length < 6) {
       setError("Introduce el código que te ha dado tu fisioterapeuta.");
       return;
@@ -109,11 +110,13 @@ export function PhysioLinkScreen() {
         </Text>
         <TextInput
           value={code}
-          onChangeText={(v) => setCode(v.toUpperCase())}
+          onChangeText={(v) => setCode(parsePastedInviteCode(v))}
           placeholder="Ej. K7M2P9QX"
           placeholderTextColor={Colors.textLight}
-          autoCapitalize="characters"
+          autoCapitalize="none"
           autoCorrect={false}
+          autoComplete="off"
+          textContentType="none"
           style={{
             borderWidth: 1,
             borderColor: Colors.borderStrong,
