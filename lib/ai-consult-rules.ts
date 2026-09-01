@@ -1,6 +1,6 @@
 /** Shared instructions so the model does not confuse profile sport with injury mechanism. */
 import { AI_EVIDENCE_DB_RULES } from "@/lib/physioguide-evidence-db-rules";
-import { hasWorkingSourceLink } from "@/lib/source-links";
+import { hasWorkingSourceLink, shouldShowInSourcesFooter } from "@/lib/source-links";
 import { AI_KNEE_ANTERIOR_PAIN_RULES } from "@/lib/physioguide-knee-anterior-rules";
 import { AI_KNEE_INSTABILITY_ACL_RULES } from "@/lib/physioguide-knee-instability-acl-rules";
 import { AI_KNEE_LATERAL_PAIN_RULES } from "@/lib/physioguide-knee-lateral-rules";
@@ -448,12 +448,24 @@ export function formatRagContext(chunks: RagChunk[] | null | undefined): {
   };
 }
 
+export function rewriteBannedLesionTerms(text: string): string {
+  return text
+    .replace(/\b[Dd]istensiones\b/g, "lesiones musculares")
+    .replace(/\bDistensión\b/g, "Lesión muscular")
+    .replace(/\bdistensión\b/g, "lesión muscular")
+    .replace(/\bDISTENSIÓN\b/g, "LESIÓN MUSCULAR")
+    .replace(/\b[Dd]istensions\b/g, "muscle injuries")
+    .replace(/\bDistension\b/g, "Muscle injury")
+    .replace(/\bdistension\b/gi, "muscle injury");
+}
+
 export function appendSourcesFooter(
   answer: string,
   sources: string[],
   language: "es" | "en" = "es"
 ): string {
-  const external = sources.filter((s) => hasWorkingSourceLink(s));
+  answer = rewriteBannedLesionTerms(answer);
+  const external = sources.filter((s) => shouldShowInSourcesFooter(s));
   if (!external.length) return answer;
   const heading =
     language === "en" ? "Sources consulted" : "Fuentes consultadas";

@@ -12,9 +12,14 @@ import { useUiLocale } from "@/lib/ui-locale";
 type LoginFormProps = {
   nextPath?: string;
   initialCode?: string;
+  infoMessage?: string;
 };
 
-export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
+export function LoginForm({
+  nextPath,
+  initialCode = "",
+  infoMessage,
+}: LoginFormProps) {
   const { locale } = useUiLocale();
   const copy = useMemo(() => authUiCopy(locale), [locale]);
   const router = useRouter();
@@ -139,6 +144,11 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
           />
         </div>
 
+        {infoMessage ? (
+          <p className="mb-4 text-sm text-blue-700" role="status">
+            {infoMessage}
+          </p>
+        ) : null}
         {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
 
         <p className="mb-4 text-right">

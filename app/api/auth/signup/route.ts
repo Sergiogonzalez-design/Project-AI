@@ -163,10 +163,13 @@ export async function POST(request: NextRequest) {
           ? "clinic"
           : "patient";
 
+    const requiresEmailConfirmation =
+      accountType === "physio" || accountType === "clinic";
+
     const { data, error } = await adminClient.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      email_confirm: !requiresEmailConfirmation,
       app_metadata: { account_type: accountType },
     });
 
@@ -198,7 +201,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, accountType }, { headers: CORS });
+    return NextResponse.json(
+      {
+        ok: true,
+        accountType,
+        emailConfirmationRequired: requiresEmailConfirmation,
+      },
+      { headers: CORS }
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500, headers: CORS });

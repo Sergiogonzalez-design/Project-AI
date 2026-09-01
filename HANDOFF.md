@@ -56,9 +56,8 @@ Regenerate scripts live under `scripts/generate_*_knowledge_pdf.py` (+ helpers l
 **Now:**
 - Triage routes personal pain in **any** zone to a questionnaire first.
 - Parts with **full adaptive UI** (step-by-step like shoulder):  
-  `shoulder`, `elbow`, `wrist_hand`, `finger`, **`neck`**
-- Parts that start questionnaire but still use **generic** form until dedicated UI exists:  
-  `back`, `hip`, `knee`, `ankle_foot`
+  `shoulder`, `elbow`, `wrist_hand`, `finger`, **`neck`**, **`back`**, **`hip`**, **`knee`**, **`ankle_foot`**
+- Generic fallback still exists for edge cases routed outside adaptive trees.
 
 **Key files:**
 | Area | Path |
@@ -92,16 +91,10 @@ Updated in shoulder, elbow, neck, wrist, finger (+ generic via shoulder’s `EVO
    - **Gemelo / Aquiles**: same yes/no battery (pedrada, arranque en frío, apoyo completo, inflamación, saltar, estirar gemelo, talón+dedos al aire, puntillas) → rest 24–36h → retest ~36h → ultrasound (gemelo vs Aquiles)
    Add more regions the same way. Structured protocol questions should be **SÍ/NO** for clearer AI context.
 
-2. **Full adaptive questionnaires still missing** (same structure as shoulder/neck):
-   - Espalda (`back`)
-   - Cadera (`hip`)
-   - Rodilla (`knee`) — questionnaire still generic; quad + hamstring functional protocols are wired into AI + mobile reminders
-   - Tobillo/pie (`ankle_foot`)  
-   Today they open the **generic** short form after triage.
-
-3. **Optional polish**
+2. **Optional polish**
    - Keep `lib/ai-consult-rules.ts` and `supabase/functions/ai-consult/response-rules.ts` in sync whenever you edit prompts; then `npx supabase functions deploy ai-consult --project-ref klxlzzgrymkexvuelzex`.
    - Mobile and web questionnaire banks should stay mirrored when you add regions/tests.
+   - Legacy Next route `/api/ai/consult` is retired (410); clients use edge `ai-consult` only.
 
 ---
 

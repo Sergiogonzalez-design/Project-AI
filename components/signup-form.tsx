@@ -82,9 +82,20 @@ export function SignupForm({ clinicInviteToken }: Props) {
           clinicInvite: clinicInviteToken || undefined,
         }),
       });
-      const payload = (await res.json()) as { error?: string };
+      const payload = (await res.json()) as {
+        error?: string;
+        emailConfirmationRequired?: boolean;
+      };
       if (!res.ok) {
         setError(payload.error ?? "No se pudo crear la cuenta.");
+        return;
+      }
+
+      if (payload.emailConfirmationRequired) {
+        setError(null);
+        router.replace(
+          `/login?message=${encodeURIComponent("Revisa tu correo para confirmar la cuenta antes de iniciar sesión.")}`
+        );
         return;
       }
 

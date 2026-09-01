@@ -1793,6 +1793,12 @@ export function formatRagContext(chunks: RagChunk[] | null | undefined): {
   };
 }
 
+function shouldShowInSourcesFooter(label: string): boolean {
+  const t = label.trim();
+  if (/^Physioguide\s*[—–-]/i.test(t)) return true;
+  return hasWorkingCitationLink(t);
+}
+
 function hasWorkingCitationLink(label: string): boolean {
   const t = label.trim();
   if (
@@ -1828,7 +1834,7 @@ export function appendSourcesFooter(
   language: "es" | "en" = "es"
 ): string {
   answer = rewriteBannedLesionTerms(answer);
-  const external = sources.filter((s) => hasWorkingCitationLink(s));
+  const external = sources.filter((s) => shouldShowInSourcesFooter(s));
   if (!external.length) return answer;
   const heading =
     language === "en" ? "Sources consulted" : "Fuentes consultadas";

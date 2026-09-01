@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { GUEST_EMAIL_DOMAIN } from "@/lib/guest-account";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
+import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import { getSupabaseUrl } from "@/lib/supabase/env";
 
 function getServiceRoleKey(): string | null {
@@ -26,6 +27,18 @@ export async function OPTIONS() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = clientIpFromHeaders(request.headers);
+    const limit = checkRateLimit(`guest-physio:${ip}`, 8, 60_000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Espera un minuto e inténtalo de nuevo." },
+        {
+          status: 429,
+          headers: { ...CORS, "Retry-After": String(limit.retryAfterSec) },
+        }
+      );
+    }
+
     const serviceKey = getServiceRoleKey();
     if (!serviceKey) {
       return NextResponse.json(

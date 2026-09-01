@@ -1404,7 +1404,6 @@ export function ChatInterface({
           p_body_area: params.bodyArea,
           p_patient_summary: params.patientSummary,
           p_physio_report: answer,
-          p_fallback_physio_id: physioId,
         }
       );
       if (insertError || !reportId) {

@@ -10,6 +10,38 @@ const CORS = {
 
 const GUEST_EMAIL_DOMAIN = "guests.aikinora.app";
 
+const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(
+  key: string,
+  max: number,
+  windowMs: number
+): { allowed: boolean; retryAfterSec: number } {
+  const now = Date.now();
+  const entry = rateLimitBuckets.get(key);
+  if (!entry || now >= entry.resetAt) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return { allowed: true, retryAfterSec: 0 };
+  }
+  if (entry.count >= max) {
+    return {
+      allowed: false,
+      retryAfterSec: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+    };
+  }
+  entry.count += 1;
+  return { allowed: true, retryAfterSec: 0 };
+}
+
+function clientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
 function parsePastedInviteCode(raw: string | null | undefined): string {
   const text = (raw ?? "").trim();
   if (!text) return "";
@@ -33,6 +65,18 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const ip = clientIp(req);
+    const limit = checkRateLimit(`guest-physio:${ip}`, 8, 60_000);
+    if (!limit.allowed) {
+      return Response.json(
+        { error: "Demasiados intentos. Espera un minuto e inténtalo de nuevo." },
+        {
+          status: 429,
+          headers: { ...CORS, "Retry-After": String(limit.retryAfterSec) },
+        }
+      );
+    }
+
     const body = (await req.json()) as { code?: string };
     const normalized = parsePastedInviteCode(body.code);
 

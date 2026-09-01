@@ -66,6 +66,13 @@ function hostSearchUrl(title: string, host: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(`${title} site:${host}`)}`;
 }
 
+/** True when the source should appear in the Fuentes consultadas footer. */
+export function shouldShowInSourcesFooter(raw: string): boolean {
+  const t = raw.trim();
+  if (/^Physioguide\s*[—–-]/i.test(t)) return true;
+  return hasWorkingSourceLink(raw);
+}
+
 /** Internal / product knowledge — used for RAG, never shown as public citations. */
 export function isInternalSource(label: string): boolean {
   const t = label.trim();
