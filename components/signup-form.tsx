@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isGuestUser } from "@/lib/guest-account";
-import type { AccountType } from "@/lib/account-type";
 
 const inputClass =
   "rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
@@ -23,7 +22,6 @@ type Props = {
 
 export function SignupForm({ clinicInviteToken }: Props) {
   const router = useRouter();
-  const [accountType, setAccountType] = useState<AccountType>("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +47,6 @@ export function SignupForm({ clinicInviteToken }: Props) {
         if (row?.email) {
           setInvite(row as InviteInfo);
           setEmail(String(row.email));
-          setAccountType("physio");
         }
       });
   }, [clinicInviteToken]);
@@ -74,28 +71,12 @@ export function SignupForm({ clinicInviteToken }: Props) {
         body: JSON.stringify({
           email: emailNorm,
           password,
-          accountType: isGuestUser(session?.user)
-            ? "patient"
-            : joiningClinic
-              ? "physio"
-              : accountType,
           clinicInvite: clinicInviteToken || undefined,
         }),
       });
-      const payload = (await res.json()) as {
-        error?: string;
-        emailConfirmationRequired?: boolean;
-      };
+      const payload = (await res.json()) as { error?: string };
       if (!res.ok) {
         setError(payload.error ?? "No se pudo crear la cuenta.");
-        return;
-      }
-
-      if (payload.emailConfirmationRequired) {
-        setError(null);
-        router.replace(
-          `/login?message=${encodeURIComponent("Revisa tu correo para confirmar la cuenta antes de iniciar sesión.")}`
-        );
         return;
       }
 
@@ -117,20 +98,6 @@ export function SignupForm({ clinicInviteToken }: Props) {
     }
   }
 
-  const roleBtn = (type: AccountType, label: string) => (
-    <button
-      type="button"
-      onClick={() => setAccountType(type)}
-      className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-        accountType === type
-          ? "border-blue-500 bg-blue-50 text-blue-700"
-          : "border-slate-200 text-slate-500 hover:border-slate-300"
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -150,22 +117,12 @@ export function SignupForm({ clinicInviteToken }: Props) {
         </div>
       </div>
 
-      {convertingGuest || joiningClinic ? null : (
-      <div className="mb-5 flex flex-col gap-1.5">
-        <label className="text-sm font-semibold text-slate-700">Soy...</label>
-        <div className="grid grid-cols-3 gap-2">
-          {roleBtn("patient", "Persona")}
-          {roleBtn("physio", "Fisio")}
-          {roleBtn("clinic", "Clínica")}
-        </div>
-        {accountType === "clinic" ? (
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Espacio para tu centro: logo, dirección y cuentas de fisioterapeutas.
-            El plan de clínica será de pago más adelante; ahora puedes configurarlo.
-          </p>
-        ) : null}
-      </div>
-      )}
+      {!joiningClinic && !convertingGuest ? (
+        <p className="mb-5 text-xs leading-relaxed text-slate-500">
+          Las cuentas de fisioterapeuta o clínica se crean con invitación. Si eres
+          profesional, pide acceso a tu clínica o contacta con el equipo.
+        </p>
+      ) : null}
 
       <div className="mb-4 flex flex-col gap-1.5">
         <label className="text-sm font-semibold text-slate-700">Correo electrónico</label>

@@ -1,6 +1,6 @@
 /** Shared instructions so the model does not confuse profile sport with injury mechanism. */
 import { AI_EVIDENCE_DB_RULES } from "@/lib/physioguide-evidence-db-rules";
-import { hasWorkingSourceLink, shouldShowInSourcesFooter } from "@/lib/source-links";
+import { shouldShowInSourcesFooter } from "@/lib/source-links";
 import { AI_KNEE_ANTERIOR_PAIN_RULES } from "@/lib/physioguide-knee-anterior-rules";
 import { AI_KNEE_INSTABILITY_ACL_RULES } from "@/lib/physioguide-knee-instability-acl-rules";
 import { AI_KNEE_LATERAL_PAIN_RULES } from "@/lib/physioguide-knee-lateral-rules";

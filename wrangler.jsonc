@@ -1,5 +1,5 @@
-// CI must run `npm run build` (OpenNext). package.json "build" = opennextjs-cloudflare build;
-// open-next.config.ts sets buildCommand to `npx next build` so there is no script recursion.
+// Cloudflare Workers Builds: set build command to `npm run build:cloudflare` in the dashboard.
+// Vercel uses `npm run build` (Next.js). Do not point Workers Builds at `next build` alone.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "projectai",

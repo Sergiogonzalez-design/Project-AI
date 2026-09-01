@@ -1,5 +1,6 @@
 import { AuthPageShell } from "@/components/auth-page-shell";
 import { LoginForm } from "@/components/login-form";
+import { resolveLoginInfoMessage } from "@/lib/login-messages";
 import { extractInviteCodeFromSearch } from "@/lib/physio-invite";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { Metadata } from "next";
@@ -41,7 +42,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
         <LoginForm
           nextPath={sp.next}
           initialCode={initialCode}
-          infoMessage={sp.message}
+          infoMessage={resolveLoginInfoMessage(sp.message)}
         />
       </main>
     </AuthPageShell>

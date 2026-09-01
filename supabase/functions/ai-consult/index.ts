@@ -107,6 +107,10 @@ function isGuestUser(user: { email?: string | null; app_metadata?: unknown }): b
   return (user.email ?? "").toLowerCase().endsWith("@guests.aikinora.app");
 }
 
+function isClinicianAccount(accountType: string | null | undefined): boolean {
+  return accountType === "physio" || accountType === "clinic";
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -1242,7 +1246,7 @@ Deno.serve(async (req) => {
 
     if (mode === "physio_chat") {
       const accountType = (profile as { account_type?: string } | null)?.account_type;
-      if (accountType !== "physio") {
+      if (!isClinicianAccount(accountType)) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403,
           headers: { ...CORS, "Content-Type": "application/json" },

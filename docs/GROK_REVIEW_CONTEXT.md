@@ -87,9 +87,7 @@ Follow-up / physio report path
 
 ### Adaptive questionnaires (full step UI)
 
-Implemented for: **shoulder, elbow, wrist_hand, finger, neck**
-
-Still generic short form: **back, hip, knee, ankle_foot**
+Implemented for: **shoulder, elbow, wrist_hand, finger, neck, back, hip, knee, ankle_foot**
 
 Each region has:
 

@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { isGuestUser } from "@/lib/guest-account";
+import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import { getSupabaseUrl } from "@/lib/supabase/env";
 
 function getServiceRoleKey(): string | null {
@@ -17,9 +18,21 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
-/** Public signup: creates the user already confirmed (no email confirmation). */
+/** Public signup: patient accounts only (physio via clinic invite; no self-serve physio/clinic). */
 export async function POST(request: NextRequest) {
   try {
+    const ip = clientIpFromHeaders(request.headers);
+    const limit = checkRateLimit(`signup:${ip}`, 10, 60_000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Espera un minuto e inténtalo de nuevo." },
+        {
+          status: 429,
+          headers: { ...CORS, "Retry-After": String(limit.retryAfterSec) },
+        }
+      );
+    }
+
     const serviceKey = getServiceRoleKey();
     if (!serviceKey) {
       return NextResponse.json(
@@ -156,21 +169,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, accountType: "physio" }, { headers: CORS });
     }
 
-    const accountType =
-      body.accountType === "physio"
-        ? "physio"
-        : body.accountType === "clinic"
-          ? "clinic"
-          : "patient";
-
-    const requiresEmailConfirmation =
-      accountType === "physio" || accountType === "clinic";
-
     const { data, error } = await adminClient.auth.admin.createUser({
       email,
       password,
-      email_confirm: !requiresEmailConfirmation,
-      app_metadata: { account_type: accountType },
+      email_confirm: true,
+      app_metadata: { account_type: "patient" },
     });
 
     if (error) {
@@ -178,10 +181,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.user) {
-      // createUser sometimes drops custom app_metadata; force it.
       const { error: metaErr } = await adminClient.auth.admin.updateUserById(
         data.user.id,
-        { app_metadata: { account_type: accountType } }
+        { app_metadata: { account_type: "patient" } }
       );
       if (metaErr) {
         return NextResponse.json({ error: metaErr.message }, { status: 400, headers: CORS });
@@ -191,7 +193,7 @@ export async function POST(request: NextRequest) {
         id: data.user.id,
         onboarding_completed: false,
         is_admin: false,
-        account_type: accountType,
+        account_type: "patient",
       });
       if (profileErr) {
         return NextResponse.json(
@@ -201,14 +203,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      {
-        ok: true,
-        accountType,
-        emailConfirmationRequired: requiresEmailConfirmation,
-      },
-      { headers: CORS }
-    );
+    return NextResponse.json({ ok: true, accountType: "patient" }, { headers: CORS });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500, headers: CORS });
