@@ -32,7 +32,7 @@ import { useI18n } from "../lib/i18n";
 import { pickIllustratedTestsForPruebasQuery } from "../lib/clinical-test-images";
 import {
   consultAttachmentCaption,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
   isConsultImageMime,
   isConsultPdfUrl,
   MAX_CONSULT_ATTACHMENT_BYTES,
@@ -308,7 +308,7 @@ export function PhysioConsultScreen() {
     setError(null);
     try {
       const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
       const userMsg: ChatMessage = {
         id: `${Date.now()}-u`,
         role: "user",

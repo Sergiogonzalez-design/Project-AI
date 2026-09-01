@@ -34,12 +34,11 @@ function checkRateLimit(
 }
 
 function clientIp(req: Request): string {
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
   const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  return req.headers.get("x-real-ip")?.trim() || "unknown";
+  const lastHop = forwarded?.split(",").pop()?.trim();
+  return lastHop || "unknown";
 }
 
 function parsePastedInviteCode(raw: string | null | undefined): string {

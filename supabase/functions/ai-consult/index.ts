@@ -155,25 +155,49 @@ type ImageContentPart = {
 };
 type UserContent = string | Array<TextContentPart | ImageContentPart>;
 
-function isAllowedConsultImageUrl(url: string): boolean {
+function parseConsultPhotoStoragePath(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!trimmed.includes("://")) return trimmed.replace(/^\/+/, "");
   try {
-    const u = new URL(url);
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    if (!supabaseUrl) return false;
-    const base = new URL(supabaseUrl);
-    return (
-      u.origin === base.origin &&
-      u.pathname.includes("/storage/v1/object/public/consult-photos/")
+    const u = new URL(trimmed);
+    const base = new URL(Deno.env.get("SUPABASE_URL") ?? "http://local");
+    if (u.origin !== base.origin) return null;
+    const m = u.pathname.match(
+      /\/storage\/v1\/object\/(?:public|sign|authenticated)\/consult-photos\/(.+)$/
     );
+    return m ? decodeURIComponent(m[1]) : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-function sanitizeImageUrl(imageUrl?: string | null): string | null {
-  if (!imageUrl || typeof imageUrl !== "string") return null;
-  const trimmed = imageUrl.trim();
-  return isAllowedConsultImageUrl(trimmed) ? trimmed : null;
+async function resolveConsultImageUrl(
+  raw: string | null | undefined,
+  userId: string,
+  adminClient: ReturnType<typeof createClient> | null
+): Promise<string | null> {
+  if (!raw || typeof raw !== "string") return null;
+  const path = parseConsultPhotoStoragePath(raw);
+  if (!path || !path.startsWith(`${userId}/`)) return null;
+  const trimmed = raw.trim();
+  if (trimmed.includes("/object/sign/") && trimmed.includes("token=")) {
+    return trimmed;
+  }
+  if (!adminClient) return null;
+  const { data, error } = await adminClient.storage
+    .from("consult-photos")
+    .createSignedUrl(path, 600);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+function buildUserContent(text: string, imageUrl?: string | null): UserContent {
+  if (!imageUrl) return text;
+  return [
+    { type: "text", text },
+    { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
+  ];
 }
 
 /** Split dense "1) … 2) …" paragraphs into Fisioterapia-style numbered lines with bold titles. */
@@ -195,15 +219,6 @@ function formatEducationalNumberedList(text: string): string {
     })
     .join("\n");
   return rewriteBannedLesionTerms(out.replace(/\n{3,}/g, "\n\n").trim());
-}
-
-function buildUserContent(text: string, imageUrl?: string | null): UserContent {
-  const safe = sanitizeImageUrl(imageUrl);
-  if (!safe) return text;
-  return [
-    { type: "text", text },
-    { type: "image_url", image_url: { url: safe, detail: "high" } },
-  ];
 }
 
 function withImageRules(prompt: string, hasImage: boolean): string {
@@ -985,6 +1000,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const adminClient = serviceKey
+      ? createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+      : null;
+
     const body = (await req.json()) as RequestBody;
     const mode = body.mode ?? "consult";
     const language = body.language === "en" ? "en" : "es";
@@ -1002,7 +1024,7 @@ Deno.serve(async (req) => {
 
     if (mode === "triage") {
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       if (!message && !imageUrl) {
         return new Response(JSON.stringify({ error: "message required" }), {
           status: 400,
@@ -1054,7 +1076,7 @@ Deno.serve(async (req) => {
 
     if (mode === "general_chat") {
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       const { context } = await fetchRagContext(supabase, message);
       const userMessage = [
         `Consulta del usuario:\n${message || "(Foto de la lesión adjunta)"}`,
@@ -1192,7 +1214,7 @@ Deno.serve(async (req) => {
 
     if (mode === "clinical_screen") {
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       const bodyArea = body.bodyArea ?? "Consulta general";
       const { context, sources } = await fetchRagContext(
         supabase,
@@ -1254,7 +1276,7 @@ Deno.serve(async (req) => {
       }
 
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       if (!message && !imageUrl) {
         return new Response(JSON.stringify({ error: "message required" }), {
           status: 400,
@@ -1380,7 +1402,7 @@ Deno.serve(async (req) => {
       symptomContext,
       conversationHistory,
     } = body;
-    const imageUrl = sanitizeImageUrl(body.imageUrl);
+    const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
 
     const isFollowUp = bodyArea === "seguimiento";
 

@@ -221,7 +221,7 @@ import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
   isConsultImageFile,
   isConsultPdfFile,
   isConsultPdfUrl,
@@ -1150,6 +1150,14 @@ export function ChatInterface({
 
       let msgs = (data as Message[]) ?? [];
 
+      msgs = await Promise.all(
+        msgs.map(async (m) => {
+          if (!m.image_url || isConsultPdfUrl(m.image_url)) return m;
+          const signed = await consultPhotoAccessUrl(m.image_url);
+          return signed ? { ...m, image_url: signed } : m;
+        })
+      );
+
       if (linkedPhysio) {
         const { data: report } = await supabase
           .from("clinical_reports")
@@ -1841,7 +1849,7 @@ export function ChatInterface({
     imageUrl?: string | null,
     language: ConsultLanguage = consultLanguage
   ) {
-    const visionUrl = consultVisionUrl(imageUrl);
+    const visionUrl = await consultPhotoAccessUrl(imageUrl);
     let answer = triage.answer?.trim() ?? "";
 
     if (!answer) {
@@ -1883,9 +1891,6 @@ export function ChatInterface({
         title,
         user_id: user.id,
         kind: linkedPhysio ? "fisioterapia" : "consulta",
-        physio_id: linkedPhysio?.physio_id ?? null,
-        physio_name: linkedPhysio?.physio_name ?? null,
-        clinic_name: linkedPhysio?.clinic_name ?? null,
       })
       .select("id, title, created_at, physio_id, physio_name, clinic_name")
       .single();
@@ -1976,7 +1981,7 @@ export function ChatInterface({
 
     try {
       const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = consultLanguage;
@@ -2479,9 +2484,6 @@ export function ChatInterface({
               title,
               user_id: user.id,
               kind: "fisioterapia",
-              physio_id: linkedPhysio.physio_id ?? null,
-              physio_name: linkedPhysio.physio_name ?? null,
-              clinic_name: linkedPhysio.clinic_name ?? null,
             })
             .select("id, title, created_at, physio_id, physio_name, clinic_name")
             .single();
@@ -2702,9 +2704,6 @@ export function ChatInterface({
           title,
           user_id: user.id,
           kind: "consulta",
-          physio_id: null,
-          physio_name: null,
-          clinic_name: null,
         })
         .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
@@ -2800,7 +2799,7 @@ export function ChatInterface({
 
     try {
       const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
 
       setMessages((prev) => [
         ...prev,

@@ -22,7 +22,7 @@ import {
 } from "@/lib/clinical-test-images";
 import {
   consultAttachmentCaption,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
   isConsultImageFile,
   isConsultPdfFile,
   isConsultPdfUrl,
@@ -553,9 +553,16 @@ export function FisioChatInterface() {
       .select("id, role, content, created_at, image_url")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
+    const resolved = await Promise.all(
+      ((msgs as Message[]) ?? []).map(async (m) => {
+        if (!m.image_url || isConsultPdfUrl(m.image_url)) return m;
+        const signed = await consultPhotoAccessUrl(m.image_url);
+        return signed ? { ...m, image_url: signed } : m;
+      })
+    );
     setActiveId(id);
     setActiveTitle(conv.title);
-    setMessages((msgs as Message[]) ?? []);
+    setMessages(resolved);
     setPhysioIntro(false);
     setMobileSidebarOpen(false);
     clearAttachment();
@@ -603,7 +610,7 @@ export function FisioChatInterface() {
       if (!user) throw new Error("Sesión expirada.");
 
       const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
 
       if (attachmentUrl) {
         setMessages((prev) =>

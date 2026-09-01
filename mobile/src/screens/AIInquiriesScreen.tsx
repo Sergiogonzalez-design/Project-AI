@@ -244,7 +244,7 @@ import { formatValidationIssueMessage } from "../lib/consulta-validation";
 import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
   isConsultImageMime,
   isConsultPdfUrl,
   MAX_CONSULT_ATTACHMENT_BYTES,
@@ -1381,7 +1381,7 @@ export function AIInquiriesScreen({
     const answer = await respondToUserMessage(
       text,
       triage,
-      consultVisionUrl(imageUrl),
+      await consultPhotoAccessUrl(imageUrl),
       language,
       fisioEdgeExtras
     );
@@ -1404,9 +1404,6 @@ export function AIInquiriesScreen({
         title,
         user_id: user.id,
         kind: linkedPhysio ? "fisioterapia" : "consulta",
-        physio_id: linkedPhysio?.physio_id ?? null,
-        physio_name: linkedPhysio?.physio_name ?? null,
-        clinic_name: linkedPhysio?.clinic_name ?? null,
       })
       .select("id, title, created_at, physio_id, physio_name, clinic_name")
       .single();
@@ -1959,7 +1956,7 @@ export function AIInquiriesScreen({
 
     try {
       const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = consultLanguage;
@@ -2507,9 +2504,6 @@ export function AIInquiriesScreen({
               title,
               user_id: user.id,
               kind: "fisioterapia",
-              physio_id: linkedPhysio.physio_id ?? null,
-              physio_name: linkedPhysio.physio_name ?? null,
-              clinic_name: linkedPhysio.clinic_name ?? null,
             })
             .select("id, title, created_at, physio_id, physio_name, clinic_name")
             .single();
@@ -2721,9 +2715,6 @@ export function AIInquiriesScreen({
           title,
           user_id: user.id,
           kind: "consulta",
-          physio_id: null,
-          physio_name: null,
-          clinic_name: null,
         })
         .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
@@ -2818,7 +2809,7 @@ export function AIInquiriesScreen({
 
     try {
       const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
 
       setMessages((prev) => [
         ...prev,

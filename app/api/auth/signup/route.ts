@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { isGuestUser } from "@/lib/guest-account";
-import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { getSupabaseUrl } from "@/lib/supabase/env";
 
 function getServiceRoleKey(): string | null {
@@ -21,8 +21,7 @@ export async function OPTIONS() {
 /** Public signup: patient accounts only (physio via clinic invite; no self-serve physio/clinic). */
 export async function POST(request: NextRequest) {
   try {
-    const ip = clientIpFromHeaders(request.headers);
-    const limit = checkRateLimit(`signup:${ip}`, 10, 60_000);
+    const limit = checkRateLimit(rateLimitKey(request.headers, "signup"), 10, 60_000);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: "Demasiados intentos. Espera un minuto e inténtalo de nuevo." },
