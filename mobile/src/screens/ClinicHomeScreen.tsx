@@ -19,6 +19,7 @@ import {
   normalizeClinicAccent,
   parseClinicSpecialties,
 } from "../lib/clinic-brand";
+import { PHYSIO_EQUIPMENT_CATEGORIES } from "../lib/physio-equipment-options";
 import { CLINIC_BILLING_REQUIRED } from "../lib/clinic-billing";
 import { formatClinicPostDate, type ClinicPost } from "../lib/clinic-directory";
 import { Colors } from "../lib/colors";
@@ -40,6 +41,7 @@ type ClinicRecord = {
   accent_color?: string | null;
   specialties?: string[] | null;
   hours?: string | null;
+  equipment?: string[] | null;
   billing_status: string;
 };
 
@@ -57,6 +59,7 @@ export function ClinicHomeScreen() {
   const [hours, setHours] = useState("");
   const [accent, setAccent] = useState("#2563EB");
   const [specialties, setSpecialties] = useState<string[]>([]);
+  const [equipment, setEquipment] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +83,7 @@ export function ClinicHomeScreen() {
     setHours(row.hours ?? "");
     setAccent(normalizeClinicAccent(row.accent_color));
     setSpecialties(parseClinicSpecialties(row.specialties));
+    setEquipment(Array.isArray(row.equipment) ? row.equipment.filter(Boolean) : []);
   }, []);
 
   const loadPosts = useCallback(async () => {
@@ -114,6 +118,7 @@ export function ClinicHomeScreen() {
         p_accent_color: accent,
         p_specialties: specialties,
         p_hours: hours.trim() || "",
+        p_equipment: equipment,
       });
       if (err) throw new Error(err.message);
       if (data?.id) fill(data as ClinicRecord);
@@ -277,6 +282,36 @@ export function ClinicHomeScreen() {
           );
         })}
       </View>
+      <Text style={styles.label}>Equipo y servicios</Text>
+      <Text style={styles.hint}>
+        Marca lo que ofreces (p. ej. ecógrafo) para que Physio te recomiende a
+        pacientes de tu ciudad.
+      </Text>
+      {PHYSIO_EQUIPMENT_CATEGORIES.map((cat) => (
+        <View key={cat.id} style={{ marginBottom: 10 }}>
+          <Text style={styles.eqCat}>{cat.title}</Text>
+          <View style={styles.swatches}>
+            {cat.options.map((opt) => {
+              const on = equipment.includes(opt.id);
+              return (
+                <Pressable
+                  key={opt.id}
+                  onPress={() =>
+                    setEquipment((prev) =>
+                      on ? prev.filter((x) => x !== opt.id) : [...prev, opt.id]
+                    )
+                  }
+                  style={[styles.specChip, on && { backgroundColor: accent }]}
+                >
+                  <Text style={[styles.specChipText, on && { color: "#fff" }]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ))}
       <Text style={styles.label}>Descripción</Text>
       <TextInput
         style={[styles.input, styles.area]}
@@ -398,6 +433,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   hint: { fontSize: 12, color: Colors.textSecondary, marginBottom: 12, lineHeight: 17 },
+  eqCat: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.textLight,
+    textTransform: "uppercase",
+    marginTop: 6,
+    marginBottom: 4,
+  },
   label: { fontSize: 12, fontWeight: "700", color: Colors.textSecondary, marginTop: 10 },
   input: {
     borderWidth: 1,

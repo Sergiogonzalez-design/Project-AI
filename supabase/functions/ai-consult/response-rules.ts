@@ -1525,6 +1525,7 @@ Posibles lesiones (orientativas)
 Qué hacer mientras tanto
 Pruebas funcionales
 Qué debes hacer ahora
+Clínicas en AIKinora cerca de ti
 ¿Necesitas contactar con nuestro fisioterapeuta?
 Fuentes consultadas
 

@@ -2,6 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import OpenAI from "npm:openai@4";
 import {
+  buildClinicRecommendPrompt,
+  inferClinicNeedTags,
+  type ClinicRecommendRow,
+} from "./clinic-recommend.ts";
+import {
   AI_DATA_FIDELITY_RULES,
   AI_EVIDENCE_AND_SEVERITY_RULES,
   AI_FOLLOW_UP_EVIDENCE_RULES,
@@ -304,24 +309,31 @@ function withConsultaGeneralRules(
       ? `GENERAL CONSULTA TAB (not the Fisioterapia code flow):
 - Do NOT say a clinical report was or will be sent to their physiotherapist or appears on any physio dashboard.
 - This tab is informational AI chat only; physio-linked reports exist ONLY in the separate Fisioterapia tab after they enter their physio's invite code.
-- The section **¿Necesitas contactar con nuestro fisioterapeuta?** is optional guidance to seek in-person care if needed — it does NOT mean Kinora sent anything to a linked physiotherapist.`
+- The section **¿Necesitas contactar con nuestro fisioterapeuta?** is optional guidance to seek in-person care if needed — it does NOT mean Kinora sent anything to a linked physiotherapist.
+- Always include **Clinics on AIKinora near you** using ONLY the injected registered-clinic list (never invent clinics).`
       : `PESTAÑA CONSULTA GENERAL (NO es el flujo Fisioterapia con código):
 - NO digas que se ha generado, se enviará o verá un informe clínico en el panel de ningún fisioterapeuta.
 - Aquí solo hay orientación informativa con la IA; el informe para el fisio vinculado existe SOLO en la pestaña Fisioterapia tras introducir el código.
-- La sección **¿Necesitas contactar con nuestro fisioterapeuta?** es orientación para valoración presencial si la necesitan — NO significa que Kinora haya enviado nada a un fisio vinculado.`;
+- La sección **¿Necesitas contactar con nuestro fisioterapeuta?** es orientación para valoración presencial si la necesitan — NO significa que Kinora haya enviado nada a un fisio vinculado.
+- Incluye siempre **Clínicas en AIKinora cerca de ti** usando SOLO la lista inyectada de clínicas registradas (nunca inventes clínicas).`;
   return `${prompt}\n\n${block}`;
 }
 
 function withPatientConsultContext(
   prompt: string,
   body: RequestBody,
-  language: "es" | "en"
+  language: "es" | "en",
+  clinicRecommendBlock = ""
 ): string {
+  const clinic =
+    !body.fisioterapiaFlow && clinicRecommendBlock
+      ? `\n\n${clinicRecommendBlock}`
+      : "";
   return `${withConsultaGeneralRules(
     withFisioterapiaFlow(prompt, body, language),
     body,
     language
-  )}\n\n${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
+  )}${clinic}\n\n${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
 }
 
 function buildAthleteContext(profile: Record<string, unknown> | null): string {
@@ -344,6 +356,7 @@ function buildAthleteContext(profile: Record<string, unknown> | null): string {
       ? `Horas de entrenamiento por semana: ${profile.hours_per_week}`
       : "",
     profile.current_season ? `Temporada actual: ${profile.current_season}` : "",
+    profile.city ? `Ciudad: ${profile.city}` : "",
     Array.isArray(profile.performance_goals) && profile.performance_goals.length
       ? `Objetivos: ${profile.performance_goals.join(", ")}`
       : "",
@@ -353,6 +366,38 @@ function buildAthleteContext(profile: Record<string, unknown> | null): string {
     "Perfil del paciente (ÚSALO para riesgo, prevalencia, carga y diferenciales; NO lo uses como mecanismo/causa de la lesión salvo que el relato o el cuestionario lo confirmen):",
     ...lines,
   ].join("\n");
+}
+
+async function fetchClinicRecommendBlock(
+  supabase: ReturnType<typeof createClient>,
+  profile: Record<string, unknown> | null,
+  body: RequestBody,
+  language: "es" | "en"
+): Promise<string> {
+  const accountType = (profile as { account_type?: string } | null)?.account_type;
+  if (isClinicianAccount(accountType) || body.fisioterapiaFlow) return "";
+  const city =
+    typeof profile?.city === "string" ? profile.city.trim() : "";
+  const needs = inferClinicNeedTags([
+    body.message,
+    body.bodyArea,
+    body.description,
+    body.symptomContext,
+  ]);
+  const { data, error } = await supabase.rpc("clinic_recommend_for_patient", {
+    p_city: city,
+    p_need_tags: needs.equipment,
+    p_specialty_tags: needs.specialties,
+    p_limit: 5,
+  });
+  if (error) {
+    console.error("clinic_recommend_for_patient", error.message);
+    return buildClinicRecommendPrompt([], city, language);
+  }
+  const recs = ((data ?? []) as ClinicRecommendRow[]).filter(
+    (c) => c?.name && c?.slug
+  );
+  return buildClinicRecommendPrompt(recs, city, language);
 }
 
 async function embedAndMatch(
@@ -1015,13 +1060,19 @@ Deno.serve(async (req) => {
     const { data: profile } = await supabase
       .from("profiles")
       .select(
-        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals, clinic_name, clinic_equipment, clinic_equipment_notes, account_type"
+        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals, city, clinic_name, clinic_equipment, clinic_equipment_notes, account_type"
       )
       .eq("id", user.id)
       .maybeSingle();
 
     const athleteContext = buildAthleteContext(profile);
     const physioEquipmentContext = buildPhysioEquipmentContext(profile);
+    const clinicRecommendBlock = await fetchClinicRecommendBlock(
+      supabase,
+      profile as Record<string, unknown> | null,
+      body,
+      language
+    );
 
     if (mode === "triage") {
       const message = body.message?.trim() ?? "";
@@ -1103,7 +1154,8 @@ Deno.serve(async (req) => {
                 language
               ),
               body,
-              language
+              language,
+              clinicRecommendBlock
             ),
           },
           { role: "user", content: buildUserContent(userMessage, imageUrl) },
@@ -1195,7 +1247,12 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: withLanguage(MULTI_PART_SUMMARY_PROMPT, language),
+            content: withPatientConsultContext(
+              withLanguage(MULTI_PART_SUMMARY_PROMPT, language),
+              body,
+              language,
+              clinicRecommendBlock
+            ),
           },
           { role: "user", content: userMessage },
         ],
@@ -1248,7 +1305,8 @@ Deno.serve(async (req) => {
                 language
               ),
               body,
-              language
+              language,
+              clinicRecommendBlock
             ),
           },
           { role: "user", content: buildUserContent(userMessage, imageUrl) },
@@ -1446,7 +1504,8 @@ Deno.serve(async (req) => {
         language
       ),
       body,
-      language
+      language,
+      clinicRecommendBlock
     );
     const history: HistoryMessage[] = conversationHistory ?? [];
 

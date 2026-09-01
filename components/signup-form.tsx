@@ -28,6 +28,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
   const [loading, setLoading] = useState(false);
   const [convertingGuest, setConvertingGuest] = useState(false);
   const [invite, setInvite] = useState<InviteInfo | null>(null);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const joiningClinic = Boolean(clinicInviteToken);
 
   useEffect(() => {
@@ -54,6 +55,10 @@ export function SignupForm({ clinicInviteToken }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!acceptedLegal) {
+      setError("Debes aceptar la Política de privacidad y los Términos de uso.");
+      return;
+    }
     setLoading(true);
     try {
       const emailNorm = email.trim().toLowerCase();
@@ -147,21 +152,39 @@ export function SignupForm({ clinicInviteToken }: Props) {
 
       {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
 
-      <p className="mb-4 text-xs leading-relaxed text-slate-500">
-        Al crear la cuenta aceptas la{" "}
-        <Link href="/privacidad?from=signup" className="font-semibold text-blue-600 hover:underline">
-          Política de privacidad
-        </Link>{" "}
-        y los{" "}
-        <Link href="/privacidad?from=signup#terminos" className="font-semibold text-blue-600 hover:underline">
-          Términos de uso
-        </Link>{" "}
-        de AIKinora.
-      </p>
+      <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left">
+        <input
+          type="checkbox"
+          checked={acceptedLegal}
+          onChange={(e) => setAcceptedLegal(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+          required
+        />
+        <span className="text-xs leading-relaxed text-slate-600">
+          He leído y acepto la{" "}
+          <Link
+            href="/privacidad?from=signup"
+            className="font-semibold text-blue-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Política de privacidad
+          </Link>{" "}
+          y los{" "}
+          <Link
+            href="/privacidad?from=signup#terminos"
+            className="font-semibold text-blue-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Términos de uso
+          </Link>
+          , incluido el tratamiento de los datos de mi consulta para orientarme con IA.
+        </span>
+      </label>
 
       <button
-        type="submit" disabled={loading}
-        className="btn-primary w-full"
+        type="submit"
+        disabled={loading || !acceptedLegal}
+        className="btn-primary w-full disabled:opacity-50"
       >
         {loading ? "Creando cuenta…" : joiningClinic ? "Unirme a la clínica" : "Crear cuenta"}
       </button>

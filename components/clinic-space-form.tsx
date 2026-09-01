@@ -12,6 +12,7 @@ import {
   normalizeClinicAccent,
   parseClinicSpecialties,
 } from "@/lib/clinic-brand";
+import { PHYSIO_EQUIPMENT_CATEGORIES } from "@/lib/physio-equipment-options";
 import {
   clinicMapsQuery,
   googleMapsEmbedUrl,
@@ -46,6 +47,7 @@ export type ClinicRecord = {
   accent_color: string | null;
   specialties: string[] | null;
   hours: string | null;
+  equipment: string[] | null;
   billing_status: string;
 };
 
@@ -74,6 +76,7 @@ export function ClinicSpaceForm() {
   const [accent, setAccent] = useState("#2563EB");
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [hours, setHours] = useState("");
+  const [equipment, setEquipment] = useState<string[]>([]);
   const [customSpecialty, setCustomSpecialty] = useState("");
 
   const fill = useCallback((row: ClinicRecord) => {
@@ -93,6 +96,7 @@ export function ClinicSpaceForm() {
     setAccent(normalizeClinicAccent(row.accent_color));
     setSpecialties(parseClinicSpecialties(row.specialties));
     setHours(row.hours ?? "");
+    setEquipment(Array.isArray(row.equipment) ? row.equipment.filter(Boolean) : []);
   }, []);
 
   useEffect(() => {
@@ -135,6 +139,7 @@ export function ClinicSpaceForm() {
         p_accent_color: accent,
         p_specialties: specialties,
         p_hours: hours.trim() || "",
+        p_equipment: equipment,
       });
       if (err) throw new Error(err.message);
       if (data) fill(data as ClinicRecord);
@@ -362,6 +367,44 @@ export function ClinicSpaceForm() {
                 Añadir
               </button>
             </div>
+          </div>
+          <div>
+            <label className={labelClass}>Equipo y servicios</label>
+            <p className="mb-2 text-xs text-neutral-500">
+              Lo que ofreces en el centro (p. ej. ecógrafo). Physio lo usa para
+              recomendar tu clínica a pacientes de tu ciudad.
+            </p>
+            {PHYSIO_EQUIPMENT_CATEGORIES.map((cat) => (
+              <div key={cat.id} className="mb-3">
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-neutral-400">
+                  {cat.title}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {cat.options.map((opt) => {
+                    const on = equipment.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() =>
+                          setEquipment((prev) =>
+                            on ? prev.filter((x) => x !== opt.id) : [...prev, opt.id]
+                          )
+                        }
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          on
+                            ? "text-white"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                        style={on ? { background: accent } : undefined}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
           <div>
             <label className={labelClass}>Horario</label>
