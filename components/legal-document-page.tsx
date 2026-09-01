@@ -98,7 +98,19 @@ export function LegalDocumentsView({
       router.push(backHref);
       return;
     }
-    router.back();
+    if (typeof window !== "undefined") {
+      const idx = (window.history.state as { idx?: number } | null)?.idx;
+      if (typeof idx === "number" && idx > 0) {
+        router.back();
+        return;
+      }
+      const referrer = document.referrer;
+      if (referrer && referrer.startsWith(window.location.origin)) {
+        router.back();
+        return;
+      }
+    }
+    router.push("/");
   }
 
   return (

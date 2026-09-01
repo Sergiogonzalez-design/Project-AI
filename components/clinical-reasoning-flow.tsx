@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import {
   applyAnswer,
   advanceFromConclusion,
@@ -15,7 +15,6 @@ import {
   type ReasoningSession,
 } from "@/lib/clinical-reasoning";
 import { CLINICAL_TEST_IMAGES } from "@/lib/clinical-test-images";
-import { getClinicalTestVideoSrc } from "@/lib/clinical-test-videos";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { isThighOrHamstringComplaint } from "@/lib/detect-body-part";
 import type {
@@ -49,43 +48,6 @@ function probabilityLabel(p: HypothesisProbability): string {
   return "Baja probabilidad";
 }
 
-function ClinicalTestVideo({
-  src,
-  title,
-  poster,
-}: {
-  src: string;
-  title: string;
-  poster?: string;
-}) {
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-black">
-      {failed ? (
-        <div className="flex aspect-video w-full items-center justify-center bg-neutral-900 px-4 py-8 text-center text-sm text-neutral-300">
-          No se pudo cargar el vídeo demostrativo. Recarga la página o prueba otro
-          navegador.
-        </div>
-      ) : (
-        <video
-          key={src}
-          src={src}
-          poster={poster}
-          controls
-          playsInline
-          preload="metadata"
-          className="aspect-video w-full bg-black object-contain"
-          aria-label={`Vídeo demostrativo: ${title}`}
-          onError={() => setFailed(true)}
-        >
-          Tu navegador no puede reproducir este vídeo.
-        </video>
-      )}
-    </div>
-  );
-}
-
 function TestScreen({
   node,
   onAnswer,
@@ -94,7 +56,6 @@ function TestScreen({
   onAnswer: (result: "positive" | "negative") => void;
 }) {
   const image = CLINICAL_TEST_IMAGES.find((t) => t.id === node.testId);
-  const videoSrc = getClinicalTestVideoSrc(node.testId);
   const isRouteNode = node.testId.startsWith("route-");
   const positiveTitle = isRouteNode ? "Sí" : "Positivo";
   const negativeTitle = isRouteNode ? "No" : "Negativo";
@@ -113,29 +74,8 @@ function TestScreen({
         ) : null}
       </div>
 
-      {!isRouteNode && (image || videoSrc) ? (
-        <div className="flex flex-col gap-4">
-          {!isRouteNode && image ? (
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
-              <Image
-                src={image.src}
-                alt={image.title}
-                width={640}
-                height={360}
-                className="h-auto w-full object-contain"
-                priority
-              />
-            </div>
-          ) : null}
-
-          {!isRouteNode && videoSrc ? (
-            <ClinicalTestVideo
-              src={videoSrc}
-              title={node.title}
-              poster={image?.src}
-            />
-          ) : null}
-        </div>
+      {!isRouteNode && image ? (
+        <ClinicalTestMediaBlock test={image} className="w-full" />
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -347,7 +287,10 @@ export function ClinicalReasoningFlow({
   }, [session, tree, currentNode]);
 
   const handleBackStep = useCallback(() => {
-    setSession((prev) => (prev ? goBack(prev) : prev));
+    setSession((prev) => {
+      if (!prev) return prev;
+      return goBack(prev) ?? prev;
+    });
   }, []);
 
   if (!initialSession || !session || !tree || !currentNode) {
@@ -417,27 +360,29 @@ export function ClinicalReasoningFlow({
 
       <div className="mt-4 flex flex-wrap gap-3">
         {session.steps.length > 1 ? (
-          <button
-            type="button"
-            onClick={handleBackStep}
-            className="btn-secondary text-sm"
-          >
-            ← Paso anterior
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handleBackStep}
+              className="btn-secondary text-sm"
+            >
+              ← Paso anterior
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setSession({
+                  ...session,
+                  currentNodeId: session.entryNodeId,
+                  steps: [{ nodeId: session.entryNodeId, at: new Date().toISOString() }],
+                })
+              }
+              className="btn-secondary text-sm"
+            >
+              Reiniciar secuencia
+            </button>
+          </>
         ) : null}
-        <button
-          type="button"
-          onClick={() =>
-            setSession({
-              ...session,
-              currentNodeId: session.entryNodeId,
-              steps: [{ nodeId: session.entryNodeId, at: new Date().toISOString() }],
-            })
-          }
-          className="btn-secondary text-sm"
-        >
-          Reiniciar secuencia
-        </button>
       </div>
     </main>
   );

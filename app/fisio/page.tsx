@@ -14,16 +14,27 @@ type PhysioPatient = {
   onboarding_completed: boolean;
 };
 
+type RecentReport = {
+  id: string;
+  created_at: string;
+  body_area: string | null;
+  status: string;
+  patient_id: string;
+};
+
 export default function FisioPatientsPage() {
   const [patients, setPatients] = useState<PhysioPatient[]>([]);
   const [unreadByPatient, setUnreadByPatient] = useState<Record<string, number>>({});
+  const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
+  const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
+  const [clinicName, setClinicName] = useState<string | null>(null);
   const codeMenuRef = useRef<HTMLDivElement>(null);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
@@ -38,10 +49,11 @@ export default function FisioPatientsPage() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name")
+          .select("display_name, clinic_name")
           .eq("id", user.id)
           .single();
         setPhysioName(profile?.display_name ?? null);
+        setClinicName(profile?.clinic_name ?? null);
       }
 
       const { data: code, error: codeError } = await supabase.rpc(
@@ -64,14 +76,20 @@ export default function FisioPatientsPage() {
 
       const { data: reports } = await supabase
         .from("clinical_reports")
-        .select("patient_id, status");
-      const counts: Record<string, number> = {};
-      for (const r of (reports as { patient_id: string; status: string }[]) ?? []) {
-        if (r.status === "new") {
-          counts[r.patient_id] = (counts[r.patient_id] ?? 0) + 1;
-        }
+        .select("id, created_at, body_area, status, patient_id")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setRecentReports((reports as RecentReport[]) ?? []);
+
+      const { data: unreadRows } = await supabase
+        .from("clinical_reports")
+        .select("patient_id, status")
+        .eq("status", "new");
+      const unreadCounts: Record<string, number> = {};
+      for (const r of (unreadRows as { patient_id: string; status: string }[]) ?? []) {
+        unreadCounts[r.patient_id] = (unreadCounts[r.patient_id] ?? 0) + 1;
       }
-      setUnreadByPatient(counts);
+      setUnreadByPatient(unreadCounts);
     } catch (e) {
       const message =
         e instanceof Error && e.message
@@ -160,7 +178,9 @@ export default function FisioPatientsPage() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
       <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-        Bienvenido/a{physioName ? `, ${physioName}` : ""}
+        Bienvenido/a
+        {physioName ? `, ${physioName}` : ""}
+        {clinicName ? ` · ${clinicName}` : ""}
       </h1>
 
       {error ? (
@@ -169,105 +189,55 @@ export default function FisioPatientsPage() {
         </p>
       ) : null}
 
-      <section className="relative mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
-        <div ref={codeMenuRef} className="absolute right-4 top-4 sm:right-5 sm:top-5">
-          <button
-            type="button"
-            aria-label={codeMenuOpen ? "Cerrar opciones" : "Más opciones"}
-            aria-expanded={codeMenuOpen}
-            disabled={!inviteCode && !codeBusy}
-            onClick={() => setCodeMenuOpen((v) => !v)}
-            className="rounded-xl border border-neutral-200 p-2.5 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-          >
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden>
-              {codeMenuOpen ? (
-                <path
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  d="M6 6l12 12M6 18L18 6"
-                />
-              ) : (
-                <path
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  d="M12 6h.01M12 12h.01M12 18h.01"
-                />
-              )}
-            </svg>
-          </button>
-          {codeMenuOpen ? (
-            <div
-              role="menu"
-              className="absolute right-0 top-full z-20 mt-1 min-w-[13.5rem] overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg"
-            >
-              <button
-                type="button"
-                role="menuitem"
-                disabled={!inviteLink}
-                onClick={() => {
-                  setCodeMenuOpen(false);
-                  void shareLink();
-                }}
-                className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-              >
-                {copied === "link" ? "Enlace copiado" : "Copiar / compartir enlace"}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                disabled={codeBusy}
-                onClick={() => {
-                  setCodeMenuOpen(false);
-                  void regenerateCode();
-                }}
-                className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-              >
-                {codeBusy ? "Generando…" : "Generar nuevo código"}
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        <h2 className="pr-12 text-lg font-semibold text-neutral-900">
-          Tu código de vinculación
-        </h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          El paciente lo introduce una vez en AIKinora, o abre el enlace directo.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.2em] text-blue-800">
-            {inviteCode ?? (loading ? "…" : "—")}
+      {!loading && recentReports.length > 0 ? (
+        <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
+          <h2 className="text-lg font-semibold text-neutral-900">
+            Informes recientes
+          </h2>
+          <p className="mt-1 text-sm text-neutral-600">
+            Todos los informes enviados a esta cuenta (también si el paciente
+            entró solo con tu código).
           </p>
-          <button
-            type="button"
-            onClick={() => inviteCode && void copyText("code", inviteCode)}
-            disabled={!inviteCode}
-            className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-          >
-            {copied === "code" ? "Copiado" : "Copiar código"}
-          </button>
-        </div>
-        {inviteLink ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <p className="min-w-0 flex-1 break-all rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 font-mono text-xs leading-relaxed text-neutral-600">
-              {inviteLink}
-            </p>
-            <button
-              type="button"
-              onClick={() => void copyText("link", inviteLink)}
-              className="shrink-0 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-            >
-              {copied === "link" ? "Copiado" : "Copiar enlace"}
-            </button>
-          </div>
-        ) : null}
-        <p className="mt-3 text-xs text-neutral-500">
-          Si regeneras el código, los pacientes ya vinculados siguen vinculados;
-          solo cambia el código para nuevos pacientes.
-        </p>
-      </section>
+          <ul className="mt-4 divide-y divide-neutral-100">
+            {recentReports.map((report) => {
+              const patient = patients.find((p) => p.id === report.patient_id);
+              const label =
+                patient?.display_name || patient?.email || "Paciente";
+              const when = new Date(report.created_at).toLocaleString("es-ES", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+              return (
+                <li key={report.id}>
+                  <Link
+                    href={`/fisio/patients/${report.patient_id}?name=${encodeURIComponent(label)}`}
+                    className="flex items-center justify-between gap-3 py-3 hover:bg-neutral-50"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-neutral-900">
+                          {label}
+                        </p>
+                        {report.status === "new" ? (
+                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                            Nuevo
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        {report.body_area || "Consulta"} · {when}
+                      </p>
+                    </div>
+                    <span className="text-neutral-400">→</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between gap-3">
@@ -287,8 +257,9 @@ export default function FisioPatientsPage() {
           <p className="mt-4 text-sm text-neutral-500">Cargando…</p>
         ) : patients.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-500">
-            Todavía no hay pacientes vinculados. Comparte tu código o enlace para
-            que se registren y se vinculen.
+            Todavía no hay pacientes ni informes en esta cuenta. Abre Vinculación
+            para compartir tu código y pulsa Actualizar después de que el paciente
+            termine el cuestionario.
           </p>
         ) : (
           <ul className="mt-4 divide-y divide-neutral-100">
@@ -321,6 +292,125 @@ export default function FisioPatientsPage() {
           </ul>
         )}
       </section>
+
+      <div className="mt-8">
+        <button
+          type="button"
+          aria-expanded={vinculacionOpen}
+          onClick={() => {
+            setVinculacionOpen((v) => !v);
+            if (vinculacionOpen) setCodeMenuOpen(false);
+          }}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-left text-base font-semibold text-neutral-900 hover:bg-neutral-50"
+        >
+          <span>Vinculación</span>
+          <span className="text-neutral-400" aria-hidden>
+            {vinculacionOpen ? "▴" : "▾"}
+          </span>
+        </button>
+
+        {vinculacionOpen ? (
+          <section className="relative mt-3 rounded-2xl border border-neutral-200 bg-white p-6">
+            <div ref={codeMenuRef} className="absolute right-4 top-4 sm:right-5 sm:top-5">
+              <button
+                type="button"
+                aria-label={codeMenuOpen ? "Cerrar opciones" : "Más opciones"}
+                aria-expanded={codeMenuOpen}
+                disabled={!inviteCode && !codeBusy}
+                onClick={() => setCodeMenuOpen((v) => !v)}
+                className="rounded-xl border border-neutral-200 p-2.5 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              >
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden>
+                  {codeMenuOpen ? (
+                    <path
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      d="M6 6l12 12M6 18L18 6"
+                    />
+                  ) : (
+                    <path
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      d="M12 6h.01M12 12h.01M12 18h.01"
+                    />
+                  )}
+                </svg>
+              </button>
+              {codeMenuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-20 mt-1 min-w-[13.5rem] overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={!inviteLink}
+                    onClick={() => {
+                      setCodeMenuOpen(false);
+                      void shareLink();
+                    }}
+                    className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {copied === "link" ? "Enlace copiado" : "Copiar / compartir enlace"}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={codeBusy}
+                    onClick={() => {
+                      setCodeMenuOpen(false);
+                      void regenerateCode();
+                    }}
+                    className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {codeBusy ? "Generando…" : "Generar nuevo código"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <h2 className="pr-12 text-lg font-semibold text-neutral-900">
+              Tu código de vinculación
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              El paciente lo introduce una vez en AIKinora, o abre el enlace directo.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.2em] text-blue-800">
+                {inviteCode ?? (loading ? "…" : "—")}
+              </p>
+              <button
+                type="button"
+                onClick={() => inviteCode && void copyText("code", inviteCode)}
+                disabled={!inviteCode}
+                className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {copied === "code" ? "Copiado" : "Copiar código"}
+              </button>
+            </div>
+            {inviteLink ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <p className="min-w-0 flex-1 break-all rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 font-mono text-xs leading-relaxed text-neutral-600">
+                  {inviteLink}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void copyText("link", inviteLink)}
+                  className="shrink-0 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                >
+                  {copied === "link" ? "Copiado" : "Copiar enlace"}
+                </button>
+              </div>
+            ) : null}
+            <p className="mt-3 text-xs text-neutral-500">
+              Si regeneras el código, los pacientes ya vinculados siguen vinculados;
+              solo cambia el código para nuevos pacientes.
+            </p>
+          </section>
+        ) : null}
+      </div>
     </main>
   );
 }

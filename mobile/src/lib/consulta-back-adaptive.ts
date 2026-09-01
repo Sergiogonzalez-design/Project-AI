@@ -1004,9 +1004,12 @@ export const BACK_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa_detalle: "Describe previous injuries, surgeries, or treatments",
 };
 
-export const BACK_OPTION_EN: Record<string, string> = {
+export const BACK_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
+  "No, es otra molestia": "No, it's a different problem",
+  "Sí, es el mismo": "Yes, it's the same",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",
@@ -1117,6 +1120,14 @@ export const BACK_OPTION_EN: Record<string, string> = {
   "Espalda doblada/curvada": "Bent/rounded back",
   "Con giro o rotación del tronco": "With trunk twisting or rotation",
   "No lo recuerdo": "I don't remember",
+  "Debilidad bilateral progresiva / pie caído": "Progressive weakness in both legs or foot drop (difficulty lifting the foot)",
+  "Entumecimiento entre las piernas / zona del asiento": "Numbness between the legs or in the seat area (saddle area)",
+  "Problemas para controlar orina o heces": "Recent bladder or bowel control changes (incontinence or retention)",
+  "Dolor nocturno con fiebre o pérdida de peso inexplicada": "Intense night pain with fever or unexplained weight loss (infection/tumor concern)",
+  "Golpe o caída con imposibilidad de moverse o dolor nocturno muy fuerte": "Recent trauma with inability to move or severe night pain after a fall",
+  "Dolor en el pecho con dificultad para respirar": "Chest pain with shortness of breath along with back pain",
+  "Antecedente de cáncer (activo o en remisión)": "Do you have or have you had cancer, even treated or in remission",
+  "Huesos frágiles / osteoporosis / corticoides / postmenopausia y dolor con esfuerzo mínimo": "Osteoporosis, prolonged corticosteroid use, or postmenopausal woman, and the pain started with minimal effort (bending down, sneezing)",
 };
 
 export const BACK_SECTION_LABELS_EN: Record<string, string> = {

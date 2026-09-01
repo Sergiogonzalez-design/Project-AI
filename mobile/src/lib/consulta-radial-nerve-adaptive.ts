@@ -627,7 +627,7 @@ export const RADIAL_NERVE_LABEL_EN: Partial<Record<string, string>> = {
   deporte_impacto: "How does it affect your training or sport?",
 };
 
-export const RADIAL_NERVE_OPTION_EN: Record<string, string> = {
+export const RADIAL_NERVE_OPTION_EN = {
   No: "No",
   Sí: "Yes",
   "Ha sido ahora": "Just now",
@@ -706,6 +706,9 @@ export const RADIAL_NERVE_OPTION_EN: Record<string, string> = {
   "Sí, resonancia": "Yes, MRI",
   "Sí, ecografía": "Yes, ultrasound",
   "Sí, varias": "Yes, multiple",
+  "Muñeca caída (wrist drop)": "Do you have wrist drop (cannot lift the hand when the arm is extended)",
+  "Debilidad progresiva": "Progressive weakness that gets worse every day",
+  "Pérdida total de sensibilidad dorso mano/antebrazo": "Complete loss of sensation on the back of the hand or forearm",
 };
 
 export const RADIAL_NERVE_SECTION_LABELS_EN: Record<string, string> = {

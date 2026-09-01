@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       email?: string;
       password?: string;
-      accountType?: "patient" | "physio";
+      accountType?: "patient" | "physio" | "clinic";
+      clinicInvite?: string;
     };
     const email = body.email?.trim().toLowerCase() ?? "";
     const password = body.password ?? "";
@@ -83,12 +84,90 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const accountType = body.accountType === "physio" ? "physio" : "patient";
+    const clinicInvite = body.clinicInvite?.trim() ?? "";
+
+    if (clinicInvite) {
+      const { data: inviteRows, error: inviteErr } = await adminClient.rpc(
+        "clinic_lookup_invite",
+        { p_token: clinicInvite }
+      );
+      if (inviteErr) {
+        return NextResponse.json(
+          { error: inviteErr.message },
+          { status: 400, headers: CORS }
+        );
+      }
+      const invite = Array.isArray(inviteRows) ? inviteRows[0] : inviteRows;
+      if (!invite?.email) {
+        return NextResponse.json(
+          { error: "La invitación no es válida o ha caducado." },
+          { status: 400, headers: CORS }
+        );
+      }
+      if (String(invite.email).toLowerCase() !== email) {
+        return NextResponse.json(
+          {
+            error: `Usa el correo de la invitación (${invite.email}).`,
+          },
+          { status: 400, headers: CORS }
+        );
+      }
+
+      const { data, error } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        app_metadata: { account_type: "physio" },
+      });
+      if (error) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 400, headers: CORS }
+        );
+      }
+      if (!data.user) {
+        return NextResponse.json(
+          { error: "No se pudo crear la cuenta." },
+          { status: 500, headers: CORS }
+        );
+      }
+
+      const displayName =
+        typeof invite.display_name === "string" ? invite.display_name.trim() : "";
+      await adminClient.from("profiles").upsert({
+        id: data.user.id,
+        onboarding_completed: Boolean(displayName),
+        is_admin: false,
+        account_type: "physio",
+        display_name: displayName || null,
+      });
+
+      const { error: acceptErr } = await adminClient.rpc("clinic_accept_invite", {
+        p_token: clinicInvite,
+        p_user_id: data.user.id,
+      });
+      if (acceptErr) {
+        return NextResponse.json(
+          { error: acceptErr.message },
+          { status: 400, headers: CORS }
+        );
+      }
+
+      return NextResponse.json({ ok: true, accountType: "physio" }, { headers: CORS });
+    }
+
+    const accountType =
+      body.accountType === "physio"
+        ? "physio"
+        : body.accountType === "clinic"
+          ? "clinic"
+          : "patient";
 
     const { data, error } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
+      app_metadata: { account_type: accountType },
     });
 
     if (error) {
@@ -96,15 +175,30 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.user) {
-      await adminClient.from("profiles").upsert({
+      // createUser sometimes drops custom app_metadata; force it.
+      const { error: metaErr } = await adminClient.auth.admin.updateUserById(
+        data.user.id,
+        { app_metadata: { account_type: accountType } }
+      );
+      if (metaErr) {
+        return NextResponse.json({ error: metaErr.message }, { status: 400, headers: CORS });
+      }
+
+      const { error: profileErr } = await adminClient.from("profiles").upsert({
         id: data.user.id,
         onboarding_completed: false,
         is_admin: false,
         account_type: accountType,
       });
+      if (profileErr) {
+        return NextResponse.json(
+          { error: profileErr.message },
+          { status: 400, headers: CORS }
+        );
+      }
     }
 
-    return NextResponse.json({ ok: true }, { headers: CORS });
+    return NextResponse.json({ ok: true, accountType }, { headers: CORS });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500, headers: CORS });

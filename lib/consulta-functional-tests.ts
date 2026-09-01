@@ -35,8 +35,11 @@ export const FUNCTIONAL_TEST_QUESTIONS: Record<FunctionalRegionId, string[]> = {
   shoulder: [
     "¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte? (SÍ/NO)",
     "¿Puedes alcanzar la espalda sin dolor o bloqueo fuerte? (SÍ/NO)",
-    "Con el brazo a 90°, ¿puedes rotar sin miedo a que se ‘salga’? (SÍ/NO)",
+    "Con el brazo a 90°, ¿puedes rotar hacia fuera sin miedo a que se ‘salga’? (SÍ/NO)",
     "¿Aguantas un objeto ligero al frente 10–15 s sin dolor fuerte? (SÍ/NO)",
+    "¿Puedes bajar el brazo despacio desde arriba sin que se te caiga? (SÍ/NO)",
+    "Comparado con el otro lado, ¿hay mucha menos fuerza al girar hacia fuera o hacia dentro con el codo pegado? (SÍ/NO)",
+    "¿Duele exactamente en la «puntita» al cruzar el brazo por delante del pecho? (SÍ/NO)",
     "¿Al girar/inclinar la cabeza empeora el dolor del hombro o hay hormigueo? (SÍ/NO)",
   ],
   elbow: [
@@ -210,8 +213,8 @@ const REGION_ALIASES: { match: RegExp; id: FunctionalRegionId }[] = [
   { match: /muñeca|muneca|wrist/i, id: "wrist_hand" },
   { match: /dedo|finger|pulgar|mano\b/i, id: "finger" },
   { match: /cervical|cuello|neck/i, id: "cervical" },
-  { match: /torácic|toracic|dorsal|costilla|rib/i, id: "thoracic" },
-  { match: /lumbar|lumbago|ciática|ciatica/i, id: "lumbar" },
+  { match: /torácic|toracic|dorsal|costilla|rib|espalda\s*media|mid\s*back|thoracic/i, id: "thoracic" },
+  { match: /lumbar|lumbago|ciática|ciatica|espalda|lumbalgia|low\s*back|back\b/i, id: "lumbar" },
   { match: /pelvis|sacro|sacroil/i, id: "pelvis" },
   { match: /cadera|hip/i, id: "hip" },
   { match: /rodilla|knee/i, id: "knee" },

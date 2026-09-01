@@ -16,6 +16,8 @@ import { AI_SHOULDER_ANTERIOR_PAIN_RULES } from "@/lib/physioguide-shoulder-ante
 import { AI_SHOULDER_INSTABILITY_TRAUMA_RULES } from "@/lib/physioguide-shoulder-instability-trauma-rules";
 import { AI_SHOULDER_LATERAL_RCRSP_RULES } from "@/lib/physioguide-shoulder-lateral-rcrsp-rules";
 import { AI_SHOULDER_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-shoulder-master-rules";
+import { AI_SHOULDER_POSTERIOR_INSTABILITY_RULES } from "@/lib/physioguide-shoulder-posterior-instability-rules";
+import { AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES } from "@/lib/physioguide-shoulder-slap-labrum-screen-rules";
 import { AI_SHOULDER_SUPERIOR_AC_RULES } from "@/lib/physioguide-shoulder-superior-ac-rules";
 import { AI_ANKLE_ACHILLES_RULES } from "@/lib/physioguide-ankle-achilles-rules";
 import { AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-ankle-foot-master-rules";
@@ -27,6 +29,16 @@ import { AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-elbow
 import { AI_ELBOW_WRIST_NEURAL_RULES } from "@/lib/physioguide-elbow-wrist-neural-rules";
 import { AI_WRIST_DEQUERVAIN_RULES } from "@/lib/physioguide-wrist-dequervain-rules";
 import { AI_WRIST_TRAUMA_SCAPHOID_RULES } from "@/lib/physioguide-wrist-trauma-scaphoid-rules";
+import { AI_ELBOW_DISTAL_BICEPS_RULES } from "@/lib/physioguide-elbow-distal-biceps-rules";
+import { AI_ELBOW_DISTAL_TRICEPS_RULES } from "@/lib/physioguide-elbow-distal-triceps-rules";
+import { AI_ELBOW_PLRI_RULES } from "@/lib/physioguide-elbow-plri-rules";
+import { AI_ELBOW_RADIAL_TUNNEL_RULES } from "@/lib/physioguide-elbow-radial-tunnel-rules";
+import { AI_ELBOW_UCL_MEDIAL_RULES } from "@/lib/physioguide-elbow-ucl-medial-rules";
+import { AI_ELBOW_WRIST_GUYON_RULES } from "@/lib/physioguide-elbow-wrist-guyon-rules";
+import { AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES } from "@/lib/physioguide-elbow-wrist-hand-differentials-rules";
+import { AI_WRIST_TFCC_ULNAR_RULES } from "@/lib/physioguide-wrist-tfcc-ulnar-rules";
+import { AI_WRIST_DRUJ_RULES } from "@/lib/physioguide-wrist-druj-rules";
+import { AI_WRIST_CARPAL_INSTABILITY_RULES } from "@/lib/physioguide-wrist-carpal-instability-rules";
 import { AI_CERVICAL_NECK_PAIN_RULES } from "@/lib/physioguide-cervical-neck-pain-rules";
 import { AI_CERVICAL_TRAUMA_REDFLAGS_RULES } from "@/lib/physioguide-cervical-trauma-redflags-rules";
 import { AI_LUMBAR_BACK_PAIN_RULES } from "@/lib/physioguide-lumbar-back-pain-rules";
@@ -35,6 +47,18 @@ import { AI_SPINE_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-spine-maste
 import { AI_GLOBAL_CROSS_REGION_RULES } from "@/lib/physioguide-global-cross-region-rules";
 import { AI_FINGER_DIGITAL_PAIN_RULES } from "@/lib/physioguide-finger-digital-pain-rules";
 import { AI_HEAD_HEADACHE_MASTER_RULES } from "@/lib/physioguide-head-headache-master-rules";
+import { AI_HYPOTHESIS_EXPLORATION_RULES } from "@/lib/physioguide-hypothesis-mode-rules";
+import { AI_MTRP_FRAMEWORK_RULES } from "@/lib/physioguide-mtrp-framework-rules";
+import { AI_SHOULDER_LATERAL_REFERRED_RULES } from "@/lib/physioguide-shoulder-lateral-referred-rules";
+import {
+  AI_CLARITY_NO_OVERDIAGNOSIS_RULES,
+  AI_DIFFERENTIAL_MATRICES_RULES,
+  AI_EVIDENCE_LEVELS_RULES,
+  AI_NEGATIVE_TEST_LIBRARY_RULES,
+  AI_NO_IMAGING_DECISION_RULES,
+  AI_PERSISTENCE_REEVALUATION_RULES,
+  AI_REFERRED_PAIN_LIBRARY_RULES,
+} from "@/lib/physioguide-clinical-reasoning-library-rules";
 
 export const AI_DATA_FIDELITY_RULES = `FIDELIDAD A LOS DATOS (CRÍTICO — incumplir esto es un error grave):
 - El mecanismo u origen de la lesión DEBE coincidir EXACTAMENTE con lo que el usuario indicó en la descripción inicial y en el cuestionario (campos Inicio, Mecanismo, Actividad, detalle de actividad).
@@ -170,14 +194,14 @@ NERVIOS / FASCITIS (cuando el caso encaje):
 - Fascitis: si persiste ~1 semana → eco; si sigue → especialista que mire también movilidad de cadera y tobillo.
 
 FORMATO BASE (igual que siempre — no inventes otros encabezados):
-**Resumen de tu consulta**
-**Estructuras que podrían estar afectadas**
-**Posibles lesiones (orientativas)**
-**Qué hacer mientras tanto**
-**Pruebas funcionales**
-**Qué debes hacer ahora**
-**¿Necesitas contactar con nuestro fisioterapeuta?**
-**Fuentes consultadas**
+Resumen de tu consulta
+Estructuras que podrían estar afectadas
+Posibles lesiones (orientativas)
+Qué hacer mientras tanto
+Pruebas funcionales
+Qué debes hacer ahora
+¿Necesitas contactar con nuestro fisioterapeuta?
+Fuentes consultadas
 
 ORDEN POR PROBABILIDAD (OBLIGATORIO):
 - En **Estructuras que podrían estar afectadas**: lista con guiones, de MAYOR a MENOR probabilidad según el caso (la más probable primero).
@@ -198,15 +222,13 @@ FUENTES / EVIDENCIA (OBLIGATORIO):
 - Si no hay documento: Fuente: criterio clínico general Kinora (sin documento recuperado)
 
 REGLAS DE FORMATO:
-- Usa ** para encabezados de sección
-- DESTACAR LO IMPORTANTE (OBLIGATORIO — negrita con **…**):
-  1) En **Posibles lesiones (orientativas)**: cada ítem empieza con el nombre de la lesión en negrita, p. ej. "- **Lesión del TFCC**: descripción…" / "- **Tendinopatía del ECU**: …"
-  2) En cualquier respuesta (inicial o seguimiento): pon en negrita el nombre de cada lesión/cuadro orientativo que menciones (p. ej. **síndrome del pronador**, **epicondilitis lateral**).
-  3) Pon en negrita adónde debe acudir o qué prueba clave hacer: **fisioterapeuta**, **médico**, **urgencias**, **hospital**, **ecografía**, **resonancia magnética**, etc.
-  Solo el nombre o destino clave, no frases enteras.
+- PROHIBIDO en el texto que ve el usuario: asteriscos (*) y almohadillas (#). NUNCA uses Markdown: nada de **negrita**, *cursiva* ni títulos # / ## / ###.
+- Encabezados de sección: una línea con el título solo, sin símbolos. Ejemplo:
+Resumen de tu consulta
+- DESTACAR LO IMPORTANTE: escribe el nombre de la lesión o el destino (fisioterapeuta, médico, urgencias) al inicio del ítem, sin asteriscos. Ejemplo: "- Lesión del TFCC: descripción…"
 - Listas con guiones (-)
 - NO emitas diagnóstico definitivo
-- NOMENCLATURA (CRÍTICO — PROHIBIDO): nunca uses «distensión», «distensiones» ni «distension» (ni en títulos ni en el texto). Aunque otra regla o documento las mencione, NO las copies. Usa **lesión muscular**, **esguince**, **rotura fibrilar / parcial**, **contusión**, o el cuadro concreto (p. ej. **tendinopatía proximal de isquiotibiales**).
+- NOMENCLATURA (CRÍTICO — PROHIBIDO): nunca uses «distensión», «distensiones» ni «distension» (ni en títulos ni en el texto). Aunque otra regla o documento las mencione, NO las copies. Usa lesión muscular, esguince, rotura fibrilar / parcial, contusión, o el cuadro concreto (p. ej. tendinopatía proximal de isquiotibiales).
 - Lenguaje sencillo, tono cercano
 - Prioriza documentos recuperados (Functional Assessment, Special Tests, Clinical Tests, Imaging) cuando existan
 - FUENTE DE VERDAD para tests: base de conocimientos Kinora; el banco local solo es respaldo si RAG no trae tests de esa zona
@@ -239,11 +261,17 @@ ${AI_SHOULDER_MASTER_INTEGRATION_RULES}
 
 ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
+${AI_SHOULDER_LATERAL_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
 
 ${AI_SHOULDER_INSTABILITY_TRAUMA_RULES}
+
+${AI_SHOULDER_POSTERIOR_INSTABILITY_RULES}
+
+${AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES}
 
 ${AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES}
 
@@ -265,6 +293,26 @@ ${AI_WRIST_DEQUERVAIN_RULES}
 
 ${AI_WRIST_TRAUMA_SCAPHOID_RULES}
 
+${AI_ELBOW_DISTAL_BICEPS_RULES}
+
+${AI_ELBOW_DISTAL_TRICEPS_RULES}
+
+${AI_ELBOW_PLRI_RULES}
+
+${AI_ELBOW_RADIAL_TUNNEL_RULES}
+
+${AI_ELBOW_UCL_MEDIAL_RULES}
+
+${AI_ELBOW_WRIST_GUYON_RULES}
+
+${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
+
+${AI_WRIST_TFCC_ULNAR_RULES}
+
+${AI_WRIST_DRUJ_RULES}
+
+${AI_WRIST_CARPAL_INSTABILITY_RULES}
+
 ${AI_SPINE_MASTER_INTEGRATION_RULES}
 
 ${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
@@ -278,6 +326,24 @@ ${AI_LUMBAR_BACK_PAIN_RULES}
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
 ${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_HYPOTHESIS_EXPLORATION_RULES}
+
+${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
+
+${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_NO_IMAGING_DECISION_RULES}
+
+${AI_MTRP_FRAMEWORK_RULES}
+
+${AI_REFERRED_PAIN_LIBRARY_RULES}
+
+${AI_NEGATIVE_TEST_LIBRARY_RULES}
+
+${AI_DIFFERENTIAL_MATRICES_RULES}
+
+${AI_EVIDENCE_LEVELS_RULES}
 
 ${AI_EVIDENCE_DB_RULES}`;
 
@@ -294,6 +360,7 @@ export const AI_IMAGE_CONTEXT_RULES = `FOTO DE LA LESIÓN (cuando hay una imagen
 
 export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PROCESO CLÍNICO):
 - CONTINUIDAD DEL CASO (CRÍTICO): es el MISMO paciente y el MISMO problema. Usa el historial. NUNCA reinicies preguntando de nuevo toda la anamnesis o todos los tests como si fuera un caso distinto.
+- SI NO MEJORA / VUELVE IGUAL: activa reevaluación de hipótesis (modo exploración): ¿hipótesis inicial incompleta? ¿referido? ¿otra estructura? ¿red flags? ¿imagen/derivación? NO asumas solo «más del mismo tratamiento».
 - INTEGRACIÓN: cada respuesta ACTUALIZA las probabilidades; no sustituyas el razonamiento previo ni bases la conclusión SOLO en la última prueba funcional.
 - Da más peso a hallazgos específicos (hormigueo con distribución, debilidad neurológica, empeora con cuello/codo flexionado, irradiación, banderas rojas) que a hallazgos inespecíficos.
 - Si una prueba musculotendinosa es positiva pero hay síntomas neurológicos claros que esa lesión no explica → mantén alta sospecha neurológica y reordena hipótesis.
@@ -389,7 +456,7 @@ export function appendSourcesFooter(
   const external = sources.filter((s) => hasWorkingSourceLink(s));
   if (!external.length) return answer;
   const heading =
-    language === "en" ? "**Sources consulted**" : "**Fuentes consultadas**";
+    language === "en" ? "Sources consulted" : "Fuentes consultadas";
   if (/Fuentes consultadas|Sources consulted/i.test(answer)) {
     const missing = external.filter((s) => !answer.includes(s));
     if (!missing.length) return answer;

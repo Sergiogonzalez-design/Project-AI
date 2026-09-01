@@ -1,0 +1,427 @@
+{
+  "pilot": "elbow-wrist",
+  "version": 2,
+  "notes": "Pilot only. No invented Sn/Sp. Traditional MTrP maps labeled traditional — not absolute anatomy. No Travell verbatim text.",
+  "relations": [
+    {
+      "id": "cervical-may-refer-or-mimic-lateral-elbow-pain",
+      "source_structure": "cervical nerve root / somatic cervical structures (C6–C7 pathway clinical)",
+      "target_region": "lateral elbow / forearm extensor region",
+      "relationship": "may_mimic",
+      "clinical_context": "Lateral elbow pain with neck contribution, dermatomal clues, or poor reproduction on Cozen/Mill despite LET-like history.",
+      "supporting_evidence": [
+        "Cervical referral and radial tunnel overlap are standard LET differentials",
+        "Negative Cozen does not prove cervical source; negative Spurling does not exclude cervical contribution"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Differential reasoning — no invented Sn/Sp."
+      },
+      "limitations": [
+        "LET and cervical often discussed together; coexistence possible",
+        "Do not skip local tendon loading tests"
+      ],
+      "alternative_explanations": [
+        "LET / extensor tendinopathy",
+        "Radial tunnel syndrome clinical construct",
+        "Intraarticular elbow / plica",
+        "Myofascial hypothesis (traditional)"
+      ],
+      "recommended_examination": [
+        "Cervical AROM + Spurling/ULTT cluster when indicated",
+        "Cozen / Mill / Maudsley with familiar pain",
+        "Radial tunnel palpation/provocation as hypothesis only"
+      ],
+      "red_flags": [
+        "Progressive neurological deficit",
+        "Trauma with inability to extend elbow / occult fracture concern"
+      ],
+      "references": [
+        {
+          "citation": "Blanpied PR et al. Neck Pain CPG. JOSPT — upper quarter referred pain framing.",
+          "year": 2017
+        },
+        {
+          "citation": "Wainner RS et al. Cervical radiculopathy examination. Spine.",
+          "year": 2003
+        }
+      ]
+    },
+    {
+      "id": "cozen-negative-does-not-exclude-let",
+      "source_structure": "common extensor / LET clinical construct",
+      "target_region": "lateral epicondyle / proximal extensor mass",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Grip/extension loading history with lateral elbow pain; Cozen negative or non-familiar.",
+      "supporting_evidence": [
+        "Single provocative tests for LET have imperfect diagnostic performance",
+        "Clinical diagnosis relies on history + localized provocation cluster"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Negative Cozen ≠ LET cleared. Do not invent accuracy numbers."
+      },
+      "limitations": [
+        "Overlap with radial tunnel",
+        "Cervical mimics"
+      ],
+      "alternative_explanations": [
+        "Radial tunnel",
+        "Cervical referral",
+        "Posterior interosseous nerve irritation",
+        "Capitellar / intraarticular sources"
+      ],
+      "recommended_examination": [
+        "Mill + Maudsley + palpation cluster",
+        "Cervical screen if atypical",
+        "Do not auto-switch to another muscle solely because Cozen is negative"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Elbow examination / LET diagnostic literature — qualitative limitations of isolated tests (sports medicine reviews).",
+          "year": 2014
+        },
+        {
+          "citation": "Physioguide elbow-wrist evidence modules — Cozen/Mill/Maudsley framing.",
+          "year": 2026
+        }
+      ]
+    },
+    {
+      "id": "phalen-negative-does-not-exclude-cts",
+      "source_structure": "median nerve at carpal tunnel (CTS clinical construct)",
+      "target_region": "hand / digits 1–3 / nocturnal paresthesia pattern",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Classic nocturnal hand paresthesias; Phalen negative.",
+      "supporting_evidence": [
+        "JAMA Rational Clinical Examination and CTS reviews: individual tests imperfect; history and combinations matter"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Qualitative mixed accuracy. Negative Phalen does not exclude CTS. No invented Sn/Sp."
+      },
+      "limitations": [
+        "Does not replace electrodiagnosis when indicated",
+        "Cervical radiculopathy can mimic"
+      ],
+      "alternative_explanations": [
+        "Pronator syndrome",
+        "Cervical C6–C7",
+        "Polyneuropathy",
+        "Guyon ulnar patterns (different distribution)"
+      ],
+      "recommended_examination": [
+        "Symptom diagram + night symptoms + Durkan/compression as cluster",
+        "Cervical screen if neck/arm clues",
+        "Neurophysiology / imaging per clinical pathway"
+      ],
+      "red_flags": [
+        "Acute thenar atrophy with progressive deficit — timely referral"
+      ],
+      "references": [
+        {
+          "citation": "D'Arcy CA, McGee S. The rational clinical examination: Does this patient have carpal tunnel syndrome? JAMA.",
+          "year": 2000
+        },
+        {
+          "citation": "MacDermid JC / CTS clinical diagnosis systematic reviews — combination of findings preferred.",
+          "year": 2004
+        }
+      ]
+    },
+    {
+      "id": "tinel-negative-does-not-exclude-entrapment-neuropathy",
+      "source_structure": "peripheral nerve entrapment sites (median at wrist; also ulnar/radial sites by analogy)",
+      "target_region": "hand / forearm neuropathic symptoms",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Suspected entrapment; Tinel negative at the expected site.",
+      "supporting_evidence": [
+        "Tinel sign has limited standalone diagnostic value across entrapment neuropathies"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not use negative Tinel as clearance. Status mixed/unknown for many sites."
+      },
+      "limitations": [
+        "False positives in asymptomatics possible",
+        "Operator force and site placement vary"
+      ],
+      "alternative_explanations": [
+        "CTS still possible",
+        "Cervical radiculopathy",
+        "Non-neural pain generators"
+      ],
+      "recommended_examination": [
+        "Region-specific clusters (Phalen/Durkan; elbow flexion test for cubital tunnel)",
+        "Neurological map of symptoms",
+        "Never conclude 'must be muscle' from negative Tinel alone"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "D'Arcy CA, McGee S. JAMA Rational Clinical Examination — CTS (Tinel limitations).",
+          "year": 2000
+        },
+        {
+          "citation": "Cubital tunnel / peripheral nerve clinical exam reviews — qualitative limits of Tinel.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "finkelstein-negative-does-not-exclude-dequervain",
+      "source_structure": "first dorsal compartment / De Quervain clinical construct",
+      "target_region": "radial wrist / radial styloid",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Radial wrist pain with thumb use (e.g. postpartum); Finkelstein/Eichhoff negative or confusing.",
+      "supporting_evidence": [
+        "Clinical diagnosis uses history + localized tenderness + provocative maneuvers; single-test exclusion unreliable",
+        "WHAT test sometimes preferred to reduce false positives — still not perfect"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Technique naming confusion (Finkelstein vs Eichhoff). No invented Sn/Sp."
+      },
+      "limitations": [
+        "CMC OA and intersection syndrome overlap",
+        "Scaphoid injury if trauma"
+      ],
+      "alternative_explanations": [
+        "Thumb CMC osteoarthritis",
+        "Intersection syndrome",
+        "Superficial radial nerve irritation",
+        "Scaphoid occult fracture (trauma)"
+      ],
+      "recommended_examination": [
+        "Palpation of first compartment + WHAT",
+        "CMC grind/screen",
+        "Trauma → scaphoid clinical screen / imaging pathway"
+      ],
+      "red_flags": [
+        "FOOSH + snuffbox tenderness — scaphoid pathway"
+      ],
+      "references": [
+        {
+          "citation": "Goubau JF et al. / WHAT test literature for De Quervain — clinical provocation alternatives.",
+          "year": 2014
+        },
+        {
+          "citation": "Walker-Bone K / De Quervain clinical epidemiology and diagnosis framing in upper limb pain surveys.",
+          "year": 2004
+        }
+      ]
+    },
+    {
+      "id": "hook-test-negative-does-not-exclude-partial-distal-biceps",
+      "source_structure": "distal biceps tendon (complete vs partial tear clinical construct)",
+      "target_region": "antecubital fossa / supination strength",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Hook test engages a cord; pop + weakness still possible with partial tear or lacertus-only injury.",
+      "supporting_evidence": [
+        "O'Driscoll described hook test primarily for complete distal biceps avulsion",
+        "An engageable hook does not clear a partial tear"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "cited",
+        "notes": "Do not invent Sn/Sp. Hook-able ≠ partial excluded. Squeeze (Ruland) is a complement."
+      },
+      "limitations": [
+        "Partial tears and intact lacertus can hook",
+        "Acute swelling limits palpation"
+      ],
+      "alternative_explanations": [
+        "LET / lateral elbow pain (wrong location)",
+        "Brachialis strain",
+        "Median nerve irritation"
+      ],
+      "recommended_examination": [
+        "Hook + contour + resisted supination",
+        "Do not label as LET because Cozen hurts"
+      ],
+      "red_flags": [
+        "Sudden pop + inability to supinate against resistance — timely referral"
+      ],
+      "references": [
+        {
+          "citation": "O'Driscoll SW, Goncalves LB, Dietz P. The hook test for distal biceps tendon avulsion. Am J Sports Med.",
+          "year": 2005
+        }
+      ]
+    },
+    {
+      "id": "durkan-raises-suspicion-cts-in-cluster",
+      "source_structure": "median nerve at carpal tunnel",
+      "target_region": "digits 1–3 nocturnal paresthesia",
+      "relationship": "raises_suspicion_when",
+      "clinical_context": "Sustained palmar pressure reproduces familiar median tingling; night symptoms + digit map matter as much as the test.",
+      "supporting_evidence": [
+        "Durkan carpal compression described as a provocative test for CTS",
+        "JAMA Rational Clinical Examination: history and combinations outperform isolated tests; mixed accuracy"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Qualitative mixed accuracy (Durkan 1991 vs later reviews). Negative Durkan does not exclude CTS. No invented Sn/Sp."
+      },
+      "limitations": [
+        "False positives with tenosynovitis or a swollen wrist",
+        "Little-finger-only symptoms are ulnar, not CTS"
+      ],
+      "alternative_explanations": [
+        "Pronator syndrome",
+        "Cervical C6–C7",
+        "Flexor tenosynovitis"
+      ],
+      "recommended_examination": [
+        "Night symptoms + digit diagram + Durkan/Phalen/Tinel cluster",
+        "Cervical screen if neck/arm clues"
+      ],
+      "red_flags": [
+        "Progressive thenar atrophy — timely referral"
+      ],
+      "references": [
+        {
+          "citation": "Durkan JA. A new diagnostic test for carpal tunnel syndrome. J Bone Joint Surg Am.",
+          "year": 1991
+        },
+        {
+          "citation": "D'Arcy CA, McGee S. The rational clinical examination: Does this patient have carpal tunnel syndrome? JAMA.",
+          "year": 2000
+        }
+      ]
+    },
+    {
+      "id": "fovea-sign-raises-suspicion-tfcc",
+      "source_structure": "ulnar fovea / TFCC foveal insertion clinical construct",
+      "target_region": "ulnar-sided wrist / palmar-ulnar hollow",
+      "relationship": "raises_suspicion_when",
+      "clinical_context": "Familiar pain on palpation of the palmar-ulnar fovea with ulnar load or rotation history.",
+      "supporting_evidence": [
+        "Tay et al. described the ulnar fovea sign as a localization screen for foveal/TFCC pathology in a clinical series"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Single-series localization screen, not arthroscopy. Do not extract universal Sn/Sp."
+      },
+      "limitations": [
+        "Overlaps DRUJ, LT, ECU, ulnar styloid",
+        "Positive fovea ≠ TFCC tear confirmed"
+      ],
+      "alternative_explanations": [
+        "DRUJ irritation",
+        "Lunotriquetral sprain",
+        "ECU tendinopathy"
+      ],
+      "recommended_examination": [
+        "Fovea + press + ulnar load cluster",
+        "Piano-key if rotation instability suspected"
+      ],
+      "red_flags": [
+        "Recent distal radius fracture — do not force piano-key"
+      ],
+      "references": [
+        {
+          "citation": "Tay SC, Tomita K, Berger RA. The ulnar fovea sign for defining ulnar wrist pain: an analysis of sensitivity and specificity. J Hand Surg Am.",
+          "year": 2007
+        }
+      ]
+    },
+    {
+      "id": "watson-shift-negative-does-not-exclude-sl-instability",
+      "source_structure": "scapholunate ligament / SL interval clinical construct",
+      "target_region": "dorsal central wrist",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "FOOSH or click at the SL interval; Watson/scaphoid shift negative or poorly tolerated.",
+      "supporting_evidence": [
+        "Watson described the scaphoid shift as a clinical maneuver, not a gold-standard tear test"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Positive ≠ SL rupture confirmed; negative ≠ SL cleared. No invented LR. FOOSH + snuffbox → image first."
+      },
+      "limitations": [
+        "Pain, guarding, and constitutional laxity confound",
+        "Aggressive shift on occult scaphoid fracture is unsafe"
+      ],
+      "alternative_explanations": [
+        "Occult scaphoid fracture",
+        "Dorsal wrist ganglion / impingement",
+        "Nonspecific sprain"
+      ],
+      "recommended_examination": [
+        "Snuffbox/axial load before aggressive Watson if FOOSH",
+        "Compare contralateral shift",
+        "Imaging pathway if persistent dorsal click"
+      ],
+      "red_flags": [
+        "FOOSH + snuffbox tenderness — scaphoid imaging before forceful scaphoid shift"
+      ],
+      "references": [
+        {
+          "citation": "Watson HK, Ashmead D, Makhlouf MV. Examination of the scaphoid. J Hand Surg Am.",
+          "year": 1988
+        }
+      ]
+    },
+    {
+      "id": "maudsley-may-mimic-radial-tunnel",
+      "source_structure": "resisted middle-finger extension (Maudsley) / ECRB loading",
+      "target_region": "lateral epicondyle vs proximal dorsal forearm",
+      "relationship": "may_mimic",
+      "clinical_context": "Maudsley reproduces pain in the proximal dorsal forearm more than the bony epicondyle.",
+      "supporting_evidence": [
+        "Maudsley loads ECRB and can irritate the radial tunnel / PIN corridor",
+        "Isolated LET tests have limited standalone accuracy (Zwerus review)"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Pain location (bone vs muscle) is the discriminator. Maudsley ≠ radial nerve lesion. No invented Sn/Sp."
+      },
+      "limitations": [
+        "C7 radiculopathy can also hurt with middle-finger loading",
+        "LET and radial tunnel may coexist"
+      ],
+      "alternative_explanations": [
+        "LET / extensor tendinopathy",
+        "Cervical C6–C7",
+        "Radiohumeral joint"
+      ],
+      "recommended_examination": [
+        "Record WHERE Maudsley hurts",
+        "Cozen/Mill/palpation cluster",
+        "Cervical screen if atypical"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Zwerus EL et al. Physical examination of the elbow: what is the evidence? A systematic literature review.",
+          "year": 2018
+        },
+        {
+          "citation": "Coombes BK, Bisset L, Vicenzino B. Management of lateral elbow tendinopathy. Br J Sports Med — LET construct, not nerve confirmation.",
+          "year": 2015
+        }
+      ]
+    }
+  ]
+}

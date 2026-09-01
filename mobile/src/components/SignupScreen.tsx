@@ -28,11 +28,12 @@ import { supabase } from "../lib/supabase";
 
 type Props = {
   onSwitch: () => void;
+  onSignedUp?: (accountType: "patient" | "physio" | "clinic") => void;
 };
 
-export function SignupScreen({ onSwitch }: Props) {
+export function SignupScreen({ onSwitch, onSignedUp }: Props) {
   const { t, locale } = useI18n();
-  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
+  const [accountType, setAccountType] = useState<"patient" | "physio" | "clinic">("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -94,6 +95,7 @@ export function SignupScreen({ onSwitch }: Props) {
       if (converting) {
         await supabase.auth.signOut({ scope: "local" });
       }
+      onSignedUp?.(converting ? "patient" : accountType);
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: emailNorm,
         password,
@@ -169,10 +171,28 @@ export function SignupScreen({ onSwitch }: Props) {
                   accountType === "physio" && styles.roleOptionTextActive,
                 ]}
               >
-                Fisioterapeuta
+                Fisio
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.roleOption, accountType === "clinic" && styles.roleOptionActive]}
+              onPress={() => setAccountType("clinic")}
+            >
+              <Text
+                style={[
+                  styles.roleOptionText,
+                  accountType === "clinic" && styles.roleOptionTextActive,
+                ]}
+              >
+                Clínica
               </Text>
             </Pressable>
           </View>
+          {accountType === "clinic" ? (
+            <Text style={styles.clinicHint}>
+              El plan de clínica será de pago más adelante. Ahora puedes configurar el espacio.
+            </Text>
+          ) : null}
           <View style={{ height: 12 }} />
             </>
           )}
@@ -203,8 +223,8 @@ export function SignupScreen({ onSwitch }: Props) {
           <View style={{ height: 12 }} />
 
           <AuthTextField
-            label="Repite la contraseña"
-            placeholder="Repite la contraseña"
+            label={t.auth.confirmPassword}
+            placeholder={t.auth.confirmPassword}
             value={confirm}
             onChangeText={setConfirm}
             editable={!loading}
@@ -369,12 +389,18 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   roleOptionText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     color: Colors.text,
   },
   roleOptionTextActive: {
     color: "#fff",
+  },
+  clinicHint: {
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 16,
+    color: Colors.textSecondary,
   },
   button: {
     marginTop: 24,

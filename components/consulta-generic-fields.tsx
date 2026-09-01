@@ -21,6 +21,8 @@ const GENERIC_LABELS_EN = {
   rf_fiebre: "Associated fever?",
   rf_perdida_sensibilidad: "Loss of sensation?",
   problem: "Your problem",
+  zona: "Where does it hurt?",
+  zona_ph: "For example: knee, back, ankle…",
   evolucion: "How long have you had this?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
@@ -127,6 +129,16 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
       </div>
 
       <h2 className="mb-4 mt-2 text-xl font-bold tracking-tight text-slate-900">{en ? L.problem : "Tu problema"}</h2>
+      <div data-question-id="zona">
+        <label className={labelClass}>{en ? L.zona : "¿Dónde te duele o te molesta?"}</label>
+        <textarea
+          value={a.zona}
+          onChange={(e) => patch({ zona: e.target.value })}
+          rows={2}
+          placeholder={en ? L.zona_ph : "Por ejemplo: rodilla, espalda, tobillo…"}
+          className={textareaClass}
+        />
+      </div>
       <div data-question-id="evolucion">
         <label className={labelClass}>{en ? L.evolucion : "¿Cuánto tiempo llevas con esto?"}</label>
         <ChipGroup options={GENERIC_FIELD_OPTIONS.evolution} value={a.evolucion} onChange={(evolucion) => patch({ evolucion })} displayOption={displayOption} />

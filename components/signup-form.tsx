@@ -6,15 +6,31 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isGuestUser } from "@/lib/guest-account";
+import type { AccountType } from "@/lib/account-type";
 
-export function SignupForm() {
+const inputClass =
+  "rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+
+type InviteInfo = {
+  clinic_name: string;
+  email: string;
+  display_name: string | null;
+};
+
+type Props = {
+  clinicInviteToken?: string;
+};
+
+export function SignupForm({ clinicInviteToken }: Props) {
   const router = useRouter();
-  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
+  const [accountType, setAccountType] = useState<AccountType>("patient");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [convertingGuest, setConvertingGuest] = useState(false);
+  const [invite, setInvite] = useState<InviteInfo | null>(null);
+  const joiningClinic = Boolean(clinicInviteToken);
 
   useEffect(() => {
     const supabase = createClient();
@@ -22,6 +38,21 @@ export function SignupForm() {
       setConvertingGuest(isGuestUser(data.user));
     });
   }, []);
+
+  useEffect(() => {
+    if (!clinicInviteToken) return;
+    const supabase = createClient();
+    void supabase
+      .rpc("clinic_lookup_invite", { p_token: clinicInviteToken })
+      .then(({ data }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.email) {
+          setInvite(row as InviteInfo);
+          setEmail(String(row.email));
+          setAccountType("physio");
+        }
+      });
+  }, [clinicInviteToken]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +74,12 @@ export function SignupForm() {
         body: JSON.stringify({
           email: emailNorm,
           password,
-          accountType: isGuestUser(session?.user) ? "patient" : accountType,
+          accountType: isGuestUser(session?.user)
+            ? "patient"
+            : joiningClinic
+              ? "physio"
+              : accountType,
+          clinicInvite: clinicInviteToken || undefined,
         }),
       });
       const payload = (await res.json()) as { error?: string };
@@ -70,6 +106,20 @@ export function SignupForm() {
     }
   }
 
+  const roleBtn = (type: AccountType, label: string) => (
+    <button
+      type="button"
+      onClick={() => setAccountType(type)}
+      className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+        accountType === type
+          ? "border-blue-500 bg-blue-50 text-blue-700"
+          : "border-slate-200 text-slate-500 hover:border-slate-300"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -82,38 +132,27 @@ export function SignupForm() {
           <p className="mt-1 text-sm text-slate-500">
             {convertingGuest
               ? "Crea tu cuenta para seguir usando la IA"
-              : "Regístrate para usar AIKinora"}
+              : joiningClinic && invite
+                ? `Te unes a ${invite.clinic_name} como fisioterapeuta`
+                : "Regístrate para usar AIKinora"}
           </p>
         </div>
       </div>
 
-      {convertingGuest ? null : (
+      {convertingGuest || joiningClinic ? null : (
       <div className="mb-5 flex flex-col gap-1.5">
         <label className="text-sm font-semibold text-slate-700">Soy...</label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setAccountType("patient")}
-            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-              accountType === "patient"
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-slate-200 text-slate-500 hover:border-slate-300"
-            }`}
-          >
-            Persona
-          </button>
-          <button
-            type="button"
-            onClick={() => setAccountType("physio")}
-            className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-              accountType === "physio"
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-slate-200 text-slate-500 hover:border-slate-300"
-            }`}
-          >
-            Fisioterapeuta
-          </button>
+        <div className="grid grid-cols-3 gap-2">
+          {roleBtn("patient", "Persona")}
+          {roleBtn("physio", "Fisio")}
+          {roleBtn("clinic", "Clínica")}
         </div>
+        {accountType === "clinic" ? (
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            Espacio para tu centro: logo, dirección y cuentas de fisioterapeutas.
+            El plan de clínica será de pago más adelante; ahora puedes configurarlo.
+          </p>
+        ) : null}
       </div>
       )}
 
@@ -122,7 +161,8 @@ export function SignupForm() {
         <input
           type="email" name="email" autoComplete="email" required
           value={email} onChange={(e) => setEmail(e.target.value)}
-          className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          readOnly={joiningClinic && Boolean(invite?.email)}
+          className={inputClass}
           placeholder="tu@correo.com"
         />
       </div>
@@ -132,7 +172,7 @@ export function SignupForm() {
         <input
           type="password" name="password" autoComplete="new-password" required minLength={6}
           value={password} onChange={(e) => setPassword(e.target.value)}
-          className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className={inputClass}
           placeholder="Mínimo 6 caracteres"
         />
       </div>
@@ -155,7 +195,7 @@ export function SignupForm() {
         type="submit" disabled={loading}
         className="btn-primary w-full"
       >
-        {loading ? "Creando cuenta…" : "Crear cuenta"}
+        {loading ? "Creando cuenta…" : joiningClinic ? "Unirme a la clínica" : "Crear cuenta"}
       </button>
 
       <p className="mt-5 text-center text-sm text-slate-500">

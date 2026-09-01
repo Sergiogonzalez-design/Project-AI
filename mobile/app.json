@@ -14,13 +14,14 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.physioguidea.app",
-      "buildNumber": "14",
+      "buildNumber": "15",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "NSUserNotificationsUsageDescription": "AIKinora envía recordatorios de Physio para ayudarte con tu recuperación.",
         "NSMicrophoneUsageDescription": "AIKinora usa el micrófono para que puedas dictar tu consulta por voz.",
         "NSSpeechRecognitionUsageDescription": "AIKinora usa el reconocimiento de voz para convertir lo que dices en texto en el chat.",
-        "NSCameraUsageDescription": "AIKinora necesita la cámara para fotografiar la zona lesionada.",
-        "NSPhotoLibraryUsageDescription": "AIKinora necesita acceso a tus fotos para adjuntar una imagen de la lesión a la consulta.",
+        "NSCameraUsageDescription": "AIKinora necesita la cámara para tu foto de perfil o para fotografiar la zona lesionada.",
+        "NSPhotoLibraryUsageDescription": "AIKinora necesita acceso a tus fotos para tu foto de perfil o para adjuntar una imagen de la lesión.",
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -66,10 +67,11 @@
       },
       "package": "com.physioguidea.app",
       "versionCode": 1,
-      "softwareKeyboardLayoutMode": "pan",
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -92,14 +94,16 @@
       [
         "expo-notifications",
         {
-          "color": "#2563EB"
+          "color": "#2563EB",
+          "defaultChannel": "AIKinora-reminders"
         }
       ],
+      "./plugins/withPhysioNotificationLargeIcon.js",
       [
         "expo-image-picker",
         {
-          "photosPermission": "AIKinora necesita acceso a tus fotos para adjuntar una imagen de la lesión a la consulta.",
-          "cameraPermission": "AIKinora necesita la cámara para fotografiar la zona lesionada."
+          "photosPermission": "AIKinora necesita acceso a tus fotos para tu foto de perfil o para adjuntar una imagen de la lesión.",
+          "cameraPermission": "AIKinora necesita la cámara para tu foto de perfil o para fotografiar la zona lesionada."
         }
       ],
       [

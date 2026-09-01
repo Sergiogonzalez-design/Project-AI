@@ -907,9 +907,12 @@ export const NECK_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa_detalle: "Describe previous injuries or treatments",
 };
 
-export const NECK_OPTION_EN: Record<string, string> = {
+export const NECK_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
+  "No, es otra molestia": "No, it's a different problem",
+  "Sí, es el mismo": "Yes, it's the same",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",
@@ -1002,6 +1005,17 @@ export const NECK_OPTION_EN: Record<string, string> = {
   Diariamente: "Daily",
   "Varias veces por semana": "Several times a week",
   Ocasionalmente: "Occasionally",
+  "Golpe o accidente fuerte en el cuello": "Was there significant trauma to the neck (accident, fall from height, hard blow)",
+  "Debilidad en brazos/piernas o torpeza al caminar": "New weakness in arms or legs, or clumsiness when walking",
+  "Pérdida de sensibilidad marcada": "Marked loss of sensation or progressive numbness",
+  "Fiebre / rigidez extrema / malestar general": "Fever, extreme neck stiffness, or severe general malaise",
+  "Mareo intenso, visión doble, habla o deglución": "Severe dizziness, double vision, or difficulty speaking or swallowing",
+  "Problemas nuevos para controlar orina o heces": "New problems controlling bladder or bowel",
+  "Cefalea repentina, muy intensa o distinta a la habitual (sospecha VAD/hemorragia)": "A sudden, very intense headache, or different from any you've had before, together with the neck pain",
+  "Manipulación/ajuste del cuello reciente (riesgo de disección arterial)": "Have you recently had a neck manipulation or adjustment (physiotherapy, chiropractic, osteopathy)",
+  "Torpeza fina en manos (sospecha mielopatía)": "Do you drop objects from your hands or notice fine clumsiness (buttoning, writing)",
+  "Signo de Lhermitte (descarga eléctrica con flexión cervical)": "Do you notice an electric-shock sensation running down your back or arms when bending your neck forward",
+  "Pérdida de peso inexplicada o antecedente de cáncer": "Unexplained weight loss or history of cancer",
 };
 
 export const NECK_SECTION_LABELS_EN: Record<string, string> = {

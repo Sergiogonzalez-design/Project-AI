@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
-import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
 import { Colors } from "../lib/colors";
 import {
   formatFunctionalTestAnswers,
   type FunctionalTestAnswer,
   type FunctionalTestItem,
 } from "../lib/functional-test-answers";
+import {
+  resolveFunctionalTestMedia,
+  stripFunctionalMediaMarker,
+} from "../lib/functional-test-media";
 
 type Props = {
   tests: FunctionalTestItem[];
@@ -46,15 +49,14 @@ export function FunctionalTestYesNo({
     <View style={styles.wrap}>
       <Text style={styles.hint}>{hint}</Text>
       {tests.map((test) => {
-        const media = shouldShowClinicalTestImage({
-          numberedText: `${test.n}. ${test.prompt}`,
-        });
+        const prompt = stripFunctionalMediaMarker(test.prompt);
+        const media = resolveFunctionalTestMedia({ prompt: test.prompt });
         const showMedia = media && !shown.has(media.id) ? media : null;
         if (showMedia) shown.add(showMedia.id);
         return (
           <View key={test.n} style={styles.item}>
             <Text style={styles.prompt}>
-              {test.n}. {test.prompt}
+              {test.n}. {prompt}
             </Text>
             {showMedia ? <ClinicalTestMediaBlock test={showMedia} /> : null}
             <View style={styles.row}>

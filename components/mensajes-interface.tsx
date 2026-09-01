@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { stripVisibleMarkup } from "@/lib/strip-visible-markup";
 import { THERAPIST } from "@/lib/therapist";
 
 type TherapistMessage = {
@@ -215,7 +216,7 @@ export function MensajesInterface() {
                           : "border border-blue-100 bg-slate-50 text-slate-800 rounded-bl-sm"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <p className="whitespace-pre-wrap">{stripVisibleMarkup(msg.content)}</p>
                       <p
                         className={`mt-1.5 text-[10px] ${
                           isUser ? "text-blue-200" : "text-slate-400"

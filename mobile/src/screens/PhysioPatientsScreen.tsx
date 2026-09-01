@@ -1,14 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -18,6 +17,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DismissKeyboard } from "../components/DismissKeyboard";
 import { ScreenScrollView } from "../components/ScreenScrollView";
 import { PhysioAvatar } from "../components/PhysioAvatar";
@@ -29,12 +29,17 @@ import {
 import { ClinicalReasoningFlow } from "../components/ClinicalReasoningFlow";
 import { PhysioAssistantBody } from "../components/PhysioAssistantBody";
 import { TypingIndicator } from "../components/TypingIndicator";
+import {
+  composerBottomInset,
+  useKeyboardHeight,
+} from "../hooks/useKeyboardHeight";
 import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { pickIllustratedTestsForPruebasQuery } from "../lib/clinical-test-images";
 import { copyToClipboard } from "../lib/copy-to-clipboard";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
 import { supabase } from "../lib/supabase";
+import { screenHeaderBarPadding } from "../lib/screen-header-insets";
 import type { TabParamList } from "../navigation/AppTabs";
 
 type PhysioPatient = {
@@ -75,15 +80,31 @@ function formatDate(value: string | null) {
 
 export function PhysioPatientsScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
+  const composerInset = composerBottomInset(keyboardHeight);
+  /** Subviews hide the tab header — pad under status bar / notch. */
+  const subviewHeaderPad = screenHeaderBarPadding(insets);
   const [patients, setPatients] = useState<PhysioPatient[]>([]);
   const [unreadByPatient, setUnreadByPatient] = useState<Record<string, number>>({});
+  const [recentReports, setRecentReports] = useState<
+    {
+      id: string;
+      created_at: string;
+      body_area: string | null;
+      status: string;
+      patient_id: string;
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
+  const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
+  const [clinicName, setClinicName] = useState<string | null>(null);
   const inviteLink = inviteCode
     ? `${WEB_APP_URL}/login?code=${encodeURIComponent(inviteCode)}`
     : null;
@@ -118,11 +139,13 @@ export function PhysioPatientsScreen() {
     setAttachedMime("image/jpeg");
   }
 
-  useLayoutEffect(() => {
-    const inSubView =
-      chatOpen || selectedPatient != null || reasoningReport != null;
-    navigation.setOptions({ headerShown: !inSubView });
-  }, [navigation, chatOpen, selectedPatient, reasoningReport]);
+  useFocusEffect(
+    useCallback(() => {
+      const inSubView =
+        chatOpen || selectedPatient != null || reasoningReport != null;
+      navigation.setOptions({ headerShown: !inSubView });
+    }, [navigation, chatOpen, selectedPatient, reasoningReport])
+  );
 
   useEffect(() => {
     if (selectedPatient && !chatOpen && !reasoningReport) {
@@ -195,10 +218,11 @@ export function PhysioPatientsScreen() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name")
+        .select("display_name, clinic_name")
         .eq("id", user.id)
         .single();
       setPhysioName(profile?.display_name ?? null);
+      setClinicName(profile?.clinic_name ?? null);
     }
 
     const { data: code, error: codeError } = await supabase.rpc(
@@ -215,6 +239,21 @@ export function PhysioPatientsScreen() {
       return;
     }
     setPatients((data as PhysioPatient[]) ?? []);
+
+    const { data: recentRows } = await supabase
+      .from("clinical_reports")
+      .select("id, created_at, body_area, status, patient_id")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setRecentReports(
+      (recentRows as {
+        id: string;
+        created_at: string;
+        body_area: string | null;
+        status: string;
+        patient_id: string;
+      }[]) ?? []
+    );
 
     const { data: reportRows } = await supabase
       .from("clinical_reports")
@@ -383,12 +422,8 @@ export function PhysioPatientsScreen() {
 
   if (chatOpen) {
     return (
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={90}
-      >
-        <View style={styles.detailHeader}>
+      <View style={[styles.root, { paddingBottom: composerInset }]}>
+        <View style={[styles.detailHeader, subviewHeaderPad]}>
           <Pressable
             style={styles.backBtn}
             onPress={() => {
@@ -397,8 +432,9 @@ export function PhysioPatientsScreen() {
               clearAttachment();
             }}
             accessibilityLabel="Volver al panel"
+            hitSlop={8}
           >
-            <Ionicons name="arrow-back" size={20} color={Colors.text} />
+            <Ionicons name="arrow-back" size={22} color={Colors.text} />
           </Pressable>
           <Text style={styles.detailTitle}>Consulta clínica</Text>
         </View>
@@ -512,13 +548,13 @@ export function PhysioPatientsScreen() {
                     (chatLoading || (!chatInput.trim() && !attachedUri)) && { opacity: 0.5 },
                   ]}
                 >
-                  <Ionicons name="send" size={18} color={Colors.white} />
+                  <Ionicons name="arrow-up" size={20} color={Colors.white} />
                 </Pressable>
               </View>
             </View>
           </>
         )}
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 
@@ -539,13 +575,14 @@ export function PhysioPatientsScreen() {
   if (selectedPatient) {
     return (
       <View style={styles.root}>
-        <View style={styles.detailHeader}>
+        <View style={[styles.detailHeader, subviewHeaderPad]}>
           <Pressable
             style={styles.backBtn}
             onPress={() => setSelectedPatient(null)}
             accessibilityLabel="Volver a pacientes"
+            hitSlop={8}
           >
-            <Ionicons name="arrow-back" size={20} color={Colors.text} />
+            <Ionicons name="arrow-back" size={22} color={Colors.text} />
           </Pressable>
           <Text style={styles.detailTitle} numberOfLines={1}>
             {selectedPatient.display_name || selectedPatient.email}
@@ -623,121 +660,63 @@ export function PhysioPatientsScreen() {
       >
         <Text style={styles.title}>
           Bienvenido/a{physioName ? `, ${physioName}` : ""}
+          {clinicName ? ` · ${clinicName}` : ""}
         </Text>
         <AiOrientationDisclaimer style={{ marginBottom: 12 }} />
-
-        <View style={styles.card}>
-          <View style={styles.codeMenuWrap} pointerEvents="box-none">
-            <Pressable
-              onPress={() => setCodeMenuOpen((v) => !v)}
-              disabled={!inviteCode && !codeBusy}
-              style={({ pressed }) => [
-                styles.codeMenuBtn,
-                pressed && { backgroundColor: Colors.background },
-                !inviteCode && !codeBusy && { opacity: 0.5 },
-              ]}
-              accessibilityLabel={codeMenuOpen ? "Cerrar opciones" : "Más opciones"}
-            >
-              <Ionicons
-                name={codeMenuOpen ? "close" : "ellipsis-vertical"}
-                size={18}
-                color={Colors.text}
-              />
-            </Pressable>
-            {codeMenuOpen ? (
-              <View style={styles.codeMenu}>
-                <Pressable
-                  disabled={!inviteLink}
-                  onPress={() => {
-                    setCodeMenuOpen(false);
-                    void shareLink();
-                  }}
-                  style={({ pressed }) => [
-                    styles.codeMenuItem,
-                    pressed && { backgroundColor: Colors.background },
-                    !inviteLink && { opacity: 0.5 },
-                  ]}
-                >
-                  <Text style={styles.codeMenuItemText}>
-                    {copied === "link" ? "Enlace copiado" : "Copiar / compartir enlace"}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  disabled={codeBusy}
-                  onPress={() => {
-                    setCodeMenuOpen(false);
-                    void regenerateCode();
-                  }}
-                  style={({ pressed }) => [
-                    styles.codeMenuItem,
-                    pressed && { backgroundColor: Colors.background },
-                    codeBusy && { opacity: 0.5 },
-                  ]}
-                >
-                  <Text style={styles.codeMenuItemText}>
-                    {codeBusy ? "Generando…" : "Generar nuevo código"}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
-
-          <Text style={styles.cardTitle}>Tu código de vinculación</Text>
-          <Text style={styles.cardSubtitle}>
-            El paciente lo introduce una vez en AIKinora, o abre el enlace directo.
-          </Text>
-
-          <View style={styles.codeBox}>
-            <Text style={styles.codeDisplay}>
-              {inviteCode ?? (loading ? "…" : "—")}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => inviteCode && void copyText("code", inviteCode)}
-            disabled={!inviteCode}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.copyBtn,
-              pressed && { backgroundColor: Colors.background },
-              !inviteCode && { opacity: 0.5 },
-            ]}
-          >
-            <Text style={styles.copyBtnText}>
-              {copied === "code" ? "Copiado" : "Copiar código"}
-            </Text>
-          </Pressable>
-
-          {inviteLink ? (
-            <>
-              <View style={styles.linkBox}>
-                <Text style={styles.linkText} selectable>
-                  {inviteLink}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => void copyText("link", inviteLink)}
-                hitSlop={8}
-                style={({ pressed }) => [
-                  styles.copyBtn,
-                  pressed && { backgroundColor: Colors.background },
-                ]}
-              >
-                <Text style={styles.copyBtnText}>
-                  {copied === "link" ? "Copiado" : "Copiar enlace"}
-                </Text>
-              </Pressable>
-            </>
-          ) : null}
-
-          <Text style={styles.cardFoot}>
-            Si regeneras el código, los pacientes ya vinculados siguen vinculados;
-            solo cambia el código para nuevos pacientes.
-          </Text>
-        </View>
 
         {error ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {!loading && recentReports.length > 0 ? (
+          <View style={{ marginBottom: 8 }}>
+            <Text style={styles.listHeaderText}>Informes recientes</Text>
+            <Text style={[styles.userMeta, { marginBottom: 10 }]}>
+              Enviados a esta cuenta (también con solo el código).
+            </Text>
+            {recentReports.map((report) => {
+              const patient = patients.find((p) => p.id === report.patient_id);
+              const label =
+                patient?.display_name || patient?.email || "Paciente";
+              return (
+                <Pressable
+                  key={report.id}
+                  style={styles.userCard}
+                  onPress={() => {
+                    if (patient) void openPatient(patient);
+                    else {
+                      void openPatient({
+                        id: report.patient_id,
+                        email: label,
+                        display_name: label,
+                        created_at: report.created_at,
+                        last_sign_in_at: null,
+                        onboarding_completed: false,
+                      });
+                    }
+                  }}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={styles.userTitleRow}>
+                      <Text style={styles.userEmail} numberOfLines={1}>
+                        {label}
+                      </Text>
+                      {report.status === "new" ? (
+                        <View style={styles.newBadge}>
+                          <Text style={styles.newBadgeText}>1</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={styles.userMeta} numberOfLines={1}>
+                      {report.body_area || "Consulta"} ·{" "}
+                      {formatDate(report.created_at)}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
         ) : null}
 
@@ -754,7 +733,8 @@ export function PhysioPatientsScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
         ) : patients.length === 0 ? (
           <Text style={styles.userMeta}>
-            Todavía no hay pacientes vinculados a tu código.
+            Todavía no hay pacientes ni informes en esta cuenta. Abre Vinculación
+            para compartir tu código y pulsa Actualizar cuando el paciente termine.
           </Text>
         ) : (
           patients.map((patient) => {
@@ -782,6 +762,137 @@ export function PhysioPatientsScreen() {
             );
           })
         )}
+
+        <Pressable
+          onPress={() => {
+            setVinculacionOpen((v) => !v);
+            if (vinculacionOpen) setCodeMenuOpen(false);
+          }}
+          style={({ pressed }) => [
+            styles.vinculacionBtn,
+            pressed && { backgroundColor: Colors.background },
+          ]}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: vinculacionOpen }}
+        >
+          <Text style={styles.vinculacionBtnText}>Vinculación</Text>
+          <Ionicons
+            name={vinculacionOpen ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={Colors.textSecondary}
+          />
+        </Pressable>
+
+        {vinculacionOpen ? (
+          <View style={styles.card}>
+            <View style={styles.codeMenuWrap} pointerEvents="box-none">
+              <Pressable
+                onPress={() => setCodeMenuOpen((v) => !v)}
+                disabled={!inviteCode && !codeBusy}
+                style={({ pressed }) => [
+                  styles.codeMenuBtn,
+                  pressed && { backgroundColor: Colors.background },
+                  !inviteCode && !codeBusy && { opacity: 0.5 },
+                ]}
+                accessibilityLabel={codeMenuOpen ? "Cerrar opciones" : "Más opciones"}
+              >
+                <Ionicons
+                  name={codeMenuOpen ? "close" : "ellipsis-vertical"}
+                  size={18}
+                  color={Colors.text}
+                />
+              </Pressable>
+              {codeMenuOpen ? (
+                <View style={styles.codeMenu}>
+                  <Pressable
+                    disabled={!inviteLink}
+                    onPress={() => {
+                      setCodeMenuOpen(false);
+                      void shareLink();
+                    }}
+                    style={({ pressed }) => [
+                      styles.codeMenuItem,
+                      pressed && { backgroundColor: Colors.background },
+                      !inviteLink && { opacity: 0.5 },
+                    ]}
+                  >
+                    <Text style={styles.codeMenuItemText}>
+                      {copied === "link" ? "Enlace copiado" : "Copiar / compartir enlace"}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    disabled={codeBusy}
+                    onPress={() => {
+                      setCodeMenuOpen(false);
+                      void regenerateCode();
+                    }}
+                    style={({ pressed }) => [
+                      styles.codeMenuItem,
+                      pressed && { backgroundColor: Colors.background },
+                      codeBusy && { opacity: 0.5 },
+                    ]}
+                  >
+                    <Text style={styles.codeMenuItemText}>
+                      {codeBusy ? "Generando…" : "Generar nuevo código"}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
+
+            <Text style={styles.cardTitle}>Tu código de vinculación</Text>
+            <Text style={styles.cardSubtitle}>
+              El paciente lo introduce una vez en AIKinora, o abre el enlace directo.
+            </Text>
+
+            <View style={styles.codeBox}>
+              <Text style={styles.codeDisplay}>
+                {inviteCode ?? (loading ? "…" : "—")}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => inviteCode && void copyText("code", inviteCode)}
+              disabled={!inviteCode}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.copyBtn,
+                pressed && { backgroundColor: Colors.background },
+                !inviteCode && { opacity: 0.5 },
+              ]}
+            >
+              <Text style={styles.copyBtnText}>
+                {copied === "code" ? "Copiado" : "Copiar código"}
+              </Text>
+            </Pressable>
+
+            {inviteLink ? (
+              <>
+                <View style={styles.linkBox}>
+                  <Text style={styles.linkText} selectable>
+                    {inviteLink}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => void copyText("link", inviteLink)}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.copyBtn,
+                    pressed && { backgroundColor: Colors.background },
+                  ]}
+                >
+                  <Text style={styles.copyBtnText}>
+                    {copied === "link" ? "Copiado" : "Copiar enlace"}
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
+
+            <Text style={styles.cardFoot}>
+              Si regeneras el código, los pacientes ya vinculados siguen vinculados;
+              solo cambia el código para nuevos pacientes.
+            </Text>
+          </View>
+        ) : null}
       </ScreenScrollView>
     </DismissKeyboard>
   );
@@ -818,6 +929,24 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 16,
     overflow: "visible",
+  },
+  vinculacionBtn: {
+    marginTop: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  vinculacionBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
   },
   codeMenuWrap: {
     position: "absolute",
@@ -985,26 +1114,28 @@ const styles = StyleSheet.create({
   detailHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
     backgroundColor: Colors.white,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.primarySoft,
   },
   detailTitle: {
     flex: 1,
-    fontSize: 16,
+    minWidth: 0,
+    fontSize: 17,
     fontWeight: "700",
+    letterSpacing: -0.2,
     color: Colors.text,
+    paddingRight: 8,
   },
   reportCard: {
     backgroundColor: Colors.white,
@@ -1103,10 +1234,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: Colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.text,
     alignItems: "center",
     justifyContent: "center",
   },

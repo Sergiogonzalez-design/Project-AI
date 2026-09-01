@@ -4,15 +4,18 @@ import {
   ActivityIndicator,
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import {
+  composerBottomInset,
+  useKeyboardHeight,
+} from "../hooks/useKeyboardHeight";
 import { Colors } from "../lib/colors";
+import { stripVisibleMarkup } from "../lib/strip-visible-markup";
 import { supabase } from "../lib/supabase";
 import { THERAPIST } from "../lib/therapist";
 
@@ -31,6 +34,8 @@ function formatTime(iso: string) {
 }
 
 export function MessagesScreen() {
+  const keyboardHeight = useKeyboardHeight();
+  const composerInset = composerBottomInset(keyboardHeight);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TherapistMessage[]>([]);
   const [isPremium, setIsPremium] = useState(false);
@@ -152,11 +157,7 @@ export function MessagesScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={90}
-    >
+    <View style={[styles.root, { paddingBottom: composerInset }]}>
       <View style={styles.therapistCard}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{THERAPIST.initials}</Text>
@@ -212,7 +213,7 @@ export function MessagesScreen() {
                 )}
                 <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleTherapist]}>
                   <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>
-                    {msg.content}
+                    {stripVisibleMarkup(msg.content)}
                   </Text>
                   <Text style={[styles.time, isUser && styles.timeUser]}>
                     {formatTime(msg.created_at)}
@@ -248,11 +249,11 @@ export function MessagesScreen() {
           {sending ? (
             <ActivityIndicator color={Colors.white} size="small" />
           ) : (
-            <Ionicons name="send" size={18} color={Colors.white} />
+            <Ionicons name="arrow-up" size={20} color={Colors.white} />
           )}
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -370,10 +371,10 @@ const styles = StyleSheet.create({
   },
   inputDisabled: { opacity: 0.6 },
   sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.text,
     alignItems: "center",
     justifyContent: "center",
   },

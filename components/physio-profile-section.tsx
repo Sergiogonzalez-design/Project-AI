@@ -69,14 +69,14 @@ export function PhysioProfileSection() {
 
   if (loading) {
     return (
-      <div className="flex justify-center rounded-2xl border border-blue-100 bg-white px-6 py-10">
+      <div className="flex justify-center rounded-3xl border border-slate-200/80 bg-white px-6 py-10">
         <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-blue-100 bg-white px-6 py-6 shadow-sm">
+    <div className="rounded-3xl border border-slate-200/80 bg-white px-6 py-6 shadow-sm">
       <h2 className="text-base font-bold text-slate-800">Datos profesionales</h2>
       <p className="mt-1 text-sm text-slate-500">
         Tu nombre y clínica para el panel de pacientes e invitaciones.

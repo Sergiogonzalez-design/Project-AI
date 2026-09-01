@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { requireOptionalNativeModule } from "expo";
 import { speechLocale } from "../lib/speech-utils";
 
@@ -133,6 +134,21 @@ export function useSpeechToText(options: Options) {
         /* ignore */
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "inactive" || state === "background") {
+        wantListeningRef.current = false;
+        setListening(false);
+        try {
+          moduleRef.current?.abort();
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   const stop = useCallback(() => {

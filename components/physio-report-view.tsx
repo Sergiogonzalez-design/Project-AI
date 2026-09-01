@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { hasClinicalReasoningForReport } from "@/lib/clinical-reasoning";
 import { hasWorkingSourceLink, toCitedSource } from "@/lib/source-links";
+import { stripVisibleMarkup } from "@/lib/strip-visible-markup";
 
 const SECTION_ORDER = [
   "Resultados de las pruebas funcionales ya realizadas",
@@ -17,7 +18,7 @@ const SECTION_ORDER = [
 ] as const;
 
 function normalizeHeading(raw: string): string {
-  let h = raw.replace(/\*\*/g, "").trim();
+  let h = stripVisibleMarkup(raw).trim();
   h = h.replace(/\s*\(por probabilidad\)\s*/i, "").trim();
   if (/^hip[oó]tesis diagn/i.test(h)) return "Hipótesis diagnósticas";
   if (/pruebas\/?\s*maniobras/i.test(h)) return "Pruebas/maniobras a realizar en la cita";
@@ -90,18 +91,33 @@ function splitReportSections(content: string): {
   return { sections, sources, preamble };
 }
 
-function renderInline(text: string) {
-  return text.split("\n").map((line, li) => {
+/** Wrap Sí/No (and EN Yes/No) in **…** so answers stand out in the report. */
+function emphasizeYesNoAnswers(text: string): string {
+  return text
+    .split(/(\*\*[^*]+\*\*)/)
+    .map((part) => {
+      if (part.startsWith("**") && part.endsWith("**")) return part;
+      return part.replace(
+        /(^|[^A-Za-záéíóúüñÁÉÍÓÚÜÑ*])(S[IÍ]|Yes|YES|No|NO)(?![A-Za-záéíóúüñÁÉÍÓÚÜÑ*])/g,
+        "$1**$2**"
+      );
+    })
+    .join("");
+}
+
+function renderInline(text: string, opts?: { boldYesNo?: boolean }) {
+  const prepared = opts?.boldYesNo ? emphasizeYesNoAnswers(text) : text;
+  return prepared.split("\n").map((line, li) => {
     const parts = line.split(/(\*\*[^*]+\*\*)/);
     return (
       <span key={li}>
         {parts.map((part, i) =>
           part.startsWith("**") && part.endsWith("**") ? (
             <strong key={i} className="font-bold text-neutral-900">
-              {part.slice(2, -2)}
+              {stripVisibleMarkup(part.slice(2, -2))}
             </strong>
           ) : (
-            <span key={i}>{part}</span>
+            <span key={i}>{stripVisibleMarkup(part)}</span>
           )
         )}
         {"\n"}
@@ -165,7 +181,13 @@ export function PhysioReportView({
           <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-600">
             {section.title}
           </h4>
-          <div className="mt-1.5 whitespace-pre-wrap">{renderInline(section.body)}</div>
+          <div className="mt-1.5 whitespace-pre-wrap">
+            {renderInline(section.body, {
+              boldYesNo:
+                section.title ===
+                "Resultados de las pruebas funcionales ya realizadas",
+            })}
+          </div>
           {section.title === "Pruebas/maniobras a realizar en la cita" &&
           showReasoningButton &&
           reasoningHref ? (

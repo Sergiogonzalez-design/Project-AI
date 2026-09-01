@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../lib/colors";
+import { screenHeaderTopInset } from "../lib/screen-header-insets";
+import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { cancelAllReminders } from "../lib/notifications";
 import type { TabParamList } from "../navigation/AppTabs";
@@ -24,34 +26,51 @@ type MenuItem = {
 
 type Props = {
   isPhysio?: boolean;
+  isClinic?: boolean;
   isAdmin?: boolean;
 };
 
 export function AppBurgerMenu({
-  isPhysio = false,
-  isAdmin = false,
+  isPhysio: isPhysioProp,
+  isClinic: isClinicProp,
+  isAdmin: isAdminProp,
 }: Props) {
+  const { t } = useI18n();
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const route = useRoute();
   const insets = useSafeAreaInsets();
+  const routeNames = navigation.getState()?.routeNames ?? [];
+  const isPhysio = isPhysioProp ?? routeNames.includes("Patients");
+  const isClinic = isClinicProp ?? routeNames.includes("ClinicHome");
+  const isAdmin = isAdminProp ?? routeNames.includes("Admin");
   const { width: windowWidth } = useWindowDimensions();
   const [open, setOpen] = useState(false);
   const drawerWidth = Math.min(280, windowWidth * 0.88);
 
   const items = useMemo<MenuItem[]>(() => {
-    const primary: MenuItem[] = isPhysio
+    const primary: MenuItem[] = isClinic
       ? [
-          { route: "Patients", label: "Clínica" },
-          { route: "PhysioConsult", label: "Consulta" },
+          { route: "ClinicConsult", label: t.headers.consulta },
+          { route: "ClinicHome", label: t.headers.clinica },
+          { route: "ClinicTeam", label: "Equipo" },
         ]
-      : [{ route: "AIInquiries", label: "Consulta" }, { route: "PhysioLink", label: "Fisioterapia" }];
+      : isPhysio
+      ? [
+          { route: "Patients", label: t.headers.clinica },
+          { route: "PhysioConsult", label: t.headers.consulta },
+        ]
+      : [
+          { route: "AIInquiries", label: t.headers.consulta },
+          { route: "PhysioLink", label: t.headers.fisioterapia },
+          { route: "ClinicSearch", label: t.headers.buscar },
+        ];
     return [
       ...primary,
-      { route: "AboutUs", label: "About" },
-      { route: "Profile", label: "Profile" },
-      ...(isAdmin ? [{ route: "Admin" as const, label: "Admin" }] : []),
+      { route: "AboutUs", label: t.headers.sobreNosotros },
+      { route: "Profile", label: t.headers.perfil },
+      ...(isAdmin ? [{ route: "Admin" as const, label: t.headers.admin }] : []),
     ];
-  }, [isPhysio, isAdmin]);
+  }, [isPhysio, isClinic, isAdmin, t]);
 
   function navigateTo(target: keyof TabParamList) {
     setOpen(false);
@@ -65,7 +84,7 @@ export function AppBurgerMenu({
       <Pressable
         onPress={() => setOpen(true)}
         style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
-        accessibilityLabel="Abrir menú"
+        accessibilityLabel={t.menu.open}
         accessibilityRole="button"
       >
         <Ionicons name="menu" size={22} color={Colors.text} />
@@ -81,24 +100,24 @@ export function AppBurgerMenu({
           <Pressable
             style={styles.backdrop}
             onPress={() => setOpen(false)}
-            accessibilityLabel="Cerrar menú"
+            accessibilityLabel={t.menu.close}
           />
           <View
             style={[
               styles.drawer,
               {
                 width: drawerWidth,
-                paddingTop: Math.max(insets.top, 12) + 8,
+                paddingTop: screenHeaderTopInset(insets),
                 paddingBottom: insets.bottom + 12,
               },
             ]}
           >
             <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>Menú</Text>
+              <Text style={styles.drawerTitle}>{t.menu.title}</Text>
               <Pressable
                 onPress={() => setOpen(false)}
                 style={({ pressed }) => [styles.closeBtn, pressed && styles.iconBtnPressed]}
-                accessibilityLabel="Cerrar menú"
+                accessibilityLabel={t.menu.close}
               >
                 <Ionicons name="close" size={22} color={Colors.text} />
               </Pressable>
@@ -130,10 +149,10 @@ export function AppBurgerMenu({
             <Pressable
               onPress={() => {
                 setOpen(false);
-                Alert.alert("Cerrar sesión", "¿Seguro que quieres cerrar sesión?", [
-                  { text: "Cancelar", style: "cancel" },
+                Alert.alert(t.profile.signOutTitle, t.profile.signOutConfirm, [
+                  { text: t.profile.cancel, style: "cancel" },
                   {
-                    text: "Cerrar sesión",
+                    text: t.profile.signOut,
                     style: "destructive",
                     onPress: async () => {
                       await cancelAllReminders();
@@ -148,7 +167,7 @@ export function AppBurgerMenu({
               style={({ pressed }) => [styles.signOutItem, pressed && { opacity: 0.8 }]}
             >
               <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
-              <Text style={styles.signOutText}>Cerrar sesión</Text>
+              <Text style={styles.signOutText}>{t.profile.signOut}</Text>
             </Pressable>
           </View>
         </View>

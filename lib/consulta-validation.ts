@@ -16,6 +16,19 @@ export function missingQuestionIssue(q: {
   };
 }
 
+/** Rephrase a missing-answer issue using a localized question label. */
+export function formatValidationIssueMessage(
+  issue: AdaptiveValidationIssue,
+  locale: "es" | "en",
+  localizedLabel: string
+): string {
+  const label = localizedLabel.replace(/[?？]\s*$/, "").trim();
+  if (locale === "en") {
+    return `Please answer: ${label || "this question"}.`;
+  }
+  return label ? `Responde: ${label}.` : issue.message;
+}
+
 /** Scroll the chat/questionnaire to the missing field and briefly highlight it. */
 export function scrollToQuestionnaireQuestion(questionId: string): void {
   if (typeof document === "undefined") return;

@@ -976,12 +976,17 @@ export const HIP_SECTION_ORDER: HipQuestionSection[] = [
 export function getVisibleHipQuestions(
   answers: HipAdaptiveAnswers
 ): HipQuestionDef[] {
-  return HIP_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = HIP_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     if (!q.options?.length) return q;
     const filtered = filterSleepDependentOptions(q.options, answers.evolucion);
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
+  // Urgent early exit: only red-flag items remain required / shown.
+  if (answers.acortar_por_urgencia) {
+    return list.filter((q) => q.section === "red_flags");
+  }
+  return list;
 }
 
 export function getVisibleHipSections(
@@ -1354,9 +1359,12 @@ export const HIP_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa_detalle: "Describe previous injuries, surgeries, or treatments",
 };
 
-export const HIP_OPTION_EN: Record<string, string> = {
+export const HIP_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
+  "No, es otra molestia": "No, it's a different problem",
+  "Sí, es el mismo": "Yes, it's the same",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",
@@ -1444,6 +1452,13 @@ export const HIP_OPTION_EN: Record<string, string> = {
   Ocasionalmente: "Occasionally",
   "No, intermitente": "No, intermittent",
   "Sí, constante": "Yes, constant",
+  "No puedes apoyar peso tras golpe o caída": "Unable to bear weight after a fall or trauma? (especially if osteoporosis risk)",
+  "Deformidad o pierna acortada/rotada": "Obvious deformity or shortened/rotated leg",
+  "Fiebre junto con el dolor de cadera": "Fever associated with hip pain",
+  "Dolor nocturno que va a más con pérdida de peso": "Progressive night pain with unexplained weight loss",
+  "Dolor fuerte y súbito en la ingle con preocupación vascular o pie frío": "Sudden severe groin pain with vascular concern or cold foot",
+  "Pérdida de sensibilidad en pie o pierna": "Loss of sensation in the foot or leg",
+  "Problemas para controlar orina/heces o entumecimiento en la zona del asiento (entre las piernas)": "Recent change in bladder/bowel control or numbness in the saddle area (groin/perineum)",
 };
 
 export const HIP_SECTION_LABELS_EN: Record<string, string> = {

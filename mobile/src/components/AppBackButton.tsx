@@ -10,10 +10,12 @@ function getLandingRoute(
   navigation: BottomTabNavigationProp<TabParamList>
 ): keyof TabParamList {
   const names = navigation.getState()?.routeNames ?? [];
+  if (names.includes("ClinicConsult")) return "ClinicConsult";
   if (names.includes("Patients")) return "Patients";
   if (names.includes("AIInquiries")) return "AIInquiries";
   if (names.includes("PhysioLink")) return "PhysioLink";
   if (names.includes("PhysioConsult")) return "PhysioConsult";
+  if (names.includes("ClinicHome")) return "ClinicHome";
   return (names[0] as keyof TabParamList | undefined) ?? "Profile";
 }
 
@@ -21,7 +23,11 @@ type Props = {
   onPress?: () => void;
 };
 
-/** Header back: custom handler, home tab, or navigation stack. Hidden on Fisioterapia / physio landing. */
+/**
+ * Header back for secondary tabs (About, Profile, Admin…).
+ * Goes to the role landing tab. Hidden on the landing tab itself.
+ * Prefer an explicit onPress when the screen owns nested navigation.
+ */
 export function AppBackButton({ onPress }: Props) {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const route = useRoute();
@@ -38,6 +44,11 @@ export function AppBackButton({ onPress }: Props) {
     }
     if (route.name !== landingRoute) {
       navigation.navigate(landingRoute);
+      return;
+    }
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) {
+      parent.goBack();
       return;
     }
     if (navigation.canGoBack()) {

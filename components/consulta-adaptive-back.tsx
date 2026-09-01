@@ -1,11 +1,13 @@
 "use client";
 
+import { consultaNavLabels } from "@/lib/consulta-nav-labels";
+
 import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
 
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
-import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "@/lib/consulta-red-flags-copy";
+import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote } from "@/lib/consulta-red-flags-copy";
 
 import { useEffect } from "react";
 import {
@@ -227,7 +229,7 @@ export function ConsultaAdaptiveBack({
 
       {currentSection === "red_flags" && (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900 shadow-sm">
-          Estas preguntas detectan situaciones que pueden requerir atención médica urgente.
+          {redFlagsSectionIntro(locale)}
         </div>
       )}
 
@@ -256,7 +258,7 @@ export function ConsultaAdaptiveBack({
             onClick={() => onSectionIndexChange(sectionIndex - 1)}
             className="btn-secondary flex-1"
           >
-            Anterior
+            {consultaNavLabels(locale).previous}
           </button>
         )}
         {!isLastSection && (
@@ -265,7 +267,7 @@ export function ConsultaAdaptiveBack({
             onClick={handleNext}
             className="btn-primary flex-1"
           >
-            Siguiente
+            {consultaNavLabels(locale).next}
           </button>
         )}
       </div>

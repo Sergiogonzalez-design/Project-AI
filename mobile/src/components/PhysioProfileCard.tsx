@@ -196,7 +196,7 @@ export function PhysioProfileCard() {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,

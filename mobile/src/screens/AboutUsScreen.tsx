@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Image,
   Pressable,
@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   LegalDocumentView,
 } from "../components/LegalDocumentView";
@@ -18,6 +19,7 @@ import { ScreenScrollView } from "../components/ScreenScrollView";
 import { BeneficiosCarousel } from "../components/BeneficiosCarousel";
 import { brandName } from "../lib/brand";
 import { Colors } from "../lib/colors";
+import { screenHeaderTopInset } from "../lib/screen-header-insets";
 import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import type { TabParamList } from "../navigation/AppTabs";
@@ -37,6 +39,7 @@ type NewsPost = {
 export function AboutUsScreen() {
   const { t, locale } = useI18n();
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const insets = useSafeAreaInsets();
   const [news, setNews] = useState<NewsPost[]>([]);
   const [selectedNews, setSelectedNews] = useState<NewsPost | null>(null);
   const [showLegal, setShowLegal] = useState(false);
@@ -58,11 +61,13 @@ export function AboutUsScreen() {
         ? t.about.goToPaciente
         : t.about.startConsulta;
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: !selectedNews && !showLegal,
-    });
-  }, [navigation, selectedNews, showLegal]);
+  useFocusEffect(
+    useCallback(() => {
+      navigation.setOptions({
+        headerShown: !selectedNews && !showLegal,
+      });
+    }, [navigation, selectedNews, showLegal])
+  );
 
   useEffect(() => {
     if (selectedNews) {
@@ -150,7 +155,10 @@ export function AboutUsScreen() {
       <ScreenScrollView
         ref={newsScrollRef}
         style={styles.root}
-        contentContainerStyle={styles.detailContainer}
+        contentContainerStyle={[
+          styles.detailContainer,
+          { paddingTop: screenHeaderTopInset(insets) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Pressable

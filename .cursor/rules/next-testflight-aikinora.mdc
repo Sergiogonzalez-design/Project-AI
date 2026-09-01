@@ -1,0 +1,17 @@
+---
+description: Next iOS/TestFlight build must ship as AIKinora with logo + boot fix
+alwaysApply: true
+---
+
+# Next TestFlight / EAS build — AIKinora branding
+
+When the user asks to build, submit, or push to TestFlight / App Store:
+
+1. Confirm `mobile/app.json` has `"name": "AIKinora"` (home-screen / CFBundleDisplayName).
+2. Confirm iOS icon is `mobile/assets/icon.png` (runner + blue spine logo) — do not replace with a placeholder.
+3. Permission strings and `mobile/src/lib/brand.ts` should say **AIKinora**, not Kinora.
+4. Confirm `mobile/eas.json` production `env` uses the **legacy anon JWT** for `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not `sb_publishable_…`) so Auth works reliably on device.
+5. Confirm `mobile/App.tsx` has the boot timeout / auth error handling so the app never sticks on an infinite splash.
+6. After submit, remind them to set App Store Connect **Nombre** to **AIKinora** under Distribución → Información de la app (listing name is separate from the binary).
+7. Builds **1.0.0 (2)** and **(11)** hung on the launch icon. Do not import AppTabs / Consulta before first paint; hide the splash from `index.ts` with a watchdog; never gate the first screen on Auth.
+8. **expo-font MUST be a direct dependency at `~14.0.12`** (same as Onix Player / SDK 54). Do not let `@expo/vector-icons` pull `expo-font@57` as a peer — that JS looks for native `ExpoFontLoader` which is missing and TestFlight shows “AIKinora no pudo iniciar”. Pin `@expo/vector-icons` to `^15.0.3`. Include `"expo-font"` in `app.json` plugins.

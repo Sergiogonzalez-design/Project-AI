@@ -29,13 +29,18 @@ RODILLA (atajos):
 - ITB = lateral + carrera/escaleras sin trauma; no LCL.
 
 HOMBRO (atajos):
-- Neer/Hawkins/arco doloroso → RCRSP en CLUSTER; no «pinzamiento confirmado» (Hegedus; Lewis).
-- Jobe doloroso = tendón; Jobe débil + drop arm → rotura importante ↑, no tamaño.
-- Aprensión (miedo a que se salga) ± relocation → inestabilidad anterior; dolor solo ≠ inestabilidad (Farber).
-- Speed/Yergason → bíceps; NO confirman SLAP.
-- Dolor en la puntita al cruzar el brazo → AC (Chronopoulos).
-- Hormigueo/cuello o tests locales pobres → cribado cervical (Spurling específico, negativo no excluye).
-- Pasivo y activo limitados (sobre todo RE) → rigidez/capsulitis, no solo manguito.
+- Neer/Hawkins/arco doloroso → RCRSP en CLUSTER (Tier C); no «pinzamiento confirmado» (Hegedus; Lewis).
+- Neer/Hawkins/Jobe NEGATIVOS aislados → NO excluyen RCRSP si la historia overhead/arco encaja (ver negative-test + referido hombro lateral).
+- Spurling NEGATIVO → NO excluye contribución cervical; usar cluster Wainner.
+- Jobe/Full Can doloroso = tendón; Jobe/Full Can débil + drop arm + RE débil → rotura importante ↑ (Tier B), no tamaño.
+- ER lag + Hornblower + RE débil → manguito posterior (Tier B). IR lag + Belly press/Bear hug/Lift-off → subescapular (Tier B).
+- Apprehension (miedo) + Relocation ± Surprise → inestabilidad anterior Tier A; dolor solo ≠ inestabilidad (Farber).
+- Kim + Jerk → inestabilidad posterior Tier B. Sulcus sin síntomas ≠ MDI.
+- Speed/Yergason/Uppercut → bíceps Tier C; NO confirman SLAP. O'Brien+Crank = screening labral Tier B, no confirmación.
+- Dolor en la puntita + cross-body/Paxinos/O'Brien AC → AC Tier A/C (Chronopoulos/Walton).
+- Hormigueo/cuello o tests locales pobres → cribado cervical Wainner Tier A (Spurling específico, negativo no excluye).
+- Pasivo y activo limitados (sobre todo RE) → rigidez/capsulitis Tier C, no solo manguito.
+- SAT/SRT mejoran síntoma → componente escapular Tier C; no sustituye cluster manguito.
 
 RAQUIS (atajos):
 - Trauma de cuello: Canadian C-spine / NEXUS ANTES de Spurling (Stiell / Hoffman).
@@ -62,6 +67,14 @@ CODO / MUÑECA (atajos):
 - Tinel cubital / codo doblado + anular-meñique → túnel cubital, no carpiano.
 - Dolor estiloides radial al usar el pulgar → De Quervain; «pulgar en el puño» (Eichhoff) da falsos positivos.
 - Caída sobre la mano + tabaquera → imagen (escafoides). No tranquilices como esguince sin pensarlo.
+- Maudsley: cluster LET si duele el hueso; antebrazo proximal → túnel radial/PIN/C7 (Zwerus; no = nervio lesionado).
+- Durkan: cluster STC con historia nocturna (D’Arcy JAMA; evidencia mixta). Negativo no descarta. Meñique solo ≠ STC.
+- WHAT + palpación 1.er compartimento ± Finkelstein → De Quervain; Eichhoff da falsos + (Goubau).
+- Hook no engancha + pop + déficit supinación → bíceps distal ↑ (O’Driscoll 2005). Hook + no descarta parcial.
+- Moving valgus / milking → UCL en lanzador (cluster C; no confirma rotura).
+- Fóvea ± press ± carga cubital → TFCC ↑ (Tay 2007); piano-key asimétrico doloroso → DRUJ. No TFCC confirmado.
+- Watson/scaphoid shift → SL ↑; no si tabaquera pendiente. Watson − no excluye.
+- Froment → motor cubital; localiza codo vs Guyon con la historia, no con el signo solo.
 
 DEDOS / MANO (atajos):
 - Phalen/Tinel + noche + sacudir la mano + 1.º–3.º → STC en cluster (D’Arcy JAMA). Un test negativo no descarta. Meñique solo → cubital.

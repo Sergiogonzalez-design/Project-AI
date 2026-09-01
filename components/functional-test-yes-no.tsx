@@ -2,12 +2,15 @@
 
 import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import { chipClass } from "@/components/ui/chip-style";
-import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import {
   formatFunctionalTestAnswers,
   type FunctionalTestAnswer,
   type FunctionalTestItem,
 } from "@/lib/functional-test-answers";
+import {
+  resolveFunctionalTestMedia,
+  stripFunctionalMediaMarker,
+} from "@/lib/functional-test-media";
 import { useState } from "react";
 
 type Props = {
@@ -47,14 +50,15 @@ export function FunctionalTestYesNo({
     <div className="mt-3 space-y-4">
       <p className="text-xs text-slate-500">{hint}</p>
       {tests.map((test) => {
-        const media = shouldShowClinicalTestImage({ numberedText: `${test.n}. ${test.prompt}` });
+        const prompt = stripFunctionalMediaMarker(test.prompt);
+        const media = resolveFunctionalTestMedia({ prompt: test.prompt });
         const showMedia = media && !shown.has(media.id) ? media : null;
         if (showMedia) shown.add(showMedia.id);
         return (
           <div key={test.n}>
             <p className="text-sm text-neutral-900">
               <strong className="font-bold text-blue-700">
-                {test.n}. {test.prompt}
+                {test.n}. {prompt}
               </strong>
             </p>
             {showMedia ? <ClinicalTestMediaBlock test={showMedia} /> : null}

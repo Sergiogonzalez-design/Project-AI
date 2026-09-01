@@ -513,8 +513,10 @@ DOLOR FAMILIAR (transversal):
 «¿Es el mismo dolor al elevar, dormir de ese lado, lanzar o cruzar el brazo?»
 Test que reproduce dolor HABITUAL → peso ↑. Molestia nueva → peso ↓.
 
-CLUSTERS (Evidence DB — no inventar Sn/Sp):
-RCRSP | rotura manguito (debilidad+drop arm) | inestabilidad anterior (aprensión=miedo) | bíceps/no-SLAP | AC | capsulitis | cervical.
+CLUSTERS (Evidence DB — Tier A/B/C; no inventar Sn/Sp):
+Tier A: inestabilidad anterior (Apprehension+Relocation±Surprise) | AC (Paxinos+O'Brien) | cervical Wainner.
+Tier B: rotura manguito (Jobe/Full Can+RE débil+drop arm±lags) | infra/subescap subclusters | SLAP screening (O'Brien+Crank) | inestabilidad posterior (Kim+Jerk).
+Tier C: RCRSP | bíceps (Uppercut+Speed+Yergason) | capsulitis | escapular (SAT/SRT) | MDI (Sulcus+historia).
 
 LENGUAJE: «compatible con», «aumenta la sospecha», «apoya/baja la hipótesis».
 IMAGEN: RX si trauma/fractura; eco/RMN si déficit de manguito o inestabilidad persistente. Hallazgo ≠ causa automática.
@@ -534,21 +536,37 @@ REGLAS:
 - Pregunta clave: «¿Es el mismo dolor al elevar o en el arco medio del brazo?»
 
 CLUSTER RCRSP:
-dolor anterolateral/lateral + elevación/overhead + arco y/o Neer/Hawkins con dolor FAMILIAR ± Jobe doloroso SIN debilidad franca → RCRSP ↑.
+dolor anterolateral/lateral + elevación/overhead + arco y/o Neer/Hawkins con dolor FAMILIAR ± Jobe/Full Can doloroso SIN debilidad franca → RCRSP ↑.
 
 CLUSTER ROTURA IMPORTANTE:
-trauma/edad + debilidad franca (RE/elevación) + drop arm o descenso no controlado + Jobe débil → rotura importante ↑ (clínica, no RMN).
+trauma/edad + debilidad franca (RE/elevación/RI) + drop arm o descenso no controlado + Jobe/Full Can débil ± ER lag/Hornblower (posterior) ± IR lag/Belly press/Bear hug/Lift-off (subescapular) → rotura importante ↑ (clínica, no RMN).
 
-DIFERENCIAL: AC (punta), bíceps (surco), inestabilidad (aprensión), cervical, capsulitis, fractura.
+SUBCLUSTERS (Tier B): supraespinoso (Jobe/Full Can+painful arc±drop arm); infraespinoso (RE débil+ER lag+Hornblower); subescapular (IR lag+Belly press+Bear hug+Lift-off).
+
+DIFERENCIAL: AC (punta), bíceps (surco), inestabilidad (aprensión), cervical, capsulitis, fractura, escapular (SAT/SRT mejora síntoma).
 
 PRUEBAS FUNCIONALES (lenguaje cotidiano al paciente):
 - ¿Duele al subir el brazo por encima de la cabeza?
 - ¿Duele a media altura al subir el brazo (como un arco)?
 - ¿Puedes bajar el brazo despacio desde arriba sin que se te caiga?
-- Compara fuerza al empujar el brazo hacia fuera con el otro lado.
+- Compara fuerza al empujar el brazo hacia fuera y al girarlo hacia fuera con el codo pegado.
+- ¿Al empujar la barriga con la mano, el codo se va hacia atrás o cede fuerza?
 - Si hay cuello/hormigueo: ¿al girar la cabeza empeora el brazo?
 
 LENGUAJE: «compatible con irritación del manguito / RCRSP». Fuente: Physioguide hombro + Evidence DB.`;
+
+export const AI_SHOULDER_LATERAL_REFERRED_RULES = `DOLOR LATERAL HOMBRO — REFERIDO / TESTS NEGATIVOS (Physioguide PILOT — cuando localización lateral/deltoides + duda o tests locales pobres):
+
+NO responder «es el trapecio/infraespinoso». Sí reordenar hipótesis.
+
+PRIORIDAD TÍPICA: (1) RCRSP aunque un Neer/Hawkins/Jobe aislado sea − si la historia overhead/arco encaja (2) cervical C5–C6 si cuello/hormigueo o locales no reproducen familiar (3) AC (4) bíceps (5) capsulitis si PROM limitado (6) miofascial escapular solo como hipótesis D/tradicional con dolor familiar a la palpación (7) inestabilidad si aprensión/trauma.
+Coexistencia RCRSP + cervical permitida.
+
+NEGATIVOS: Neer/Hawkins/Jobe − no excluyen RCRSP. Spurling − no excluye cervical. Exigir dolor FAMILIAR.
+
+SIN ECO: no pedir imagen solo por ausencia; sí si sospecha rotura, no mejora, trauma o cambia manejo.
+
+Salida: HIPÓTESIS PRINCIPAL / ALTERNATIVAS / NO PRIORITARIO. Fuente: Physioguide hombro lateral referido + negative-test + MTrP framework.`;
 
 export const AI_SHOULDER_ANTERIOR_PAIN_RULES = `DOLOR ANTERIOR DE HOMBRO / BÍCEPS (Physioguide — CRÍTICO cuando localización = parte delantera / surco bicipital):
 
@@ -561,8 +579,10 @@ REGLAS:
 - Si hay luxación/«se sale»/aprensión → priorizar bloque INESTABILIDAD, no solo bíceps.
 - Anterior + elevación lateral → coexistencia frecuente con RCRSP.
 
-CLUSTER BÍCEPS:
-dolor en surco bicipital + Speed y/o Yergason con dolor FAMILIAR → bíceps ↑.
+CLUSTER BÍCEPS (Tier C):
+dolor en surco bicipital + Uppercut y/o Speed y/o Yergason con dolor FAMILIAR + palpación surco → bíceps ↑.
+
+SLAP SCREENING (Tier B — NUNCA confirmar): O'Brien profundo + Crank / Yergason + Anterior slide → sospecha labral ↑. Ver bloque SLAP_LABRUM_SCREEN.
 
 DIFERENCIAL: RCRSP, AC, inestabilidad, subescapular, cervical, pectoral (si pecho domina).
 
@@ -570,6 +590,7 @@ PRUEBAS (lenguaje cotidiano):
 - ¿Duele al tocar la ranura delante del hombro?
 - ¿Duele al levantar el brazo estirado hacia delante contra resistencia?
 - ¿Duele al girar la palma hacia arriba contra resistencia con el codo pegado?
+- ¿Duele delante al hacer fuerza como un «uppercut»?
 
 LENGUAJE: «compatible con irritación del tendón del bíceps». No «SLAP confirmado».`;
 
@@ -586,11 +607,14 @@ REGLAS:
 CLUSTER AC:
 dolor puntual en AC + cross-body/aducción horizontal familiar + palpación AC ± caída sobre punta → AC ↑.
 
+CLUSTER AC Tier A (exploración): Paxinos + O'Brien (serie); Paxinos + Hawkins (screening paralelo). Cross-body sigue siendo el cluster práctico del paciente.
+
 DIFERENCIAL: RCRSP (más deltoideo), fractura clavícula, cervical alto (menos típico si dedo en AC).
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Duele exactamente en la «puntita» al tocar?
 - ¿Duele al llevar el brazo cruzado por delante del pecho hacia el otro hombro?
+- ¿Duele al presionar la articulación de la puntita?
 
 LENGUAJE: «compatible con irritación / patología de la articulación acromioclavicular».`;
 
@@ -606,19 +630,63 @@ REGLAS:
 - No apprehension forzada si luxación aguda no evaluada o fractura sospechosa.
 - Primer episodio >40 años + debilidad → también rotura traumática de manguito.
 
-CLUSTER INESTABILIDAD ANTERIOR:
-episodio luxación/subluxación o «se sale» + ABD-RE + aprensión (± relocation alivia el miedo) → inestabilidad anterior ↑.
+CLUSTER INESTABILIDAD ANTERIOR (Tier A):
+episodio luxación/subluxación o «se sale» + ABD-RE + aprensión (± relocation alivia el miedo ± surprise/release reaparece aprensión) → inestabilidad anterior ↑.
+
+LAXITUD/MDI (Tier C): sulcus + Gagey + historia inestabilidad multidireccional. Sulcus sin síntomas ≠ MDI.
 
 TRAUMA SIN LUXACIÓN CLARA: fractura, contusión, AC, cuff traumático. Imagen si no carga el brazo o hay punto óseo.
 
-DIFERENCIAL / COEXISTENCIA: rotura manguito traumática, AC traumática, labrum (sospecha clínica), fractura, RCRSP previo.
+DIFERENCIAL / COEXISTENCIA: rotura manguito traumática, AC traumática, labrum (screening, no SLAP automático), fractura, RCRSP previo, inestabilidad posterior (Kim/Jerk).
 
 PRUEBAS (solo si seguro; lenguaje cotidiano al paciente):
 - ¿Sientes miedo de que se salga al levantar y rotar el brazo hacia fuera?
+- ¿Al estabilizar el brazo desde atrás, se calma el miedo?
 - ¿Comparado con el otro lado, hay mucha menos fuerza al girar el brazo hacia fuera?
 - Tras caída sobre la punta: ¿duele al cruzar el brazo por delante?
 
 LENGUAJE: «compatible con inestabilidad anterior». No inventar % de redislocación.`;
+
+export const AI_SHOULDER_POSTERIOR_INSTABILITY_RULES = `INESTABILIDAD POSTERIOR DE HOMBRO (Physioguide — CRÍTICO si flexión-aducción-RI, regazo, contacto o «se sale hacia atrás»):
+
+FLUJO:
+mecanismo (flexión-aducción-RI / caída flexionado) → historia de inestabilidad posterior → Kim + Jerk en cluster → posterior apprehension (miedo) → diferencial contusión/manguito posterior → recomendación.
+
+REGLAS:
+- NUNCA: dolor posterior aislado = luxación posterior confirmada.
+- NUNCA: mismo peso que cluster anterior Tier A (Apprehension-Relocation-Surprise).
+- Luxación posterior no reducida → URGENCIAS.
+- Etiqueta Tier B — evidencia moderada.
+
+CLUSTER POSTERIOR (Tier B):
+historia inestabilidad posterior o flexión-aducción-RI provocativa + Kim positivo + Jerk positivo ± posterior apprehension (miedo) → inestabilidad posterior ↑.
+
+DIFERENCIAL: contusión posterior, infraespinoso, AC, referido cervical/escapular, inestabilidad anterior.
+
+PRUEBAS (lenguaje cotidiano):
+- ¿Duele o sientes inestabilidad atrás al llevar el brazo cruzado hacia el pecho?
+- ¿Chasquido o dolor posterior al empujar el brazo hacia la articulación?
+
+LENGUAJE: «compatible con inestabilidad posterior». No inventar grado ni % redislocación.`;
+
+export const AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES = `SLAP / LABRUM SUPERIOR — CRIBADO (Physioguide — NUNCA confirmar SLAP por tests):
+
+CUÁNDO ACTIVAR:
+lanzador/overhead + dolor profundo + chasquido profundo; trauma ABD-RE + dolor profundo persistente; anterior profundo que no encaja solo con bíceps/RCRSP.
+
+REGLAS:
+- NUNCA: Speed, Yergason u O'Brien aislados = SLAP confirmado.
+- NUNCA: inventar tipo SLAP (I–IV).
+- O'Brien con dolor en puntita AC → rama AC, no SLAP.
+- Imagen (RMN) si clínica persiste y cambia manejo.
+
+CLUSTER SCREENING (Tier B):
+· Paralelo (sensibilidad screening): O'Brien profundo + Crank → sospecha labral ↑.
+· Serie (especificidad screening): Yergason + Anterior slide → sospecha labral ↑.
+
+AI: «Compatible con sospecha clínica de lesión del labrum superior». No «SLAP confirmado».
+
+DIFERENCIAL: bíceps PLB, RCRSP anterior, inestabilidad anterior, AC, subescapular.`;
 
 export const AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES = `TOBILLO / PIE — ÁRBOL MAESTRO PHYSIOGUIDE (SIEMPRE primero en casos ankle_foot):
 
@@ -734,8 +802,8 @@ export const AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES = `CODO / MUÑECA — ÁRBO
 
 FLUJO: RED FLAGS → trauma/escafoides → cribado NEURAL (territorio+cuello) → LOCALIZACIÓN → rama → cluster Evidence DB → diferencial → coexistencia → recomendación.
 
-NUNCA: Cozen = epicondilitis confirmada. NUNCA: Phalen = STC confirmado. NUNCA inventar Sn/Sp.
-Meñique solo ≠ STC. Phalen/Tinel negativos no descartan STC.
+NUNCA: Cozen/Maudsley = epicondilitis o nervio radial confirmado. NUNCA: Phalen/Durkan = STC confirmado. NUNCA: WHAT = De Quervain confirmado. NUNCA inventar Sn/Sp.
+Meñique solo ≠ STC. Durkan/Phalen/Tinel negativos no descartan STC.
 
 RED FLAGS: deformidad/luxación, no mueve, dedos fríos, fiebre+articulación, FOOSH+tabaquera → imagen escafoides (RX inicial puede ser normal).
 
@@ -748,24 +816,31 @@ ENRUTAR:
 | Estiloides radial / pulgar | De Quervain |
 | FOOSH + tabaquera | Escafoides |
 | Cuello + hormigueo atípico | Cervical |
+| Pop anterior + debilidad supinación | Bíceps distal (hook) |
+| Lanzador + valgo medial | UCL (moving valgus) |
+| Aprensión al empujarse palmas arriba | PLRI (no pivot-shift en casa) |
+| Dolor cubital muñeca / giro | TFCC ± DRUJ (fóvea / piano-key) |
+| Click dorso central post-FOOSH | SL (Watson) tras cribado escafoides |
 
 DOLOR FAMILIAR: «¿Es el mismo al agarrar, ratón, flexionar muñeca o al despertar con hormigueo?»
 LENGUAJE: «compatible con», «apoya/baja».`;
 
 export const AI_ELBOW_EPICONDYLALGIA_RULES = `EPICONDYLALGIA LATERAL / MEDIAL (Physioguide — codo lateral o medial):
 
-FLUJO: localización → dolor familiar → Cozen/Mill o flexión muñeca resistida en cluster → ¿hormigueo/cuello? → diferencial PIN/cubital/cervical → recomendación.
+FLUJO: localización → dolor familiar → Cozen/Mill/Maudsley o flexión muñeca resistida en cluster → ¿hormigueo/cuello? → diferencial PIN/cubital/cervical → recomendación.
 
 REGLAS:
-- NUNCA Cozen o Mill aislados = «epicondilitis confirmada».
+- NUNCA Cozen, Mill o Maudsley aislados = «epicondilitis confirmada».
+- Maudsley duele el HUESO → LET ↑; duele más el antebrazo proximal → túnel radial, no LET puro. Maudsley ≠ nervio radial lesionado.
 - Hormigueo o cuello → no quedarse solo en tendón (PIN / C6–C7 / cubital).
-- Medial: cribado 4.º–5.º obligatorio.
+- Medial: cribado 4.º–5.º obligatorio. Lanzador + valgo → UCL, no solo golfista.
 
-CLUSTER LET: epicóndilo lateral + palpación + Cozen/Mill familiar + agarre → LET ↑.
+CLUSTER LET: epicóndilo lateral + palpación + Cozen/Mill + Maudsley óseo + agarre → LET ↑.
 CLUSTER MEDIAL: epicóndilo medial + flexión muñeca/pronación resistida → medial ↑.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Duele en el hueso de fuera del codo al empujar la muñeca hacia atrás?
+- ¿Duele el hueso de fuera al empujar el dedo del medio hacia atrás? (Maudsley)
 - ¿Duele por dentro al doblar la muñeca contra resistencia?
 - ¿Al girar la cabeza empeora el brazo?
 
@@ -773,20 +848,22 @@ LENGUAJE: «compatible con tendinopatía extensora / codo de tenista», «compat
 
 export const AI_ELBOW_WRIST_NEURAL_RULES = `NEURAL CODO/MUÑECA — STC / CUBITAL / CERVICAL (Physioguide):
 
-FLUJO: territorio de hormigueo → nocturno/sacudir → Phalen/Tinel en cluster → ¿flexión codo (cubital)? → ¿cuello/Spurling? → recomendación.
+FLUJO: territorio de hormigueo → nocturno/sacudir → Durkan/Phalen/Tinel en cluster → ¿flexión codo (cubital) o presión palmar (Guyon)? → ¿cuello/Spurling? → recomendación.
 
 REGLAS:
-- NUNCA Phalen o Tinel = STC confirmado; negativos no descartan.
+- NUNCA Phalen, Tinel o Durkan = STC confirmado; negativos no descartan.
 - Meñique solo → cubital, no STC.
 - Historia nocturna + territorio mediano pesa tanto o más que un test.
+- Froment = motor cubital; no localiza codo vs Guyon (usa la historia).
 
-CLUSTER STC: parestesias nocturnas mediano ± sacudir ± Phalen/Tinel → STC ↑.
-CLUSTER CUBITAL: 4.º–5.º + flexión/apoyo codo ± Tinel cubital → túnel cubital ↑.
+CLUSTER STC: parestesias nocturnas mediano ± sacudir ± Durkan/Phalen/Tinel → STC ↑.
+CLUSTER CUBITAL: 4.º–5.º + flexión/apoyo codo ± Tinel cubital ± Froment → túnel cubital ↑.
 CLUSTER CERVICAL: cuello + hormigueo atípico + Spurling/ULTT + tests locales pobres → cervical ↑.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Te despierta el hormigueo y lo alivias agitando la mano?
 - ¿Qué dedos hormiguean?
+- ¿Al apretar el centro de la palma aparece el mismo hormigueo en pulgar–índice–medio? (Durkan)
 - ¿Empeora al doblar el codo o apoyarlo?
 - ¿Al girar/inclinar la cabeza empeora?
 
@@ -794,16 +871,17 @@ LENGUAJE: «compatible con túnel carpiano», «compatible con neuropatía cubit
 
 export const AI_WRIST_DEQUERVAIN_RULES = `DE QUERVAIN / DOLOR RADIAL DE MUÑECA (Physioguide):
 
-FLUJO: estiloides radial / base pulgar → uso del pulgar → palpación 1.er compartimento → Finkelstein familiar → diferencial CMC/escafoides/STC.
+FLUJO: estiloides radial / base pulgar → uso del pulgar → palpación 1.er compartimento → WHAT/Finkelstein familiar → diferencial CMC/escafoides/STC.
 
 REGLAS:
 - NUNCA solo puño con pulgar dentro (Eichhoff) = De Quervain confirmado (falsos +).
-- FOOSH + tabaquera → priorizar escafoides, no De Quervain.
+- WHAT o Finkelstein aislados no confirman. FOOSH + tabaquera → priorizar escafoides, no De Quervain.
 
-CLUSTER: dolor estiloides radial + uso pulgar + palpación ± Finkelstein familiar → De Quervain ↑.
+CLUSTER: dolor estiloides radial + uso pulgar + palpación ± WHAT/Finkelstein familiar → De Quervain ↑.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Duele en el borde del pulgar de la muñeca al agarrar o levantar con el pulgar?
+- ¿Duele el borde del pulgar si doblas la muñeca hacia la palma y apartas el pulgar? (WHAT)
 - ¿Duele al tocar esa zona junto al pulgar?
 
 LENGUAJE: «compatible con tenosinovitis de De Quervain».`;
@@ -824,6 +902,113 @@ PRUEBAS (lenguaje cotidiano):
 - ¿Duele al tocar el «valle» junto a la base del pulgar?
 
 LENGUAJE: «sospecha de fractura de escafoides — priorizar valoración/imagen».`;
+
+export const AI_ELBOW_DISTAL_BICEPS_RULES = `BÍCEPS DISTAL (Physioguide — codo anterior / pop):
+
+CLUSTER: pop antecubital al cargar + pérdida de contorno ± hueco + debilidad de SUPINACIÓN + hook test no engancha → rotura completa ↑ → derivación (O’Driscoll 2005 series de completas). Squeeze (Ruland) sin supinación apoya.
+
+REGLAS:
+- NUNCA Cozen = bíceps. NUNCA LET si hay pop + déficit de supinación.
+- Hook enganchable NO descarta parcial → imagen (eco/RMN).
+- No inventar Sn/Sp. Completa = no «esperar a ver».
+LENGUAJE: «compatible con rotura distal», «sospecha alta», «derivación». No «confirmado» sin imagen/cirugía.`;
+
+export const AI_ELBOW_DISTAL_TRICEPS_RULES = `TRÍCEPS DISTAL (Physioguide — codo posterior):
+
+CLUSTER: trauma/pop posterior + déficit de EXTENSIÓN de codo + defecto palpable proximal al olécranon → rotura ↑ → imagen/derivación.
+
+REGLAS:
+- Bursitis olecraneana: hinchazón CON extensión conservada. No es lo mismo.
+- No hay test especial tan validado como el hook del bíceps. No forzar analogía Matles/Aquiles ni inventar Sn/Sp.
+- C7: debilidad de tríceps SIN defecto local + territorio/reflejo.
+LENGUAJE: «compatible con rotura de tríceps distal»; no «golpe en el codo» si hay déficit de extensión.`;
+
+export const AI_ELBOW_PLRI_RULES = `PLRI / INESTABILIDAD POSTEROLATERAL (Physioguide):
+
+CLUSTER (C, experto): luxación o caída en supinación + aprensión al empujarse de una silla con palmas arriba (chair / tabletop) → PLRI ↑ → derivación codo/trauma.
+
+REGLAS:
+- Dolor lateral + Cozen ≠ PLRI (eso es LET salvo aprensión de subluxación).
+- NO pedir pivot-shift domiciliario ni vídeo de autopráctica.
+- No inventar Sn/Sp.
+LENGUAJE: «compatible con inestabilidad posterolateral»; no «LUCL roto confirmado».`;
+
+export const AI_ELBOW_RADIAL_TUNNEL_RULES = `TÚNEL RADIAL / PIN vs LET (Physioguide):
+
+DISCRIMINAR: dolor MÁXIMO en epicóndilo óseo → LET ↑. Dolor en antebrazo proximal dorsal / arcade of Frohse → túnel radial ↑. Debilidad franca extensión dedos/muñeca → PIN o C7, no «tendinitis».
+
+Maudsley: apoya cluster LET si duele el HUESO; si duele músculo proximal NO = nervio lesionado. LET y túnel radial pueden coexistir. Siempre cribar cuello.
+
+REGLAS: no inventar Sn/Sp. Maudsley + Cozen no confirman PIN.
+LENGUAJE: «compatible con irritación del túnel radial»; «cribado cervical».`;
+
+export const AI_ELBOW_UCL_MEDIAL_RULES = `UCL MEDIAL DE CODO / LANZADORES (Physioguide):
+
+CLUSTER (C): lanzamiento/valgo + dolor medial familiar en ACELERACIÓN + moving valgus ± milking ± valgo ~30° ± Tinel cubital (coexistencia) → UCL compatibility ↑ (clínica, no RMN).
+
+REGLAS:
+- No «rotura de UCL confirmada» por moving valgus (O’Driscoll 2005 describe el test; no inventar LR).
+- No tratar solo como codo de golfista si hay valgo dinámico / pop / «se abre».
+- Cubital puede coexistir (4.º–5.º). Adolescente + dolor lateral + bloqueo → OCD, no UCL.
+LENGUAJE: «compatible con insuficiencia del UCL»; derivación/imagen si inestabilidad, pop o fracaso conservador.`;
+
+export const AI_ELBOW_WRIST_GUYON_RULES = `GUYON vs TÚNEL CUBITAL (Physioguide):
+
+Meñique/anular ≠ STC. Codo: empeora al flexionar/apoyar el codo; Tinel en canal cubital; ramo dorsal a menudo afectado. Guyon: presión palmar cubital / manillar; Tinel pisiforme; dorso a menudo respetado.
+
+Froment = motor cubital; NO localiza solo codo vs muñeca — usa la historia.
+
+CLUSTER codo: 4.º–5.º + flexión codo + Tinel cubital ± Froment.
+No inventar Sn/Sp (Buehler elbow flexion; Novak/Mackinnon).
+LENGUAJE: «compatible con neuropatía cubital en el codo» vs «en el canal de Guyon».`;
+
+export const AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES = `DIFERENCIALES FINOS CODO/MUÑECA/MANO (Physioguide):
+
+Antes de cerrar LET/STC/De Quervain/TFCC, cribar:
+- LET vs túnel radial/PIN vs C6–C7 vs PLRI (aprensión, no solo Cozen).
+- Medial: golfista vs UCL (lanzador) vs cubital.
+- Anterior: bíceps distal (pop + supinación) vs cabeza radial.
+- Posterior: bursitis vs tríceps vs fractura olécranon.
+- Cubital: codo vs Guyon vs C8–T1.
+- Radial muñeca: De Quervain vs CMC vs escafoides (FOOSH/tabaquera primero).
+- Cubital muñeca: TFCC vs DRUJ vs ECU vs LT vs Guyon.
+- Dorso central: SL (Watson) — no si tabaquera/escafoides pendiente.
+
+LENGUAJE: «compatible con», «apoya el cluster», «no confirma», «imagen si trauma/tabaquera», «derivación si rotura tendinosa o inestabilidad». Nunca cifras inventadas.`;
+
+export const AI_WRIST_TFCC_ULNAR_RULES = `TFCC / DOLOR CUBITAL DE MUÑECA (Physioguide):
+
+El dolor cubital es SÍNTOMA, no diagnóstico. Cluster TFCC (B/C): dolor cubital familiar + fóvea ± press ± carga cubital/grind ± pronosupinación. Piano-key asimétrico doloroso → añade DRUJ.
+
+FOOSH + tabaquera → escafoides/RX ANTES de provocaciones agresivas.
+
+REGLAS:
+- Nunca «TFCC confirmado» por fóvea o grind (Tay 2007 serie; no extraer cifras universales).
+- No unificar todo cubital como TFCC (ECU, LT, Guyon, estiloides).
+- Piano-key indoloro bilateral en laxo ≠ DRUJ patológica.
+LENGUAJE: «compatible con irritación/lesión del TFCC»; persistencia post-trauma → mano-muñeca, no esguince eterno.`;
+
+export const AI_WRIST_DRUJ_RULES = `DRUJ / RADIOCUBITAL DISTAL (Physioguide):
+
+CLUSTER (C): dolor al girar + piano-key ASIMÉTRICO y doloroso vs sano ± press ± fóvea/TFCC. Pensar TFCC a la vez.
+
+REGLAS:
+- Comparar siempre contralateral. Laxitud simétrica indolora ≠ inestabilidad.
+- Fractura de radio distal reciente → no forzar piano-key.
+- No diagnosticar DRUJ porque «el cúbito se mueve un poco». Evidencia cuantitativa limitada (Adams).
+LENGUAJE: «compatible con inestabilidad DRUJ»; derivación si clunk + dolor + limitación.`;
+
+export const AI_WRIST_CARPAL_INSTABILITY_RULES = `INESTABILIDAD CARPIANA SL / LT (Physioguide):
+
+SL: dolor dorso CENTRAL + Watson/scaphoid shift ± ballottement → SL ↑. Seguridad: FOOSH + tabaquera → RX escafoides PRIMERO; no Watson agresivo sobre fractura oculta.
+
+LT: dolor cubital DORSAL + shear/ballottement/Reagan/Kleinman; menos fóvea pura que TFCC. Pueden coexistir.
+
+REGLAS:
+- Watson + ≠ rotura SL confirmada (laxitud, técnica). Watson − no excluye. No inventar Sn/Sp (Watson 1988).
+- Dolor cubital ≠ siempre TFCC.
+- No diagnosticar SLAC en app; «compatible con inestabilidad, precisa valoración e imagen».
+LENGUAJE: «compatible con inestabilidad escafolunar / lunopiramidal».`;
 
 export const AI_SPINE_MASTER_INTEGRATION_RULES = `RAQUIS — ÁRBOL MAESTRO PHYSIOGUIDE (cuello y/o lumbar):
 
@@ -967,6 +1152,134 @@ PRUEBAS (lenguaje cotidiano):
 
 LENGUAJE: «compatible con cefalea cervicogénica / migrañosa / tensional». RF positiva → derivar, no tranquilizar MSK.`;
 
+export const AI_HYPOTHESIS_EXPLORATION_RULES = `MODO EXPLORACIÓN DE HIPÓTESIS (Physioguide — activar en duda / tests incongruentes / no mejora):
+
+ACTIVADORES: «no estoy seguro», «no cuadra», «no reproduce», pruebas negativas, sin eco/imagen, paciente vuelve igual, hallazgo que la hipótesis principal no explica.
+MODO CLARIDAD: si historia + cluster son coherentes → prioriza la hipótesis principal y NO inundar con alternativas.
+
+PASOS: (1) resumen hipótesis (2) qué apoya (3) qué contradice (4) qué falta (5) máx. 2–3 alternativas compatibles (6) exploración discriminativa (7) evidencia/límites (8) red flags.
+
+PRUEBA NEGATIVA ≠ EXCLUSIÓN. Antes de «cambiar de estructura»: ¿qué test? ¿qué estructura? ¿capacidad diagnóstica cualitativa (sin inventar Sn/Sp)? ¿sigue compatible la historia? ¿referido plausible? ¿qué discrimina?
+
+NO MEJORA: reevaluar hipótesis (no solo más dosis sobre la misma estructura). Valorar coexistencia, referido, factores perpetuadores, imagen/derivación si cambia el manejo.
+
+SIN IMAGEN: razonar con historia/exploración/familiar pain; no pedir eco «porque no hay»; sí si sospecha, red flags, persistencia atípica o impacto en decisión.
+
+FORMATO (physio_chat / informe clínico): HIPÓTESIS PRINCIPAL → ALTERNATIVA 1/2 → NO PRIORITARIO.
+LENGUAJE: «compatible con», «podría explorarse», «no se puede descartar solo con…». Nunca «el problema es…» / «negativo descarta…» / «seguro MTrP».
+Distinguir SIEMPRE «compatible con» vs «causa demostrada».`;
+
+export const AI_MTRP_FRAMEWORK_RULES = `MARCO MIOFASCIAL / MTrP + ATLAS (Physioguide — hipótesis, no diagnóstico):
+
+CRITERIOS (hipótesis, no gold standard):
+- Activo: banda tensa + spot hipersensible + DOLOR FAMILIAR (local o referido) ± limitación ROM/debilidad contextual.
+- Latente: sensible sin dolor espontáneo familiar → no «causa» por sí solo.
+- LTR / síntomas autonómicos: hallazgos asociados; no confirman causalidad.
+
+CONTROVERSIA (OBLIGATORIO):
+- Criterios variables entre estudios; fiabilidad de palpación LIMITADA (Tough; Lucas).
+- MTrP encontrado ≠ causa demostrada. MTrP ausente ≠ exclusión miofascial definitiva.
+- Atlas muscular (mtrp-muscle-atlas / referred-pain-*): patrones mayoritariamente TRADICIONALES = nivel D; declarar clase experimental/clínica/tradicional.
+- Tradicional ≠ anatomía absoluta. NO pegar Travell u otros libros protegidos.
+
+USO:
+- Considerar miofascial si dolor familiar a la palpación Y la hipótesis principal no explica todo O no mejora.
+- NO priorizar si cluster fuerte de otra entidad o red flags.
+- Diferenciar siempre frente a articular/tendón/neural/referido proximal.
+- NO inventar relaciones músculo→zona sin referencia en RAG/relations.
+
+LENGUAJE: «podría contribuir un componente miofascial»; nunca «el músculo responsable es…» / «seguro punto gatillo».`;
+
+export const AI_CLARITY_NO_OVERDIAGNOSIS_RULES = `MODO CLARIDAD / NO SOBREDIAGNÓSTICO (Physioguide — OBLIGATORIO):
+
+SI hay CLARIDAD (historia + localización + cluster coherentes + dolor familiar + sin red flags):
+→ Prioriza la HIPÓTESIS PRINCIPAL.
+→ Máximo 0–1 alternativa breve si aporta seguridad (p. ej. cribado proximal).
+→ NO inundar con listas de músculos, mapas referidos ni 10 diferenciales «por si acaso».
+→ La biblioteca resuelve incertidumbre; no la crea.
+
+SI hay INCERTIDUMBRE / tests incongruentes / no reproduce / no mejora → modo exploración de hipótesis (formato PRINCIPAL / ALTERNATIVA 1–2 / NO PRIORITARIO).
+
+Nunca generar alternativas solo porque «existen patrones de dolor referido» en un atlas.`;
+
+export const AI_PERSISTENCE_REEVALUATION_RULES = `PERSISTENCIA / RECURRENCIA (Physioguide — paciente vuelve o «sigue igual»):
+
+NO asumir automáticamente: «el tratamiento falló por dosis insuficiente».
+
+REEVALUAR:
+1) ¿Era correcta/completa la hipótesis inicial?
+2) ¿Se trató solo una manifestación?
+3) ¿Otra estructura / referido / múltiples generadores?
+4) ¿Evolución esperable más larga de esa condición?
+5) ¿Factores de carga / psicosociales / adherencia?
+6) ¿Red flags nuevos o progresivos?
+7) ¿La intervención tenía evidencia para ESA condición?
+8) ¿Imagen o derivación cambian el manejo?
+
+Salida: reordenar hipótesis + exploración discriminativa + seguridad primero.
+LENGUAJE: «conviene reevaluar la hipótesis…», no «hay que buscar otro músculo».`;
+
+export const AI_NO_IMAGING_DECISION_RULES = `SIN ECOGRAFÍA / SIN IMAGEN (Physioguide):
+
+- Ausencia de eco/RMN/RX NO implica «entonces es muscular/miofascial».
+- Razonar con: historia, comportamiento, exploración, tests funcionales, dolor familiar, bilateral, neuro si toca, probabilidad.
+- Indicar cuándo la falta de imagen limita la certeza SOLO si eso cambia decisiones.
+- NO pedir imagen «porque no hay».
+- SÍ considerar imagen si: sospecha clínica que cambia manejo, criterios establecidos (Ottawa, C-spine, etc.), red flags, persistencia/evolución atípica, o impacto claro en plan.
+- Nunca sustituir criterio presencial ni usar imagen como único ancla diagnóstica.`;
+
+export const AI_EVIDENCE_LEVELS_RULES = `NIVELES DE EVIDENCIA (Physioguide — etiquetar afirmaciones):
+
+A — evidencia consistente de alta calidad (revisiones/CPG coherentes).
+B — moderada o con limitaciones.
+C — limitada.
+D — preliminar/indirecta / tradicional (p. ej. mapas miofasciales clásicos).
+INSUFFICIENT — no afirmar clínicamente.
+
+- Clusters Tier A/B/C del evidence DB se mapean a A/B/C de este marco.
+- Mapas referidos TRADICIONALES = como máximo D; declarar la clase.
+- NUNCA inventar Sn/Sp/LR/%. Si no hay cifra citada de confianza → cualitativo («limitada», «mixta», «no excluye»).
+- Distinguir SIEMPRE «compatible con» vs «causa demostrada».`;
+
+export const AI_DIFFERENTIAL_MATRICES_RULES = `MATRICES DIFERENCIALES POR LOCALIZACIÓN (Physioguide):
+
+Las listas por zona (cervical, torácica, cabeza, hombro, lumbar, cadera, rodilla, tobillo/pie, codo, muñeca/mano, pelvis) son MENÚS de hipótesis posibles, NO listas diagnósticas automáticas.
+
+Seleccionar SOLO alternativas compatibles con: historia, distribución, comportamiento, exploración, tests +/−, agravantes/atenuantes.
+Máximo 2–3 hipótesis activas en incertidumbre; en claridad → 1 principal.
+Prioridad: SEGURIDAD → evidencia → probabilidad → diferencial → pruebas discriminativas → reevaluación.`;
+
+export const AI_REFERRED_PAIN_LIBRARY_RULES = `BIBLIOTECA DE DOLOR REFERIDO (Physioguide — regional):
+
+Cuando el patrón no cuadra o tests locales no reproducen dolor familiar:
+1) Considerar referido proximal/distal con evidencia (cervical↔hombro/brazo; lumbar↔cadera/pierna; cervicotorácico↔escápula; SNOOP en cabeza).
+2) Etiquetar el patrón como experimental (fenómeno de referido — Graven-Nielsen; facetas Dwyer/Aprill/Bogduk — NO valida mapas comerciales musculares) / clínica (CPG/clusters) / TRADICIONAL (atlas — nivel D).
+3) Proponer exploración que discrimine (no saltar a un músculo).
+4) Permitir coexistencia (p. ej. RCRSP + cervical).
+5) Miofascial solo como hipótesis, con controversia de MTrP (Tough; Lucas) y dolor familiar.
+6) Trazabilidad: referred-pain-sources.md / CPG / RS; si no hay fuente → no afirmar.
+
+Nunca: «el dolor viene del músculo X» por proximidad anatómica sola.
+Relaciones deben ser rastreables a módulos referred-pain-* / relations JSON / RAG Physioguide.`;
+
+export const AI_NEGATIVE_TEST_LIBRARY_RULES = `BIBLIOTECA PRUEBA NEGATIVA (Physioguide — completa):
+
+Pipeline: probabilidad pretest → resultado → probabilidad postest.
+Negativo ≠ descartado en la mayoría de tests MSK aislados.
+
+Antes de cambiar de estructura, responder:
+¿qué test? ¿qué estructura? ¿capacidad diagnóstica cualitativa? ¿permite descartar? ¿síntomas siguen compatibles? ¿otra estructura/patrón similar? ¿referido plausible? ¿qué discrimina?
+
+Atajos (cualitativos; no inventar %):
+- Hombro: Neer/Hawkins/Jobe − no excluyen RCRSP; Spurling − no excluye cervical.
+- Raquis: SLR − no excluye radiculopatía; ULTT − sensible/poco específico; Kemp − no confirma ni excluye faceta.
+- Cadera: FADIR − no excluye FAI/labrum; FABER interpreta DÓNDE duele.
+- Rodilla: McMurray/Thessaly − no excluyen menisco; Lachman mejor para LCA pero no perfecto.
+- Tobillo: cajón anterior − no excluye esguince/inestabilidad crónica.
+- Codo/muñeca: Cozen/Phalen/Tinel/Finkelstein − un negativo no descarta el cluster.
+
+Nunca: «negativo → automáticamente otro músculo».`;
+
 /** Fase 3 evidence DB — keep in sync with lib/physioguide-evidence-db-rules.ts */
 export const AI_EVIDENCE_DB_RULES = `EVIDENCIA DE TESTS / CLUSTERS (Physioguide Fase 3 — cadera, rodilla, hombro, raquis, pie/tobillo, codo/muñeca, dedos, cabeza):
 
@@ -993,13 +1306,18 @@ RODILLA (atajos):
 - ITB = lateral + carrera/escaleras sin trauma; no LCL.
 
 HOMBRO (atajos):
-- Neer/Hawkins/arco doloroso → RCRSP en CLUSTER; no «pinzamiento confirmado» (Hegedus; Lewis).
-- Jobe doloroso = tendón; Jobe débil + drop arm → rotura importante ↑, no tamaño.
-- Aprensión (miedo a que se salga) ± relocation → inestabilidad anterior; dolor solo ≠ inestabilidad (Farber).
-- Speed/Yergason → bíceps; NO confirman SLAP.
-- Dolor en la puntita al cruzar el brazo → AC (Chronopoulos).
-- Hormigueo/cuello o tests locales pobres → cribado cervical (Spurling específico, negativo no excluye).
-- Pasivo y activo limitados (sobre todo RE) → rigidez/capsulitis, no solo manguito.
+- Neer/Hawkins/arco doloroso → RCRSP en CLUSTER (Tier C); no «pinzamiento confirmado» (Hegedus; Lewis).
+- Neer/Hawkins/Jobe NEGATIVOS aislados → NO excluyen RCRSP si la historia overhead/arco encaja (ver negative-test + referido hombro lateral).
+- Spurling NEGATIVO → NO excluye contribución cervical; usar cluster Wainner.
+- Jobe/Full Can doloroso = tendón; Jobe/Full Can débil + drop arm + RE débil → rotura importante ↑ (Tier B), no tamaño.
+- ER lag + Hornblower + RE débil → manguito posterior (Tier B). IR lag + Belly press/Bear hug/Lift-off → subescapular (Tier B).
+- Apprehension (miedo) + Relocation ± Surprise → inestabilidad anterior Tier A; dolor solo ≠ inestabilidad (Farber).
+- Kim + Jerk → inestabilidad posterior Tier B. Sulcus sin síntomas ≠ MDI.
+- Speed/Yergason/Uppercut → bíceps Tier C; NO confirman SLAP. O'Brien+Crank = screening labral Tier B, no confirmación.
+- Dolor en la puntita + cross-body/Paxinos/O'Brien AC → AC Tier A/C (Chronopoulos/Walton).
+- Hormigueo/cuello o tests locales pobres → cribado cervical Wainner Tier A (Spurling específico, negativo no excluye).
+- Pasivo y activo limitados (sobre todo RE) → rigidez/capsulitis Tier C, no solo manguito.
+- SAT/SRT mejoran síntoma → componente escapular Tier C; no sustituye cluster manguito.
 
 RAQUIS (atajos):
 - Trauma de cuello: Canadian C-spine / NEXUS ANTES de Spurling (Stiell / Hoffman).
@@ -1026,6 +1344,14 @@ CODO / MUÑECA (atajos):
 - Tinel cubital / codo doblado + anular-meñique → túnel cubital, no carpiano.
 - Dolor estiloides radial al usar el pulgar → De Quervain; «pulgar en el puño» (Eichhoff) da falsos positivos.
 - Caída sobre la mano + tabaquera → imagen (escafoides). No tranquilices como esguince sin pensarlo.
+- Maudsley: cluster LET si duele el hueso; antebrazo proximal → túnel radial/PIN/C7 (Zwerus; no = nervio lesionado).
+- Durkan: cluster STC con historia nocturna (D’Arcy JAMA; evidencia mixta). Negativo no descarta. Meñique solo ≠ STC.
+- WHAT + palpación 1.er compartimento ± Finkelstein → De Quervain; Eichhoff da falsos + (Goubau).
+- Hook no engancha + pop + déficit supinación → bíceps distal ↑ (O’Driscoll 2005). Hook + no descarta parcial.
+- Moving valgus / milking → UCL en lanzador (cluster C; no confirma rotura).
+- Fóvea ± press ± carga cubital → TFCC ↑ (Tay 2007); piano-key asimétrico doloroso → DRUJ. No TFCC confirmado.
+- Watson/scaphoid shift → SL ↑; no si tabaquera pendiente. Watson − no excluye.
+- Froment → motor cubital; localiza codo vs Guyon con la historia, no con el signo solo.
 
 DEDOS / MANO (atajos):
 - Phalen/Tinel + noche + sacudir la mano + 1.º–3.º → STC en cluster (D’Arcy JAMA). Un test negativo no descarta. Meñique solo → cubital.
@@ -1193,14 +1519,14 @@ NERVIOS / FASCITIS (cuando el caso encaje):
 - Fascitis: si persiste ~1 semana → eco; si sigue → especialista que mire también movilidad de cadera y tobillo.
 
 FORMATO BASE (igual que siempre — no inventes otros encabezados):
-**Resumen de tu consulta**
-**Estructuras que podrían estar afectadas**
-**Posibles lesiones (orientativas)**
-**Qué hacer mientras tanto**
-**Pruebas funcionales**
-**Qué debes hacer ahora**
-**¿Necesitas contactar con nuestro fisioterapeuta?**
-**Fuentes consultadas**
+Resumen de tu consulta
+Estructuras que podrían estar afectadas
+Posibles lesiones (orientativas)
+Qué hacer mientras tanto
+Pruebas funcionales
+Qué debes hacer ahora
+¿Necesitas contactar con nuestro fisioterapeuta?
+Fuentes consultadas
 
 ORDEN POR PROBABILIDAD (OBLIGATORIO):
 - En **Estructuras que podrían estar afectadas**: lista con guiones, de MAYOR a MENOR probabilidad según el caso (la más probable primero).
@@ -1221,15 +1547,12 @@ FUENTES / EVIDENCIA (OBLIGATORIO):
 - Si no hay documento: Fuente: criterio clínico general Kinora (sin documento recuperado)
 
 REGLAS DE FORMATO:
-- Usa ** para encabezados de sección
-- DESTACAR LO IMPORTANTE (OBLIGATORIO — negrita con **…**):
-  1) En **Posibles lesiones (orientativas)**: cada ítem empieza con el nombre de la lesión en negrita, p. ej. "- **Lesión del TFCC**: descripción…" / "- **Tendinopatía del ECU**: …"
-  2) En cualquier respuesta (inicial o seguimiento): pon en negrita el nombre de cada lesión/cuadro orientativo que menciones (p. ej. **síndrome del pronador**, **epicondilitis lateral**).
-  3) Pon en negrita adónde debe acudir o qué prueba clave hacer: **fisioterapeuta**, **médico**, **urgencias**, **hospital**, **ecografía**, **resonancia magnética**, etc.
-  Solo el nombre o destino clave, no frases enteras.
+- PROHIBIDO en el texto que ve el usuario: asteriscos y almohadillas. NUNCA uses Markdown de negrita, cursiva ni títulos con almohadilla.
+- Encabezados de sección: una línea con el título solo, sin símbolos.
+- DESTACAR LO IMPORTANTE: escribe el nombre de la lesión o el destino (fisioterapeuta, médico, urgencias) al inicio del ítem, sin asteriscos. Ejemplo: "- Lesión del TFCC: descripción…"
 - Listas con guiones (-)
 - NO emitas diagnóstico definitivo
-- NOMENCLATURA (CRÍTICO — PROHIBIDO): nunca uses «distensión», «distensiones» ni «distension» (ni en títulos ni en el texto). Aunque otra regla o documento las mencione, NO las copies. Usa **lesión muscular**, **esguince**, **rotura fibrilar / parcial**, **contusión**, o el cuadro concreto (p. ej. **tendinopatía proximal de isquiotibiales**).
+- NOMENCLATURA (CRÍTICO — PROHIBIDO): nunca uses «distensión», «distensiones» ni «distension» (ni en títulos ni en el texto). Aunque otra regla o documento las mencione, NO las copies. Usa lesión muscular, esguince, rotura fibrilar / parcial, contusión, o el cuadro concreto (p. ej. tendinopatía proximal de isquiotibiales).
 - Lenguaje sencillo, tono cercano
 - Prioriza documentos recuperados (Functional Assessment, Special Tests, Clinical Tests, Imaging) cuando existan
 - FUENTE DE VERDAD para tests: base de conocimientos Kinora; el banco local solo es respaldo si RAG no trae tests de esa zona
@@ -1283,11 +1606,17 @@ ${AI_SHOULDER_MASTER_INTEGRATION_RULES}
 
 ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
+${AI_SHOULDER_LATERAL_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
 
 ${AI_SHOULDER_INSTABILITY_TRAUMA_RULES}
+
+${AI_SHOULDER_POSTERIOR_INSTABILITY_RULES}
+
+${AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES}
 
 ${AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES}
 
@@ -1309,6 +1638,26 @@ ${AI_WRIST_DEQUERVAIN_RULES}
 
 ${AI_WRIST_TRAUMA_SCAPHOID_RULES}
 
+${AI_ELBOW_DISTAL_BICEPS_RULES}
+
+${AI_ELBOW_DISTAL_TRICEPS_RULES}
+
+${AI_ELBOW_PLRI_RULES}
+
+${AI_ELBOW_RADIAL_TUNNEL_RULES}
+
+${AI_ELBOW_UCL_MEDIAL_RULES}
+
+${AI_ELBOW_WRIST_GUYON_RULES}
+
+${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
+
+${AI_WRIST_TFCC_ULNAR_RULES}
+
+${AI_WRIST_DRUJ_RULES}
+
+${AI_WRIST_CARPAL_INSTABILITY_RULES}
+
 ${AI_SPINE_MASTER_INTEGRATION_RULES}
 
 ${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
@@ -1322,6 +1671,24 @@ ${AI_LUMBAR_BACK_PAIN_RULES}
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
 ${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_HYPOTHESIS_EXPLORATION_RULES}
+
+${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
+
+${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_NO_IMAGING_DECISION_RULES}
+
+${AI_MTRP_FRAMEWORK_RULES}
+
+${AI_REFERRED_PAIN_LIBRARY_RULES}
+
+${AI_NEGATIVE_TEST_LIBRARY_RULES}
+
+${AI_DIFFERENTIAL_MATRICES_RULES}
+
+${AI_EVIDENCE_LEVELS_RULES}
 
 ${AI_EVIDENCE_DB_RULES}`;
 
@@ -1338,6 +1705,7 @@ export const AI_IMAGE_CONTEXT_RULES = `FOTO DE LA LESIÓN (cuando hay una imagen
 
 export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PROCESO CLÍNICO):
 - CONTINUIDAD DEL CASO (CRÍTICO): es el MISMO paciente y el MISMO problema. Usa el historial. NUNCA reinicies preguntando de nuevo toda la anamnesis o todos los tests como si fuera un caso distinto.
+- SI NO MEJORA / VUELVE IGUAL: activa reevaluación de hipótesis (modo exploración): ¿hipótesis inicial incompleta? ¿referido? ¿otra estructura? ¿red flags? ¿imagen/derivación? NO asumas solo «más del mismo tratamiento».
 - INTEGRACIÓN: cada respuesta ACTUALIZA las probabilidades; no sustituyas el razonamiento previo ni bases la conclusión SOLO en la última prueba funcional.
 - Da más peso a hallazgos específicos (hormigueo con distribución, debilidad neurológica, empeora con cuello/codo flexionado, irradiación, banderas rojas) que a hallazgos inespecíficos.
 - Si una prueba musculotendinosa es positiva pero hay síntomas neurológicos claros que esa lesión no explica → mantén alta sospecha neurológica y reordena hipótesis.
@@ -1463,7 +1831,7 @@ export function appendSourcesFooter(
   const external = sources.filter((s) => hasWorkingCitationLink(s));
   if (!external.length) return answer;
   const heading =
-    language === "en" ? "**Sources consulted**" : "**Fuentes consultadas**";
+    language === "en" ? "Sources consulted" : "Fuentes consultadas";
   if (/Fuentes consultadas|Sources consulted/i.test(answer)) {
     const missing = external.filter((s) => !answer.includes(s));
     if (!missing.length) return answer;
@@ -1475,7 +1843,7 @@ export function appendSourcesFooter(
 
 export function languageInstruction(language: "es" | "en"): string {
   if (language === "en") {
-    return `LANGUAGE (CRITICAL): The patient is using English. Reply ENTIRELY in English: section headings (e.g. Summary of your consult, Structures that may be involved, Possible injuries, What to do in the meantime, What you should do now, Sources consulted), functional test questions, recommendations, and disclaimers. Do NOT use Spanish. When protocols list ES|EN questions, use the EN wording only.`;
+    return `LANGUAGE (CRITICAL — OVERRIDE ALL OTHER LANGUAGE CUES): The patient's UI language is English. Reply ENTIRELY in English even if the case notes, questionnaire answers, RAG excerpts, or protocols appear in Spanish. Translate section headings (e.g. Summary of your consult, Structures that may be involved, Possible injuries, What to do in the meantime, What you should do now, Sources consulted), functional test questions, recommendations, and disclaimers to English. Do NOT write Spanish sentences. When protocols list ES|EN questions, use the EN wording only.`;
   }
   return `IDIOMA (CRÍTICO): El paciente usa español. Responde ENTERAMENTE en español: encabezados, preguntas de tests funcionales, recomendaciones y avisos. Cuando un protocolo liste ES|EN, usa solo el texto ES.`;
 }
@@ -1990,7 +2358,8 @@ VÍDEOS (CRÍTICO — fuerza del producto):
 - Si pide N pruebas, elige las N más relevantes del catálogo de esa zona (si hay menos, lista todas las del grupo).
 - Si pide TODAS las pruebas / all tests / el catálogo de una zona, lista TODAS las del grupo de esa zona (una línea numerada por test, nombre canónico). Así la app muestra el vídeo de cada una.
 - Si pide todas las pruebas SIN zona, recorre CADA grupo con encabezado **Zona:** (p. ej. **Lumbar:**, **Rodilla:**) y lista todas las de ese grupo. NUNCA mezcles tests de rodilla bajo **Lumbar:**.
-- Lumbar/espalda: SOLO Schober, SLR / Lasègue, SLR cruzado (well-leg), Kemp. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
+- Lumbar/espalda: SOLO SLR / Lasègue, SLR cruzado (well-leg), Kemp, FABER (Patrick), Schober. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
+- Si el caso es «Espalda» (sin más detalle), trata como lumbar y lista 4–5 de ese grupo (no tests genéricos).
 
 REGLA DE ZONA (CRÍTICO — error grave si se incumple):
 - Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, lumbar/espalda, etc.).
@@ -2014,12 +2383,23 @@ Catálogo por zona:
   - Test de Neer
   - Hawkins-Kennedy
   - Jobe / Empty can
+  - Full can / Jobe pulgar arriba
   - Apprehension / Relocation
+  - Surprise / Release (inestabilidad anterior)
   - Test de Speed
   - Test de Yergason
+  - Uppercut (bíceps)
   - Drop arm
   - Painful arc
+  - ER lag sign
+  - Belly press / Napoleon
+  - Lift-off / Gerber
   - Cross-body / aducción horizontal
+  - Paxinos (AC)
+  - O'Brien / Active compression
+  - Crank (screening labral)
+  - Kim test (inestabilidad posterior)
+  - Jerk test (inestabilidad posterior)
 **Cuello / neural miembro superior**
   - Test de Spurling
   - ULTT / ULNT
@@ -2051,10 +2431,11 @@ Catálogo por zona:
   - Flexión de muñeca resistida (medial)
   - Test de flexión de codo (cubital)
 **Columna lumbar / espalda**
-  - Test de Schober
   - SLR / Lasègue
   - SLR cruzado (well-leg)
   - Test de Kemp / cuadrante lumbar
+  - FABER / Patrick
+  - Test de Schober
 - Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
 - Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.
 - Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;

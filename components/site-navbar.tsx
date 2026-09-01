@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { clearPatientModeCookie } from "@/components/fisio-patient-mode";
 import {
+  CLINIC_NAV_LINKS,
   isNavLinkActive,
   PATIENT_NAV_LINKS,
   PHYSIO_NAV_LINKS,
@@ -24,6 +25,7 @@ export function SiteNavbar() {
   const [mounted, setMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isPhysioAccount, setIsPhysioAccount] = useState(false);
+  const [isClinicAccount, setIsClinicAccount] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export function SiteNavbar() {
       setIsGuest(isGuestUser(user));
       if (!user) {
         setIsPhysioAccount(false);
+        setIsClinicAccount(false);
         clearPatientModeCookie();
         return;
       }
@@ -48,13 +51,14 @@ export function SiteNavbar() {
         .select("account_type")
         .eq("id", user.id)
         .maybeSingle();
-      const physio = profile?.account_type === "physio";
-      setIsPhysioAccount(physio);
+      setIsPhysioAccount(profile?.account_type === "physio");
+      setIsClinicAccount(profile?.account_type === "clinic");
       clearPatientModeCookie();
     }
     void loadUser().catch(() => {
       setUserEmail(null);
       setIsPhysioAccount(false);
+      setIsClinicAccount(false);
       setIsGuest(false);
       clearPatientModeCookie();
     });
@@ -64,6 +68,7 @@ export function SiteNavbar() {
         setIsGuest(isGuestUser(session?.user));
         if (!session?.user) {
           setIsPhysioAccount(false);
+          setIsClinicAccount(false);
           clearPatientModeCookie();
           return;
         }
@@ -77,6 +82,7 @@ export function SiteNavbar() {
             .maybeSingle()
             .then(({ data: profile }) => {
               setIsPhysioAccount(profile?.account_type === "physio");
+              setIsClinicAccount(profile?.account_type === "clinic");
               clearPatientModeCookie();
             });
         }, 0);
@@ -105,22 +111,28 @@ export function SiteNavbar() {
 
   const isAdmin = isClientAdminEmail(userEmail);
 
-  const usePhysioLinks = isPhysioAccount;
-
   const links = useMemo(() => {
     if (isGuest) return [];
-    const base: AppNavLink[] = usePhysioLinks
-      ? [...PHYSIO_NAV_LINKS]
-      : [...PATIENT_NAV_LINKS];
+    const base: AppNavLink[] = isClinicAccount
+      ? [...CLINIC_NAV_LINKS]
+      : isPhysioAccount
+        ? [...PHYSIO_NAV_LINKS]
+        : [...PATIENT_NAV_LINKS];
     if (!isAdmin) return base;
     return [
       ...base.slice(0, -1),
       { href: "/admin", label: "Admin" },
       base[base.length - 1],
     ];
-  }, [isAdmin, usePhysioLinks, isGuest]);
+  }, [isAdmin, isPhysioAccount, isClinicAccount, isGuest]);
 
-  const homeHref = usePhysioLinks ? "/fisio" : isGuest ? "/fisioterapia" : "/consulta";
+  const homeHref = isClinicAccount
+    ? "/clinica/consulta"
+    : isPhysioAccount
+      ? "/fisio"
+      : isGuest
+        ? "/fisioterapia"
+        : "/consulta";
 
   function handleSignOut() {
     setSigningOut(true);

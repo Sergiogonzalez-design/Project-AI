@@ -1,5 +1,7 @@
+import { formatValidationIssueMessage } from "../lib/consulta-validation";
 import React, { useEffect } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { ConsultaTextInput } from "./ConsultaTextInput";
 import {
   defaultHipAdaptiveAnswers,
   detectHipRedFlags,
@@ -17,7 +19,8 @@ import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
 import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
-import { redFlagsDetectedLabel, redFlagsUrgencyNote, skipQuestionnaireForUrgencyLabel } from "../lib/consulta-red-flags-copy";
+import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote, skipQuestionnaireForUrgencyLabel } from "../lib/consulta-red-flags-copy";
+import { consultaNavLabels } from "../lib/consulta-nav-labels";
 
 function ChipGroup({
   options,
@@ -127,7 +130,7 @@ function QuestionField({
     return (
       <View style={styles.field}>
         <Text style={styles.label}>{label}</Text>
-        <TextInput
+        <ConsultaTextInput
           style={styles.input}
           value={typeof val === "string" ? val : ""}
           onChangeText={(t) => onPatch({ [q.id]: t } as Partial<HipAdaptiveAnswers>)}
@@ -176,6 +179,8 @@ type Props = {
   sectionError: string | null;
   onSectionError: (msg: string | null) => void;
   locale?: ConsultLocale;
+  /** Called with shortened answers so the parent can submit immediately. */
+  onSubmitUrgency?: (answers: HipAdaptiveAnswers) => void;
 };
 
 export function ConsultaAdaptiveHip({
@@ -186,6 +191,7 @@ export function ConsultaAdaptiveHip({
   sectionError,
   onSectionError,
   locale = "es",
+  onSubmitUrgency,
 }: Props) {
   const answers = value ?? defaultHipAdaptiveAnswers();
   const sections = getVisibleHipSections(answers);
@@ -210,18 +216,20 @@ export function ConsultaAdaptiveHip({
     if (currentSection !== "red_flags") return;
     const issue = validateHipSection("red_flags", answers);
     if (issue) {
-      onSectionError(issue.message);
+      onSectionError(formatValidationIssueMessage(issue, locale, localizeHipLabel(issue.questionId, issue.message.replace(/^Responde:\s*/, "").replace(/\.$/, ""), locale)));
       return;
     }
     onSectionError(null);
-    onChange({ ...answers, acortar_por_urgencia: true });
+    const next = { ...answers, acortar_por_urgencia: true };
+    onChange(next);
+    onSubmitUrgency?.(next);
   }
 
   function handleNext() {
     if (!currentSection) return;
     const issue = validateHipSection(currentSection, answers);
     if (issue) {
-      onSectionError(issue.message);
+      onSectionError(formatValidationIssueMessage(issue, locale, localizeHipLabel(issue.questionId, issue.message.replace(/^Responde:\s*/, "").replace(/\.$/, ""), locale)));
       return;
     }
     onSectionError(null);
@@ -235,7 +243,7 @@ export function ConsultaAdaptiveHip({
       {currentSection === "red_flags" && (
         <View style={styles.warnBox}>
           <Text style={styles.warnText}>
-            Estas preguntas detectan situaciones que pueden requerir atención médica urgente.
+            {redFlagsSectionIntro(locale)}
           </Text>
         </View>
       )}
@@ -243,7 +251,7 @@ export function ConsultaAdaptiveHip({
       {urgent && currentSection !== "red_flags" && (
         <View style={styles.redBox}>
           <Text style={styles.redText}>
-            {redFlagsDetectedLabel(locale)} {triggered.join(", ")}.{redFlagsUrgencyNote(locale)}
+            {redFlagsDetectedLabel(locale)} {triggered.map((x) => localizeHipOption(x, locale)).join(", ")}.{redFlagsUrgencyNote(locale)}
           </Text>
         </View>
       )}
@@ -259,12 +267,12 @@ export function ConsultaAdaptiveHip({
       <View style={styles.navRow}>
         {sectionIndex > 0 && (
           <Pressable style={styles.navBtnOutline} onPress={() => onSectionIndexChange(sectionIndex - 1)}>
-            <Text style={styles.navBtnOutlineText}>Anterior</Text>
+            <Text style={styles.navBtnOutlineText}>{consultaNavLabels(locale).previous}</Text>
           </Pressable>
         )}
         {!isLastSection && (
           <Pressable style={styles.navBtn} onPress={handleNext}>
-            <Text style={styles.navBtnText}>Siguiente</Text>
+            <Text style={styles.navBtnText}>{consultaNavLabels(locale).next}</Text>
           </Pressable>
         )}
         {currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia && (

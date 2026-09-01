@@ -28,7 +28,7 @@ export function AssistantMessageWithSources({ content, renderBody }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
-    <View>
+    <>
       {renderBody(body)}
       {sources.length > 0 ? (
         <View style={styles.wrap}>
@@ -50,7 +50,7 @@ export function AssistantMessageWithSources({ content, renderBody }: Props) {
           ) : null}
         </View>
       ) : null}
-    </View>
+    </>
   );
 }
 

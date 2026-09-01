@@ -1,0 +1,172 @@
+{
+  "pilot": "thoracic",
+  "version": 1,
+  "notes": "Visceral/cardiac first. No invented Sn/Sp. Traditional rhomboid maps labeled D. No Travell verbatim.",
+  "relations": [
+    {
+      "id": "cardiac-visceral-red-flag-if-chest-or-interscapular-pain",
+      "source_structure": "cardiac / pulmonary / aortic / PE pathways",
+      "target_region": "chest / interscapular / arm",
+      "relationship": "red_flag_if",
+      "clinical_context": "Chest or interscapular pain with dyspnoea, diaphoresis, exertional pattern, syncope, or vascular risk.",
+      "supporting_evidence": [
+        "Chest-pain guidelines require urgent evaluation when ACS or other visceral features are present"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "do_not_invent",
+        "notes": "Safety pathway, not an MSK test."
+      },
+      "limitations": [
+        "Mechanical thoracic pain exists but must not delay emergency care"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Stop elective MSK cascade if visceral features present",
+        "Urgent medical referral"
+      ],
+      "red_flags": [
+        "ACS-type chest pain",
+        "Dyspnoea / syncope / diaphoresis",
+        "Pulsatile chest/back pain concerning for aortic syndrome"
+      ],
+      "references": [
+        {
+          "citation": "Gulati M et al. 2021 AHA/ACC Guideline for the Evaluation and Diagnosis of Chest Pain. Circulation/JACC.",
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "id": "thoracic-facet-may-refer-pain-to-axial-or-interscapular",
+      "source_structure": "thoracic zygapophyseal joints (provocation maps)",
+      "target_region": "thoracic axial / interscapular perceived pain",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Mechanical thoracic pain after visceral safety screen; local rhomboid palpation is not confirmatory.",
+      "supporting_evidence": [
+        "Provocation of thoracic zygapophyseal joints in volunteers can produce referred axial pain patterns"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "experimental",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Provocation maps ≠ clinic palpation accuracy. Do not invent Sn/Sp."
+      },
+      "limitations": [
+        "No Wainner-like cluster for thoracic facet in clinic",
+        "Cannot name a segmental level from a pain drawing"
+      ],
+      "alternative_explanations": [
+        "Cervical referral",
+        "Rib / chest wall",
+        "Shoulder source",
+        "Visceral"
+      ],
+      "recommended_examination": [
+        "Visceral safety first",
+        "Thoracic and cervical AROM",
+        "Shoulder load tests if symptoms change with arm use"
+      ],
+      "red_flags": [
+        "Cardiac / pulmonary / aortic features"
+      ],
+      "references": [
+        {
+          "citation": "Dreyfuss P, Tibiletti C, Dreyer SJ. Thoracic zygapophyseal joint pain patterns. A study in normal volunteers. Spine. 1994.",
+          "year": 1994
+        }
+      ]
+    },
+    {
+      "id": "cervical-may-refer-pain-to-medial-scapula",
+      "source_structure": "cervical zygapophyseal / somatic structures",
+      "target_region": "medial scapular / interscapular",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Interscapular pain that changes with neck movement, or with weak local shoulder reproduction.",
+      "supporting_evidence": [
+        "Cervical zygapophyseal provocation studies include scapular-girdle referral",
+        "Neck Pain CPGs endorse cervical contribution to upper-quarter symptoms"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Cannot localize segment from scapular pain alone."
+      },
+      "limitations": [
+        "Overlaps thoracic, rib, and shoulder sources"
+      ],
+      "alternative_explanations": [
+        "Thoracic segment",
+        "RCRSP perceived posteriorly",
+        "Traditional rhomboid hypothesis (D)"
+      ],
+      "recommended_examination": [
+        "Cervical AROM + radiculopathy cluster as indicated",
+        "Ask if neck movement changes scapular pain",
+        "Shoulder cluster for familiar pain"
+      ],
+      "red_flags": [
+        "Myelopathy",
+        "Visceral chest-pain features"
+      ],
+      "references": [
+        {
+          "citation": "Dwyer A, Aprill C, Bogduk N. Cervical zygapophyseal joint pain patterns. Spine. 1990.",
+          "year": 1990
+        },
+        {
+          "citation": "Fukui S et al. Referred pain distribution of the cervical zygapophyseal joints and cervical dorsal rami. Pain. 1996.",
+          "year": 1996
+        },
+        {
+          "citation": "Blanpied PR et al. Neck Pain: Revision 2017 (CPG). JOSPT.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "rhomboid-may-mimic-interscapular-pain-traditional",
+      "source_structure": "rhomboid / middle trapezius region (myofascial hypothesis)",
+      "target_region": "interscapular",
+      "relationship": "may_mimic",
+      "clinical_context": "Familiar pain on palpation after visceral and cervicothoracic hypotheses are considered.",
+      "supporting_evidence": [
+        "Classical myofascial maps describe interscapular patterns (traditional class only)"
+      ],
+      "evidence_level": "D",
+      "referred_pattern_class": "traditional",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "MTrP palpation reliability limited. Found ≠ cause."
+      },
+      "limitations": [
+        "Must not override cardiac/pulmonary screening",
+        "Maps are not absolute anatomy"
+      ],
+      "alternative_explanations": [
+        "Cervicothoracic referral",
+        "Rib / chest wall",
+        "Shoulder"
+      ],
+      "recommended_examination": [
+        "Familiar pain criterion",
+        "Cervical/thoracic/shoulder screens"
+      ],
+      "red_flags": [
+        "Visceral features"
+      ],
+      "references": [
+        {
+          "citation": "Tough EA et al. Variability of criteria used to diagnose myofascial trigger point pain syndrome. 2007.",
+          "year": 2007
+        },
+        {
+          "citation": "Lucas N et al. Reliability of physical examination for diagnosis of myofascial trigger points. Clin J Pain. 2009.",
+          "year": 2009
+        }
+      ]
+    }
+  ]
+}

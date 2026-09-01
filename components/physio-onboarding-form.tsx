@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
@@ -15,8 +15,26 @@ export function PhysioOnboardingForm() {
   const supabase = createClient();
   const [fullName, setFullName] = useState("");
   const [clinicName, setClinicName] = useState("");
+  const [linkedClinic, setLinkedClinic] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const client = createClient();
+    void client.auth.getUser().then(async ({ data }) => {
+      const id = data.user?.id;
+      if (!id) return;
+      const { data: profile } = await client
+        .from("profiles")
+        .select("clinic_id, clinic_name")
+        .eq("id", id)
+        .maybeSingle();
+      if (profile?.clinic_id && profile.clinic_name) {
+        setLinkedClinic(profile.clinic_name);
+        setClinicName(profile.clinic_name);
+      }
+    });
+  }, []);
 
   async function handleSubmit() {
     if (!fullName.trim()) {
@@ -83,9 +101,12 @@ export function PhysioOnboardingForm() {
             onChange={(e) => setClinicName(e.target.value)}
             placeholder="Ej: Clínica AIKinora, Centro de fisioterapia…"
             className={inputClass}
+            disabled={Boolean(linkedClinic)}
           />
           <p className="mt-1.5 text-xs text-slate-500">
-            Opcional — visible para tus pacientes en el enlace de invitación.
+            {linkedClinic
+              ? "Heredas el nombre y la ficha de tu clínica."
+              : "Opcional — visible para tus pacientes en el enlace de invitación."}
           </p>
         </div>
 

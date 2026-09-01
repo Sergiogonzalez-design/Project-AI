@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { User } from "@supabase/supabase-js";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,6 +27,7 @@ import {
 import { refreshSmartReminders } from "../lib/smart-reminders";
 import { deleteOwnAccount } from "../lib/delete-account";
 import { supabase } from "../lib/supabase";
+import { uploadAvatarFromUri } from "../lib/upload-avatar";
 
 const LANGUAGE_OPTIONS: {
   value: LanguagePreference;
@@ -45,9 +47,12 @@ export function ProfileScreen() {
   const [deleting, setDeleting] = useState(false);
   const [showAthleteProfile, setShowAthleteProfile] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [accountType, setAccountType] = useState<"patient" | "physio" | null>(null);
+  const [accountType, setAccountType] = useState<
+    "patient" | "physio" | "clinic" | null
+  >(null);
   const [notificationsOn, setNotificationsOn] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -61,7 +66,11 @@ export function ProfileScreen() {
         setDisplayName(profile?.display_name ?? "");
         setAvatarUrl(profile?.avatar_url ?? null);
         setAccountType(
-          profile?.account_type === "physio" ? "physio" : "patient"
+          profile?.account_type === "physio"
+            ? "physio"
+            : profile?.account_type === "clinic"
+              ? "clinic"
+              : "patient"
         );
       }
       setNotificationsOn(await getNotificationsEnabled());
@@ -160,6 +169,61 @@ export function ProfileScreen() {
     ]);
   }
 
+  async function applyPickedPhoto(uri: string) {
+    setUploadingPhoto(true);
+    try {
+      const url = await uploadAvatarFromUri(uri);
+      setAvatarUrl(url);
+      Alert.alert(t.profile.title, t.profile.photoUpdated);
+    } catch {
+      Alert.alert(t.profile.title, t.profile.photoError);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  async function takeProfilePhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t.profile.title, t.profile.photoPermission);
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await applyPickedPhoto(result.assets[0].uri);
+    }
+  }
+
+  async function pickProfilePhoto() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t.profile.title, t.profile.photoPermission);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await applyPickedPhoto(result.assets[0].uri);
+    }
+  }
+
+  function handleChangePhoto() {
+    Alert.alert(t.profile.changePhoto, t.profile.changePhotoHint, [
+      { text: t.consulta.takePhoto, onPress: () => void takeProfilePhoto() },
+      { text: t.consulta.choosePhoto, onPress: () => void pickProfilePhoto() },
+      { text: t.profile.cancel, style: "cancel" },
+    ]);
+  }
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -179,60 +243,114 @@ export function ProfileScreen() {
       ? user.email.slice(0, 2).toUpperCase()
       : "U";
 
+  const roleLabel =
+    accountType === "clinic"
+      ? "Clínica"
+      : accountType === "physio"
+        ? t.profile.rolePhysio
+        : t.profile.rolePatient;
+
   return (
     <ScreenScrollView
       style={styles.root}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.pageTitle}>{t.profile.title}</Text>
-
-      <View style={styles.avatarSection}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={styles.avatarImg}
-            accessibilityLabel={t.profile.avatarA11y}
-          />
-        ) : (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
+      <View style={styles.hero}>
+        <View style={styles.heroGlow} />
+        <Pressable
+          onPress={handleChangePhoto}
+          disabled={uploadingPhoto}
+          style={styles.avatarPress}
+          accessibilityLabel={t.profile.changePhoto}
+        >
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatarImg}
+              accessibilityLabel={t.profile.avatarA11y}
+            />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
+          <View style={styles.cameraBadge}>
+            {uploadingPhoto ? (
+              <ActivityIndicator color={Colors.white} size="small" />
+            ) : (
+              <Ionicons name="camera" size={14} color={Colors.white} />
+            )}
           </View>
-        )}
-        <Text style={styles.email}>{displayName || user?.email || "—"}</Text>
-        {displayName ? (
-          <Text style={styles.emailSub}>{user?.email}</Text>
+        </Pressable>
+        <Text style={styles.heroName}>{displayName || user?.email || "—"}</Text>
+        {displayName && user?.email ? (
+          <Text style={styles.heroEmail}>{user.email}</Text>
         ) : null}
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{t.profile.freePlan}</Text>
+        <View style={styles.chipRow}>
+          <View style={styles.roleChip}>
+            <Ionicons
+              name={
+                accountType === "clinic"
+                  ? "business-outline"
+                  : accountType === "physio"
+                    ? "medkit-outline"
+                    : "person-outline"
+              }
+              size={13}
+              color={Colors.white}
+            />
+            <Text style={styles.roleChipText}>{roleLabel}</Text>
+          </View>
+          <View style={styles.planChip}>
+            <Text style={styles.planChipText}>{t.profile.freePlan}</Text>
+          </View>
         </View>
+        <Pressable
+          onPress={handleChangePhoto}
+          disabled={uploadingPhoto}
+          style={({ pressed }) => [styles.changePhotoBtn, pressed && { opacity: 0.85 }]}
+        >
+          <Ionicons name="image-outline" size={16} color={Colors.white} />
+          <Text style={styles.changePhotoText}>{t.profile.changePhoto}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t.profile.preferences}</Text>
 
-        <Text style={styles.prefLabel}>{t.profile.language}</Text>
-        <View style={styles.languageRow}>
-          {LANGUAGE_OPTIONS.map((opt) => {
-            const active = preference === opt.value;
-            return (
-              <Pressable
-                key={opt.value}
-                onPress={() => handleLanguageChange(opt.value)}
-                style={[styles.langChip, active && styles.langChipActive]}
-              >
-                <Text
-                  style={[styles.langChipText, active && styles.langChipTextActive]}
-                >
-                  {t.profile[opt.labelKey]}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View style={[styles.settingRow, styles.settingRowFirst]}>
+          <View style={styles.settingIcon}>
+            <Ionicons name="globe-outline" size={18} color={Colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.prefLabel}>{t.profile.language}</Text>
+            <View style={styles.languageRow}>
+              {LANGUAGE_OPTIONS.map((opt) => {
+                const active = preference === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => handleLanguageChange(opt.value)}
+                    style={[styles.langChip, active && styles.langChipActive]}
+                  >
+                    <Text
+                      style={[styles.langChipText, active && styles.langChipTextActive]}
+                    >
+                      {t.profile[opt.labelKey]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
         </View>
 
-        <View style={[styles.prefRow, styles.prefRowBorder, { marginTop: 8 }]}>
-          <View style={{ flex: 1, paddingRight: 12 }}>
+        <View style={styles.settingRow}>
+          <View style={styles.settingIcon}>
+            <Ionicons name="notifications-outline" size={18} color={Colors.primary} />
+          </View>
+          <View style={{ flex: 1, paddingRight: 8 }}>
             <Text style={styles.prefLabel}>{t.profile.notifications}</Text>
             <Text style={styles.prefHint}>{t.profile.notificationsHint}</Text>
             {notifBusy ? (
@@ -249,7 +367,13 @@ export function ProfileScreen() {
         </View>
       </View>
 
-      {accountType === "physio" ? (
+      {accountType === "clinic" ? (
+        <View style={styles.card}>
+          <Text style={styles.collapseBtnText}>
+            Edita la ficha y el equipo en las pestañas Clínica y Equipo.
+          </Text>
+        </View>
+      ) : accountType === "physio" ? (
         <PhysioProfileCard />
       ) : (
         <View style={styles.card}>
@@ -277,17 +401,30 @@ export function ProfileScreen() {
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t.profile.account}</Text>
-        <InfoRow label={t.profile.email} value={user?.email ?? "—"} />
-        <InfoRow
-          label={t.profile.createdAt}
-          value={
-            user?.created_at
-              ? new Date(user.created_at).toLocaleDateString(
-                  locale === "en" ? "en-US" : "es-ES"
-                )
-              : "—"
-          }
-        />
+        <View style={[styles.accountRow, styles.settingRowFirst]}>
+          <View style={styles.settingIcon}>
+            <Ionicons name="mail-outline" size={18} color={Colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>{t.profile.email}</Text>
+            <Text style={styles.infoValueLeft}>{user?.email ?? "—"}</Text>
+          </View>
+        </View>
+        <View style={styles.accountRow}>
+          <View style={styles.settingIcon}>
+            <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>{t.profile.createdAt}</Text>
+            <Text style={styles.infoValueLeft}>
+              {user?.created_at
+                ? new Date(user.created_at).toLocaleDateString(
+                    locale === "en" ? "en-US" : "es-ES"
+                  )
+                : "—"}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <Pressable
@@ -304,7 +441,10 @@ export function ProfileScreen() {
         {signingOut ? (
           <ActivityIndicator color={Colors.danger} />
         ) : (
-          <Text style={styles.signOutText}>{t.profile.signOut}</Text>
+          <>
+            <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
+            <Text style={styles.signOutText}>{t.profile.signOut}</Text>
+          </>
         )}
       </Pressable>
 
@@ -315,7 +455,7 @@ export function ProfileScreen() {
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
-            <Text style={styles.collapseBtnText}>{t.profile.valuePrivacy}</Text>
+            <Text style={styles.collapseBtnText}>{t.profile.privacySection}</Text>
           </View>
           <Ionicons
             name={showPrivacy ? "chevron-up" : "chevron-down"}
@@ -333,9 +473,7 @@ export function ProfileScreen() {
               style={({ pressed }) => [styles.privacyLinkBtn, pressed && { opacity: 0.8 }]}
             >
               <Ionicons name="document-text-outline" size={16} color={Colors.primary} />
-              <Text style={styles.privacyLinkText}>
-                {locale === "en" ? "Privacy Policy" : "Política de privacidad"}
-              </Text>
+              <Text style={styles.privacyLinkText}>{t.profile.privacyPolicy}</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [
@@ -359,15 +497,6 @@ export function ProfileScreen() {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   container: { padding: 20, paddingBottom: 48 },
@@ -377,74 +506,145 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Colors.background,
   },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: Colors.text,
-    letterSpacing: -0.6,
-    marginBottom: 24,
-  },
-  avatarSection: { alignItems: "center", marginBottom: 28 },
-  avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+  hero: {
     backgroundColor: Colors.primary,
+    borderRadius: 28,
+    paddingTop: 28,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    marginBottom: 20,
+    overflow: "hidden",
+    shadowColor: Colors.primaryDark,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  heroGlow: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    top: -80,
+    right: -50,
+  },
+  avatarPress: { marginBottom: 14 },
+  avatar: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14,
-    elevation: 6,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.55)",
   },
   avatarImg: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    marginBottom: 14,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     backgroundColor: Colors.primaryLight,
     borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.7)",
+  },
+  avatarText: { color: Colors.white, fontSize: 34, fontWeight: "700" },
+  cameraBadge: {
+    position: "absolute",
+    right: 2,
+    bottom: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.primaryDark,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
     borderColor: Colors.white,
   },
-  avatarText: { color: Colors.white, fontSize: 28, fontWeight: "700" },
-  email: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.text,
-    marginBottom: 2,
+  heroName: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.white,
+    letterSpacing: -0.4,
+    textAlign: "center",
   },
-  emailSub: { fontSize: 13, color: Colors.textSecondary, marginBottom: 6 },
-  badge: {
-    backgroundColor: Colors.primaryLight,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+  heroEmail: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.78)",
+    textAlign: "center",
   },
-  badgeText: { fontSize: 12, color: Colors.primary, fontWeight: "600" },
+  chipRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  roleChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  roleChipText: { color: Colors.white, fontSize: 12, fontWeight: "700" },
+  planChip: {
+    backgroundColor: Colors.white,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  planChipText: { color: Colors.primary, fontSize: 12, fontWeight: "700" },
+  changePhotoBtn: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(15,23,42,0.22)",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  changePhotoText: { color: Colors.white, fontSize: 13, fontWeight: "700" },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
     elevation: 2,
   },
   cardTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: Colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  languageRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
+  settingRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+  },
+  settingRowFirst: { borderTopWidth: 0, paddingTop: 0 },
+  settingIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: Colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  languageRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   langChip: {
     borderRadius: 999,
     borderWidth: 1,
@@ -454,8 +654,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primarySoft,
   },
   langChipActive: {
-    backgroundColor: "#6B7280",
-    borderColor: "#6B7280",
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   langChipText: {
     fontSize: 13,
@@ -470,33 +670,31 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   collapseBtnText: { fontSize: 15, fontWeight: "700", color: Colors.text },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  infoLabel: { fontSize: 14, color: Colors.textSecondary },
-  infoValue: { fontSize: 14, fontWeight: "600", color: Colors.text, maxWidth: "58%", textAlign: "right" },
-  prefRow: {
+  accountRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
     paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
   },
-  prefRowBorder: { borderTopWidth: 1, borderTopColor: Colors.border },
+  infoLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
+  infoValueLeft: { fontSize: 14, fontWeight: "600", color: Colors.text },
   prefLabel: { fontSize: 15, fontWeight: "700", color: Colors.text, marginBottom: 4 },
   prefHint: { fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
   prefBusy: { marginTop: 6, fontSize: 12, color: Colors.primary, fontWeight: "600" },
   signOutBtn: {
-    marginTop: 8,
+    marginTop: 4,
+    marginBottom: 16,
     borderWidth: 1.5,
-    borderColor: Colors.danger,
-    borderRadius: 16,
+    borderColor: "#FECACA",
+    borderRadius: 18,
     paddingVertical: 15,
     alignItems: "center",
-    backgroundColor: "#FFF5F5",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: Colors.dangerSoft,
   },
   signOutBtnPressed: { backgroundColor: "#FEE2E2" },
   signOutText: { fontSize: 15, fontWeight: "700", color: Colors.danger },

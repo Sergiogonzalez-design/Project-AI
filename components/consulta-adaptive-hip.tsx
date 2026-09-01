@@ -1,11 +1,13 @@
 "use client";
 
+import { consultaNavLabels } from "@/lib/consulta-nav-labels";
+
 import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
 
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
-import { redFlagsDetectedLabel, redFlagsUrgencyNote, skipQuestionnaireForUrgencyLabel } from "@/lib/consulta-red-flags-copy";
+import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote, skipQuestionnaireForUrgencyLabel } from "@/lib/consulta-red-flags-copy";
 
 import { useEffect } from "react";
 import {
@@ -179,6 +181,8 @@ type Props = {
   sectionError: string | null;
   onSectionError: (msg: string | null) => void;
   locale?: ConsultLocale;
+  /** Called with shortened answers so the parent can submit immediately. */
+  onSubmitUrgency?: (answers: HipAdaptiveAnswers) => void;
 };
 
 export function ConsultaAdaptiveHip({
@@ -189,6 +193,7 @@ export function ConsultaAdaptiveHip({
   sectionError,
   onSectionError,
   locale = "es",
+  onSubmitUrgency,
 }: Props) {
   const answers = value ?? defaultHipAdaptiveAnswers();
   const sections = getVisibleHipSections(answers);
@@ -218,7 +223,9 @@ export function ConsultaAdaptiveHip({
       return;
     }
     onSectionError(null);
-    onChange({ ...answers, acortar_por_urgencia: true });
+    const next = { ...answers, acortar_por_urgencia: true };
+    onChange(next);
+    onSubmitUrgency?.(next);
   }
 
   function handleNext() {
@@ -239,7 +246,7 @@ export function ConsultaAdaptiveHip({
 
       {currentSection === "red_flags" && (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900 shadow-sm">
-          Estas preguntas detectan situaciones que pueden requerir atención médica urgente.
+          {redFlagsSectionIntro(locale)}
         </div>
       )}
 
@@ -268,7 +275,7 @@ export function ConsultaAdaptiveHip({
             onClick={() => onSectionIndexChange(sectionIndex - 1)}
             className="btn-secondary flex-1"
           >
-            Anterior
+            {consultaNavLabels(locale).previous}
           </button>
         )}
         {!isLastSection && (
@@ -277,7 +284,7 @@ export function ConsultaAdaptiveHip({
             onClick={handleNext}
             className="btn-primary flex-1"
           >
-            Siguiente
+            {consultaNavLabels(locale).next}
           </button>
         )}
         {currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia && (

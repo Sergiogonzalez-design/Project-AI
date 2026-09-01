@@ -30,6 +30,7 @@ import {
   uploadConsultPhoto,
 } from "@/lib/consult-photo";
 import { createClient } from "@/lib/supabase/client";
+import { stripVisibleMarkup } from "@/lib/strip-visible-markup";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 
@@ -66,11 +67,9 @@ function welcomeMessage(): Message {
   return { id: WELCOME_ID, role: "assistant", content: WELCOME_MESSAGE };
 }
 
-/** Remove leftover markdown asterisks after bold segments are extracted. */
+/** Remove leftover markdown asterisks and hashes after bold segments are extracted. */
 function stripMarkdownStars(text: string) {
-  return text
-    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2") // *italic* → italic
-    .replace(/\*/g, "");
+  return stripVisibleMarkup(text);
 }
 
 function parseNumberedLine(
@@ -151,7 +150,7 @@ function renderAssistantContent(
     ) {
       return;
     }
-    const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+    const headingMatch = /^(#{1,6})\s*(.+)$/.exec(trimmed);
     const headingText = headingMatch?.[2] ?? null;
     const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
     const numberedText =
@@ -864,7 +863,7 @@ export function FisioChatInterface() {
                         if (el) messageRefs.current.set(msg.id, el);
                         else messageRefs.current.delete(msg.id);
                       }}
-                      className={`animate-fade-in-up flex items-start gap-3 ${
+                      className={`animate-fade-in-up flex w-full min-w-0 items-start gap-3 ${
                         msg.role === "user" ? "justify-end" : "justify-start"
                       }`}
                     >
@@ -874,12 +873,14 @@ export function FisioChatInterface() {
                         </div>
                       )}
                       <div
-                        className={`flex max-w-[92%] flex-col sm:max-w-[85%] ${
-                          msg.role === "user" ? "items-end" : "items-start"
+                        className={`flex min-w-0 flex-col ${
+                          msg.role === "user"
+                            ? "max-w-[85%] items-end"
+                            : "max-w-[calc(100%-3rem)] flex-1 items-start sm:max-w-[min(85%,calc(100%-3rem))]"
                         }`}
                       >
                         <div
-                          className={`rounded-2xl px-3 py-2.5 text-sm leading-relaxed sm:px-4 sm:py-3 ${
+                          className={`min-w-0 max-w-full break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed sm:px-4 sm:py-3 ${
                             msg.role === "user"
                               ? "bg-blue-600 text-white"
                               : "border border-slate-200 bg-white text-slate-800 shadow-[var(--shadow-card)]"
@@ -902,7 +903,7 @@ export function FisioChatInterface() {
                                 )
                               ) : null}
                               {msg.content ? (
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                               ) : null}
                             </div>
                           ) : (
@@ -921,7 +922,7 @@ export function FisioChatInterface() {
                                 <AssistantMessageWithSources
                                   content={visibleText}
                                   renderBody={(body) => (
-                                    <div className="whitespace-pre-wrap">
+                                    <div className="whitespace-pre-wrap break-words">
                                       {renderAssistantContent(
                                         body,
                                         pruebasFallback
@@ -1046,9 +1047,9 @@ export function FisioChatInterface() {
                   placeholder={
                     conversationMode
                       ? listening
-                        ? "Te escucho… (3 s de silencio = turno de la IA)"
-                        : "Conversación activa — la IA está respondiendo…"
-                      : "Pregunta clínica"
+                        ? "Te escucho…"
+                        : "Conversación activa…"
+                      : "Pregunta clínica…"
                   }
                   className="chat-composer__input min-w-0 flex-1 basis-0"
                   disabled={loading || conversationMode}

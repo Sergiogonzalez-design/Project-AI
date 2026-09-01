@@ -8,19 +8,21 @@ type Props = {
   className?: string;
 };
 
+function canUseHistoryBack(): boolean {
+  if (typeof window === "undefined") return false;
+  // Next.js App Router stores navigation depth on history.state.idx
+  const idx = (window.history.state as { idx?: number } | null)?.idx;
+  if (typeof idx === "number") return idx > 0;
+  // Fallback: only trust same-origin referrer (history.length is unreliable).
+  const referrer = document.referrer;
+  return Boolean(referrer && referrer.startsWith(window.location.origin));
+}
+
 export function NavBackButton({ fallbackHref, className = "" }: Props) {
   const router = useRouter();
 
   function handleBack() {
-    if (typeof window === "undefined") {
-      router.push(fallbackHref);
-      return;
-    }
-    const referrer = document.referrer;
-    const sameOrigin = Boolean(
-      referrer && referrer.startsWith(window.location.origin)
-    );
-    if (sameOrigin && window.history.length > 1) {
+    if (canUseHistoryBack()) {
       router.back();
       return;
     }

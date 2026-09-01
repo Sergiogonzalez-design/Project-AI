@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { physioDisplayName } from "@/lib/physio-linked-welcome";
+import { useUiLocaleOptional } from "@/lib/ui-locale";
 
 type Props = {
   physioName?: string | null;
@@ -14,10 +15,10 @@ export function PhysioReportCompleteCard({
   clinicName,
   guestMode = false,
 }: Props) {
-  const name = physioDisplayName(physioName);
-  const subtitle = clinicName?.trim()
-    ? `${name} · ${clinicName.trim()}`
-    : name;
+  const { locale } = useUiLocaleOptional();
+  const name = physioDisplayName(physioName, locale);
+  const clinic = clinicName?.trim();
+  const en = locale === "en";
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-8 sm:px-6">
@@ -35,36 +36,54 @@ export function PhysioReportCompleteCard({
         </div>
 
         <h2 className="mt-5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-          ¡Gracias por tu tiempo!
+          {en ? "Thanks for your time!" : "¡Gracias por tu tiempo!"}
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
-          <span className="font-semibold text-slate-800">{subtitle}</span> ya ha
-          recibido toda la información sobre tu molestia y podrá prepararse mejor
-          para tu tratamiento.
+          <strong className="font-bold text-slate-800">{name}</strong>
+          {clinic ? (
+            <>
+              {" "}
+              <strong className="font-bold text-slate-800">{clinic}</strong>
+            </>
+          ) : null}{" "}
+          {en
+            ? "has already received all the information about your complaint and will be better prepared for your treatment."
+            : "ya ha recibido toda la información sobre tu molestia y podrá prepararse mejor para tu tratamiento."}
         </p>
         {guestMode ? (
           <>
             <p className="mt-4 text-sm leading-relaxed text-slate-500">
-              Si quieres seguir hablando con la IA, crea una cuenta.
+              {en
+                ? "If you want to keep talking with the AI, create an account."
+                : "Si quieres seguir hablando con la IA, crea una cuenta."}
             </p>
             <Link
               href="/signup"
               className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
             >
-              Crear cuenta
+              {en ? "Create account" : "Crear cuenta"}
             </Link>
           </>
         ) : (
           <>
             <p className="mt-4 text-sm leading-relaxed text-slate-500">
-              Si quieres seguir usando la IA (dudas, orientación, ejercicios…), abre
-              la pestaña <span className="font-semibold text-slate-700">Consulta</span>.
+              {en ? (
+                <>
+                  If you want to keep using the AI (questions, guidance, exercises…), open the{" "}
+                  <span className="font-semibold text-slate-700">Consulta</span> tab.
+                </>
+              ) : (
+                <>
+                  Si quieres seguir usando la IA (dudas, orientación, ejercicios…), abre
+                  la pestaña <span className="font-semibold text-slate-700">Consulta</span>.
+                </>
+              )}
             </p>
             <Link
               href="/consulta"
               className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
             >
-              Ir a Consulta
+              {en ? "Go to Consulta" : "Ir a Consulta"}
             </Link>
           </>
         )}

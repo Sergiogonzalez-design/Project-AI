@@ -1,0 +1,223 @@
+{
+  "pilot": "cervical",
+  "version": 1,
+  "notes": "Pilot only. No invented Sn/Sp. Traditional MTrP maps labeled traditional — not absolute anatomy. No Travell verbatim text.",
+  "relations": [
+    {
+      "id": "cervical-may-refer-pain-to-scapula-shoulder",
+      "source_structure": "cervical somatic / nerve root structures (C5–C7 pathway clinical)",
+      "target_region": "scapular / periscapular / shoulder girdle",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Scapular or shoulder-girdle pain with neck movement contribution, dermatomal clues, or weak local shoulder reproduction.",
+      "supporting_evidence": [
+        "Neck Pain CPGs endorse cervical contribution to upper quarter symptoms",
+        "Wainner cluster supports radiculopathy when present; somatic referral also common"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Cannot localize exact cervical segment from scapular pain alone."
+      },
+      "limitations": [
+        "Coexists with RCRSP frequently",
+        "Scapular pain is multi-source"
+      ],
+      "alternative_explanations": [
+        "RCRSP / local cuff",
+        "AC joint",
+        "Thoracic contribution",
+        "Myofascial hypothesis (traditional)"
+      ],
+      "recommended_examination": [
+        "Cervical AROM + Spurling / distraction / ULTT as cluster",
+        "Ask if neck movement changes scapular/shoulder pain",
+        "Local shoulder cluster for familiar pain"
+      ],
+      "red_flags": [
+        "Myelopathy signs",
+        "Canadian C-spine rule indications after trauma",
+        "Progressive neurological deficit"
+      ],
+      "references": [
+        {
+          "citation": "Blanpied PR et al. Neck Pain: Revision 2017 (CPG). JOSPT.",
+          "year": 2017
+        },
+        {
+          "citation": "Wainner RS et al. Reliability and diagnostic accuracy of the clinical examination for cervical radiculopathy. Spine.",
+          "year": 2003
+        }
+      ]
+    },
+    {
+      "id": "spurling-negative-does-not-exclude-cervical-radiculopathy",
+      "source_structure": "cervical nerve root (radiculopathy clinical construct)",
+      "target_region": "neck / upper limb",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Arm pain, paresthesia, or scapular pain with cervical history but Spurling negative.",
+      "supporting_evidence": [
+        "Spurling often described as more specific than sensitive",
+        "Wainner cluster outperforms single tests"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Negative Spurling does not exclude cervical radiculopathy. Do not invent Sn/Sp."
+      },
+      "limitations": [
+        "Irritability may preclude testing",
+        "Technique variation"
+      ],
+      "alternative_explanations": [
+        "Cervical somatic referred pain without radiculopathy",
+        "Peripheral entrapment",
+        "Shoulder local source"
+      ],
+      "recommended_examination": [
+        "Distraction, ULTT, reflex/myotome screen",
+        "Repeat under lower irritability if needed",
+        "Shoulder screen if local clues"
+      ],
+      "red_flags": [
+        "Myelopathy",
+        "Trauma + unstable cervical risk"
+      ],
+      "references": [
+        {
+          "citation": "Tong HC, Haig AJ, Yamakawa K. The Spurling test and cervical radiculopathy. Spine.",
+          "year": 2002
+        },
+        {
+          "citation": "Wainner RS et al. Spine.",
+          "year": 2003
+        }
+      ]
+    },
+    {
+      "id": "ultt-negative-does-not-exclude-neural-contribution",
+      "source_structure": "upper limb neural continuum (median/radial/ulnar biased variants)",
+      "target_region": "arm / forearm / hand symptoms",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Suspected neurodynamic or radicular contribution; ULTT negative or only stretch without familiar symptoms.",
+      "supporting_evidence": [
+        "Neurodynamic tests require familiar symptom reproduction for clinical meaning",
+        "Component of Wainner cluster — not standalone exclusion"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Reliability and accuracy vary by variant and population; qualitative limitations only."
+      },
+      "limitations": [
+        "Positive responses in asymptomatics possible",
+        "Does not localize entrapment site"
+      ],
+      "alternative_explanations": [
+        "Local CTS / cubital tunnel",
+        "Cervical somatic pain",
+        "Shoulder pathology"
+      ],
+      "recommended_examination": [
+        "Cervical cluster + neurological exam",
+        "Region-specific peripheral provocation (Phalen, elbow flexion test) as adjuncts",
+        "Do not auto-switch to MTrP because ULTT is negative"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Wainner RS et al. Cervical radiculopathy clinical examination. Spine.",
+          "year": 2003
+        },
+        {
+          "citation": "Blanpied PR et al. Neck Pain CPG. JOSPT.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "cervical-may-coexist-with-rcrsp",
+      "source_structure": "cervical contribution (radicular or somatic)",
+      "target_region": "lateral / anterolateral shoulder (RCRSP region)",
+      "relationship": "may_coexist_with",
+      "clinical_context": "Load-related shoulder pain plus neck symptoms, dual reproduction on cervical and cuff testing.",
+      "supporting_evidence": [
+        "Clinical coexistence is common; treating one region alone may fail",
+        "Negative Spurling does not rule out dual contribution"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Coexistence is clinical reasoning, not a single accuracy metric."
+      },
+      "limitations": [
+        "Do not force a single-label diagnosis",
+        "Prioritize red flags and neurological deficit first"
+      ],
+      "alternative_explanations": [
+        "Pure RCRSP",
+        "Pure cervical",
+        "AC / LHB"
+      ],
+      "recommended_examination": [
+        "Document which tests reproduce familiar pain in which region",
+        "Treat/reevaluate the dominant reproduceable driver first",
+        "Hypothesis-exploration if no change"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Lewis J. Rotator cuff related shoulder pain — assessment uncertainties and cervical screen framing.",
+          "year": 2016
+        },
+        {
+          "citation": "Blanpied PR et al. Neck Pain CPG. JOSPT.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "cervical-myelopathy-red-flag-if-gait-or-hand-clumsiness",
+      "source_structure": "cervical spinal cord (myelopathy construct)",
+      "target_region": "hands / gait / bilateral upper and lower limbs",
+      "relationship": "red_flag_if",
+      "clinical_context": "Neck pain or upper limb symptoms plus gait disturbance, hand clumsiness, hyperreflexia, or Hoffman/Babinski-type concerns.",
+      "supporting_evidence": [
+        "Neck Pain CPGs list myelopathy features as indications for medical referral / imaging pathways"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Individual myelopathy signs imperfect; act on constellation. No invented Sn/Sp."
+      },
+      "limitations": [
+        "Single soft signs insufficient alone",
+        "Urgent pathway depends on progression"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Neurological screen upper and lower limbs",
+        "Urgent referral per local pathway — stop elective hypothesis cascade"
+      ],
+      "red_flags": [
+        "Gait ataxia",
+        "Hand dexterity loss",
+        "Long-tract signs"
+      ],
+      "references": [
+        {
+          "citation": "Blanpied PR et al. Neck Pain: Revision 2017 (CPG). JOSPT — myelopathy / referral criteria framing.",
+          "year": 2017
+        },
+        {
+          "citation": "Cook C et al. Clustered clinical findings for cervical myelopathy — qualitative use of clusters, not single tests.",
+          "year": 2010
+        }
+      ]
+    }
+  ]
+}

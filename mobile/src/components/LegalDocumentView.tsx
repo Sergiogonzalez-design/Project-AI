@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../lib/colors";
 import {
   getPrivacyPolicy,
@@ -9,6 +10,7 @@ import {
   type LegalLocale,
   type LegalSection,
 } from "../lib/legal-docs";
+import { screenHeaderBarPadding } from "../lib/screen-header-insets";
 import { useI18n } from "../lib/i18n";
 
 type Props = {
@@ -40,6 +42,7 @@ export function LegalDocumentView({
   initialSection = "privacy",
 }: Props) {
   const { locale } = useI18n();
+  const insets = useSafeAreaInsets();
   const legalLocale: LegalLocale = locale === "en" ? "en" : "es";
   const ui = legalUiCopy(legalLocale);
   const privacy = getPrivacyPolicy(legalLocale);
@@ -60,7 +63,7 @@ export function LegalDocumentView({
 
   return (
     <View style={styles.root}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, screenHeaderBarPadding(insets)]}>
         <Pressable
           onPress={onClose}
           hitSlop={12}
@@ -109,7 +112,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },

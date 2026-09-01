@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
+import { useUiLocaleOptional } from "@/lib/ui-locale";
 
 type LinkedPhysio = {
   physio_id: string;
@@ -28,6 +29,8 @@ export function PhysioCodeGate({
   initialCode = null,
   autoSubmit = false,
 }: Props) {
+  const { locale } = useUiLocaleOptional();
+  const en = locale === "en";
   const [code, setCode] = useState(() =>
     (initialCode ?? "").trim().toUpperCase().replace(/\s+/g, "")
   );
@@ -39,7 +42,11 @@ export function PhysioCodeGate({
     setError(null);
     const normalized = parsePastedInviteCode(rawCode);
     if (normalized.length < 6) {
-      setError("Introduce el código que te ha dado tu fisioterapeuta.");
+      setError(
+        en
+          ? "Enter the code your physiotherapist gave you."
+          : "Introduce el código que te ha dado tu fisioterapeuta."
+      );
       return;
     }
     setLoading(true);
@@ -52,16 +59,22 @@ export function PhysioCodeGate({
       const raw = rpcError.message ?? "";
       setError(
         raw.includes("no encontrado")
-          ? "Código no encontrado. Comprueba que lo has escrito bien."
+          ? en
+            ? "Code not found. Check that you typed it correctly."
+            : "Código no encontrado. Comprueba que lo has escrito bien."
           : raw.includes("fisioterapeutas no pueden")
-            ? "Estás en una cuenta de fisioterapeuta. Inicia sesión con una cuenta de paciente para vincularte."
+            ? en
+              ? "You are on a physiotherapist account. Sign in with a patient account to link."
+              : "Estás en una cuenta de fisioterapeuta. Inicia sesión con una cuenta de paciente para vincularte."
             : raw
       );
       return;
     }
     const row = Array.isArray(data) ? data[0] : data;
     if (!row?.physio_id) {
-      setError("No se pudo vincular con ese código.");
+      setError(
+        en ? "Could not link with that code." : "No se pudo vincular con ese código."
+      );
       return;
     }
     onLinked({
@@ -102,13 +115,13 @@ export function PhysioCodeGate({
         {embedded && onCancel ? (
           <div className="mb-3 flex items-start justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-900">
-              Código de tu fisioterapeuta
+              {en ? "Your physiotherapist's code" : "Código de tu fisioterapeuta"}
             </h2>
             <button
               type="button"
               onClick={onCancel}
               className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              aria-label="Cerrar"
+              aria-label={en ? "Close" : "Cerrar"}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M6 6l12 12M6 18L18 6" strokeLinecap="round" />
@@ -117,16 +130,16 @@ export function PhysioCodeGate({
           </div>
         ) : (
           <h2 className="text-lg font-semibold text-slate-900">
-            Código de tu fisioterapeuta
+            {en ? "Your physiotherapist's code" : "Código de tu fisioterapeuta"}
           </h2>
         )}
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Introduce el código que te ha compartido tu fisioterapeuta para
-          empezar la consulta con la IA. Al terminar, el informe clínico se
-          enviará automáticamente a su panel antes de tu cita.
+          {en
+            ? "Enter the code your physiotherapist shared to start the AI consultation. When you finish, the clinical report is sent automatically to their dashboard before your appointment."
+            : "Introduce el código que te ha compartido tu fisioterapeuta para empezar la consulta con la IA. Al terminar, el informe clínico se enviará automáticamente a su panel antes de tu cita."}
         </p>
         <label className="mt-5 block text-sm font-semibold text-slate-700">
-          Código
+          {en ? "Code" : "Código"}
         </label>
         <input
           value={code}
@@ -148,7 +161,13 @@ export function PhysioCodeGate({
           disabled={loading}
           className="mt-5 btn-primary w-full"
         >
-          {loading ? "Vinculando…" : "Continuar a la consulta"}
+          {loading
+            ? en
+              ? "Linking…"
+              : "Vinculando…"
+            : en
+              ? "Continue to consultation"
+              : "Continuar a la consulta"}
         </button>
       </form>
     </div>

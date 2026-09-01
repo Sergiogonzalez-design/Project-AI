@@ -1,0 +1,268 @@
+{
+  "pilot": "shoulder-lateral",
+  "version": 1,
+  "notes": "Pilot only. No invented Sn/Sp. Traditional MTrP maps labeled traditional — not absolute anatomy. No Travell verbatim text.",
+  "relations": [
+    {
+      "id": "cervical-may-refer-to-lateral-shoulder",
+      "source_structure": "cervical nerve root / cervical somatic structures (C5–C6 pathway)",
+      "target_region": "lateral / anterolateral shoulder / deltoid region",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Lateral shoulder pain with neck symptoms, dermatomal/myotomal clues, or poor reproduction on local cuff tests.",
+      "supporting_evidence": [
+        "Cervical radiculopathy clusters (Wainner) support cervical contribution when present",
+        "Cross-region screening is standard when local tests fail to reproduce familiar pain"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Spurling more specific than sensitive; negative Spurling does not exclude cervical contribution."
+      },
+      "limitations": [
+        "Cervical contribution and RCRSP often coexist",
+        "Do not label as 'cervical confirmed' from one test"
+      ],
+      "alternative_explanations": [
+        "RCRSP / subacromial-related shoulder pain",
+        "AC joint",
+        "Long head of biceps",
+        "Myofascial contribution (hypothesis only)"
+      ],
+      "recommended_examination": [
+        "Cervical AROM + Spurling / distraction / ULTT as cluster",
+        "Ask if neck movement changes shoulder pain",
+        "Repeat local cuff cluster for familiar pain"
+      ],
+      "red_flags": [
+        "Progressive neurological deficit",
+        "Myelopathy signs",
+        "Trauma + Canadian C-spine indications"
+      ],
+      "references": [
+        {
+          "citation": "Wainner RS et al. Reliability and diagnostic accuracy of the clinical examination and patient self-report measures for cervical radiculopathy. Spine. 2003.",
+          "year": 2003
+        },
+        {
+          "citation": "Blanpied PR et al. Neck Pain: Revision 2017 (CPG). JOSPT. 2017.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "neer-hawkins-negative-does-not-exclude-rcrsp",
+      "source_structure": "rotator cuff / subacromial complex (clinical RCRSP construct)",
+      "target_region": "lateral / anterolateral shoulder",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Isolated Neer or Hawkins negative (or non-familiar pain) while history still suggests load-related lateral shoulder pain.",
+      "supporting_evidence": [
+        "Impingement tests have limited diagnostic accuracy in isolation",
+        "Prefer cluster + familiar pain rather than single-test exclusion"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent numeric Sn/Sp. Literature shows mixed/limited standalone accuracy (Hegedus reviews; Lewis RCRSP framing)."
+      },
+      "limitations": [
+        "Negative special test ≠ structure cleared",
+        "Technique, irritability, and familiar-pain criterion matter"
+      ],
+      "alternative_explanations": [
+        "Cervical referral",
+        "AC joint",
+        "Partial-thickness tear with preserved strength",
+        "Scapular contribution"
+      ],
+      "recommended_examination": [
+        "Painful arc + Jobe/Full Can with familiar pain",
+        "Strength screen (drop arm / ER weakness)",
+        "Cervical screen if local cluster weak"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Hegedus EJ et al. Physical examination tests of the shoulder: a systematic review with meta-analysis of individual tests. Br J Sports Med.",
+          "year": 2008
+        },
+        {
+          "citation": "Lewis J. Rotator cuff related shoulder pain: Assessment, management and uncertainties. Man Ther / related RCRSP papers.",
+          "year": 2016
+        }
+      ]
+    },
+    {
+      "id": "infraspinatus-region-may-mimic-lateral-shoulder-pain-traditional",
+      "source_structure": "infraspinatus region (myofascial hypothesis)",
+      "target_region": "lateral deltoid / anterolateral shoulder",
+      "relationship": "may_mimic",
+      "clinical_context": "When cuff special tests are inconclusive and palpation reproduces familiar pain in infraspinatus region — treat as hypothesis only.",
+      "supporting_evidence": [
+        "Classical myofascial referral maps describe lateral shoulder patterns from scapular muscles (traditional class)"
+      ],
+      "evidence_level": "D",
+      "referred_pattern_class": "traditional",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Palpation reliability for MTrP is limited; MTrP found ≠ proven cause."
+      },
+      "limitations": [
+        "Traditional maps are not absolute anatomy",
+        "High methodological controversy in MTrP diagnosis",
+        "Must not replace cervical/RCRSP reasoning"
+      ],
+      "alternative_explanations": [
+        "RCRSP",
+        "Cervical referral",
+        "AC / biceps"
+      ],
+      "recommended_examination": [
+        "Reproduce familiar pain with palpation + movement tests",
+        "Compare with cuff and cervical clusters",
+        "Reassess if no change after local treatment"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Tough EA et al. Variability of criteria used to diagnose myofascial trigger point pain syndrome — evidence of limited reliability/validity concerns in the MTrP literature (use as caution, not atlas).",
+          "year": 2007
+        },
+        {
+          "citation": "Lucas N, Macaskill P, Irwig L, Moran R, Bogduk N. Reliability of physical examination for diagnosis of myofascial trigger points. Clin J Pain. 2009.",
+          "year": 2009
+        }
+      ]
+    },
+    {
+      "id": "ac-joint-may-mimic-lateral-or-superior-shoulder",
+      "source_structure": "acromioclavicular joint",
+      "target_region": "superior / lateral shoulder",
+      "relationship": "may_mimic",
+      "clinical_context": "Pain more at the point of the shoulder or with cross-body load; may be labelled 'lateral' by the patient.",
+      "supporting_evidence": [
+        "AC pain is a clinical construct overlapping RCRSP",
+        "Isolated special tests have limited standalone accuracy (qualitative)"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent Sn/Sp for cross-body or AC palpation."
+      },
+      "limitations": [
+        "Overlaps RCRSP and trapezius pain",
+        "Palpation alone is not confirmatory"
+      ],
+      "alternative_explanations": [
+        "RCRSP",
+        "Cervical referral",
+        "Myofascial hypothesis (traditional)"
+      ],
+      "recommended_examination": [
+        "Localized AC palpation with familiar pain",
+        "Cross-body / high arc as adjuncts",
+        "Cervical and cuff cluster"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Hegedus EJ et al. Physical examination tests of the shoulder: systematic review with meta-analysis. Br J Sports Med — qualitative: isolated tests mixed/limited.",
+          "year": 2008
+        },
+        {
+          "citation": "Lewis J. Rotator cuff related shoulder pain — overlapping anterior/superior constructs.",
+          "year": 2016
+        }
+      ]
+    },
+    {
+      "id": "cardiac-chest-pain-red-flag-if-shoulder-arm-symptoms",
+      "source_structure": "cardiac / visceral (ACS and related chest-pain pathways)",
+      "target_region": "shoulder / arm / interscapular / chest",
+      "relationship": "red_flag_if",
+      "clinical_context": "Shoulder or arm pain with chest pressure, dyspnoea, diaphoresis, nausea, exertional pattern, or vascular risk — not a physiotherapy special test.",
+      "supporting_evidence": [
+        "Chest-pain guidelines require urgent medical pathway when ACS features are present",
+        "MSK hypothesis must wait until safety is addressed"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "do_not_invent",
+        "notes": "Safety pathway, not a diagnostic accuracy claim for a physio test."
+      },
+      "limitations": [
+        "Not all referred shoulder pain is cardiac",
+        "Do not delay emergency care to complete an MSK cluster"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Stop elective MSK cascade if ACS/visceral features present",
+        "Urgent medical referral per local pathway"
+      ],
+      "red_flags": [
+        "Chest pressure or tightness",
+        "Dyspnoea, diaphoresis, syncope",
+        "Pain into arm/jaw with exertional or autonomic features"
+      ],
+      "references": [
+        {
+          "citation": "Gulati M et al. 2021 AHA/ACC/ASE/CHEST/SAEM/SCCT/SCMR Guideline for the Evaluation and Diagnosis of Chest Pain. Circulation/JACC. 2021.",
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "id": "cervical-facet-may-refer-to-shoulder-girdle",
+      "source_structure": "cervical zygapophyseal joints (provocation maps)",
+      "target_region": "shoulder girdle / scapular / lateral shoulder perceived pain",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Shoulder-girdle pain that changes with cervical movement; local cuff tests poorly reproduce familiar pain.",
+      "supporting_evidence": [
+        "Fluoroscopy-controlled zygapophyseal provocation in volunteers and patients can refer to the shoulder girdle",
+        "Does not identify the exact segment from pain location in clinic"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "experimental",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "These studies map referred patterns under provocation; they are not Sn/Sp of Spurling or palpation."
+      },
+      "limitations": [
+        "Clinic cannot reproduce fluoroscopic provocation",
+        "Maps overlap between segments",
+        "Must not be used as Travell-style muscle maps"
+      ],
+      "alternative_explanations": [
+        "Cervical radiculopathy",
+        "RCRSP",
+        "Thoracic contribution"
+      ],
+      "recommended_examination": [
+        "Cervical AROM and radiculopathy cluster",
+        "Ask whether neck movement changes shoulder pain",
+        "Do not diagnose a facet level from a pain drawing"
+      ],
+      "red_flags": [
+        "Myelopathy signs",
+        "Canadian C-spine indications after trauma"
+      ],
+      "references": [
+        {
+          "citation": "Dwyer A, Aprill C, Bogduk N. Cervical zygapophyseal joint pain patterns. I: A study in normal volunteers. Spine. 1990.",
+          "year": 1990
+        },
+        {
+          "citation": "Aprill C, Dwyer A, Bogduk N. Cervical zygapophyseal joint pain patterns. II: A clinical evaluation. Spine. 1990.",
+          "year": 1990
+        },
+        {
+          "citation": "Fukui S et al. Referred pain distribution of the cervical zygapophyseal joints and cervical dorsal rami. Pain. 1996.",
+          "year": 1996
+        }
+      ]
+    }
+  ]
+}

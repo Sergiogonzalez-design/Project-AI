@@ -10,11 +10,10 @@ import {
   type ClinicalTestImage,
 } from "../lib/clinical-test-images";
 import { Colors } from "../lib/colors";
+import { stripVisibleMarkup } from "../lib/strip-visible-markup";
 
 function stripMarkdownStars(text: string) {
-  return text
-    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2")
-    .replace(/\*/g, "");
+  return stripVisibleMarkup(text);
 }
 
 function parseNumberedLine(
@@ -83,7 +82,7 @@ export function PhysioAssistantBody({ text, fallbackTests = [] }: Props) {
     ) {
       return;
     }
-    const headingMatch = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+    const headingMatch = /^(#{1,6})\s*(.+)$/.exec(trimmed);
     const headingText = headingMatch?.[2] ?? null;
     const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
     const numberedText =

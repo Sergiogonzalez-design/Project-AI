@@ -9,6 +9,14 @@ export const SHOULDER_PAIN_LOCATION = [
   "No sé",
 ] as const;
 
+export const SHOULDER_TRIGGER = [
+  "De repente (un gesto/acción puntual)",
+  "Progresivo (con el tiempo/entrenando)",
+  "Después de un golpe/caída",
+  "Después de levantar peso",
+  "Después de movimientos por encima de la cabeza",
+] as const;
+
 export const SHOULDER_ROM_LIMIT = [
   "No",
   "Sí, un poco",
@@ -28,7 +36,7 @@ export type ShoulderDetails = {
   romLimit: string;
   instability: string;
   neckPain: string;
-  nightPainShoulderSide: string;
+  nightPainShoulderSide: string; // different from general night pain; specific to lying on it
 };
 
 export function defaultShoulderDetails(): ShoulderDetails {

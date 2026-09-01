@@ -16,10 +16,13 @@ REGLAS:
 CLUSTER AC:
 dolor puntual en AC + cross-body/aducción horizontal familiar + palpación AC ± caída sobre punta → AC ↑.
 
+CLUSTER AC Tier A (exploración): Paxinos + O'Brien (serie); Paxinos + Hawkins (screening paralelo). Cross-body sigue siendo el cluster práctico del paciente.
+
 DIFERENCIAL: RCRSP (más deltoideo), fractura clavícula, cervical alto (menos típico si dedo en AC).
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Duele exactamente en la «puntita» al tocar?
 - ¿Duele al llevar el brazo cruzado por delante del pecho hacia el otro hombro?
+- ¿Duele al presionar la articulación de la puntita?
 
 LENGUAJE: «compatible con irritación / patología de la articulación acromioclavicular».`;

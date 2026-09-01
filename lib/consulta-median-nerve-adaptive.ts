@@ -629,7 +629,7 @@ export const MEDIAN_NERVE_LABEL_EN: Partial<Record<string, string>> = {
   deporte_impacto: "How does it affect your training or sport?",
 };
 
-export const MEDIAN_NERVE_OPTION_EN: Record<string, string> = {
+export const MEDIAN_NERVE_OPTION_EN = {
   No: "No",
   Sí: "Yes",
   "Ha sido ahora": "Just now",
@@ -706,6 +706,9 @@ export const MEDIAN_NERVE_OPTION_EN: Record<string, string> = {
   "Sí, resonancia": "Yes, MRI",
   "Sí, ecografía": "Yes, ultrasound",
   "Sí, varias": "Yes, multiple",
+  "Debilidad progresiva en la mano": "Progressive weakness in the hand that gets worse every week",
+  "Atrofia de la eminencia tenar": "Have you noticed the muscles at the base of your thumb have flattened or shrunk",
+  "Pérdida total de sensibilidad en dedos": "Complete loss of sensation in fingers (you feel nothing when touching)",
 };
 
 export const MEDIAN_NERVE_SECTION_LABELS_EN: Record<string, string> = {

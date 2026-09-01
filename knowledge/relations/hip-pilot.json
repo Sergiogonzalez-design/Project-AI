@@ -1,0 +1,225 @@
+{
+  "pilot": "hip",
+  "version": 1,
+  "notes": "Pilot only. No invented Sn/Sp. Traditional MTrP maps labeled traditional — not absolute anatomy. No Travell verbatim text.",
+  "relations": [
+    {
+      "id": "lumbar-may-refer-pain-to-groin-or-lateral-hip",
+      "source_structure": "lumbar somatic / nerve root structures",
+      "target_region": "groin / greater trochanter / lateral hip",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Hip-region pain with lumbar movement contribution, sit-to-stand lumbar load, or weak local hip reproduction.",
+      "supporting_evidence": [
+        "Hip–spine differential is standard in groin and lateral hip presentations",
+        "Negative FADIR does not prove lumbar source; negative SLR does not exclude lumbar contribution"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "No numeric accuracy claimed for referral maps."
+      },
+      "limitations": [
+        "Hip and lumbar often coexist",
+        "Do not label 'lumbar confirmed' from one test"
+      ],
+      "alternative_explanations": [
+        "FAI-related / intraarticular hip",
+        "Adductor-related groin pain (Doha)",
+        "GTPS",
+        "Myofascial hypothesis"
+      ],
+      "recommended_examination": [
+        "Lumbar AROM + neurological screen",
+        "FADIR/FABER with pain location mapping",
+        "Adductor squeeze / Doha screening when groin-dominant"
+      ],
+      "red_flags": [
+        "Fracture / AVN risk (steroids, alcohol, sickle cell context)",
+        "Infection / malignancy features",
+        "Cauda features if lumbar-dominant with neurological change"
+      ],
+      "references": [
+        {
+          "citation": "Weir A et al. Doha agreement meeting on terminology and definitions in groin pain in athletes. Br J Sports Med.",
+          "year": 2015
+        },
+        {
+          "citation": "Reiman MP et al. Clinical examination of the hip — diagnostic accuracy reviews (qualitative mixed single-test performance).",
+          "year": 2015
+        }
+      ]
+    },
+    {
+      "id": "fadir-negative-does-not-exclude-intraarticular-hip",
+      "source_structure": "femoroacetabular / intraarticular hip clinical construct",
+      "target_region": "groin / C-sign region",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Groin pain with flexion/adduction/IR loading history but FADIR negative or non-familiar.",
+      "supporting_evidence": [
+        "Hip provocation tests have mixed diagnostic accuracy and imperfect specificity",
+        "Morphology on imaging ≠ symptomatic FAI"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent Sn/Sp. Negative FADIR does not clear the joint."
+      },
+      "limitations": [
+        "Positive FADIR common in some asymptomatic cohorts",
+        "Technique and irritability matter"
+      ],
+      "alternative_explanations": [
+        "Iliopsoas-related pain",
+        "Adductor-related",
+        "Lumbar referral",
+        "Inguinal-related (athlete)"
+      ],
+      "recommended_examination": [
+        "FABER, squat, log roll, strength/adductor cluster",
+        "Lumbar screen",
+        "Imaging only if it changes management"
+      ],
+      "red_flags": [
+        "AVN / fracture suspicion"
+      ],
+      "references": [
+        {
+          "citation": "Griffin DR et al. Warwick Agreement on femoroacetabular impingement syndrome — clinical syndrome not morphology alone.",
+          "year": 2016
+        },
+        {
+          "citation": "Reiman MP et al. Diagnostic accuracy of clinical tests for the hip — systematic reviews.",
+          "year": 2015
+        }
+      ]
+    },
+    {
+      "id": "faber-negative-does-not-exclude-hip-or-sij-contribution",
+      "source_structure": "hip joint and/or SIJ clinical constructs",
+      "target_region": "groin / buttock / posterior pelvic",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "FABER negative while history still suggests hip or posterior pelvic contribution — interpret by where pain would have been.",
+      "supporting_evidence": [
+        "FABER is multi-structural; limited standalone exclusion value"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Qualitative mixed utility; pain location guides interpretation."
+      },
+      "limitations": [
+        "Does not isolate SIJ vs hip",
+        "SIJ clinical diagnosis remains limited"
+      ],
+      "alternative_explanations": [
+        "Lumbar source",
+        "GTPS",
+        "Adductor-related groin pain"
+      ],
+      "recommended_examination": [
+        "Combine with FADIR, lumbar cluster, thigh thrust / distraction only as limited SIJ screen",
+        "Familiar pain mapping"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Reiman MP et al. Hip clinical tests diagnostic accuracy reviews.",
+          "year": 2015
+        },
+        {
+          "citation": "Hancock MJ et al. Tests to identify SIJ as source of LBP — limited utility.",
+          "year": 2007
+        }
+      ]
+    },
+    {
+      "id": "trendelenburg-negative-does-not-exclude-gtps",
+      "source_structure": "gluteus medius/minimus / GTPS clinical construct",
+      "target_region": "lateral hip / greater trochanter",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Lateral hip pain with side-lying or walking aggravation; Trendelenburg stable or equivocal.",
+      "supporting_evidence": [
+        "GTPS diagnosis is clinical cluster-based; single abductor sign insufficient for exclusion"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent accuracy numbers for Trendelenburg in GTPS."
+      },
+      "limitations": [
+        "Pain inhibition vs true weakness",
+        "Compensatory trunk lean may confuse interpretation"
+      ],
+      "alternative_explanations": [
+        "Lumbar L4–L5 referral",
+        "Intraarticular hip",
+        "ITB / distal lateral patterns"
+      ],
+      "recommended_examination": [
+        "Palpation of greater trochanter with familiar pain",
+        "Single-leg stance endurance / resisted abduction as cluster",
+        "Lumbar and FADIR screen when atypical"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Grimaldi A, Fearon A. Gluteal tendinopathy / GTPS clinical assessment literature.",
+          "year": 2015
+        },
+        {
+          "citation": "French HP et al. GTPS clinical diagnosis and management reviews — cluster framing.",
+          "year": 2016
+        }
+      ]
+    },
+    {
+      "id": "adductor-related-may-coexist-with-hip-joint-pain",
+      "source_structure": "adductor-related groin pain (Doha)",
+      "target_region": "groin / medial thigh",
+      "relationship": "may_coexist_with",
+      "clinical_context": "Athlete groin pain with tenderness and squeeze pain plus possible hip joint findings.",
+      "supporting_evidence": [
+        "Doha classification allows multiple entities in one athlete",
+        "Hip joint-related and adductor-related often overlap"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Classification system — not a single test accuracy claim."
+      },
+      "limitations": [
+        "Do not collapse all groin pain into FAI",
+        "Pubic-related and inguinal-related remain differentials"
+      ],
+      "alternative_explanations": [
+        "Iliopsoas-related",
+        "Inguinal-related",
+        "Pubic-related",
+        "Lumbar referral"
+      ],
+      "recommended_examination": [
+        "Doha-oriented clinical entities checklist",
+        "Hip ROM / FADIR",
+        "Adductor squeeze and palpation with familiar pain"
+      ],
+      "red_flags": [
+        "Acute trauma with inability to bear weight — fracture screen"
+      ],
+      "references": [
+        {
+          "citation": "Weir A et al. Doha agreement on groin pain in athletes. BJSM.",
+          "year": 2015
+        },
+        {
+          "citation": "Griffin DR et al. Warwick Agreement on FAI syndrome.",
+          "year": 2016
+        }
+      ]
+    }
+  ]
+}

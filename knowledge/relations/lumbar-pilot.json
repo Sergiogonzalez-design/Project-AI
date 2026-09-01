@@ -1,0 +1,225 @@
+{
+  "pilot": "lumbar",
+  "version": 1,
+  "notes": "Pilot only. No invented Sn/Sp. Traditional MTrP maps labeled traditional — not absolute anatomy. No Travell verbatim text.",
+  "relations": [
+    {
+      "id": "hip-may-refer-or-mimic-lumbar-buttock-pain",
+      "source_structure": "hip joint / periarticular hip (FAI-related, osteoarthritis, GTPS continuum)",
+      "target_region": "buttock / posterior pelvic / lateral lumbar-flank perceived pain",
+      "relationship": "may_mimic",
+      "clinical_context": "Lumbopelvic pain with sitting, squatting, or hip rotation that does not follow a clear radicular pattern; lumbar tests poorly reproduce familiar pain.",
+      "supporting_evidence": [
+        "Hip–spine syndrome recognized clinically; hip exam can alter perceived lumbar-buttock symptoms",
+        "FADIR/FABER interpreted by pain location; negative lumbar neural tests do not prove lumbar source"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "No single test cleanly separates hip vs lumbar; do not invent Sn/Sp."
+      },
+      "limitations": [
+        "Hip and lumbar often coexist",
+        "Imaging morphology of hip ≠ pain generator"
+      ],
+      "alternative_explanations": [
+        "Lumbar somatic referred pain",
+        "Radiculopathy / radicular pain",
+        "SIJ clinical pattern (limited specificity)",
+        "Hamstring proximal tendinopathy"
+      ],
+      "recommended_examination": [
+        "Hip ROM + FADIR/FABER with familiar-pain mapping",
+        "Lumbar AROM, SLR/crossed SLR, neurological screen",
+        "Ask which movement most reproducibly changes symptoms"
+      ],
+      "red_flags": [
+        "Cauda equina symptoms",
+        "Progressive neurological deficit",
+        "Infection / malignancy / fracture risk factors"
+      ],
+      "references": [
+        {
+          "citation": "Reiman MP, et al. Concordance of hip and lumbar examination findings — clinical hip–spine literature and exam reviews.",
+          "year": 2014
+        },
+        {
+          "citation": "Delitto A et al. Low Back Pain: Clinical Practice Guidelines (JOSPT) — screening and classification framing.",
+          "year": 2012
+        }
+      ]
+    },
+    {
+      "id": "slr-negative-does-not-exclude-lumbar-radiculopathy",
+      "source_structure": "lumbar nerve root / sciatic pathway (clinical radiculopathy construct)",
+      "target_region": "buttock / posterior thigh / leg",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Leg-dominant or mixed lumbopelvic-leg pain with neurological clues but SLR negative or non-familiar.",
+      "supporting_evidence": [
+        "SLR diagnostic performance is variable across reviews and thresholds",
+        "Crossed SLR more specific but not a standalone exclusion tool when negative either"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Qualitative only: negative SLR does not exclude radiculopathy. Do not invent LR−."
+      },
+      "limitations": [
+        "Irritability, chronicity, and examiner technique alter results",
+        "Back-dominant pain may yield negative SLR despite lumbar contribution"
+      ],
+      "alternative_explanations": [
+        "Somatic referred lumbar pain",
+        "Hip or hamstring source",
+        "Peripheral entrapment (less common — do not leap)"
+      ],
+      "recommended_examination": [
+        "Neurological exam (myotomes, reflexes, sensation)",
+        "Crossed SLR / slump as adjuncts with familiar symptoms",
+        "Reassess under different irritability / load"
+      ],
+      "red_flags": [
+        "Cauda equina",
+        "Rapidly progressive deficit"
+      ],
+      "references": [
+        {
+          "citation": "van der Windt DA et al. Physical examination for lumbar radiculopathy due to disc herniation in patients with low-back pain (Cochrane Database) — qualitative limitations of single tests.",
+          "year": 2010
+        },
+        {
+          "citation": "Delitto A et al. Low Back Pain CPG. JOSPT.",
+          "year": 2012
+        }
+      ]
+    },
+    {
+      "id": "kemp-negative-does-not-exclude-mechanical-lbp",
+      "source_structure": "lumbar zygapophyseal / mechanical extension-rotation pain construct",
+      "target_region": "unilateral lumbar / buttock",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Mechanical LBP suspected; Kemp/extension-rotation negative or non-specific.",
+      "supporting_evidence": [
+        "Facet clinical tests have limited structural validity",
+        "Single provocation maneuvers do not confirm or exclude facetogenic pain"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not treat Kemp as inclusion or exclusion criterion for 'facet syndrome'."
+      },
+      "limitations": [
+        "Construct of clinical facet pain is controversial",
+        "Positive Kemp is non-specific"
+      ],
+      "alternative_explanations": [
+        "Discogenic / non-specific mechanical LBP",
+        "Hip contribution",
+        "Stenosis pattern (claudication)"
+      ],
+      "recommended_examination": [
+        "Pattern of aggravating movements and load tolerance",
+        "Neurological and red-flag screen",
+        "Hip screen when buttock-dominant"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Hancock MJ et al. Systematic review of tests to identify the disc, SIJ or facet joint as source of low back pain — limited utility of many clinical tests.",
+          "year": 2007
+        },
+        {
+          "citation": "Qaseem A et al. Noninvasive treatments for acute, subacute, and chronic low back pain (ACP guideline) — avoid over-pathologizing.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "lumbar-may-refer-pain-to-buttock-thigh",
+      "source_structure": "lumbar somatic structures (disc / zygapophyseal / soft tissue — clinical referred pain)",
+      "target_region": "buttock / posterior or lateral thigh (non-dermatomal possible)",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Buttock or thigh pain without hard neurological signs; lumbar movements reproduce familiar pain better than local hip/knee tests.",
+      "supporting_evidence": [
+        "Somatic referred pain from lumbar structures is a standard clinical construct in LBP CPGs",
+        "Absence of SLR does not refute somatic referral"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Referral maps are clinical patterns, not precise lesion localization."
+      },
+      "limitations": [
+        "Cannot name exact tissue from referral alone",
+        "Must screen hip and red flags"
+      ],
+      "alternative_explanations": [
+        "True radicular pain",
+        "Hip joint / GTPS",
+        "Myofascial hypothesis (traditional — hypothesis only)"
+      ],
+      "recommended_examination": [
+        "Lumbar repeated movements / AROM with familiar pain",
+        "Neurological screen",
+        "Hip cluster if indicated"
+      ],
+      "red_flags": [
+        "Night pain with systemic features",
+        "Trauma + osteoporosis risk"
+      ],
+      "references": [
+        {
+          "citation": "Bogduk N. On the definitions and physiology of back pain, referred pain, and radicular pain (clinical framing).",
+          "year": 2009
+        },
+        {
+          "citation": "Delitto A et al. Low Back Pain CPG. JOSPT.",
+          "year": 2012
+        }
+      ]
+    },
+    {
+      "id": "cauda-equina-red-flag-if-saddle-or-sphincter-change",
+      "source_structure": "cauda equina / severe lumbar canal compromise (emergency construct)",
+      "target_region": "saddle region / bladder-bowel / bilateral legs",
+      "relationship": "red_flag_if",
+      "clinical_context": "New saddle anesthesia, bladder/bowel dysfunction, or progressive bilateral neurological deficit with LBP/leg symptoms.",
+      "supporting_evidence": [
+        "Emergency referral pathways in LBP CPGs and national guidance"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "cited",
+        "notes": "Clinical red-flag pathway — not a special-test accuracy claim. Do not invent Sn/Sp for individual questions."
+      },
+      "limitations": [
+        "Individual red-flag questions have imperfect accuracy — act on constellation and urgency"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Urgent medical / ED referral per local pathway",
+        "Do not continue elective MSK hypothesis hunting"
+      ],
+      "red_flags": [
+        "Saddle sensory change",
+        "Urinary retention / incontinence",
+        "Progressive bilateral deficit"
+      ],
+      "references": [
+        {
+          "citation": "NICE / national low back pain and sciatica guidance — cauda equina emergency symptoms (use local current pathway).",
+          "year": 2016
+        },
+        {
+          "citation": "Delitto A et al. Low Back Pain CPG. JOSPT — red flag screening framing.",
+          "year": 2012
+        }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,10 @@ const projectRoot = path.resolve(
     : path.dirname(fileURLToPath(import.meta.url))
 );
 
+if (process.env.NODE_ENV === "development") {
+  void initOpenNextCloudflareForDev();
+}
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
@@ -41,7 +45,5 @@ const nextConfig: NextConfig = {
     ],
   },
 };
-
-initOpenNextCloudflareForDev();
 
 export default nextConfig;

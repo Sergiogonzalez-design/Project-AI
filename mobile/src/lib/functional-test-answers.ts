@@ -1,11 +1,13 @@
 export type FunctionalTestItem = {
   n: number;
+  /** May include a trailing ⟦media-id⟧ marker for demo video lookup. */
   prompt: string;
 };
 
 export type FunctionalTestAnswer = "si" | "no";
 
-const SECTION_HEADING = /^(Pruebas funcionales|Functional tests)\b/i;
+const SECTION_HEADING =
+  /^(Pruebas funcionales|Functional tests|Preguntas\s*\/\s*pruebas para completar el informe|Questions\s*\/\s*tests to complete the report)\b/i;
 const NEXT_HEADING = /^(?:\*\*)([^*]+)(?:\*\*)\s*$/;
 const NUMBERED =
   /^(?:[-*]\s+)?(?:\*\*)?(\d+)[.)](?:\*\*)?\s+(?:\*\*)?(.+?)(?:\*\*)?\s*$/;
@@ -28,9 +30,13 @@ export function splitFunctionalTests(content: string): {
     const trimmed = lines[i].trim().replace(/\*/g, "");
     if (SECTION_HEADING.test(trimmed)) {
       headingIndex = i;
-      heading = /functional tests/i.test(trimmed)
-        ? "Functional tests"
-        : "Pruebas funcionales";
+      heading = /questions\s*\/\s*tests|functional tests/i.test(trimmed)
+        ? /questions\s*\/\s*tests/i.test(trimmed)
+          ? "Questions / tests to complete the report"
+          : "Functional tests"
+        : /preguntas\s*\/\s*pruebas/i.test(trimmed)
+          ? "Preguntas / pruebas para completar el informe"
+          : "Pruebas funcionales";
       break;
     }
   }
@@ -79,7 +85,8 @@ export function formatFunctionalTestAnswers(
       : "Resultados de las pruebas funcionales:";
   const lines = tests.map((t) => {
     const ans = answers[t.n] === "no" ? no : yes;
-    return `${t.n}. ${ans} — ${t.prompt}`;
+    const prompt = t.prompt.replace(/⟦[a-z0-9-]+⟧\s*$/i, "").trim();
+    return `${t.n}. ${ans} — ${prompt}`;
   });
   return `${title}\n${lines.join("\n")}`;
 }

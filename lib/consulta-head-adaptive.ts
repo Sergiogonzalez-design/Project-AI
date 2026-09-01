@@ -491,9 +491,12 @@ export const HEAD_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa_detalle: "Describe previous episodes or diagnoses you were told",
 };
 
-export const HEAD_OPTION_EN: Record<string, string> = {
+export const HEAD_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
+  "No, es otra molestia": "No, it's a different problem",
+  "Sí, es el mismo": "Yes, it's the same",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",
@@ -542,6 +545,12 @@ export const HEAD_OPTION_EN: Record<string, string> = {
   "No afecta": "Does not affect",
   Parcialmente: "Partially",
   "No puedo entrenar o competir": "I cannot train or compete",
+  "Peor dolor de cabeza / inicio súbito distinto": "Is this the worst headache of your life, or did it start suddenly and feel very different from usual",
+  "Síntomas neurológicos (visión, habla, debilidad, confusión)": "Double vision, weakness on one side of the body, difficulty speaking, or marked confusion",
+  "Golpe fuerte en la cabeza reciente": "Was there a strong blow to the head recently",
+  "Fiebre con rigidez de cuello": "Fever with intense neck stiffness or very strong general illness",
+  "Vómitos progresivos / empeora al tumbarse o toser": "Repeated vomiting that worsens, or pain that increases when lying down or coughing",
+  "Dolor nocturno sistémico con pérdida de peso": "Constant night pain that doesn't improve with rest, with unexplained weight loss",
 };
 
 export const HEAD_SECTION_LABELS_EN: Record<HeadQuestionSection, string> = {

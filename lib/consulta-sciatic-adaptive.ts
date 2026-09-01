@@ -605,7 +605,7 @@ export const SCIATIC_LABEL_EN: Partial<Record<string, string>> = {
   deporte_impacto: "How does it affect your training or sport?",
 };
 
-export const SCIATIC_OPTION_EN: Record<string, string> = {
+export const SCIATIC_OPTION_EN = {
   No: "No",
   Sí: "Yes",
   "Ha sido ahora": "Just now",
@@ -676,6 +676,11 @@ export const SCIATIC_OPTION_EN: Record<string, string> = {
   "Sí, resonancia magnética": "Yes, MRI",
   "Sí, TAC": "Yes, CT scan",
   "Sí, ambas": "Yes, both",
+  "Pérdida de control de esfínteres": "New problems controlling bladder or bowel",
+  "Anestesia en silla de montar": "Loss of sensation in the perineal / saddle area",
+  "Debilidad progresiva bilateral": "Progressive weakness (getting worse every day) in both legs",
+  "Fiebre / pérdida de peso / antecedente oncológico": "Fever, unexplained weight loss, or history of cancer",
+  "Pie caído súbito": "Sudden foot drop (cannot lift foot when walking)",
 };
 
 export const SCIATIC_SECTION_LABELS_EN: Record<string, string> = {

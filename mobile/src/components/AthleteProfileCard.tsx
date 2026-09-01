@@ -381,7 +381,7 @@ export function AthleteProfileCard() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
+    backgroundColor: Colors.surface, borderRadius: 24, padding: 16,
     marginBottom: 16, borderWidth: 1, borderColor: Colors.border,
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },

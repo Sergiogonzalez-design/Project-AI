@@ -1,5 +1,7 @@
+import { formatValidationIssueMessage } from "../lib/consulta-validation";
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ConsultaTextInput } from "./ConsultaTextInput";
 import {
   defaultFingerAdaptiveAnswers,
   detectFingerRedFlags,
@@ -19,7 +21,8 @@ import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
 import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
-import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
+import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
+import { consultaNavLabels } from "../lib/consulta-nav-labels";
 
 function ChipGroup({
   options,
@@ -193,7 +196,7 @@ function QuestionField({
     return (
       <View style={styles.field}>
         <Text style={styles.label}>{label}</Text>
-        <TextInput
+        <ConsultaTextInput
           style={styles.input}
           value={typeof val === "string" ? val : ""}
           onChangeText={(t) => onPatch({ [q.id]: t } as Partial<FingerAdaptiveAnswers>)}
@@ -289,7 +292,7 @@ export function ConsultaAdaptiveFinger({
     if (!currentSection) return;
     const issue = validateFingerSection(currentSection, answers);
     if (issue) {
-      onSectionError(issue.message);
+      onSectionError(formatValidationIssueMessage(issue, locale, localizeFingerLabel(issue.questionId, issue.message.replace(/^Responde:\s*/, "").replace(/\.$/, ""), locale)));
       return;
     }
     onSectionError(null);
@@ -309,7 +312,7 @@ export function ConsultaAdaptiveFinger({
       {currentSection === "red_flags" && (
         <View style={styles.warnBox}>
           <Text style={styles.warnText}>
-            Estas preguntas detectan situaciones que pueden requerir atención médica urgente.
+            {redFlagsSectionIntro(locale)}
           </Text>
         </View>
       )}
@@ -318,7 +321,7 @@ export function ConsultaAdaptiveFinger({
         <View style={styles.redBox}>
           <Text style={styles.redText}>
             <Text style={{ fontWeight: "800" }}>{redFlagsDetectedLabel(locale)}</Text>{" "}
-            {triggered.join(", ")}.{redFlagsUrgencyNote(locale)}
+            {triggered.map((x) => localizeFingerOption(x, locale)).join(", ")}.{redFlagsUrgencyNote(locale)}
           </Text>
         </View>
       )}
@@ -342,7 +345,7 @@ export function ConsultaAdaptiveFinger({
         )}
         {!isLastSection ? (
           <Pressable style={[styles.btn, styles.btnPrimary]} onPress={handleNext}>
-            <Text style={[styles.btnText, styles.btnPrimaryText]}>Siguiente</Text>
+            <Text style={[styles.btnText, styles.btnPrimaryText]}>{consultaNavLabels(locale).next}</Text>
           </Pressable>
         ) : (
           <View style={[styles.btn, styles.btnDone]}>

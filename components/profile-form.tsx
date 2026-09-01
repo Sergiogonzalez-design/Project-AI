@@ -4,7 +4,8 @@ import { AthleteProfileSection } from "@/components/athlete-profile-section";
 import { PhysioProfileSection } from "@/components/physio-profile-section";
 import { createClient } from "@/lib/supabase/client";
 import { signOutToLogin } from "@/lib/sign-out-client";
-import { Camera, Check, Loader2, Mail, User } from "lucide-react";
+import { useUiLocale, type UiLocale } from "@/lib/ui-locale";
+import { Camera, Check, Loader2, Mail, Shield, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const SUPABASE_URL = "https://klxlzzgrymkexvuelzex.supabase.co";
@@ -12,6 +13,9 @@ const SUPABASE_URL = "https://klxlzzgrymkexvuelzex.supabase.co";
 export function ProfileForm() {
   const supabase = createClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const { locale, setLocale } = useUiLocale();
+  const en = locale === "en";
+
 
   const [email, setEmail] = useState("");
   const [userId, setUserId] = useState("");
@@ -29,7 +33,7 @@ export function ProfileForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
-  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
+  const [accountType, setAccountType] = useState<"patient" | "physio" | "clinic">("patient");
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -49,7 +53,13 @@ export function ProfileForm() {
       if (profile) {
         setDisplayName(profile.display_name ?? "");
         setAvatarUrl(profile.avatar_url ?? null);
-        setAccountType(profile.account_type === "physio" ? "physio" : "patient");
+        setAccountType(
+          profile.account_type === "physio"
+            ? "physio"
+            : profile.account_type === "clinic"
+              ? "clinic"
+              : "patient"
+        );
       }
       setLoading(false);
     }
@@ -196,43 +206,54 @@ export function ProfileForm() {
 
   const avatarSrc = avatarPreview ?? avatarUrl;
 
+  const roleLabel =
+    accountType === "clinic"
+      ? "Clínica"
+      : accountType === "physio"
+        ? "Fisioterapeuta"
+        : "Paciente";
+
   return (
     <div className="flex flex-1 flex-col bg-slate-50">
-      {/* Header banner */}
-      <section className="bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-10 text-white sm:px-6 sm:py-14">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-2xl font-bold sm:text-3xl">Mi perfil</h1>
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-800 to-blue-500 px-4 pb-20 pt-12 text-white sm:px-6 sm:pb-24 sm:pt-16">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-10 h-48 w-48 rounded-full bg-sky-300/20 blur-2xl" />
+        <div className="relative mx-auto max-w-2xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100/80">
+            AIKinora
+          </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Mi perfil</h1>
           <p className="mt-2 text-sm text-blue-100 sm:text-base">
-            Personaliza tu cuenta y mantén tus datos actualizados.
+            Tu espacio personal. Foto, datos y preferencias en un solo sitio.
           </p>
         </div>
       </section>
 
-      {/* Form card */}
-      <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
-        <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
-
-          {/* Avatar */}
-          <div className="mb-8 flex flex-col items-center gap-4">
+      <div className="relative mx-auto w-full max-w-2xl px-4 pb-8 sm:px-6 sm:pb-10">
+        <div className="-mt-14 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)] sm:p-8">
+          <div className="mb-8 flex flex-col items-center gap-3">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               className="group relative"
               title="Cambiar foto"
             >
-              <div className="relative h-24 w-24 overflow-hidden rounded-full ring-4 ring-blue-100">
+              <div className="relative h-28 w-28 overflow-hidden rounded-full ring-4 ring-white shadow-lg">
                 {avatarSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarSrc} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-blue-600 text-2xl font-bold text-white">
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800 text-3xl font-bold text-white">
                     {initials()}
                   </div>
                 )}
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100">
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/45 opacity-0 transition group-hover:opacity-100">
                   <Camera className="h-6 w-6 text-white" />
                 </div>
               </div>
+              <span className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-700 text-white shadow-md">
+                <Camera className="h-3.5 w-3.5" />
+              </span>
             </button>
             <input
               ref={fileRef}
@@ -241,11 +262,60 @@ export function ProfileForm() {
               className="hidden"
               onChange={handleFileChange}
             />
-            <p className="text-xs text-slate-400">Haz clic en la foto para cambiarla</p>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                {roleLabel}
+              </span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                Plan gratuito
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+            >
+              Cambiar foto de perfil
+            </button>
           </div>
 
           {/* Fields */}
           <div className="space-y-5">
+            <div>
+              <p className="mb-1.5 text-sm font-semibold text-slate-700">
+                {en ? "Language" : "Idioma"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    { value: "es" as UiLocale, label: "Español" },
+                    { value: "en" as UiLocale, label: "English" },
+                  ] as const
+                ).map((opt) => {
+                  const active = locale === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setLocale(opt.value)}
+                      className={
+                        active
+                          ? "rounded-full bg-blue-600 px-3.5 py-1.5 text-sm font-semibold text-white"
+                          : "rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-xs text-slate-500">
+                {en
+                  ? "Consulta, Fisioterapia and AI replies follow this language."
+                  : "Consulta, Fisioterapia y las respuestas de la IA usan este idioma."}
+              </p>
+            </div>
+
             {/* Display name */}
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">
@@ -258,7 +328,7 @@ export function ProfileForm() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Tu nombre"
-                  className="w-full rounded-xl border border-blue-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
@@ -274,7 +344,7 @@ export function ProfileForm() {
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full rounded-xl border border-blue-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               {newEmail !== email && (
@@ -310,14 +380,14 @@ export function ProfileForm() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Nueva contraseña (mín. 6 caracteres)"
-                    className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                   />
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirmar contraseña"
-                    className="w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               )}
@@ -339,7 +409,7 @@ export function ProfileForm() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="btn-primary mt-6 w-full"
+            className="btn-primary mt-6 w-full !rounded-2xl"
           >
             {saving ? (
               <><Loader2 className="h-4 w-4 animate-spin" /> Guardando…</>
@@ -352,15 +422,25 @@ export function ProfileForm() {
         </div>
 
         <div className="mt-6">
-          {accountType === "physio" ? (
+          {accountType === "clinic" ? (
+            <a
+              href="/clinica"
+              className="block rounded-3xl border border-blue-100 bg-white p-6 text-sm font-semibold text-blue-700 shadow-sm hover:bg-blue-50"
+            >
+              Editar ficha de la clínica, logo y equipo →
+            </a>
+          ) : accountType === "physio" ? (
             <PhysioProfileSection />
           ) : (
             <AthleteProfileSection />
           )}
         </div>
 
-        <div className="mt-8 rounded-2xl border border-red-100 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">Zona de peligro</h2>
+        <div className="mt-8 rounded-3xl border border-red-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-800">
+            <Shield className="h-4 w-4 text-red-500" />
+            <h2 className="text-sm font-semibold">Zona de peligro</h2>
+          </div>
           <p className="mt-1 text-sm leading-relaxed text-slate-500">
             Eliminar la cuenta borra tu perfil, consultas, fotos e informes. No se
             puede deshacer.

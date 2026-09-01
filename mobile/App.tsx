@@ -15,15 +15,23 @@ import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-cont
 import { AppErrorBoundary } from "./src/components/AppErrorBoundary";
 import { LoginScreen } from "./src/components/LoginScreen";
 import { Colors } from "./src/lib/colors";
+import { accountTypeFromMetadata, type AccountType } from "./src/lib/account-type";
 import { isGuestEmail, isGuestUser } from "./src/lib/guest-account";
+import { deleteOwnAccountAndSignOut } from "./src/lib/delete-account";
+import { setAppDisclaimerHeight } from "./src/lib/app-disclaimer-height";
 import { hideNativeSplash, startSplashHideWatchdog } from "./src/lib/hide-splash";
-import { I18nProvider } from "./src/lib/i18n";
+import { ensureNotificationHandler } from "./src/lib/notifications";
+import { useOnAppForeground } from "./src/hooks/useAppLifecycle";
+import { I18nProvider, useI18n } from "./src/lib/i18n";
 import { isAdminEmail, isSupabaseConfigured } from "./src/lib/supabase-config";
 import { supabase } from "./src/lib/supabase";
 import {
   ATHLETE_PROFILE_COLUMNS,
   isAthleteProfileComplete,
 } from "./src/lib/athlete-profile-complete";
+import {
+  isClinicProfileComplete,
+} from "./src/lib/clinic-profile-complete";
 import {
   PHYSIO_PROFILE_COLUMNS,
   isPhysioProfileComplete,
@@ -66,6 +74,12 @@ const SignupScreen = React.lazy(() =>
   }))
 );
 
+const ForgotPasswordScreen = React.lazy(() =>
+  import("./src/components/ForgotPasswordScreen").then((mod) => ({
+    default: mod.ForgotPasswordScreen,
+  }))
+);
+
 const OnboardingScreen = React.lazy(() =>
   import("./src/screens/OnboardingScreen").then((mod) => ({
     default: mod.OnboardingScreen,
@@ -75,6 +89,12 @@ const OnboardingScreen = React.lazy(() =>
 const PhysioOnboardingScreen = React.lazy(() =>
   import("./src/screens/PhysioOnboardingScreen").then((mod) => ({
     default: mod.PhysioOnboardingScreen,
+  }))
+);
+
+const ClinicOnboardingScreen = React.lazy(() =>
+  import("./src/screens/ClinicOnboardingScreen").then((mod) => ({
+    default: mod.ClinicOnboardingScreen,
   }))
 );
 
@@ -88,12 +108,17 @@ function TabsFallback() {
 
 function AppInner() {
   const [session, setSession] = useState<Session | null>(null);
-  const [authView, setAuthView] = useState<"login" | "signup">("login");
+  const [authReady, setAuthReady] = useState(false);
+  const [profileGateReady, setProfileGateReady] = useState(false);
+  const [authView, setAuthView] = useState<"login" | "signup" | "forgot">("login");
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [isPhysio, setIsPhysio] = useState(false);
+  const [isClinic, setIsClinic] = useState(false);
+  const [roleReady, setRoleReady] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [guestSignup, setGuestSignup] = useState(false);
   const onboardingCheckSeq = useRef(0);
+  const pendingAccountType = useRef<AccountType | null>(null);
 
   const isAdmin = isAdminEmail(session?.user?.email);
 
@@ -106,20 +131,46 @@ function AppInner() {
     setOnboardingDone(true);
   }, []);
 
+  const applyKnownAccountType = useCallback((type: AccountType | null) => {
+    if (!type) return;
+    setIsPhysio(type === "physio");
+    setIsClinic(type === "clinic");
+    setRoleReady(true);
+  }, []);
+
+  /** Guest X / back: show login immediately; cleanup runs in the background. */
+  const exitGuestToLogin = useCallback(() => {
+    setSession(null);
+    setAuthView("login");
+    setGuestSignup(false);
+    setIsGuest(false);
+    void deleteOwnAccountAndSignOut();
+  }, []);
+
   const checkOnboarding = useCallback(
-    async (userId: string, email: string | undefined) => {
+    async (
+      userId: string,
+      email: string | undefined,
+      appMetadata?: unknown
+    ) => {
       const seq = ++onboardingCheckSeq.current;
+      const hinted =
+        pendingAccountType.current ?? accountTypeFromMetadata(appMetadata);
+      applyKnownAccountType(hinted);
       try {
         if (isAdminEmail(email) || isGuestEmail(email)) {
           if (seq !== onboardingCheckSeq.current) return;
+          pendingAccountType.current = null;
           setIsPhysio(false);
+          setIsClinic(false);
+          setRoleReady(true);
           setOnboardingDone(true);
           return;
         }
         const { data: profile } = await withTimeout(
           supabase
             .from("profiles")
-            .select(`account_type, ${PHYSIO_PROFILE_COLUMNS}, ${ATHLETE_PROFILE_COLUMNS}`)
+            .select(`account_type, ${PHYSIO_PROFILE_COLUMNS}, ${ATHLETE_PROFILE_COLUMNS}, clinic_id`)
             .eq("id", userId)
             .maybeSingle(),
           PROFILE_TIMEOUT_MS,
@@ -128,24 +179,66 @@ function AppInner() {
         if (seq !== onboardingCheckSeq.current) return;
 
         if (!profile) {
-          // Fail open so a hung profiles query cannot pin the launch screen.
-          setIsPhysio(false);
+          // Do not assume patient — that flashes athlete questions after physio signup.
+          if (hinted) {
+            setIsPhysio(hinted === "physio");
+            setIsClinic(hinted === "clinic");
+            setRoleReady(true);
+            setOnboardingDone(false);
+            return;
+          }
+          setRoleReady(true);
           setOnboardingDone(true);
           return;
         }
 
-        const physio = profile.account_type === "physio";
+        pendingAccountType.current = null;
+        // Prefer JWT/hint when profile is still wrongly "patient".
+        let physio = profile.account_type === "physio";
+        let clinic = profile.account_type === "clinic";
+        if (profile.account_type === "patient" && hinted === "clinic") {
+          clinic = true;
+          physio = false;
+          void supabase
+            .from("profiles")
+            .update({ account_type: "clinic" })
+            .eq("id", userId);
+        } else if (profile.account_type === "patient" && hinted === "physio") {
+          physio = true;
+          clinic = false;
+          void supabase
+            .from("profiles")
+            .update({ account_type: "physio" })
+            .eq("id", userId);
+        }
         setIsPhysio(physio);
+        setIsClinic(clinic);
+        setRoleReady(true);
         setOnboardingDone(
-          physio ? isPhysioProfileComplete(profile) : isAthleteProfileComplete(profile)
+          clinic
+            ? isClinicProfileComplete(profile)
+            : physio
+              ? isPhysioProfileComplete(profile)
+              : isAthleteProfileComplete(profile)
         );
       } catch {
         if (seq !== onboardingCheckSeq.current) return;
-        setIsPhysio(false);
+        if (hinted) {
+          setIsPhysio(hinted === "physio");
+          setIsClinic(hinted === "clinic");
+          setRoleReady(true);
+          setOnboardingDone(false);
+          return;
+        }
+        setRoleReady(true);
         setOnboardingDone(true);
+      } finally {
+        if (seq === onboardingCheckSeq.current) {
+          setProfileGateReady(true);
+        }
       }
     },
-    []
+    [applyKnownAccountType]
   );
 
   useEffect(() => {
@@ -162,11 +255,25 @@ function AppInner() {
         setSession(data.session);
         setIsGuest(isGuestUser(data.session?.user));
         if (data.session?.user) {
-          void checkOnboarding(data.session.user.id, data.session.user.email);
+          setProfileGateReady(false);
+          applyKnownAccountType(
+            accountTypeFromMetadata(data.session.user.app_metadata)
+          );
+          void checkOnboarding(
+            data.session.user.id,
+            data.session.user.email,
+            data.session.user.app_metadata
+          );
+        } else {
+          setProfileGateReady(true);
         }
       } catch {
-        if (!cancelled) setSession(null);
+        if (!cancelled) {
+          setSession(null);
+          setProfileGateReady(true);
+        }
       } finally {
+        if (!cancelled) setAuthReady(true);
         hideNativeSplash();
       }
     };
@@ -174,22 +281,32 @@ function AppInner() {
     void boot();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+      (event, newSession) => {
         setSession(newSession);
-        if (!newSession) setAuthView("login");
-        setIsGuest(isGuestUser(newSession?.user));
-        if (newSession?.user) {
-          if (!isGuestUser(newSession.user)) setGuestSignup(false);
-          const { id, email } = newSession.user;
-          setTimeout(() => {
-            void checkOnboarding(id, email);
-          }, 0);
-        } else {
+        if (!newSession) {
+          setAuthView("login");
           setOnboardingDone(false);
           setIsPhysio(false);
+          setIsClinic(false);
+          setRoleReady(false);
           setIsGuest(false);
           setGuestSignup(false);
+          setProfileGateReady(true);
+          pendingAccountType.current = null;
+          return;
         }
+        setIsGuest(isGuestUser(newSession.user));
+        if (!isGuestUser(newSession.user)) setGuestSignup(false);
+        if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") return;
+        setProfileGateReady(false);
+        applyKnownAccountType(
+          pendingAccountType.current ??
+            accountTypeFromMetadata(newSession.user.app_metadata)
+        );
+        const { id, email, app_metadata } = newSession.user;
+        setTimeout(() => {
+          void checkOnboarding(id, email, app_metadata);
+        }, 0);
       }
     );
 
@@ -197,7 +314,7 @@ function AppInner() {
       cancelled = true;
       listener.subscription.unsubscribe();
     };
-  }, [checkOnboarding]);
+  }, [applyKnownAccountType, checkOnboarding]);
 
   if (!isSupabaseConfigured()) {
     return (
@@ -211,15 +328,38 @@ function AppInner() {
     );
   }
 
+  if (!authReady || (session && !profileGateReady)) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <TabsFallback />
+      </>
+    );
+  }
+
   if (!session) {
     return (
       <>
         <StatusBar style="dark" />
         {authView === "login" ? (
-          <LoginScreen onSwitch={() => setAuthView("signup")} />
+          <LoginScreen
+            onSwitch={() => setAuthView("signup")}
+            onForgot={() => setAuthView("forgot")}
+          />
+        ) : authView === "forgot" ? (
+          <Suspense fallback={<TabsFallback />}>
+            <ForgotPasswordScreen onBack={() => setAuthView("login")} />
+          </Suspense>
         ) : (
           <Suspense fallback={<TabsFallback />}>
-            <SignupScreen onSwitch={() => setAuthView("login")} />
+            <SignupScreen
+            onSwitch={() => setAuthView("login")}
+            onSignedUp={(type) => {
+              pendingAccountType.current = type;
+              applyKnownAccountType(type);
+              setOnboardingDone(false);
+            }}
+          />
           </Suspense>
         )}
       </>
@@ -231,7 +371,14 @@ function AppInner() {
       <>
         <StatusBar style="dark" />
         <Suspense fallback={<TabsFallback />}>
-          <SignupScreen onSwitch={() => setGuestSignup(false)} />
+          <SignupScreen
+            onSwitch={() => setGuestSignup(false)}
+            onSignedUp={(type) => {
+              pendingAccountType.current = type;
+              applyKnownAccountType(type);
+              setOnboardingDone(false);
+            }}
+          />
         </Suspense>
       </>
     );
@@ -243,10 +390,22 @@ function AppInner() {
         <NavigationContainer>
           <StatusBar style="dark" />
           <Suspense fallback={<TabsFallback />}>
-            <GuestPhysioNavigator onCreateAccount={() => setGuestSignup(true)} />
+            <GuestPhysioNavigator
+              onCreateAccount={() => setGuestSignup(true)}
+              onExitToLogin={exitGuestToLogin}
+            />
           </Suspense>
         </NavigationContainer>
       </GestureHandlerRootView>
+    );
+  }
+
+  if (!roleReady) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <TabsFallback />
+      </>
     );
   }
 
@@ -255,7 +414,9 @@ function AppInner() {
       <>
         <StatusBar style="dark" />
         <Suspense fallback={<TabsFallback />}>
-          {isPhysio ? (
+          {isClinic ? (
+            <ClinicOnboardingScreen onComplete={handleOnboardingComplete} />
+          ) : isPhysio ? (
             <PhysioOnboardingScreen onComplete={handleOnboardingComplete} />
           ) : (
             <OnboardingScreen onComplete={handleOnboardingComplete} />
@@ -271,9 +432,10 @@ function AppInner() {
         <StatusBar style="dark" />
         <Suspense fallback={<TabsFallback />}>
           <AppTabs
-            key={`${isPhysio ? "physio" : "user"}-${isAdmin ? "admin" : ""}`}
+            key={`${isClinic ? "clinic" : isPhysio ? "physio" : "user"}-${isAdmin ? "admin" : ""}`}
             isAdmin={isAdmin}
             isPhysio={isPhysio}
+            isClinic={isClinic}
           />
         </Suspense>
       </NavigationContainer>
@@ -282,8 +444,14 @@ function AppInner() {
 }
 
 function AppDisclaimer() {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useOnAppForeground(() => {
+    setKeyboardOpen(false);
+    Keyboard.dismiss();
+  });
 
   useEffect(() => {
     const show = Keyboard.addListener(
@@ -300,41 +468,29 @@ function AppDisclaimer() {
     };
   }, []);
 
-  if (keyboardOpen) {
-    return (
-      <View
-        style={[
-          styles.disclaimer,
-          { paddingBottom: Math.max(insets.bottom, 8), opacity: 0 },
-        ]}
-        pointerEvents="none"
-        accessibilityElementsHidden
-      >
-        <Text style={styles.disclaimerText}>
-          AIKinora es una IA orientativa: no sustituye el criterio clínico ni un
-          diagnóstico médico presencial.
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <View
       style={[
         styles.disclaimer,
         { paddingBottom: Math.max(insets.bottom, 8) },
+        keyboardOpen && styles.disclaimerHidden,
       ]}
+      pointerEvents={keyboardOpen ? "none" : "auto"}
+      accessibilityElementsHidden={keyboardOpen}
+      onLayout={(event) => {
+        if (!keyboardOpen) {
+          setAppDisclaimerHeight(event.nativeEvent.layout.height);
+        }
+      }}
     >
-      <Text style={styles.disclaimerText}>
-        AIKinora es una IA orientativa: no sustituye el criterio clínico ni un
-        diagnóstico médico presencial.
-      </Text>
+      <Text style={styles.disclaimerText}>{t.common.appDisclaimer}</Text>
     </View>
   );
 }
 
 export default function App() {
   useEffect(() => {
+    ensureNotificationHandler();
     return startSplashHideWatchdog();
   }, []);
 
@@ -387,6 +543,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingHorizontal: 16,
     paddingTop: 6,
+  },
+  disclaimerHidden: {
+    height: 0,
+    overflow: "hidden",
+    opacity: 0,
+    borderTopWidth: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   disclaimerText: {
     fontSize: 11,

@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { ConsultaTextInput } from "./ConsultaTextInput";
 import {
   defaultGenericConsultaAnswers,
   GENERIC_FIELD_OPTIONS,
@@ -20,6 +21,8 @@ const GENERIC_LABELS_EN = {
   rf_fiebre: "Associated fever?",
   rf_perdida_sensibilidad: "Loss of sensation?",
   problem: "Your problem",
+  zona: "Where does it hurt?",
+  zona_ph: "For example: knee, back, ankle…",
   evolucion: "How long have you had this?",
   inicio: "How did it start?",
   mecanismo: "What may have caused it? (you can select several)",
@@ -121,6 +124,15 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
       <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_perdida_sensibilidad} onChange={(rf_perdida_sensibilidad) => patch({ rf_perdida_sensibilidad })} displayOption={displayOption} />
 
       <Text style={styles.sectionTitle}>{en ? L.problem : "Tu problema"}</Text>
+      <Text style={styles.label}>{en ? L.zona : "¿Dónde te duele o te molesta?"}</Text>
+      <ConsultaTextInput
+        value={a.zona}
+        onChangeText={(zona) => patch({ zona })}
+        placeholder={en ? L.zona_ph : "Por ejemplo: rodilla, espalda, tobillo…"}
+        placeholderTextColor={Colors.textLight}
+        style={styles.input}
+        multiline
+      />
       <Text style={styles.label}>{en ? L.evolucion : "¿Cuánto tiempo llevas con esto?"}</Text>
       <ChipGroup options={GENERIC_FIELD_OPTIONS.evolution} value={a.evolucion} onChange={(evolucion) => patch({ evolucion })} displayOption={displayOption} />
       <Text style={styles.label}>{en ? L.inicio : "¿Cómo fue el inicio?"}</Text>
@@ -128,7 +140,7 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
       <Text style={styles.label}>{en ? L.mecanismo : "¿Qué pudo provocarlo? (puedes marcar varias)"}</Text>
       <MultiChipGroup options={GENERIC_FIELD_OPTIONS.mechanism} value={a.mecanismo} onChange={(mecanismo) => patch({ mecanismo })} displayOption={displayOption} />
       {a.mecanismo.includes("Otro") && (
-        <TextInput
+        <ConsultaTextInput
           style={styles.input}
           value={a.mecanismo_otro}
           onChangeText={(mecanismo_otro) => patch({ mecanismo_otro })}
@@ -143,7 +155,7 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
         locale={locale}
       />
       <Text style={styles.label}>{en ? L.descripcion : "Detalles adicionales (opcional)"}</Text>
-      <TextInput
+      <ConsultaTextInput
         style={styles.input}
         value={a.descripcion}
         onChangeText={(descripcion) => patch({ descripcion })}

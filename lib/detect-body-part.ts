@@ -161,6 +161,30 @@ Where exactly does it hurt the most? Reply with the most specific place you can 
 ¿Dónde te duele exactamente con más intensidad? Responde con la zona más concreta que puedas (por ejemplo: hombro, codo, antebrazo, muñeca…). Así te haré las preguntas adecuadas para esa zona.`;
 }
 
+/** Patient said something hurts but did not name a body region. */
+export function vagueInjuryLocationMessage(locale: "es" | "en" = "es"): string {
+  if (locale === "en") {
+    return `Thanks for telling us. To prepare the report for your physiotherapist I need to know **where** it hurts.
+
+Is it the neck, back, shoulder, elbow, wrist/hand, hip, thigh, knee, lower leg, ankle or foot? Reply with the most specific place you can. Then I will ask the right questions for that area.`;
+  }
+  return `Gracias por contarnos. Para preparar el informe de tu fisioterapeuta necesito saber **dónde** te duele.
+
+¿Es el cuello, la espalda, el hombro, el codo, la muñeca/mano, la cadera, el muslo, la rodilla, la pierna baja, el tobillo o el pie? Responde con la zona más concreta que puedas. Así te haré las preguntas adecuadas para esa zona.`;
+}
+
+/** Brief steer when they ask how Fisioterapia works instead of describing the injury. */
+export function fisioSteerToComplaintMessage(locale: "es" | "en" = "es"): string {
+  if (locale === "en") {
+    return `This chat is only to prepare a clinical report for your physiotherapist before the appointment.
+
+Tell me what hurts (where, when it started and how it affects you). I will then ask a questionnaire for that area so the report can be generated. For other questions, use the Consulta tab.`;
+  }
+  return `Este chat sirve solo para preparar un informe clínico para tu fisioterapeuta antes de la cita.
+
+Cuéntame qué te molesta (dónde, desde cuándo y cómo te afecta). Después te haré un cuestionario de esa zona para poder generar el informe. Para otras dudas, usa la pestaña Consulta.`;
+}
+
 /**
  * Pain in the leg just below the knee / shin / calf — NOT the knee joint.
  * "Rodilla" here is only a landmark (e.g. "justo debajo de la rodilla").
@@ -660,6 +684,21 @@ export function resolveBodyPartFromLocationReply(
   }
   if (/^(los\s+|mis\s+|the\s+)?(dedos?|fingers?|pulgar|thumb)\b/i.test(t)) {
     return "finger";
+  }
+  if (/^(la\s+|el\s+|mi\s+|the\s+)?(rodillas?|knees?)\b/i.test(t)) return "knee";
+  if (/^(la\s+|el\s+|mi\s+|the\s+)?(caderas?|hips?|ingles?|groin)\b/i.test(t)) {
+    return "hip";
+  }
+  if (/^(la\s+|el\s+|mi\s+|the\s+)?(espaldas?|backs?|lumbar|dorsal)\b/i.test(t)) {
+    return "back";
+  }
+  if (/^(el\s+|mi\s+|the\s+)?(cuello|neck|cervical)\b/i.test(t)) return "neck";
+  if (
+    /^(el\s+|la\s+|mi\s+|the\s+)?(tobillos?|ankles?|pies?|foot|feet|tal[oó]n|heel|muslos?|thighs?|isquios?)\b/i.test(
+      t
+    )
+  ) {
+    return "ankle_foot";
   }
   return null;
 }

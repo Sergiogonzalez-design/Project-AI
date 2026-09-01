@@ -13,16 +13,21 @@ import {
   type AthleteProfileFields,
 } from "@/lib/athlete-profile-complete";
 import {
+  isClinicProfileComplete,
+  type ClinicProfileFields,
+} from "@/lib/clinic-profile-complete";
+import {
   PHYSIO_PROFILE_COLUMNS,
   isPhysioProfileComplete,
   type PhysioProfileFields,
 } from "@/lib/physio-profile-complete";
 
 const PROFILE_COLUMNS =
-  `account_type, ${ATHLETE_PROFILE_COLUMNS}, ${PHYSIO_PROFILE_COLUMNS}` as const;
+  `account_type, ${ATHLETE_PROFILE_COLUMNS}, ${PHYSIO_PROFILE_COLUMNS}, clinic_id` as const;
 
 type RoutingProfile = AthleteProfileFields &
-  PhysioProfileFields & { account_type?: string | null };
+  PhysioProfileFields &
+  ClinicProfileFields & { account_type?: string | null };
 
 function isGuestAllowedPath(pathname: string): boolean {
   return (
@@ -32,7 +37,8 @@ function isGuestAllowedPath(pathname: string): boolean {
     pathname === "/privacidad" ||
     pathname === "/terminos" ||
     pathname.startsWith("/auth/") ||
-    pathname.startsWith("/api/")
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/centro/")
   );
 }
 
@@ -42,6 +48,9 @@ function destinationFor(
   guest = false
 ): string {
   if (guest) return "/fisioterapia";
+  if (profile?.account_type === "clinic") {
+    return isClinicProfileComplete(profile) ? "/clinica/consulta" : "/onboarding";
+  }
   if (profile?.account_type === "physio") {
     return isPhysioProfileComplete(profile) ? "/fisio" : "/onboarding";
   }
@@ -106,8 +115,10 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     pathname === "/login" ||
     pathname === "/signup" ||
+    pathname === "/forgot-password" ||
     pathname === "/privacidad" ||
     pathname === "/terminos" ||
+    pathname.startsWith("/centro/") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/supabase-health" ||
@@ -170,6 +181,25 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const isClinicPath =
+    (pathname === "/clinica" || pathname.startsWith("/clinica/")) &&
+    pathname !== "/clinica/access-denied";
+
+  if (isClinicPath) {
+    if (!user || guestUser) {
+      return NextResponse.redirect(new URL("/clinica/access-denied", request.url));
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("account_type")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.account_type !== "clinic") {
+      return NextResponse.redirect(new URL("/clinica/access-denied", request.url));
+    }
+    return supabaseResponse;
+  }
+
   const isPhysioPath =
     (pathname === "/fisio" || pathname.startsWith("/fisio/")) &&
     pathname !== "/fisio/access-denied";
@@ -215,6 +245,22 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
 
+    if (profile?.account_type === "clinic") {
+      const onClinicArea =
+        pathname === "/clinica" || pathname.startsWith("/clinica/");
+      const onSharedSite =
+        pathname === "/perfil" ||
+        pathname.startsWith("/perfil/") ||
+        pathname === "/sobre-nosotros" ||
+        pathname.startsWith("/sobre-nosotros/") ||
+        pathname.startsWith("/centro/") ||
+        pathname === "/privacidad" ||
+        pathname === "/terminos";
+      if (!onClinicArea && !onSharedSite) {
+        return NextResponse.redirect(new URL("/clinica/consulta", request.url));
+      }
+    }
+
     // Physios stay on /fisio (patient Consulta is a separate patient account).
     if (profile?.account_type === "physio") {
       const onPhysioArea =
@@ -225,7 +271,8 @@ export async function middleware(request: NextRequest) {
         pathname === "/sobre-nosotros" ||
         pathname.startsWith("/sobre-nosotros/") ||
         pathname === "/privacidad" ||
-        pathname === "/terminos";
+        pathname === "/terminos" ||
+        pathname.startsWith("/centro/");
       if (!onPhysioArea && !onSharedSite) {
         return NextResponse.redirect(new URL("/fisio", request.url));
       }

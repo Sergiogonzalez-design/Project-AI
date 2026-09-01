@@ -3,6 +3,7 @@ import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../lib/colors";
+import { screenHeaderTopInset } from "../lib/screen-header-insets";
 
 type Props = {
   onPress: () => void;
@@ -13,7 +14,7 @@ export function AuthBackBar({ onPress }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrap, { paddingTop: insets.top + 4 }]}>
+    <View style={[styles.wrap, { paddingTop: screenHeaderTopInset(insets) }]}>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}

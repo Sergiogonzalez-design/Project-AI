@@ -1410,9 +1410,10 @@ export const LOWER_LEG_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa_detalle: "Describe previous injuries or treatments",
 };
 
-export const LOWER_LEG_OPTION_EN: Record<string, string> = {
+export const LOWER_LEG_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",
@@ -1531,6 +1532,13 @@ export const LOWER_LEG_OPTION_EN: Record<string, string> = {
   "Persiste/empeora en reposo o semanas": "Persists/worsens at rest or over weeks",
   "Mejora al parar": "Improves when stopping",
   Variable: "Variable",
+  "Se ve torcido, deformado o muy distinto": "Is there an obvious deformity in the leg, shin, or ankle",
+  "No puedes apoyar o caminar en absoluto": "Are you completely unable to bear weight or walk",
+  "Hinchazón súbita e intensa de pantorrilla": "Sudden, intense swelling of the calf",
+  "Pérdida de sensibilidad en el pie": "Loss of sensation in the foot",
+  "Fiebre junto con el dolor": "Do you have a fever along with the pain",
+  "Dolor de pantorrilla con hinchazón en una sola pierna (posible problema de circulación)": "Calf pain with unilateral swelling (one leg only) that concerns you",
+  "Dolor mucho más fuerte de lo que parece al estirar dedos/tobillo, con tensión extrema (posible síndrome compartimental)": "Disproportionate pain that worsens when you stretch your toes or ankle, with extreme tightness in the calf/shin",
 };
 
 export const LOWER_LEG_SECTION_LABELS_EN: Record<string, string> = {

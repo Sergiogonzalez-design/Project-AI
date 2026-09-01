@@ -3,6 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Colors } from "../lib/colors";
 import { hasClinicalReasoningForReport } from "../lib/clinical-reasoning";
 import { hasWorkingSourceLink, toCitedSource } from "../lib/source-links";
+import { stripVisibleMarkup } from "../lib/strip-visible-markup";
 
 const SECTION_ORDER = [
   "Resultados de las pruebas funcionales ya realizadas",
@@ -16,7 +17,7 @@ const SECTION_ORDER = [
 ] as const;
 
 function normalizeHeading(raw: string): string {
-  let h = raw.replace(/\*\*/g, "").trim();
+  let h = stripVisibleMarkup(raw).trim();
   h = h.replace(/\s*\(por probabilidad\)\s*/i, "").trim();
   if (/^hip[oó]tesis diagn/i.test(h)) return "Hipótesis diagnósticas";
   if (/pruebas\/?\s*maniobras/i.test(h)) return "Pruebas/maniobras a realizar en la cita";
@@ -89,17 +90,37 @@ function splitReportSections(content: string): {
   return { sections, sources, preamble };
 }
 
-function InlineMarkdown({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/);
+function emphasizeYesNoAnswers(text: string): string {
+  return text
+    .split(/(\*\*[^*]+\*\*)/)
+    .map((part) => {
+      if (part.startsWith("**") && part.endsWith("**")) return part;
+      return part.replace(
+        /(^|[^A-Za-záéíóúüñÁÉÍÓÚÜÑ*])(S[IÍ]|Yes|YES|No|NO)(?![A-Za-záéíóúüñÁÉÍÓÚÜÑ*])/g,
+        "$1**$2**"
+      );
+    })
+    .join("");
+}
+
+function InlineMarkdown({
+  text,
+  boldYesNo,
+}: {
+  text: string;
+  boldYesNo?: boolean;
+}) {
+  const prepared = boldYesNo ? emphasizeYesNoAnswers(text) : text;
+  const parts = prepared.split(/(\*\*[^*]+\*\*)/);
   return (
     <Text style={styles.body}>
       {parts.map((part, i) =>
         part.startsWith("**") && part.endsWith("**") ? (
           <Text key={i} style={styles.bold}>
-            {part.slice(2, -2)}
+            {stripVisibleMarkup(part.slice(2, -2))}
           </Text>
         ) : (
-          <Text key={i}>{part}</Text>
+          <Text key={i}>{stripVisibleMarkup(part)}</Text>
         )
       )}
     </Text>
@@ -144,7 +165,13 @@ export function PhysioReportView({
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
-          <InlineMarkdown text={section.body} />
+          <InlineMarkdown
+            text={section.body}
+            boldYesNo={
+              section.title ===
+              "Resultados de las pruebas funcionales ya realizadas"
+            }
+          />
           {section.title === "Pruebas/maniobras a realizar en la cita" &&
           showReasoningButton ? (
             <View style={styles.reasoningWrap}>

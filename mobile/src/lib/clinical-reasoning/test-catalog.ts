@@ -347,6 +347,94 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     evidenceNote:
       "Dolor o salto en surco → bíceps/corredera. NO confirma SLAP (Hegedus / literatura labrum).",
   },
+  "full-can": {
+    id: "full-can",
+    title: "Full can / Jobe pulgar arriba",
+    procedure:
+      "Brazos ~90° en plano escapular, pulgares hacia ARRIBA. Resistencia a la abducción. Registrar dolor vs debilidad franca.",
+    evidenceNote:
+      "Misma familia que empty can (Hegedus; Itoi). Full-can suele tolerarse mejor. Debilidad + drop arm → rotura ↑ en cluster, no aislado.",
+  },
+  surprise: {
+    id: "surprise",
+    title: "Surprise / Release (inestabilidad anterior)",
+    procedure:
+      "Tras relocation en ABD-RE: retirar suavemente la presión posterior. Positivo si reaparece aprensión (miedo), no solo dolor.",
+    evidenceNote:
+      "Farber JBJS 2006: cluster Apprehension + Relocation ± Surprise (Tier A). No forzar en luxación aguda. Dolor sin miedo ≠ inestabilidad.",
+  },
+  paxinos: {
+    id: "paxinos",
+    title: "Paxinos (AC)",
+    procedure:
+      "Pulgar en espina escapular, índice en clavícula distal; comprimir la AC. Positivo si dolor localizado en la puntita, familiar.",
+    evidenceNote:
+      "Walton / Chronopoulos: cluster AC Tier A con O'Brien (serie) o Hawkins (screening). No confundir con dolor deltoideo.",
+  },
+  obrien: {
+    id: "obrien",
+    title: "O'Brien / Active compression",
+    procedure:
+      "Flexión 90°, ligera aducción, pulgar abajo, resistencia hacia abajo. Dolor en puntita AC → AC; dolor profundo anterior → screening labral.",
+    evidenceNote:
+      "Interpretación por LOCALIZACIÓN. AC: Paxinos+O'Brien (Tier A). SLAP: screening con Crank (Tier B) — NUNCA SLAP confirmado.",
+  },
+  uppercut: {
+    id: "uppercut",
+    title: "Uppercut (bíceps)",
+    procedure:
+      "Codo flexionado, antebrazo supinado. Resistencia a un gesto de uppercut. Dolor en surco bicipital familiar.",
+    evidenceNote:
+      "Batería bíceps Tier C con Speed/Yergason. No confirma SLAP (Hegedus).",
+  },
+  crank: {
+    id: "crank",
+    title: "Crank (screening labral)",
+    procedure:
+      "Supino, abducción ~90–120°, carga axial + rotación. Positivo si dolor anterior profundo familiar o chasquido profundo (no AC superficial).",
+    evidenceNote:
+      "Metaanálisis combinaciones SLAP: O'Brien + Crank aumenta sensibilidad de SCREENING. Precisión limitada. No SLAP confirmado.",
+  },
+  "er-lag": {
+    id: "er-lag",
+    title: "ER lag sign",
+    procedure:
+      "Codo 90° pegado al tronco; llevar a máxima RE y pedir que mantenga. Positivo si el antebrazo «cae» hacia rotación interna (lag), no solo dolor.",
+    evidenceNote:
+      "Hertel lag signs / Hegedus: cluster manguito posterior (RE débil + ER lag + Hornblower). No gradúa tamaño de rotura.",
+  },
+  "belly-press": {
+    id: "belly-press",
+    title: "Belly press / Napoleon",
+    procedure:
+      "Mano en abdomen, codo adelantado; presionar el abdomen. Positivo si el codo cae atrás, hay debilidad franca o dolor anterior familiar.",
+    evidenceNote:
+      "Barth / Hegedus: cluster subescapular (IR lag, Bear hug, Lift-off). Mayor especificidad que sensibilidad en revisiones.",
+  },
+  "lift-off": {
+    id: "lift-off",
+    title: "Lift-off / Gerber",
+    procedure:
+      "Mano en la región lumbar; intentar separar la mano de la espalda. Positivo si no puede o hay lag posterior de la mano.",
+    evidenceNote:
+      "Gerber / Barth: cluster subescapular. Limitado por rigidez/capsulitis. No tamaño de rotura automático.",
+  },
+  "kim-test": {
+    id: "kim-test",
+    title: "Kim test (inestabilidad posterior)",
+    procedure:
+      "Brazo flexionado ~90°, aducido, RI; carga posterior sobre el húmero proximal. Positivo si dolor posterior familiar o sensación de que «se sale» atrás.",
+    evidenceNote:
+      "Kim et al.: cluster posterior Tier B con Jerk. Menor evidencia que Apprehension-Relocation-Surprise. Dolor solo ≠ inestabilidad.",
+  },
+  "jerk-test": {
+    id: "jerk-test",
+    title: "Jerk test (inestabilidad posterior)",
+    procedure:
+      "Flexión ~90°, aducción, RI; compresión axial hacia la glenoides. Positivo si chasquido o dolor posterior familiar.",
+    evidenceNote:
+      "Kim + Jerk = cluster clínico posterior (Tier B). No mismo peso que cluster anterior validado.",
+  },
   schober: {
     id: "schober",
     title: "Test de Schober",
@@ -370,6 +458,126 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
       "Extensión + inclinación lateral y rotación hacia el lado doloroso.",
     evidenceNote:
       "Evidencia LIMITADA como test facetario. Dolor mecánico local en extensión; no confirma artrosis ni indica infiltración (JOSPT LBP CPG).",
+  },
+  maudsley: {
+    id: "maudsley",
+    title: "Maudsley (extensión resistida del 3.er dedo)",
+    procedure:
+      "Codo extendido o casi. Antebrazo en pronación. Resistir la extensión del 3.er dedo (MCP). Registrar DÓNDE duele (epicóndilo vs antebrazo proximal dorsal).",
+    evidenceNote:
+      "Cluster LET (Cozen/Mill/palpación). Zwerus: precisión aislada limitada. Dolor óseo → LET ↑; músculo proximal → túnel radial. NO = nervio radial lesionado.",
+  },
+  durkan: {
+    id: "durkan",
+    title: "Durkan / compresión carpiana",
+    procedure:
+      "Presión firme mantenida (~30 s) sobre el túnel carpiano. Positivo si parestesias FAMILIARES en territorio mediano.",
+    evidenceNote:
+      "Cluster STC con historia nocturna (Durkan 1991; D’Arcy JAMA; JOSPT CTS 2019). Evidencia de precisión MIXTA. Negativo no descarta. Meñique solo ≠ STC.",
+  },
+  "what-test": {
+    id: "what-test",
+    title: "WHAT (Wrist Hyperflexion and Abduction of the Thumb)",
+    procedure:
+      "Muñeca en hiperflexión; el paciente abduce el pulgar contra resistencia. Dolor familiar en estiloides radial / 1.er compartimento.",
+    evidenceNote:
+      "Cluster De Quervain con palpación ± Finkelstein (Goubau). Eichhoff da más falsos +. No confirma tenosinovitis.",
+  },
+  "hook-test": {
+    id: "hook-test",
+    title: "Hook test (bíceps distal)",
+    procedure:
+      "Codo flexionado ~90°, antebrazo supinado. Intentar enganchar el tendón distal del bíceps con el índice desde lateral. Ausencia de gancho + déficit de supinación → completa ↑.",
+    evidenceNote:
+      "O’Driscoll AJSM 2005 (completas). Hook enganchable no descarta parcial. Squeeze (Ruland) como complemento. No LET.",
+  },
+  "moving-valgus": {
+    id: "moving-valgus",
+    title: "Moving valgus (UCL medial)",
+    procedure:
+      "Valgo mantenido mientras se mueve el codo ~70–120°. Positivo si dolor medial FAMILIAR en el arco de aceleración (lanzador).",
+    evidenceNote:
+      "O’Driscoll AJSM 2005 describe el test. Cluster C con milking/historia. No confirma rotura de UCL. No inventar LR.",
+  },
+  "milking-maneuver": {
+    id: "milking-maneuver",
+    title: "Milking maneuver (UCL)",
+    procedure:
+      "Hombro ABD, codo ~70–90°. Tracción del pulgar que aplica valgo. Dolor medial familiar en lanzadores.",
+    evidenceNote:
+      "Complemento de moving valgus (cluster C). No confirma UCL. Cubital puede coexistir.",
+  },
+  "fovea-sign": {
+    id: "fovea-sign",
+    title: "Signo de la fóvea (TFCC)",
+    procedure:
+      "Palpación en el hueco palmar-cubital distal al cúbito, proximal al pisiforme. Positivo si dolor FAMILIAR en ese punto.",
+    evidenceNote:
+      "Tay JHS 2007 (serie). Cluster TFCC con press/carga cubital. No confirma rotura. No extraer cifras universales.",
+  },
+  "piano-key": {
+    id: "piano-key",
+    title: "Piano-key / ballottement DRUJ",
+    procedure:
+      "Antebrazo pronado. Empujar la cabeza cubital dorsal como tecla y comparar con el lado sano. Positivo si asimetría DOLOROSA (no laxitud simétrica indolora).",
+    evidenceNote:
+      "Cluster C DRUJ/TFCC (Adams). Fractura reciente de radio: no forzar. Laxitud constitucional ≠ patológica.",
+  },
+  "watson-scaphoid-shift": {
+    id: "watson-scaphoid-shift",
+    title: "Watson / scaphoid shift (SL)",
+    procedure:
+      "Presión sobre el polo palmar del escafoides mientras se lleva la muñeca de cubital a radial. Positivo si dolor/clunk dorsal SL familiar.",
+    evidenceNote:
+      "Watson JHS 1988. Cluster C. FOOSH + tabaquera → RX primero (no agresivo sobre fractura oculta). + no confirma rotura SL; − no excluye.",
+  },
+  froment: {
+    id: "froment",
+    title: "Signo de Froment (cubital motor)",
+    procedure:
+      "Pinza papel pulgar–índice. Positivo si flexiona IFP del pulgar (FPL) para compensar aductor débil.",
+    evidenceNote:
+      "Motor cubital; no localiza codo vs Guyon. Usar historia (flexión codo vs presión palmar). Cluster cubital B.",
+  },
+  "jersey-finger": {
+    id: "jersey-finger",
+    title: "Jersey finger (flexión activa IFP / FDP)",
+    procedure:
+      "Pedir flexión activa aislada de la IFP (sujetar la IFD si hace falta). Positivo: no flexiona activamente la IFP tras trauma en flexión (agarre de camiseta). El pasivo puede estar conservado.",
+    evidenceNote:
+      "Sospecha de avulsión FDP. No esguince simple. Valoración médica/imagen. No inventar grado.",
+  },
+  "mallet-finger": {
+    id: "mallet-finger",
+    title: "Mallet finger (extensión activa IFD)",
+    procedure:
+      "Pedir extensión activa de la punta (IFD). Positivo: no mantiene la extensión activa de la IFD tras golpe en punta. Comparar con el contralateral.",
+    evidenceNote:
+      "Sospecha de lesión del extensor terminal ± avulsión. RX si hay. No tratar solo como esguince.",
+  },
+  "trigger-a1": {
+    id: "trigger-a1",
+    title: "Trigger / polea A1",
+    procedure:
+      "Palpar el nudillo palmar (A1) mientras el paciente flexiona y extiende. Positivo: chasquido, bloqueo o dolor familiar en A1.",
+    evidenceNote:
+      "Compatible con trigger / tenosinovitis A1 en cluster. No confirma grado. Diferencial: artrosis IF, STC si hormigueo domina.",
+  },
+  "lt-ballottement": {
+    id: "lt-ballottement",
+    title: "Ballottement LT / Reagan / Kleinman shear (clínico)",
+    procedure:
+      "Fijar semilunar y desplazar piramidal palmar-dorsal (Reagan/ballottement) o cizalla Kleinman del intervalo LT. Positivo: dolor en intervalo LT + holgura vs contralateral — más dorsal-cubital que la fóvea pura.",
+    evidenceNote:
+      "Cluster C de inestabilidad LT (Reagan JHS). Precisión limitada. Diferencial TFCC/ECU. No confirmar rotura. No SÍ/NO de paciente.",
+  },
+  "cmc-lever": {
+    id: "cmc-lever",
+    title: "CMC lever (rizartrosis) — clínico",
+    procedure:
+      "Estabilizar trapecio. Palanca dorsal/radial del 1.er metacarpiano. Positivo: dolor familiar en la BASE del pulgar (CMC), no en estiloides ni tabaquera.",
+    evidenceNote:
+      "Complemento del grind. Cluster OA CMC (edad, pinza, grind + lever + palpación). Sin métricas robustas aisladas. No De Quervain si el 1.er compartimento está silente.",
   },
 };
 

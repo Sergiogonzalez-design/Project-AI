@@ -10,6 +10,7 @@ import {
 } from "./consulta-validation";
 
 export type GenericConsultaAnswers = {
+  zona: string;
   evolucion: string;
   inicio: string;
   mecanismo: string[];
@@ -23,6 +24,7 @@ export type GenericConsultaAnswers = {
 
 export function defaultGenericConsultaAnswers(): GenericConsultaAnswers {
   return {
+    zona: "",
     evolucion: "",
     inicio: "",
     mecanismo: [],
@@ -38,6 +40,13 @@ export function defaultGenericConsultaAnswers(): GenericConsultaAnswers {
 export function validateGenericConsulta(
   a: GenericConsultaAnswers
 ): AdaptiveValidationIssue | null {
+  if (!a.zona.trim()) {
+    return missingQuestionIssue({
+      id: "zona",
+      section: "core",
+      label: "¿Dónde te duele o te molesta?",
+    });
+  }
   if (!a.evolucion) {
     return missingQuestionIssue({
       id: "evolucion",
@@ -102,6 +111,7 @@ export function formatGenericConsulta(a: GenericConsultaAnswers, bodyMapText: st
     "",
     bodyMapText,
     "",
+    a.zona.trim() ? `Zona: ${a.zona.trim()}` : "",
     redFlags.length ? `⚠️ BANDERAS ROJAS: ${redFlags.join(", ")}` : "Sin banderas rojas marcadas",
     `Evolución: ${a.evolucion}`,
     `Inicio: ${a.inicio}`,

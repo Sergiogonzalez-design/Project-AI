@@ -595,7 +595,7 @@ export const PLANTAR_FASCIA_LABEL_EN: Partial<Record<string, string>> = {
   deporte_impacto: "How does it affect your training or sport?",
 };
 
-export const PLANTAR_FASCIA_OPTION_EN: Record<string, string> = {
+export const PLANTAR_FASCIA_OPTION_EN = {
   No: "No",
   Sí: "Yes",
   "Ha sido ahora": "Just now",
@@ -671,6 +671,9 @@ export const PLANTAR_FASCIA_OPTION_EN: Record<string, string> = {
   "Sí, radiografía": "Yes, X-ray",
   "Sí, resonancia": "Yes, MRI",
   "Sí, varias": "Yes, multiple",
+  "Sospecha de fractura por trauma": "Was there significant trauma, a fall, or direct blow to the foot, and do you suspect a fracture",
+  "Signos de infección (enrojecimiento, calor, fiebre)": "Is the foot red, hot, swollen, and/or do you have a fever",
+  "Pérdida de sensibilidad / cambio de color": "Marked loss of sensation or color change in the foot",
 };
 
 export const PLANTAR_FASCIA_SECTION_LABELS_EN: Record<string, string> = {

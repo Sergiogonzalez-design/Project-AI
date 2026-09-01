@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useMemo, useState } from "react";
+import { authUiCopy } from "@/lib/auth-ui-copy";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
+import { createClient } from "@/lib/supabase/client";
+import { useUiLocale } from "@/lib/ui-locale";
 
 type LoginFormProps = {
   nextPath?: string;
@@ -13,6 +15,8 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
+  const { locale } = useUiLocale();
+  const copy = useMemo(() => authUiCopy(locale), [locale]);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +25,16 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
   const [guestError, setGuestError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
+
+  // Never keep credentials in the address bar (password managers / paste mistakes).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("email") && !url.searchParams.has("password")) return;
+    url.searchParams.delete("email");
+    url.searchParams.delete("password");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,7 +62,7 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
     setGuestError(null);
     const normalized = parsePastedInviteCode(rawCode);
     if (normalized.length < 6) {
-      setGuestError("Introduce el código que te ha dado tu fisioterapeuta.");
+      setGuestError(copy.guestCodeRequired);
       return;
     }
     setGuestLoading(true);
@@ -64,7 +78,7 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
         password?: string;
       };
       if (!res.ok || !payload.email || !payload.password) {
-        setGuestError(payload.error ?? "No se pudo empezar la consulta.");
+        setGuestError(payload.error ?? copy.guestStartError);
         return;
       }
       const supabase = createClient();
@@ -79,7 +93,7 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
       router.replace("/fisioterapia");
       router.refresh();
     } catch {
-      setGuestError("No se pudo empezar la consulta. Inténtalo de nuevo.");
+      setGuestError(copy.guestStartError);
     } finally {
       setGuestLoading(false);
     }
@@ -97,18 +111,16 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
         <Image src="/logo-icon.png" alt="AIKinora" width={56} height={56} className="object-contain" />
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Iniciar sesión</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{copy.loginTitle}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {nextPath === "/admin"
-              ? "Acceso de administrador — panel de gestión"
-              : "Accede a tu cuenta de AIKinora"}
+            {nextPath === "/admin" ? copy.adminSubtitle : copy.loginSubtitle}
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="mb-4 flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-slate-700">Correo electrónico</label>
+          <label className="text-sm font-semibold text-slate-700">{copy.email}</label>
           <input
             type="email" name="email" autoComplete="email" required
             value={email} onChange={(e) => setEmail(e.target.value)}
@@ -118,7 +130,7 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
         </div>
 
         <div className="mb-5 flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-slate-700">Contraseña</label>
+          <label className="text-sm font-semibold text-slate-700">{copy.password}</label>
           <input
             type="password" name="password" autoComplete="current-password" required minLength={6}
             value={password} onChange={(e) => setPassword(e.target.value)}
@@ -129,41 +141,47 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
 
         {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
 
+        <p className="mb-4 text-right">
+          <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:underline">
+            {copy.forgotPassword}
+          </Link>
+        </p>
+
         <button
           type="submit" disabled={busy}
           className="btn-primary w-full"
         >
-          {loading ? "Entrando…" : "Entrar"}
+          {loading ? copy.entering : copy.enter}
         </button>
       </form>
 
       <p className="mt-5 text-center text-sm text-slate-500">
-        ¿No tienes cuenta?{" "}
+        {copy.noAccount}{" "}
         <Link
           href={nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : "/signup"}
           className="font-semibold text-blue-600 hover:underline"
         >
-          Crear cuenta
+          {copy.createAccount}
         </Link>
       </p>
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-slate-200" />
         <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-          o
+          {copy.or}
         </span>
         <div className="h-px flex-1 bg-slate-200" />
       </div>
 
       <form onSubmit={handleGuestCode}>
         <label htmlFor="guest-code" className="block text-sm font-semibold text-slate-800">
-          Código de tu fisioterapeuta
+          {copy.guestCodeTitle}
         </label>
         <input
           id="guest-code"
           value={inviteCode}
           onChange={(e) => setInviteCode(parsePastedInviteCode(e.target.value))}
-          placeholder="Ej. K7M2P9QX"
+          placeholder={copy.guestCodePlaceholder}
           autoCapitalize="characters"
           autoCorrect="off"
           spellCheck={false}
@@ -181,7 +199,7 @@ export function LoginForm({ nextPath, initialCode = "" }: LoginFormProps) {
           disabled={busy}
           className="mt-4 w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100 disabled:opacity-60"
         >
-          {guestLoading ? "Abriendo consulta…" : "Empezar consulta previa"}
+          {guestLoading ? copy.guestOpening : copy.guestStart}
         </button>
       </form>
     </div>

@@ -6,8 +6,8 @@ export const AI_ELBOW_WRIST_MASTER_INTEGRATION_RULES = `CODO / MUÑECA — ÁRBO
 
 FLUJO: RED FLAGS → trauma/escafoides → cribado NEURAL (territorio+cuello) → LOCALIZACIÓN → rama → cluster Evidence DB → diferencial → coexistencia → recomendación.
 
-NUNCA: Cozen = epicondilitis confirmada. NUNCA: Phalen = STC confirmado. NUNCA inventar Sn/Sp.
-Meñique solo ≠ STC. Phalen/Tinel negativos no descartan STC.
+NUNCA: Cozen/Maudsley = epicondilitis o nervio radial confirmado. NUNCA: Phalen/Durkan = STC confirmado. NUNCA: WHAT = De Quervain confirmado. NUNCA inventar Sn/Sp.
+Meñique solo ≠ STC. Durkan/Phalen/Tinel negativos no descartan STC.
 
 RED FLAGS: deformidad/luxación, no mueve, dedos fríos, fiebre+articulación, FOOSH+tabaquera → imagen escafoides (RX inicial puede ser normal).
 
@@ -20,6 +20,11 @@ ENRUTAR:
 | Estiloides radial / pulgar | De Quervain |
 | FOOSH + tabaquera | Escafoides |
 | Cuello + hormigueo atípico | Cervical |
+| Pop anterior + debilidad supinación | Bíceps distal (hook) |
+| Lanzador + valgo medial | UCL (moving valgus) |
+| Aprensión al empujarse palmas arriba | PLRI (no pivot-shift en casa) |
+| Dolor cubital muñeca / giro | TFCC ± DRUJ (fóvea / piano-key) |
+| Click dorso central post-FOOSH | SL (Watson) tras cribado escafoides |
 
 DOLOR FAMILIAR: «¿Es el mismo al agarrar, ratón, flexionar muñeca o al despertar con hormigueo?»
 LENGUAJE: «compatible con», «apoya/baja».`;

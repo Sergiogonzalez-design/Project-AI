@@ -6,8 +6,10 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../lib/colors";
+import { screenHeaderBarPadding } from "../lib/screen-header-insets";
 import { bodyPartLabel } from "../lib/body-parts";
 import { isThighOrHamstringComplaint } from "../lib/detect-body-part";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
@@ -221,6 +223,9 @@ export function ClinicalReasoningFlow({
   patientName: string | null;
   onClose: () => void;
 }) {
+  const insets = useSafeAreaInsets();
+  const topPad = screenHeaderBarPadding(insets);
+
   const initialSession = useMemo(
     () => createSession({ reportId, bodyArea, physioReport }),
     [reportId, bodyArea, physioReport]
@@ -253,8 +258,8 @@ export function ClinicalReasoningFlow({
   if (!initialSession || !session || !tree || !currentNode) {
     return (
       <View style={styles.root}>
-        <Pressable style={styles.backRow} onPress={onClose}>
-          <Ionicons name="arrow-back" size={20} color={Colors.text} />
+        <Pressable style={[styles.backRow, styles.backRowPad, topPad]} onPress={onClose}>
+          <Ionicons name="arrow-back" size={22} color={Colors.text} />
           <Text style={styles.backText}>Volver al informe</Text>
         </Pressable>
         <View style={styles.emptyCard}>
@@ -272,9 +277,9 @@ export function ClinicalReasoningFlow({
 
   return (
     <View style={styles.root}>
-      <View style={styles.topBar}>
-        <Pressable style={styles.backRow} onPress={onClose}>
-          <Ionicons name="arrow-back" size={20} color={Colors.text} />
+      <View style={[styles.topBar, topPad]}>
+        <Pressable style={styles.backRow} onPress={onClose} hitSlop={8}>
+          <Ionicons name="arrow-back" size={22} color={Colors.text} />
           <Text style={styles.backText}>Volver al informe</Text>
         </Pressable>
         <View style={styles.stepBadge}>
@@ -317,30 +322,37 @@ export function ClinicalReasoningFlow({
 
         <View style={styles.actionsRow}>
           {session.steps.length > 1 ? (
-            <Pressable
-              style={styles.secondaryBtn}
-              onPress={() => setSession((prev) => (prev ? goBack(prev) : prev))}
-            >
-              <Text style={styles.secondaryBtnText}>← Paso anterior</Text>
-            </Pressable>
+            <>
+              <Pressable
+                style={styles.secondaryBtn}
+                onPress={() =>
+                  setSession((prev) => {
+                    if (!prev) return prev;
+                    return goBack(prev) ?? prev;
+                  })
+                }
+              >
+                <Text style={styles.secondaryBtnText}>← Paso anterior</Text>
+              </Pressable>
+              <Pressable
+                style={styles.secondaryBtn}
+                onPress={() =>
+                  setSession({
+                    ...session,
+                    currentNodeId: session.entryNodeId,
+                    steps: [
+                      {
+                        nodeId: session.entryNodeId,
+                        at: new Date().toISOString(),
+                      },
+                    ],
+                  })
+                }
+              >
+                <Text style={styles.secondaryBtnText}>Reiniciar secuencia</Text>
+              </Pressable>
+            </>
           ) : null}
-          <Pressable
-            style={styles.secondaryBtn}
-            onPress={() =>
-              setSession({
-                ...session,
-                currentNodeId: session.entryNodeId,
-                steps: [
-                  {
-                    nodeId: session.entryNodeId,
-                    at: new Date().toISOString(),
-                  },
-                ],
-              })
-            }
-          >
-            <Text style={styles.secondaryBtnText}>Reiniciar secuencia</Text>
-          </Pressable>
         </View>
       </ScrollView>
     </View>
@@ -354,16 +366,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingBottom: 10,
+    backgroundColor: Colors.white,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
   },
   backRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     paddingVertical: 8,
+    minHeight: 44,
   },
-  backText: { fontSize: 14, fontWeight: "600", color: Colors.text },
+  backRowPad: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  backText: { fontSize: 15, fontWeight: "600", color: Colors.text },
   stepBadge: {
     backgroundColor: "#F3F4F6",
     borderRadius: 999,

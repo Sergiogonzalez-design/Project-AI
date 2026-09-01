@@ -1,0 +1,49 @@
+---
+description: Physioguide modules must sync to code AND conocimientos RAG
+alwaysApply: true
+---
+
+# Physioguide — dual sync (código + conocimientos)
+
+When implementing or updating a Physioguide clinical module, **always do BOTH**:
+
+## 1. Code (deterministic — always applied)
+
+- `knowledge/clinical-reasoning/<module>.md` — full clinical module
+- `lib/physioguide-<module>-rules.ts` — AI rules constant
+- Wire into `lib/ai-consult-rules.ts`, `mobile/src/lib/ai-consult-rules.ts`, `supabase/functions/ai-consult/response-rules.ts`
+- Expand adaptive questionnaire + `lib/clinical-reasoning/trees.ts` (+ mobile copies)
+- Deploy `ai-consult` edge function after rule changes
+- Append hip/region rules to **physio_chat** and **physio_report** prompts in `supabase/functions/ai-consult/index.ts` when the module is region-specific
+
+## 2. Conocimientos RAG (retrieved + citable)
+
+After code is ready, ingest the markdown module:
+
+```bash
+node scripts/ingest-clinical-reasoning.mjs
+```
+
+Or one file: `node scripts/ingest-clinical-reasoning.mjs hip-lateral-pain.md`
+
+Source titles use prefix `Physioguide — …` so RAG and Admin list them clearly.
+
+## 3. Fase 3 evidence DB (tests + clusters)
+
+When adding structured test/cluster evidence (not a clinical region module):
+
+- `knowledge/evidence/<file>.md` — formato master §21 (Purpose…AI rule + Citation)
+- `lib/physioguide-evidence-db-rules.ts` (+ mobile) if rules change
+- Ingest: `node scripts/ingest-clinical-reasoning.mjs hip-tests.md`
+- Prefix: `Physioguide — Evidencia — …`
+- Never invent Sn/Sp; mark mixed evidence explicitly
+
+## Who uses what
+
+| Surface | Hardcoded rules | RAG (document_chunks) |
+|---------|-----------------|------------------------|
+| Consulta paciente | Yes (AI_EVIDENCE…) | Yes (fetchRagContext) |
+| Fisioterapia tab (informe) | Yes (physio_report + rules) | Yes |
+| /fisio/consulta Physio chat | Yes (physio_chat + rules) | Yes |
+
+Both paths must stay aligned. Never ship code-only Physioguide modules without running the ingest script.

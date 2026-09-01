@@ -47,7 +47,9 @@ export type FunctionalProtocolId =
   | "knee"
   | "hip"
   | "lumbar"
-  | "cervical";
+  | "cervical"
+  | "finger"
+  | "head";
 
 export type FunctionalProtocol = {
   id: FunctionalProtocolId;
@@ -1230,7 +1232,7 @@ export const HIP_PROTOCOL: FunctionalProtocol = {
 /** Lumbar — forward bend, SLS, sit-to-stand, walk. */
 export const LUMBAR_PROTOCOL: FunctionalProtocol = {
   id: "lumbar",
-  match: /lumbar|lumbago|espalda\s*baja|low\s*back|ci[aá]tica|lumbalgia/i,
+  match: /lumbar|lumbago|espalda(\s*baja)?|low\s*back|\bback\b|ci[aá]tica|lumbalgia/i,
   name: {
     es: "Valoración funcional — Lumbar / espalda baja",
     en: "Functional assessment — Lumbar / low back",
@@ -1304,6 +1306,204 @@ export const LUMBAR_PROTOCOL: FunctionalProtocol = {
       "Si el retest sigue malo → presencial; RMN si irradiación/neurológicos persistentes; mantener vigilancia de banderas rojas.",
     en:
       "If retest still bad → in-person; MRI if persistent radiation/neurological signs; keep watching for red flags.",
+  },
+};
+
+/** Finger / thumb — neural screen, trigger, jersey/mallet, UCL, pinch. */
+export const FINGER_PROTOCOL: FunctionalProtocol = {
+  id: "finger",
+  match:
+    /dedo|finger|pulgar|thumb|trigger|mallet|jersey|interfal[aá]ngic|IFP|IFD|UCL|gamekeeper|skier|A1|tenosinovitis\s*digital/i,
+  name: {
+    es: "Valoración funcional — Dedos / pulgar",
+    en: "Functional assessment — Fingers / thumb",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay dedo frío/pálido, herida abierta con tendón visible, deformidad marcada, incapacidad total de mover el dedo tras trauma, o pulgar muy hinchado con fiebre → URGENCIAS YA. Jersey finger / mallet con déficit activo → valoración médica pronto.",
+    en:
+      "If the finger is cold/pale, open wound with visible tendon, marked deformity, total inability to move the finger after trauma, or very swollen thumb with fever → ER NOW. Jersey finger / mallet with active deficit → medical assessment soon.",
+  },
+  historyItems: [
+    {
+      id: "hx_finger_trauma",
+      question: {
+        es: "¿Hubo un golpe, agarre forzado, torsión o valgo del pulgar (balón, esquí, caída)?",
+        en: "Was there a blow, forced grip, twist, or thumb valgus (ball, ski, fall)?",
+      },
+    },
+    {
+      id: "hx_finger_onset",
+      question: {
+        es: "¿El problema empezó de golpe (trauma) o fue apareciendo poco a poco (repetitivo)?",
+        en: "Did it start suddenly (trauma) or gradually (overuse/repetitive)?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_fist_full_rom",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes hacer un puño completo y abrir la mano sin bloqueo doloroso?",
+        en: "Can you make a full fist and open the hand without painful blocking?",
+      },
+    },
+    {
+      id: "test_pinch_strength",
+      positiveWhen: "no",
+      question: {
+        es: "Al pellizcar (pulgar–índice), ¿hay dolor, debilidad o sensación de inestabilidad?",
+        en: "When pinching (thumb–index), is there pain, weakness, or a sense of instability?",
+      },
+    },
+    {
+      id: "test_trigger_click",
+      question: {
+        es: "¿Algún dedo se «traba», hace chasquido al flexionar/extender o amanece trabado?",
+        en: "Does any finger lock, click when bending/straightening, or wake up stuck?",
+      },
+    },
+    {
+      id: "test_spread_fingers",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes separar y juntar los dedos con fuerza similar al otro lado?",
+        en: "Can you spread and squeeze the fingers with similar strength to the other side?",
+      },
+    },
+    {
+      id: "test_ifp_active_flex",
+      question: {
+        es: "Tras un trauma en flexión: ¿puedes flexionar activamente la articulación del medio del dedo (IFP) manteniendo la punta recta?",
+        en: "After a flexion injury: can you actively bend the middle joint (PIP) while keeping the fingertip straight?",
+      },
+    },
+    {
+      id: "test_ifd_active_extend",
+      question: {
+        es: "Tras un golpe en la punta: ¿puedes mantener la punta del dedo extendida sin que «caiga»?",
+        en: "After hitting the fingertip: can you keep the fingertip straight without it drooping?",
+      },
+    },
+    {
+      id: "test_night_tingling_median",
+      question: {
+        es: "¿Hormigueo nocturno o al agarrar cosas en pulgar, índice o medio (sin dominar solo meñique)?",
+        en: "Night tingling or tingling when gripping in thumb, index, or middle (not mainly the little finger alone)?",
+      },
+    },
+  ],
+  suspectThreshold: 0.45,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar agarres fuertes, torsiones y deportes de contacto). Movilidad suave sin dolor si no hay sospecha de jersey/mallet/UCL grave. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid strong grips, twists, and contact sports). Gentle pain-free motion if no suspected jersey/mallet/UCL tear. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; ecografía/RMN si sospecha jersey, mallet, UCL o trigger persistente; valoración médica si déficit activo.",
+    en:
+      "If retest still bad → in-person; ultrasound/MRI if jersey, mallet, UCL, or persistent trigger suspected; medical assessment if active deficit.",
+  },
+};
+
+/** Headache — SNOOP screen, cervical provocation, migraine/tension patterns. */
+export const HEAD_PROTOCOL: FunctionalProtocol = {
+  id: "head",
+  match:
+    /cefalea|headache|migra|migraine|cluster\s*head|occipital|hemicran|forehead|temple|temporal\s*head|head\s*pain|\bhead\b/i,
+  name: {
+    es: "Valoración funcional — Cabeza / cefalea",
+    en: "Functional assessment — Head / headache",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si es la peor cefalea de tu vida, empezó de golpe (thunderclap), hay fiebre + rigidez de cuello, confusión, visión doble persistente, debilidad de un lado, trauma reciente con vómitos/somnolencia, o embarazo con cefalea nueva → URGENCIAS YA. No batería de tests caseros.",
+    en:
+      "If it is the worst headache of your life, started suddenly (thunderclap), fever + stiff neck, confusion, persistent double vision, one-sided weakness, recent head trauma with vomiting/drowsiness, or pregnancy with new headache → ER NOW. No home test battery.",
+  },
+  historyItems: [
+    {
+      id: "hx_head_onset",
+      question: {
+        es: "¿La cefalea empezó de golpe (segundos) o fue apareciendo gradualmente?",
+        en: "Did the headache start suddenly (seconds) or build up gradually?",
+      },
+    },
+    {
+      id: "hx_head_pattern_change",
+      question: {
+        es: "¿Es un patrón de dolor de cabeza distinto al habitual o peor que nunca?",
+        en: "Is this a different headache pattern than usual or worse than ever?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_neck_worsens_headache",
+      question: {
+        es: "¿Al girar o inclinar el cuello empeora el mismo dolor de cabeza de siempre?",
+        en: "Does turning or tilting the neck worsen the same usual headache?",
+      },
+    },
+    {
+      id: "test_migraine_pattern",
+      question: {
+        es: "¿Es unilateral, pulsátil y va con náuseas, sensibilidad a la luz o sonido?",
+        en: "Is it one-sided, throbbing, and accompanied by nausea, light sensitivity, or sound sensitivity?",
+      },
+    },
+    {
+      id: "test_tension_pattern",
+      positiveWhen: "no",
+      question: {
+        es: "¿Es bilateral, como «presión» en la frente/sienes y empeora con estrés o pantallas?",
+        en: "Is it bilateral, like pressure across the forehead/temples, worse with stress or screens?",
+      },
+    },
+    {
+      id: "test_arm_with_headache",
+      question: {
+        es: "¿Hay hormigueo, entumecimiento o dolor que baja al brazo junto con la cefalea?",
+        en: "Is there tingling, numbness, or arm pain along with the headache?",
+      },
+    },
+    {
+      id: "test_sustained_upgaze_head",
+      positiveWhen: "no",
+      question: {
+        es: "¿Aguantas 20–30 s mirando un poco hacia arriba sin mareo ni empeorar la cefalea?",
+        en: "Can you hold a slight upward gaze for 20–30 s without dizziness or worsening headache?",
+      },
+    },
+    {
+      id: "test_analgesic_overuse",
+      question: {
+        es: "¿Tomas analgésicos casi a diario (>15 días/mes) para la cabeza?",
+        en: "Do you take painkillers almost daily (>15 days/month) for the headache?",
+      },
+    },
+  ],
+  suspectThreshold: 0.45,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (hidratación, sueño regular, pausas de pantalla, movilidad cervical suave si no hay red flags). Evitar analgésicos en exceso. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (hydration, regular sleep, screen breaks, gentle neck mobility if no red flags). Avoid excess painkillers. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; valoración médica si patrón migrañoso persistente, cervicogénica refractaria o sobreuso analgésico; RMN/TC solo según criterio médico.",
+    en:
+      "If retest still bad → in-person; medical assessment for persistent migraine pattern, refractory cervicogenic headache, or medication overuse; MRI/CT only per medical criteria.",
   },
 };
 
@@ -1405,6 +1605,8 @@ export const FUNCTIONAL_PROTOCOLS: FunctionalProtocol[] = [
   HIP_PROTOCOL,
   LUMBAR_PROTOCOL,
   CERVICAL_PROTOCOL,
+  FINGER_PROTOCOL,
+  HEAD_PROTOCOL,
 ];
 
 /** Default rest / retest timing for every non-urgent body region. */
@@ -1640,6 +1842,22 @@ export function findFunctionalProtocolLoose(
     return ELBOW_PROTOCOL;
   }
 
+  if (
+    /dedo|finger|pulgar|thumb|trigger|mallet|jersey|interfal[aá]ngic|IFP|IFD|UCL|gamekeeper|skier/i.test(
+      text
+    )
+  ) {
+    return FINGER_PROTOCOL;
+  }
+
+  if (
+    /cefalea|headache|migra|migraine|cluster\s*head|occipital|hemicran|forehead|\bhead\b/i.test(
+      text
+    )
+  ) {
+    return HEAD_PROTOCOL;
+  }
+
   if (/mu[nñ]eca|wrist|mano\b|hand|t[uú]nel\s*carpiano|TFCC|escafoides/i.test(text)) {
     return WRIST_HAND_PROTOCOL;
   }
@@ -1652,7 +1870,7 @@ export function findFunctionalProtocolLoose(
     return HIP_PROTOCOL;
   }
 
-  if (/lumbar|lumbago|espalda\s*baja|low\s*back|ci[aá]tica/i.test(text)) {
+  if (/lumbar|lumbago|espalda(\s*baja)?|low\s*back|\bback\b|ci[aá]tica|lumbalgia/i.test(text)) {
     return LUMBAR_PROTOCOL;
   }
 
@@ -1781,7 +1999,11 @@ export function buildFunctionalProtocolPromptBlock(
                                     ? "lumbar / low back"
                                     : protocol.id === "cervical"
                                       ? "cervical / neck"
-                                      : protocol.id;
+                                      : protocol.id === "finger"
+                                        ? "dedos / fingers / thumb"
+                                        : protocol.id === "head"
+                                          ? "cabeza / headache"
+                                          : protocol.id;
 
   const lines = [
     `PROTOCOLO ESTRUCTURADO — ${protocol.name.es} / ${protocol.name.en}`,

@@ -19,7 +19,10 @@ import {
   AI_SHOULDER_ANTERIOR_PAIN_RULES,
   AI_SHOULDER_INSTABILITY_TRAUMA_RULES,
   AI_SHOULDER_LATERAL_RCRSP_RULES,
+  AI_SHOULDER_LATERAL_REFERRED_RULES,
   AI_SHOULDER_MASTER_INTEGRATION_RULES,
+  AI_SHOULDER_POSTERIOR_INSTABILITY_RULES,
+  AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES,
   AI_SHOULDER_SUPERIOR_AC_RULES,
   AI_ANKLE_ACHILLES_RULES,
   AI_ANKLE_FOOT_MASTER_INTEGRATION_RULES,
@@ -31,12 +34,31 @@ import {
   AI_ELBOW_WRIST_NEURAL_RULES,
   AI_WRIST_DEQUERVAIN_RULES,
   AI_WRIST_TRAUMA_SCAPHOID_RULES,
+  AI_ELBOW_DISTAL_BICEPS_RULES,
+  AI_ELBOW_DISTAL_TRICEPS_RULES,
+  AI_ELBOW_PLRI_RULES,
+  AI_ELBOW_RADIAL_TUNNEL_RULES,
+  AI_ELBOW_UCL_MEDIAL_RULES,
+  AI_ELBOW_WRIST_GUYON_RULES,
+  AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES,
+  AI_WRIST_TFCC_ULNAR_RULES,
+  AI_WRIST_DRUJ_RULES,
+  AI_WRIST_CARPAL_INSTABILITY_RULES,
   AI_CERVICAL_NECK_PAIN_RULES,
   AI_CERVICAL_TRAUMA_REDFLAGS_RULES,
   AI_LUMBAR_BACK_PAIN_RULES,
   AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES,
   AI_FINGER_DIGITAL_PAIN_RULES,
   AI_HEAD_HEADACHE_MASTER_RULES,
+  AI_HYPOTHESIS_EXPLORATION_RULES,
+  AI_MTRP_FRAMEWORK_RULES,
+  AI_CLARITY_NO_OVERDIAGNOSIS_RULES,
+  AI_PERSISTENCE_REEVALUATION_RULES,
+  AI_NO_IMAGING_DECISION_RULES,
+  AI_EVIDENCE_LEVELS_RULES,
+  AI_DIFFERENTIAL_MATRICES_RULES,
+  AI_REFERRED_PAIN_LIBRARY_RULES,
+  AI_NEGATIVE_TEST_LIBRARY_RULES,
   AI_SPINE_MASTER_INTEGRATION_RULES,
   AI_GLOBAL_CROSS_REGION_RULES,
   AI_ILLUSTRATED_CLINICAL_TESTS_RULES,
@@ -155,7 +177,8 @@ function withImageRules(prompt: string, hasImage: boolean): string {
 }
 
 function withLanguage(prompt: string, language: "es" | "en"): string {
-  return `${prompt}\n\n${languageInstruction(language)}`;
+  // Put the language rule first so it outweighs Spanish case notes / RAG.
+  return `${languageInstruction(language)}\n\n${prompt}\n\n${languageInstruction(language)}`;
 }
 
 function linkedPhysioLabel(
@@ -191,6 +214,7 @@ PURPOSE OF THIS CHAT (the ONLY purpose):
 - That report goes to **${who}**'s dashboard before the appointment. You are NOT chatting with ${who}; you are an AI preparing their report.
 
 STRICT RULES:
+- A questionnaire MUST always be completed in this tab before the report. If the patient is vague, ask WHERE it hurts, then the app will open the matching questionnaire. Never skip the questionnaire to chat freely.
 - Do NOT invite free-form chatting or "ask me anything" in this tab.
 - Do NOT say the patient can talk "directly" with **${who}** (or any physiotherapist) inside Kinora — neither this tab nor Consulta is a live chat with the clinician.
 - NEVER tell the patient possible injuries, diagnoses, affected structures, or clinical hypotheses. That content is ONLY for the clinician report **${who}** will read — never in this chat.
@@ -206,6 +230,7 @@ El paciente ha introducido el código de su fisioterapeuta **${who}**.
 - Ese informe va al panel de **${who}** antes de la cita. Tú NO eres ${who}; eres la IA que prepara su informe.
 
 REGLAS ESTRICTAS:
+- En esta pestaña SIEMPRE hay que completar un cuestionario antes del informe. Si el paciente es vago, pregunta DÓNDE duele; la app abrirá el cuestionario de esa zona. Nunca saltes el cuestionario para chatear.
 - NO invites a chatear libremente ni digas "puedes preguntarme lo que quieras aquí".
 - NUNCA digas que puede hablar "directamente" con **${who}** (ni con ningún fisioterapeuta) dentro de Kinora: ni esta pestaña ni Consulta son un chat en vivo con el profesional.
 - NUNCA digas al paciente posibles lesiones, diagnósticos, estructuras afectadas ni hipótesis clínicas. Eso va SOLO en el informe que leerá **${who}**, nunca en este chat.
@@ -345,7 +370,7 @@ const TRIAGE_SYSTEM_PROMPT = `Eres Physio, asistente de Kinora. Clasificas cada 
 Devuelve SOLO JSON válido con esta forma:
 {
   "action": "questionnaire" | "respond",
-  "bodyPart": "shoulder" | "elbow" | "wrist_hand" | "finger" | "neck" | "back" | "hip" | "knee" | "ankle_foot" | null,
+  "bodyPart": "shoulder" | "elbow" | "wrist_hand" | "finger" | "head" | "neck" | "back" | "hip" | "knee" | "ankle_foot" | null,
   "intent": "general" | "symptom_other" | null,
   "answer": "string o null"
 }
@@ -353,7 +378,7 @@ Devuelve SOLO JSON válido con esta forma:
 REGLAS DE CLASIFICACIÓN:
 
 1) action = "questionnaire" SI el usuario describe un PROBLEMA PERSONAL ACTUAL (dolor, molestia, lesión, limitación, hinchazón, traumatismo, rigidez) en CUALQUIER zona musculoesquelética.
-   - Incluye: hombro, codo, muñeca/mano, dedo(s), cuello/cervical, espalda, cadera, rodilla, pierna baja/tobillo/pie.
+   - Incluye: hombro, codo, muñeca/mano, dedo(s), cabeza, cuello/cervical, espalda, cadera, rodilla, pierna baja/tobillo/pie.
    - Incluye mensajes de seguimiento como "también me duele el codo" o "ahora me molesta el cuello".
    - bodyPart debe ser la zona principal de ESTE mensaje (shoulder, elbow, wrist_hand, finger, neck, back, hip, knee, ankle_foot).
    - Usa "finger" cuando el problema es específico de uno o varios dedos; "wrist_hand" para muñeca/mano en general; "neck" para cuello/cervical; "back" para espalda/lumbar/dorsal.
@@ -393,6 +418,7 @@ REGLAS DE CLASIFICACIÓN:
 
 4) action = "respond" con intent = "symptom_other" SOLO si describe síntomas personales ACTUALES pero NO se puede asignar una zona concreta (muy vago) o varias zonas a la vez sin zona principal clara.
    - bodyPart = null, answer = null (el cliente abrirá cuestionario genérico)
+   - En flujo Fisioterapia (informe para el fisio): NUNCA uses intent = "general" para un síntoma personal vago. Usa symptom_other para que SIEMPRE se abra cuestionario e informe.
 
 NO uses "questionnaire" para peticiones de ejercicios, consejos generales o preguntas hipotéticas.
 NO uses clinical screen / respuesta larga de lesiones sin cuestionario cuando hay un problema personal en una zona.`;
@@ -553,7 +579,7 @@ DESTINATARIO: profesional sanitario. Usa lenguaje técnico y nomenclatura clíni
 - Hablar de hipótesis (compatibilidad / cluster), red flags y criterio de imagen (RX/US/RM). NUNCA inventes sensibilidad, especificidad, LR ni porcentajes; cita cualitativa solo si está en un chunk «Physioguide —».
 - NUNCA uses «distensión» / «distension» para nombrar o describir una lesión; usa lesión muscular, esguince, rotura fibrilar/parcial, contusión o el cuadro concreto.
 - NO uses el tono ni el formato del informe para pacientes (nada de “Pruebas funcionales” en lenguaje cotidiano).
-- FORMATO: NUNCA uses encabezados Markdown con # / ## / ###. Para títulos de sección usa solo negrita con **así** (p. ej. **Hipótesis diagnósticas**). El resto del texto en párrafos y listas normales.
+- FORMATO: NUNCA uses asteriscos ni almohadillas en el texto visible. Nada de Markdown (negrita, cursiva, # títulos). Títulos de sección en su propia línea, sin símbolos (p. ej. Hipótesis diagnósticas). El resto del texto en párrafos y listas normales.
 - MATERIAL DE LA CONSULTA: NO adaptes tus respuestas al material o equipo que el fisio tenga o no tenga en consulta. Ignora cualquier bloque de «material disponible» si apareciera en el contexto. Recomienda lo clínicamente indicado (pruebas, imagen, técnicas, derivaciones) sin limitarte a lo que supuestamente dispone.
 - Sé conciso, estructurado y útil en consulta. Si falta información clínica, pide los datos que faltan.
 - No emitas diagnóstico definitivo; orienta el razonamiento clínico.
@@ -562,7 +588,7 @@ DESTINATARIO: profesional sanitario. Usa lenguaje técnico y nomenclatura clíni
   * Si el fisio pide pruebas de una zona (aunque diga «funcionales» o «para un paciente»), responde con lista numerada usando SOLO nombres canónicos del catálogo ilustrado de ESA zona.
   * Si pide TODAS las pruebas de una zona (o «todas», «all», «el catálogo»), lista TODAS las del grupo, cada una en una línea numerada con el nombre canónico (así aparece el vídeo de cada una).
   * Si pide todas las pruebas sin zona, recorre cada grupo con encabezado **Zona:** y lista todas las de ese grupo.
-  * Lumbar/espalda: NUNCA numeres Cajón posterior (eso es rodilla/LCP). Solo Schober, SLR/Lasègue, SLR cruzado, Kemp.
+  * Lumbar/espalda: NUNCA numeres Cajón posterior (eso es rodilla/LCP). Solo SLR/Lasègue, SLR cruzado, Kemp, FABER (Patrick), Schober. Si el caso es solo «Espalda», trata como lumbar y lista 4–5 de ese grupo.
   * PROHIBIDO inventar nombres genéricos en líneas numeradas («Agarre», «flexión/extensión resistida», «elevación activa», «apoyo monopodal» sin el nombre del test, «Sentadilla», «Marcha», etc.).
   * Ejemplo correcto para muñeca: "1. **Test de Phalen**: …" / "2. **Signo de Tinel**: …". Incorrecto: "1. **Agarre**: …".
   * Tras el nombre canónico SIEMPRE explica brevemente cómo se ejecuta el test (posición del paciente, qué hace el terapeuta, qué es positivo). Es obligatorio para cada test numerado.
@@ -602,11 +628,17 @@ ${AI_SHOULDER_MASTER_INTEGRATION_RULES}
 
 ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
+${AI_SHOULDER_LATERAL_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
 
 ${AI_SHOULDER_INSTABILITY_TRAUMA_RULES}
+
+${AI_SHOULDER_POSTERIOR_INSTABILITY_RULES}
+
+${AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES}
 
 RAZONAMIENTO CLÍNICO PHYSIOGUIDE — TOBILLO / PIE (aplicar cuando el caso sea tobillo/pie/Aquiles/fascia; combinar con RAG; Ottawa primero en trauma):
 
@@ -632,6 +664,26 @@ ${AI_WRIST_DEQUERVAIN_RULES}
 
 ${AI_WRIST_TRAUMA_SCAPHOID_RULES}
 
+${AI_ELBOW_DISTAL_BICEPS_RULES}
+
+${AI_ELBOW_DISTAL_TRICEPS_RULES}
+
+${AI_ELBOW_PLRI_RULES}
+
+${AI_ELBOW_RADIAL_TUNNEL_RULES}
+
+${AI_ELBOW_UCL_MEDIAL_RULES}
+
+${AI_ELBOW_WRIST_GUYON_RULES}
+
+${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
+
+${AI_WRIST_TFCC_ULNAR_RULES}
+
+${AI_WRIST_DRUJ_RULES}
+
+${AI_WRIST_CARPAL_INSTABILITY_RULES}
+
 RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (cuello/lumbar; Spurling/SLR/Kemp no confirman hernia/faceta):
 
 ${AI_SPINE_MASTER_INTEGRATION_RULES}
@@ -647,6 +699,24 @@ ${AI_LUMBAR_BACK_PAIN_RULES}
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
 ${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_HYPOTHESIS_EXPLORATION_RULES}
+
+${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
+
+${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_NO_IMAGING_DECISION_RULES}
+
+${AI_MTRP_FRAMEWORK_RULES}
+
+${AI_REFERRED_PAIN_LIBRARY_RULES}
+
+${AI_NEGATIVE_TEST_LIBRARY_RULES}
+
+${AI_DIFFERENTIAL_MATRICES_RULES}
+
+${AI_EVIDENCE_LEVELS_RULES}
 
 ${AI_EVIDENCE_DB_RULES}
 
@@ -714,11 +784,17 @@ ${AI_SHOULDER_MASTER_INTEGRATION_RULES}
 
 ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
+${AI_SHOULDER_LATERAL_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
 
 ${AI_SHOULDER_INSTABILITY_TRAUMA_RULES}
+
+${AI_SHOULDER_POSTERIOR_INSTABILITY_RULES}
+
+${AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES}
 
 RAZONAMIENTO CLÍNICO PHYSIOGUIDE — TOBILLO / PIE (aplicar en informes de tobillo/pie; Ottawa primero en trauma):
 
@@ -744,6 +820,26 @@ ${AI_WRIST_DEQUERVAIN_RULES}
 
 ${AI_WRIST_TRAUMA_SCAPHOID_RULES}
 
+${AI_ELBOW_DISTAL_BICEPS_RULES}
+
+${AI_ELBOW_DISTAL_TRICEPS_RULES}
+
+${AI_ELBOW_PLRI_RULES}
+
+${AI_ELBOW_RADIAL_TUNNEL_RULES}
+
+${AI_ELBOW_UCL_MEDIAL_RULES}
+
+${AI_ELBOW_WRIST_GUYON_RULES}
+
+${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
+
+${AI_WRIST_TFCC_ULNAR_RULES}
+
+${AI_WRIST_DRUJ_RULES}
+
+${AI_WRIST_CARPAL_INSTABILITY_RULES}
+
 RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (informes de cuello/lumbar):
 
 ${AI_SPINE_MASTER_INTEGRATION_RULES}
@@ -760,6 +856,24 @@ ${AI_FINGER_DIGITAL_PAIN_RULES}
 
 ${AI_HEAD_HEADACHE_MASTER_RULES}
 
+${AI_HYPOTHESIS_EXPLORATION_RULES}
+
+${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
+
+${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_NO_IMAGING_DECISION_RULES}
+
+${AI_MTRP_FRAMEWORK_RULES}
+
+${AI_REFERRED_PAIN_LIBRARY_RULES}
+
+${AI_NEGATIVE_TEST_LIBRARY_RULES}
+
+${AI_DIFFERENTIAL_MATRICES_RULES}
+
+${AI_EVIDENCE_LEVELS_RULES}
+
 ${AI_EVIDENCE_DB_RULES}
 
 IMPORTANTE: no contradigas el informe que ya recibió el paciente (te lo paso como "Informe ya entregado al paciente"); constrúyelo y amplíalo. Si hay discrepancia relevante, señálala en "Puntos de alerta".
@@ -768,7 +882,7 @@ NO inventes datos que no estén en el cuestionario, las pruebas funcionales, la 
 
 Devuelve el informe en este orden EXACTO de secciones, con encabezados en negrita exactamente así:
 
-**Resultados de las pruebas funcionales ya realizadas** — lista cada prueba con nombre clínico (y entre paréntesis la instrucción cotidiana si aplica), resultado (SÍ/NO u otro) e interpretación breve. Si el paciente aún no envió resultados, indica “Pendiente / no realizadas” y qué implica.
+**Resultados de las pruebas funcionales ya realizadas** — lista cada prueba con nombre clínico (y entre paréntesis la instrucción cotidiana si aplica), resultado e interpretación breve. El resultado Sí/No (o Yes/No) debe ir SIEMPRE en negrita markdown, p. ej. **SÍ** / **NO**. Si el paciente aún no envió resultados, indica “Pendiente / no realizadas” y qué implica.
 
 **Pruebas/maniobras a realizar en la cita** — 3–5 tests clínicos concretos SOLO de la zona lesionada, con nombre técnico, para apoyar o bajar las hipótesis (nunca confirmar un diagnóstico).
 
@@ -1212,16 +1326,28 @@ Deno.serve(async (req) => {
 
     const queryText = isFollowUp
       ? onsetType
-      : [
-          `Zona afectada: ${bodyArea}`,
-          `Cómo empezó: ${onsetType}`,
-          `Nivel de dolor: ${painLevel}/10`,
-          `Traumatismo: ${hadTrauma}`,
-          description ? `Información adicional: ${description}` : "",
-          symptomContext ? `Detalles del caso:\n${symptomContext}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n");
+      : language === "en"
+        ? [
+            `Affected area: ${bodyArea}`,
+            `How it started: ${onsetType}`,
+            `Pain level: ${painLevel}/10`,
+            `Trauma: ${hadTrauma}`,
+            description ? `Additional information: ${description}` : "",
+            symptomContext ? `Case details:\n${symptomContext}` : "",
+            "NOTE: Case details may include Spanish questionnaire labels; still answer entirely in English.",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        : [
+            `Zona afectada: ${bodyArea}`,
+            `Cómo empezó: ${onsetType}`,
+            `Nivel de dolor: ${painLevel}/10`,
+            `Traumatismo: ${hadTrauma}`,
+            description ? `Información adicional: ${description}` : "",
+            symptomContext ? `Detalles del caso:\n${symptomContext}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n");
 
     const { context, sources } = await fetchRagContext(
       supabase,
@@ -1259,15 +1385,26 @@ Deno.serve(async (req) => {
           .filter(Boolean)
           .join("\n\n")
       : [
-          `Síntomas actuales:\n${queryText}`,
+          language === "en"
+            ? `Current symptoms:\n${queryText}`
+            : `Síntomas actuales:\n${queryText}`,
           imageUrl
-            ? "Hay una foto de la lesión adjunta: incorpórala al razonamiento clínico según las reglas de foto (hallazgos visibles + relato + cuestionario)."
+            ? language === "en"
+              ? "There is an attached injury photo: incorporate it into the clinical reasoning per the photo rules (visible findings + story + questionnaire)."
+              : "Hay una foto de la lesión adjunta: incorpórala al razonamiento clínico según las reglas de foto (hallazgos visibles + relato + cuestionario)."
             : "",
           athleteContext ? athleteContext : "",
           context
-            ? `Información relevante de los documentos:\n${context}`
-            : "(No se encontró información específica en documentos. Responde con tus conocimientos generales de fisioterapia.)",
-          buildFunctionalQuestionsPromptBlock(bodyArea),
+            ? language === "en"
+              ? `Relevant information from documents:\n${context}`
+              : `Información relevante de los documentos:\n${context}`
+            : language === "en"
+              ? "(No specific document match found. Reply with general physiotherapy knowledge.)"
+              : "(No se encontró información específica en documentos. Responde con tus conocimientos generales de fisioterapia.)",
+          buildFunctionalQuestionsPromptBlock(bodyArea) +
+            (language === "en"
+              ? "\n\nCRITICAL: Write every patient-facing functional test question in English (YES/NO). Do not paste Spanish bank wording into the reply."
+              : ""),
         ]
           .filter(Boolean)
           .join("\n\n");

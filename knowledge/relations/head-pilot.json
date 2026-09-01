@@ -1,0 +1,176 @@
+{
+  "pilot": "head",
+  "version": 1,
+  "notes": "No invented Sn/Sp. Traditional MTrP maps labeled traditional. No Travell verbatim. SNOOP first.",
+  "relations": [
+    {
+      "id": "snoop-red-flag-if-secondary-headache-features",
+      "source_structure": "possible secondary headache (vascular, infection, mass, trauma)",
+      "target_region": "head",
+      "relationship": "red_flag_if",
+      "clinical_context": "Thunderclap, worst headache, focal neurology, fever/stiff neck, trauma with vomiting/confusion, or other SNOOP-type features.",
+      "supporting_evidence": [
+        "Secondary-headache red-flag frameworks exist to trigger medical/emergency pathways",
+        "MSK or myofascial hypotheses are inappropriate first steps"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "do_not_invent",
+        "notes": "Safety screen, not a physiotherapy test accuracy claim."
+      },
+      "limitations": [
+        "SNOOP is a mnemonic, not a validated single score",
+        "Absence of red flags does not prove primary headache"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Stop elective MSK cascade",
+        "Urgent medical pathway per local protocol"
+      ],
+      "red_flags": [
+        "Thunderclap or sudden severe onset",
+        "Neurological deficit",
+        "Fever with meningism",
+        "Head trauma with red-flag features"
+      ],
+      "references": [
+        {
+          "citation": "Blanpied PR et al. Neck Pain: Revision 2017 (CPG). JOSPT — associated cervical red flags.",
+          "year": 2017
+        },
+        {
+          "citation": "ICHD-3: International Classification of Headache Disorders, 3rd edition — secondary vs primary framing (qualitative).",
+          "year": 2018
+        }
+      ]
+    },
+    {
+      "id": "cervical-may-refer-pain-to-head-cervicogenic",
+      "source_structure": "upper cervical somatic structures (clinical cervicogenic headache construct)",
+      "target_region": "occiput / temporal / orbital perceived pain",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Headache provoked or eased by neck movement/posture, with upper-cervical findings, after SNOOP screen.",
+      "supporting_evidence": [
+        "Neck Pain CPGs include cervicogenic contribution as a clinical pattern",
+        "Evidence reviews emphasize overlap with primary headache and lack of a single confirmatory test"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "No isolated MSK test confirms cervicogenic headache. Do not invent Sn/Sp."
+      },
+      "limitations": [
+        "Migraine and cervicogenic features often coexist",
+        "Spurling does not diagnose headache source"
+      ],
+      "alternative_explanations": [
+        "Migraine",
+        "Tension-type headache",
+        "TMD",
+        "Traditional myofascial hypothesis (D)"
+      ],
+      "recommended_examination": [
+        "SNOOP first",
+        "C0–C2 AROM and familiar-pain reproduction with cervical tests",
+        "Do not treat migraine features as trigger points"
+      ],
+      "red_flags": [
+        "SNOOP features"
+      ],
+      "references": [
+        {
+          "citation": "Bogduk N, Govind J. Cervicogenic headache: an assessment of the evidence on diagnosis, management, and treatment. Lancet Neurol. 2009.",
+          "year": 2009
+        },
+        {
+          "citation": "Blanpied PR et al. Neck Pain: Revision 2017 (CPG). JOSPT.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "migraine-pattern-may-mimic-cervicogenic-or-myofascial",
+      "source_structure": "primary migraine / tension-type headache (ICHD-3 pattern)",
+      "target_region": "head",
+      "relationship": "may_mimic",
+      "clinical_context": "Pulsatile headache with nausea/photophobia ± aura, or bilateral pressing tension-type pattern, with or without neck pain.",
+      "supporting_evidence": [
+        "ICHD-3 classifies primary headache by pattern, not by a physical test",
+        "Neck pain does not exclude migraine"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Pattern recognition, not Sn/Sp of palpation."
+      },
+      "limitations": [
+        "Neck pain is common in migraine",
+        "Do not relabel migraine as MTrP"
+      ],
+      "alternative_explanations": [
+        "Cervicogenic contribution (may coexist)",
+        "TMD",
+        "Secondary headache if red flags"
+      ],
+      "recommended_examination": [
+        "ICHD-3-style pattern questions",
+        "SNOOP",
+        "Cervical exam as adjunct, not replacement"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Headache Classification Committee of the IHS. The International Classification of Headache Disorders, 3rd edition. Cephalalgia. 2018.",
+          "year": 2018
+        }
+      ]
+    },
+    {
+      "id": "upper-trap-scm-may-mimic-headache-traditional",
+      "source_structure": "upper trapezius / SCM / suboccipitals (myofascial hypothesis)",
+      "target_region": "head / temple / orbit",
+      "relationship": "may_mimic",
+      "clinical_context": "Palpation reproduces familiar head pain after SNOOP and after primary vs cervicogenic framing.",
+      "supporting_evidence": [
+        "Classical maps describe head referral from cervical/shoulder girdle muscles (traditional class only)"
+      ],
+      "evidence_level": "D",
+      "referred_pattern_class": "traditional",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "MTrP palpation reliability limited (Lucas 2009). Found ≠ cause."
+      },
+      "limitations": [
+        "Traditional maps are not absolute anatomy",
+        "Must not replace SNOOP or migraine reasoning",
+        "Do not attribute vertigo solely to SCM"
+      ],
+      "alternative_explanations": [
+        "Cervicogenic headache",
+        "Migraine / tension-type",
+        "TMD"
+      ],
+      "recommended_examination": [
+        "Familiar pain on palpation plus cervical AROM",
+        "Vestibular/medical screen if dizziness"
+      ],
+      "red_flags": [
+        "SNOOP",
+        "True vestibular or vascular features"
+      ],
+      "references": [
+        {
+          "citation": "Tough EA et al. Variability of criteria used to diagnose myofascial trigger point pain syndrome. 2007.",
+          "year": 2007
+        },
+        {
+          "citation": "Lucas N et al. Reliability of physical examination for diagnosis of myofascial trigger points. Clin J Pain. 2009.",
+          "year": 2009
+        }
+      ]
+    }
+  ]
+}

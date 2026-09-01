@@ -10,15 +10,18 @@ import {
 } from "react-native";
 import { Colors } from "../lib/colors";
 import { deleteOwnAccountAndSignOut } from "../lib/delete-account";
+import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { AuthBackBar } from "./AuthBackBar";
 import { AuthTextField } from "./AuthTextField";
 
 type Props = {
   onSaved: (name: string) => void;
+  onExit?: () => void;
 };
 
-export function GuestNameGate({ onSaved }: Props) {
+export function GuestNameGate({ onSaved, onExit }: Props) {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +30,7 @@ export function GuestNameGate({ onSaved }: Props) {
     Keyboard.dismiss();
     const displayName = name.trim().replace(/\s+/g, " ");
     if (displayName.length < 2) {
-      setError("Escribe tu nombre para que tu fisioterapeuta sepa quién eres.");
+      setError(t.guest.nameRequired);
       return;
     }
     setLoading(true);
@@ -37,7 +40,7 @@ export function GuestNameGate({ onSaved }: Props) {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setError("Sesión caducada. Vuelve a introducir el código.");
+        setError(t.guest.sessionExpired);
         return;
       }
       const { error: updateError } = await supabase
@@ -45,7 +48,7 @@ export function GuestNameGate({ onSaved }: Props) {
         .update({ display_name: displayName })
         .eq("id", user.id);
       if (updateError) {
-        setError("No se pudo guardar tu nombre. Inténtalo de nuevo.");
+        setError(t.guest.saveNameError);
         return;
       }
       onSaved(displayName);
@@ -60,17 +63,20 @@ export function GuestNameGate({ onSaved }: Props) {
       onPress={Keyboard.dismiss}
       accessible={false}
     >
-      <AuthBackBar onPress={() => void deleteOwnAccountAndSignOut()} />
+      <AuthBackBar
+        onPress={() => {
+          if (onExit) onExit();
+          else void deleteOwnAccountAndSignOut();
+        }}
+      />
       <View style={styles.wrap} pointerEvents="box-none">
         <Image
           source={require("../../assets/logo.png")}
           style={styles.logo}
           accessibilityLabel="AIKinora"
         />
-        <Text style={styles.title}>¿Cómo te llamas?</Text>
-        <Text style={styles.hint}>
-          Tu fisioterapeuta verá este nombre en el informe de la consulta previa.
-        </Text>
+        <Text style={styles.title}>{t.guest.nameTitle}</Text>
+        <Text style={styles.hint}>{t.guest.nameHint}</Text>
         <AuthTextField
           value={name}
           onChangeText={setName}
@@ -80,7 +86,7 @@ export function GuestNameGate({ onSaved }: Props) {
           autoComplete="off"
           textContentType="none"
           importantForAutofill="no"
-          placeholder="Nombre y apellidos"
+          placeholder={t.guest.namePlaceholder}
           returnKeyType="done"
           blurOnSubmit
           onSubmitEditing={() => void handleSubmit()}
@@ -98,7 +104,7 @@ export function GuestNameGate({ onSaved }: Props) {
           {loading ? (
             <ActivityIndicator color={Colors.white} />
           ) : (
-            <Text style={styles.buttonText}>Empezar consulta</Text>
+            <Text style={styles.buttonText}>{t.guest.startConsult}</Text>
           )}
         </Pressable>
       </View>

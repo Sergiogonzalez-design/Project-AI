@@ -12,7 +12,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GuestNameGate } from "../components/GuestNameGate";
 import { Colors } from "../lib/colors";
-import { deleteOwnAccountAndSignOut } from "../lib/delete-account";
+import { screenHeaderTopInset } from "../lib/screen-header-insets";
+import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { AIInquiriesScreen } from "../screens/AIInquiriesScreen";
 
@@ -24,12 +25,15 @@ type LinkedPhysio = {
 
 type Props = {
   onCreateAccount: () => void;
+  /** Instant exit to login (do not wait on network). */
+  onExitToLogin: () => void;
 };
 
 const Tab = createBottomTabNavigator();
 
 /** Isolated navigator so the login screen never imports the heavy consult chat. */
-export function GuestPhysioNavigator({ onCreateAccount }: Props) {
+export function GuestPhysioNavigator({ onCreateAccount, onExitToLogin }: Props) {
+  const { t } = useI18n();
   const [linked, setLinked] = useState<LinkedPhysio | null>(null);
   const [needsName, setNeedsName] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -88,12 +92,11 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
             lineHeight: 20,
           }}
         >
-          No se encontró el fisioterapeuta de este código. Vuelve al inicio e
-          introdúcelo de nuevo.
+          {t.guest.physioNotFound}
         </Text>
-        <Pressable onPress={() => void deleteOwnAccountAndSignOut()}>
+        <Pressable onPress={onExitToLogin}>
           <Text style={{ color: Colors.primary, fontWeight: "700" }}>
-            Volver al inicio
+            {t.menu.backHome}
           </Text>
         </Pressable>
       </View>
@@ -101,13 +104,14 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
   }
 
   if (needsName) {
-    return <GuestNameGate onSaved={() => setNeedsName(false)} />;
+    return <GuestNameGate onSaved={() => setNeedsName(false)} onExit={onExitToLogin} />;
   }
 
   return (
     <>
     <Tab.Navigator
       screenOptions={{
+        headerStatusBarHeight: insets.top,
         headerStyle: {
           backgroundColor: Colors.white,
           shadowColor: "transparent",
@@ -125,9 +129,9 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
         headerShadowVisible: false,
         headerLeft: () => (
           <Pressable
-            onPress={() => void deleteOwnAccountAndSignOut()}
+            onPress={onExitToLogin}
             style={{ marginLeft: 8, padding: 8 }}
-            accessibilityLabel="Cerrar"
+            accessibilityLabel={t.menu.close}
           >
             <Ionicons name="close" size={22} color={Colors.text} />
           </Pressable>
@@ -136,7 +140,7 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
           <Pressable
             onPress={() => setMenuOpen(true)}
             style={{ marginRight: 8, padding: 8 }}
-            accessibilityLabel="Abrir menú"
+            accessibilityLabel={t.menu.open}
           >
             <Ionicons name="menu" size={22} color={Colors.text} />
           </Pressable>
@@ -144,7 +148,7 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
         tabBarStyle: { display: "none" },
       }}
     >
-      <Tab.Screen name="GuestPhysio" options={{ title: "Consulta previa" }}>
+      <Tab.Screen name="GuestPhysio" options={{ title: t.headers.consultaPrevia }}>
         {() => (
           <AIInquiriesScreen
             linkedPhysio={linked}
@@ -171,7 +175,7 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
         <Pressable
           style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
           onPress={() => setMenuOpen(false)}
-          accessibilityLabel="Cerrar menú"
+          accessibilityLabel={t.menu.close}
         />
         <View
           style={{
@@ -181,7 +185,7 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
             borderLeftWidth: 1,
             borderLeftColor: Colors.border,
             paddingHorizontal: 12,
-            paddingTop: Math.max(insets.top, 12) + 8,
+            paddingTop: screenHeaderTopInset(insets),
             paddingBottom: insets.bottom + 12,
           }}
         >
@@ -198,7 +202,7 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
             }}
           >
             <Text style={{ fontSize: 15, fontWeight: "700", color: Colors.text }}>
-              Menú
+              {t.menu.title}
             </Text>
             <Pressable onPress={() => setMenuOpen(false)} style={{ padding: 8 }}>
               <Ionicons name="close" size={22} color={Colors.text} />
@@ -212,14 +216,14 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
             style={{ borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14 }}
           >
             <Text style={{ fontSize: 15, fontWeight: "600", color: Colors.text }}>
-              Crear cuenta
+              {t.menu.createAccount}
             </Text>
           </Pressable>
           <View style={{ flex: 1 }} />
           <Pressable
             onPress={() => {
               setMenuOpen(false);
-              void deleteOwnAccountAndSignOut();
+              onExitToLogin();
             }}
             style={{
               flexDirection: "row",
@@ -234,7 +238,7 @@ export function GuestPhysioNavigator({ onCreateAccount }: Props) {
           >
             <Ionicons name="arrow-back" size={18} color={Colors.primary} />
             <Text style={{ fontSize: 15, fontWeight: "600", color: Colors.primary }}>
-              Volver a inicio
+              {t.menu.backHome}
             </Text>
           </Pressable>
         </View>

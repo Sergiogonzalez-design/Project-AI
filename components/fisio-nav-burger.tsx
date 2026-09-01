@@ -12,7 +12,11 @@ import {
 import { signOutToLogin } from "@/lib/sign-out-client";
 
 /** Slide-out ☰ menu: Clínica, Consulta, About, Profile (physio). */
-export function FisioNavBurger() {
+export function FisioNavBurger({
+  links = PHYSIO_NAV_LINKS,
+}: {
+  links?: AppNavLink[];
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -68,7 +72,7 @@ export function FisioNavBurger() {
               aria-modal="true"
               aria-label="Menú de navegación"
             >
-              <NavLinks links={PHYSIO_NAV_LINKS} pathname={pathname} onNavigate={() => setOpen(false)} />
+              <NavLinks links={links} pathname={pathname} onNavigate={() => setOpen(false)} />
               <div className="shrink-0 border-t border-slate-200/80 p-3">
                 <button
                   type="button"

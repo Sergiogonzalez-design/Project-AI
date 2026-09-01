@@ -26,19 +26,20 @@ import { supabase } from "../lib/supabase";
 
 type Props = {
   onSwitch: () => void;
+  onForgot: () => void;
 };
 
-function translateAuthError(message: string): string {
+function translateAuthError(message: string, t: ReturnType<typeof useI18n>["t"]): string {
   if (message.includes("Invalid login credentials")) {
-    return "Correo o contraseña incorrectos.";
+    return t.auth.invalidCredentials;
   }
   if (message.includes("Email not confirmed")) {
-    return "Esta cuenta aún no está activa. Vuelve a registrarte o contacta con soporte.";
+    return t.auth.emailNotConfirmed;
   }
   return message;
 }
 
-export function LoginScreen({ onSwitch }: Props) {
+export function LoginScreen({ onSwitch, onForgot }: Props) {
   const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,7 +55,7 @@ export function LoginScreen({ onSwitch }: Props) {
     setError(null);
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail || !password.trim()) {
-      setError("Introduce tu correo y contraseña.");
+      setError(t.auth.emailPasswordRequired);
       return;
     }
     setLoading(true);
@@ -63,7 +64,7 @@ export function LoginScreen({ onSwitch }: Props) {
         email: trimmedEmail,
         password,
       });
-      if (signError) setError(translateAuthError(signError.message));
+      if (signError) setError(translateAuthError(signError.message, t));
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ export function LoginScreen({ onSwitch }: Props) {
     Keyboard.dismiss();
     const normalized = parsePastedInviteCode(inviteCode);
     if (normalized.length < 6) {
-      setGuestError("Introduce el código que te ha dado tu fisioterapeuta.");
+      setGuestError(t.auth.guestCodeRequired);
       return;
     }
     setGuestLoading(true);
@@ -111,21 +112,21 @@ export function LoginScreen({ onSwitch }: Props) {
             payload.error ??
             fnPayload?.error ??
             fnError?.message ??
-            "No se pudo empezar la consulta.";
+            t.auth.guestStartError;
         }
       }
 
       if (!email || !password) {
-        setGuestError(apiError ?? "No se pudo empezar la consulta.");
+        setGuestError(apiError ?? t.auth.guestStartError);
         return;
       }
       const { error: signError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (signError) setGuestError(translateAuthError(signError.message));
+      if (signError) setGuestError(translateAuthError(signError.message, t));
     } catch {
-      setGuestError("No se pudo empezar la consulta. Inténtalo de nuevo.");
+      setGuestError(t.auth.guestStartError);
     } finally {
       setGuestLoading(false);
     }
@@ -173,6 +174,16 @@ export function LoginScreen({ onSwitch }: Props) {
             onSubmitEditing={handleLogin}
           />
 
+          <Pressable
+            onPress={onForgot}
+            disabled={busy}
+            style={styles.forgotRow}
+            accessibilityRole="button"
+            accessibilityLabel={t.auth.forgotPassword}
+          >
+            <Text style={styles.forgotText}>{t.auth.forgotPassword}</Text>
+          </Pressable>
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Pressable
@@ -200,13 +211,13 @@ export function LoginScreen({ onSwitch }: Props) {
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>o</Text>
+            <Text style={styles.dividerText}>{t.auth.or}</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          <Text style={styles.guestTitle}>Código de tu fisioterapeuta</Text>
+          <Text style={styles.guestTitle}>{t.auth.guestCodeTitle}</Text>
           <AuthTextField
-            label="Código"
+            label={t.auth.guestCodeLabel}
             value={inviteCode}
             onChangeText={(v) => setInviteCode(parsePastedInviteCode(v))}
             editable={!busy}
@@ -215,7 +226,7 @@ export function LoginScreen({ onSwitch }: Props) {
             autoComplete="off"
             textContentType="none"
             importantForAutofill="no"
-            placeholder="Ej. K7M2P9QX"
+            placeholder={t.auth.guestCodePlaceholder}
             returnKeyType="done"
             blurOnSubmit
             onSubmitEditing={() => void handleGuestCode()}
@@ -230,12 +241,12 @@ export function LoginScreen({ onSwitch }: Props) {
             onPress={() => void handleGuestCode()}
             disabled={busy}
             accessibilityRole="button"
-            accessibilityLabel="Empezar consulta previa con código de fisioterapeuta"
+            accessibilityLabel={t.auth.guestStartA11y}
           >
             {guestLoading ? (
               <ActivityIndicator color={Colors.primary} />
             ) : (
-            <Text style={styles.guestButtonText}>Empezar consulta previa</Text>
+            <Text style={styles.guestButtonText}>{t.auth.guestStart}</Text>
           )}
         </Pressable>
         </View>
@@ -312,6 +323,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.2,
   },
+  forgotRow: { marginTop: 10, alignSelf: "flex-end" },
+  forgotText: { fontSize: 13, fontWeight: "700", color: Colors.primary },
   switchRow: { marginTop: 24, alignItems: "center" },
   switchText: { fontSize: 14, color: Colors.textSecondary },
   switchLink: { color: Colors.primary, fontWeight: "700" },

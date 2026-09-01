@@ -641,7 +641,7 @@ export const ULNAR_NERVE_LABEL_EN: Partial<Record<string, string>> = {
   deporte_impacto: "How does it affect your training or sport?",
 };
 
-export const ULNAR_NERVE_OPTION_EN: Record<string, string> = {
+export const ULNAR_NERVE_OPTION_EN = {
   No: "No",
   Sí: "Yes",
   "Ha sido ahora": "Just now",
@@ -725,6 +725,9 @@ export const ULNAR_NERVE_OPTION_EN: Record<string, string> = {
   "Sí, resonancia": "Yes, MRI",
   "Sí, ecografía": "Yes, ultrasound",
   "Sí, varias": "Yes, multiple",
+  "Debilidad progresiva en la mano": "Progressive weakness in the hand that gets worse every week",
+  "Atrofia de los interóseos": "Have you noticed the muscles between your knuckles have sunken or flattened",
+  "Deformidad en garra del 4.º y 5.º dedo": "Do the 4th and 5th fingers stay in a claw position (flexed, unable to fully extend)",
 };
 
 export const ULNAR_NERVE_SECTION_LABELS_EN: Record<string, string> = {

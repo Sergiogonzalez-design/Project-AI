@@ -50,6 +50,29 @@ export function resolveEntryNodeId(
   }
 
   const maniobras = extractManiobrasFromReport(physioReport);
+
+  // Espalda/lumbar: prefer the full multi-test battery (SLR→…→Schober), never a leaf-only jump.
+  if (tree.bodyPart === "back") {
+    const preferred = [
+      "slr-lasegue",
+      "crossed-slr",
+      "kemp",
+      "faber",
+      "schober",
+    ] as const;
+    const listed = new Set(
+      maniobras.map((m) => m.testId).filter((id): id is string => Boolean(id))
+    );
+    for (const id of preferred) {
+      if (!listed.has(id)) continue;
+      const mapped = tree.entryByTestId?.[id];
+      if (mapped && tree.nodes[mapped]) return mapped;
+    }
+    // Even without a matched line, start the battery if the tree defines it.
+    if (tree.nodes.bk_slr) return "bk_slr";
+    return tree.entryNodeId;
+  }
+
   for (const line of maniobras) {
     if (!line.testId) continue;
     // Ignore ankle/foot-only shortcuts when this tree is not ankle_foot

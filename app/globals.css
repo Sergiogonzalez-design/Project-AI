@@ -291,10 +291,17 @@ button:disabled,
   line-height: 1.45;
   color: var(--foreground);
   padding: 0.55rem 0.4rem;
+  /* Keep empty composer one line tall even if placeholder is long */
+  field-sizing: content;
+  max-height: none;
+  min-height: calc(1.45em + 1.1rem);
 }
 
 .chat-composer__input::placeholder {
   color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-composer__input:focus,

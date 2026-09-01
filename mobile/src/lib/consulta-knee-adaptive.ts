@@ -1107,12 +1107,17 @@ export const KNEE_SECTION_ORDER: KneeQuestionSection[] = [
 export function getVisibleKneeQuestions(
   answers: KneeAdaptiveAnswers
 ): KneeQuestionDef[] {
-  return KNEE_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = KNEE_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     if (!q.options?.length) return q;
     const filtered = filterSleepDependentOptions(q.options, answers.evolucion);
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
+  // Urgent early exit: only red-flag items remain required / shown.
+  if (answers.acortar_por_urgencia) {
+    return list.filter((q) => q.section === "red_flags");
+  }
+  return list;
 }
 
 export function getVisibleKneeSections(
@@ -1504,9 +1509,12 @@ export const KNEE_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa_detalle: "Describe previous injuries or treatments",
 };
 
-export const KNEE_OPTION_EN: Record<string, string> = {
+export const KNEE_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
+  "No, es otra molestia": "No, it's a different problem",
+  "Sí, es el mismo": "Yes, it's the same",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",
@@ -1605,6 +1613,14 @@ export const KNEE_OPTION_EN: Record<string, string> = {
   Ocasionalmente: "Occasionally",
   "No, intermitente": "No, intermittent",
   "Sí, constante": "Yes, constant",
+  "Se ve torcido, deformado o muy distinto en rodilla": "Is there an obvious deformity in the knee",
+  "Incapacidad para apoyar peso o caminar": "Is it impossible for you to put weight on the knee or walk",
+  "Rodilla bloqueada / no puede estirar del todo": "Is the knee locked or unable to fully straighten",
+  "Hinchazón súbita e intensa": "Sudden, intense swelling of the knee",
+  "Fiebre junto con el dolor": "Do you have a fever along with the pain",
+  "Dolor de pantorrilla con hinchazón (posible problema de circulación)": "Calf pain with swelling that concerns you (vascular concern)",
+  "Pérdida de sensibilidad en el pie": "Loss of sensation in the foot",
+  "Incapacidad para levantar la pierna estirada tras el inicio (sospecha rotura del mecanismo extensor: tendón rotuliano o cuadricipital)": "After it started, can you lift your leg straight (without bending the knee) unassisted",
 };
 
 export const KNEE_SECTION_LABELS_EN: Record<string, string> = {

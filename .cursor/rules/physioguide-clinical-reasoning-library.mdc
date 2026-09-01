@@ -1,0 +1,36 @@
+---
+description: Clinical reasoning library — hypotheses not diagnoses; MTrP/referred/negative-test rules
+alwaysApply: true
+---
+
+# Physioguide — clinical reasoning library
+
+Master: `knowledge/PHYSIOGUIDE_CLINICAL_REASONING_LIBRARY.md`
+
+When adding or changing **myofascial / referred pain / negative-test / hypothesis-mode** content:
+
+## Behavior (always)
+
+- Assistant of **hypotheses**, never automatic diagnosis.
+- Prefer: «compatible con», «podría explorarse», «evidencia limitada/mixta».
+- Never: «el problema es X», «negativo descarta», «seguro MTrP».
+- **Clarity** → do not flood alternatives. **Uncertainty / negative tests / no improvement** → hypothesis-exploration mode.
+- Red flags → safety / referral first.
+- Label referred-pain evidence as **experimental / clinical / traditional**.
+  - Experimental/clinical joint provocation (Dwyer/Bogduk, Fukui, Dreyfuss, McCall, Fortin, Lesher) ≠ commercial muscle maps.
+  - Traditional myofascial maps = **D** only. Tough 2007 / Lucas 2009 for MTrP caution.
+- Never invent Sn/Sp/LR. If unknown, say so. If no citable source → do not assert the relation.
+- Do **not** ingest copyrighted Travell & Simons (or similar) as full text.
+
+## Dual sync (same as other Physioguide modules)
+
+1. Markdown under `knowledge/clinical-reasoning/` or `knowledge/evidence/` (+ optional `knowledge/relations/*.json`)
+2. Rules constant in `lib/physioguide-*-rules.ts` (+ mobile mirror)
+3. Wire `lib/ai-consult-rules.ts`, `mobile/src/lib/ai-consult-rules.ts`, `supabase/functions/ai-consult/response-rules.ts`
+4. Region-specific: also `physio_chat` / `physio_report` in `ai-consult/index.ts`
+5. Register ingest title in `scripts/ingest-clinical-reasoning.mjs` → run ingest
+6. Deploy `ai-consult` after rule changes
+
+## Schema
+
+New clinical relations must follow `knowledge/schema/clinical-relation.schema.json`.

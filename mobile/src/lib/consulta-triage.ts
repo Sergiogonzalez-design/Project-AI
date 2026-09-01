@@ -84,12 +84,31 @@ const PROFESSIONAL_OR_THIRD_PERSON =
 /** True personal current symptom (first person), not teaching / hypothetical. */
 export function describesCurrentPersonalSymptom(text: string): boolean {
   const hasSymptom =
-    /\b(?:me\s+duele|tengo\s+dolor|me\s+molesta|me\s+ha\s+dolido|me\s+doli[oó]|me\s+he\s+hecho\s+da[ñn]o|me\s+hice\s+da[ñn]o|me\s+he\s+lesionado|me\s+lesion[eé]|me\s+he\s+lastimado|me\s+lastim[eé]|me\s+he\s+torcido|me\s+torc[ií]|tengo\s+(?:un\s+)?esguince|siento\s+dolor|tengo\s+(?:una?\s+)?(?:lesi[oó]n|molestia|hinchaz[oó]n)|(?:tengo|siento|noto)\s+(?:una?\s+)?molestia|notado\s+una?\s+molestia|(?:dolor|molestia|hinchaz[oó]n)\s+en\s+(?:la|el|mi|mis)|it\s+hurts|my\s+.+\s+hurts|i\s+(?:hurt|injured|sprained)|i\s+have\s+pain)\b/i.test(
+    /\b(?:me\s+duele|tengo\s+(?:un\s+|una\s+)?dolor|tengo\s+dolor|me\s+molesta|me\s+ha\s+dolido|me\s+doli[oó]|me\s+he\s+hecho\s+da[ñn]o|me\s+hice\s+da[ñn]o|me\s+he\s+lesionado|me\s+lesion[eé]|me\s+he\s+lastimado|me\s+lastim[eé]|me\s+he\s+torcido|me\s+torc[ií]|tengo\s+(?:un\s+)?esguince|siento\s+(?:dolor|molest|algo|un\s+pinch)|(?:tengo|siento|noto)\s+(?:una?\s+)?(?:molestia|dolor|hinchaz[oó]n|pinchazo|rigidez)|notado\s+una?\s+(?:molestia|dolor)|(?:dolor|molestia|hinchaz[oó]n|rigidez|pinchazo)\s+en\s+(?:la|el|mi|mis|una|un)|hay\s+dolor|me\s+duele|duele\s+(?:la|el|mi)|it\s+hurts|my\s+.+\s+hurts|my\s+\w[\w\s-]{0,40}?\s+(?:is\s+)?(?:sore|aching|painful|tender|swollen)|i\s+(?:hurt|injured|sprained|twisted)|i\s+have\s+(?:a\s+)?pain|i\s+have\s+(?:a\s+)?(?:sore|aching|painful)|(?:a\s+)?pain\s+in\s+(?:my|the|la|el)|(?:sore|aching|painful|tender)\s+(?:in\s+)?(?:my|the)|i(?:'m| am)\s+(?:in\s+)?pain|it(?:'s|\s+is)\s+(?:sore|painful|aching|tender)|i\s+feel\s+(?:pain|sore|a\s+pain|something)|feeling\s+(?:pain|sore|something)|something\s+(?:hurts|is\s+sore))\b/i.test(
       text
     );
   const hypothetical =
     /(?:te\s+)?(?:digo|cuento|si\s+me\s+duele|should\s+i\s+tell|do\s+i\s+tell)/i.test(text);
   return hasSymptom && !hypothetical;
+}
+
+const LOOSE_SYMPTOM_CUE =
+  /dolor|duele|molest|lesi[oó]n|hinchaz|rigidez|pinchazo|tir[oó]n|contractura|esguince|torc|lastim|da[ñn]o|cruj|chasquid|no\s+puedo|me\s+(?:pesa|falla)|hurt|pain|sore|injur|sprain|swell|stiff|ach(?:e|es|ing)|tender|pinch|can't\s+(?:move|walk|lift)|something\s+(?:hurts|feels)|feel(?:s|ing)?\s+(?:pain|sore|something|off)|algo\s+(?:me\s+)?(?:duele|molesta)|me\s+pasa\s+algo|tengo\s+algo|estoy\s+(?:fatal|mal|regular)|no\s+s[eé]\s+qu[eé]\s+me\s+pasa|desde\s+hace|me\s+noto|notado|incomodidad|discomfort|problem(?:a|s)?\s+(?:en|con|with)/i;
+
+/**
+ * Broader than describesCurrentPersonalSymptom — used in Fisioterapia so
+ * "algo me duele", "tengo un pinchazo" or a named body part still start the case.
+ */
+export function looksLikePersonalMusculoskeletalComplaint(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (describesCurrentPersonalSymptom(t)) return true;
+  if (isInformationalOrEducationalQuery(t) && !describesCurrentPersonalSymptom(t)) {
+    return false;
+  }
+  if (isMetaOrClarificationQuery(t) && !LOOSE_SYMPTOM_CUE.test(t)) return false;
+  if (detectBodyPartsFromText(t).length > 0) return true;
+  return LOOSE_SYMPTOM_CUE.test(t);
 }
 
 /**
@@ -129,12 +148,29 @@ export function isInformationalOrEducationalQuery(text: string): boolean {
   return false;
 }
 
-/** Only open adaptive questionnaires for a real personal injury complaint. */
+/**
+ * Open adaptive questionnaires for any personal symptom report.
+ * Wording must not matter: "my knee hurts", "I have a pain in my knee",
+ * "knee is sore", "siento algo en la rodilla", etc.
+ */
 export function shouldOpenSymptomQuestionnaire(text: string): boolean {
-  if (!text.trim()) return false;
-  if (isInformationalOrEducationalQuery(text)) return false;
-  if (isMetaOrClarificationQuery(text)) return false;
-  return describesCurrentPersonalSymptom(text);
+  const t = text.trim();
+  if (!t) return false;
+  if (isInformationalOrEducationalQuery(t)) return false;
+  if (isMetaOrClarificationQuery(t)) return false;
+  if (describesCurrentPersonalSymptom(t)) return true;
+  // Body region + any pain / sore / discomfort cue
+  if (LOOSE_SYMPTOM_CUE.test(t) && detectBodyPartsFromText(t).length > 0) {
+    return true;
+  }
+  // First-person discomfort without a clear region still starts intake
+  if (
+    LOOSE_SYMPTOM_CUE.test(t) &&
+    /\b(?:my|mi|tengo|siento|noto|me|i(?:'m|\s+am|\s+have|\s+feel)|it(?:'s|\s+is))\b/i.test(t)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /** User asks how the chat works or what to do — not reporting a current symptom. */
@@ -422,6 +458,35 @@ export function askMoreRelatedQuestionsPrompt(
   return "¿Tienes alguna otra pregunta relacionada con esta lesión?";
 }
 
+/** When more body zones are still queued in the same consulta. */
+export function promptContinueNextZoneEvaluation(
+  nextLabel: string,
+  language: "es" | "en" = "es"
+): string {
+  if (language === "en") {
+    return `We still need to evaluate **${nextLabel}** in this consultation. Reply **yes** when you're ready to start the ${nextLabel} questionnaire.`;
+  }
+  return `Aún tenemos pendiente evaluar **${nextLabel}** en esta consulta. Responde **sí** cuando quieras empezar el cuestionario de ${nextLabel}.`;
+}
+
+export function resolveNextPendingZone(
+  initialMessage: string,
+  evaluatedParts: AdaptiveQuestionnairePart[],
+  pendingParts: AdaptiveQuestionnairePart[],
+  awaitingNextPart: AdaptiveQuestionnairePart | null,
+  completedPart?: AdaptiveQuestionnairePart | "generic"
+): AdaptiveQuestionnairePart | null {
+  if (awaitingNextPart) return awaitingNextPart;
+  if (pendingParts[0]) return pendingParts[0];
+  const evaluated = [
+    ...evaluatedParts,
+    ...(completedPart && completedPart !== "generic"
+      ? [completedPart as AdaptiveQuestionnairePart]
+      : []),
+  ];
+  return pendingPartsFromText(initialMessage, evaluated)[0] ?? null;
+}
+
 export function ensureAsksMoreRelatedQuestions(
   answer: string,
   language: "es" | "en" = "es"
@@ -535,22 +600,28 @@ ${askMore ? "Termina preguntando si tiene alguna otra pregunta relacionada con e
 }
 
 export function functionalTestResultsFollowupContext(
-  language: "es" | "en" = "es"
+  language: "es" | "en" = "es",
+  options?: { pendingNextZoneLabel?: string | null }
 ): string {
+  const closing = options?.pendingNextZoneLabel?.trim()
+    ? promptContinueNextZoneEvaluation(options.pendingNextZoneLabel.trim(), language)
+    : askMoreRelatedQuestionsPrompt(language);
   if (language === "en") {
     return `FUNCTIONAL TEST RESULTS (CRITICAL): The patient is answering the **functional tests** you already asked for in this same consultation.
 READ their answers carefully. INTERPRET them against the prior orientation and questionnaire.
 Give a clearer conclusion about the likely injury / structures involved and concrete recommendations (what to do now / in the meantime).
 Do NOT start a new questionnaire. Do NOT pretend this is a new body region. Do NOT ask them to fill another form.
 Do NOT ignore what they wrote.
-End with: "${askMoreRelatedQuestionsPrompt("en")}"`;
+${options?.pendingNextZoneLabel ? "Do NOT ask if they have other questions about the injury — more body zones are still pending in this consult." : ""}
+End with: "${closing}"`;
   }
   return `RESULTADOS DE PRUEBAS FUNCIONALES (CRÍTICO): El paciente está respondiendo a las **pruebas funcionales** que ya le pediste en ESTA misma consulta.
 LEE con atención lo que responde. INTERPRETA los resultados junto con la orientación y el cuestionario previos.
 Da una conclusión más clara sobre la lesión / estructuras afectadas y recomendaciones concretas (qué hacer ahora / mientras tanto).
 NO empieces un cuestionario nuevo. NO trates esto como otra zona corporal nueva. NO pidas otro formulario.
 NO ignores lo que ha escrito el paciente.
-Termina con: "${askMoreRelatedQuestionsPrompt("es")}"`;
+${options?.pendingNextZoneLabel ? "NO preguntes si tiene otras dudas sobre la lesión — aún quedan más zonas por evaluar en esta consulta." : ""}
+Termina con: "${closing}"`;
 }
 
 /** After tests are done, patient wants to move on to the next questionnaire. */
@@ -750,12 +821,13 @@ export function isClearStartNextPart(
   return false;
 }
 
-/** Patient declines / postpones the next questionnaire. */
+/** Patient declines / postpones the next questionnaire (explicit — not a bare "no"). */
 export function isDeclineNextPart(text: string): boolean {
   const t = text.trim();
   if (!t) return false;
   if (isChoosingOrAskingNextStep(t)) return false;
-  return /^(no|nop|ahora no|luego|m[aá]s tarde|despu[eé]s|pasar|skip)([\s,.!]|$)/i.test(t);
+  if (/^(no|nop)([\s,.!]|$)/i.test(t)) return false;
+  return /^(ahora no|luego|m[aá]s tarde|despu[eé]s|pasar|skip|no quiero)([\s,.!]|$)/i.test(t);
 }
 
 /** Context for Physio when the patient is between zones and asks what to do. */

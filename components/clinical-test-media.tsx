@@ -3,7 +3,7 @@
 import type { ClinicalTestImage } from "@/lib/clinical-test-images";
 import { getClinicalTestVideoSrc } from "@/lib/clinical-test-videos";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type VideoPlayerProps = {
   src: string;
@@ -18,7 +18,25 @@ export function ClinicalTestVideoPlayer({
   poster,
   className,
 }: VideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
+
+  async function enterFullscreen() {
+    const el = videoRef.current;
+    if (!el) return;
+    try {
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else {
+        const webkit = el as HTMLVideoElement & {
+          webkitEnterFullscreen?: () => void;
+        };
+        webkit.webkitEnterFullscreen?.();
+      }
+    } catch {
+      /* browser blocked fullscreen */
+    }
+  }
 
   if (failed && poster) {
     return (
@@ -46,19 +64,33 @@ export function ClinicalTestVideoPlayer({
           No se pudo cargar el vídeo demostrativo.
         </div>
       ) : (
-        <video
-          key={src}
-          src={src}
-          poster={poster}
-          controls
-          playsInline
-          preload="metadata"
-          className="aspect-video w-full bg-black object-contain"
-          aria-label={`Vídeo demostrativo: ${title}`}
-          onError={() => setFailed(true)}
-        >
-          Tu navegador no puede reproducir este vídeo.
-        </video>
+        <div className="relative">
+          <video
+            ref={videoRef}
+            key={src}
+            src={src}
+            poster={poster}
+            controls
+            playsInline
+            preload="metadata"
+            className="aspect-video w-full bg-black object-contain"
+            aria-label={`Vídeo demostrativo: ${title}`}
+            onError={() => setFailed(true)}
+          >
+            Tu navegador no puede reproducir este vídeo.
+          </video>
+          <button
+            type="button"
+            onClick={() => void enterFullscreen()}
+            className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-full bg-slate-950/80 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm hover:bg-slate-900"
+            aria-label="Ver en pantalla completa"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+              <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Pantalla completa
+          </button>
+        </div>
       )}
     </div>
   );

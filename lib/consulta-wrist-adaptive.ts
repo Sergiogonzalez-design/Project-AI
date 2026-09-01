@@ -161,17 +161,20 @@ export type WristAdaptiveAnswers = {
   num_constante: string;
   num_noche: string;
   num_sacudir_mejora: string;
+  num_durkan: string;
 
   // Thumb side branch
   pulgar_pinza_agrava: string;
   pulgar_cargar_agrava: string;
   pulgar_mover_reproduce: string;
   pulgar_rigidez_matutina: string;
+  pulgar_what: string;
 
   // Ulnar side branch
   menique_torsion_agrava: string;
   menique_empujar_silla_agrava: string;
   menique_click_inestabilidad: string;
+  menique_fovea: string;
 
   // Clicking / locking branch
   bloqueo_atasca: string;
@@ -224,13 +227,16 @@ export function defaultWristAdaptiveAnswers(): WristAdaptiveAnswers {
     num_constante: "",
     num_noche: "",
     num_sacudir_mejora: "",
+    num_durkan: "",
     pulgar_pinza_agrava: "",
     pulgar_cargar_agrava: "",
     pulgar_mover_reproduce: "",
     pulgar_rigidez_matutina: "",
+    pulgar_what: "",
     menique_torsion_agrava: "",
     menique_empujar_silla_agrava: "",
     menique_click_inestabilidad: "",
+    menique_fovea: "",
     bloqueo_atasca: "",
     click_duele: "",
     click_siente_desplaza: "",
@@ -283,6 +289,10 @@ function hasSymptom(a: WristAdaptiveAnswers, s: string) {
 
 function hasAnyLocation(a: WristAdaptiveAnswers, loc: string) {
   return a.localizacion_muneca.includes(loc);
+}
+
+function hasMedianDigits(a: WristAdaptiveAnswers) {
+  return a.num_dedos.some((d) => d === "Pulgar" || d === "Índice" || d === "Medio");
 }
 
 export const WRIST_QUESTIONS: WristQuestionDef[] = [
@@ -357,17 +367,20 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
   { id: "num_constante", section: "neuro", label: "¿Es constante o intermitente?", type: "single", options: ["Constante", "Intermitente"] as const, required: true, showIf: (a) => hasSymptom(a, "Hormigueo") || hasSymptom(a, "Entumecimiento") },
   { id: "num_noche", section: "neuro", label: "¿Es peor por la noche?", type: "single", options: YES_NO, required: true, showIf: (a) => (hasSymptom(a, "Hormigueo") || hasSymptom(a, "Entumecimiento")) && shouldShowSleepDependentQuestion("num_noche", a.comienzo, a.inicio) },
   { id: "num_sacudir_mejora", section: "neuro", label: "¿Sacudir la mano mejora los síntomas?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Hormigueo") || hasSymptom(a, "Entumecimiento") },
+  { id: "num_durkan", section: "neuro", label: "¿Si aprietas el centro de la palma (cerca de la muñeca) unos segundos, aparece el mismo hormigueo en pulgar, índice o medio?", type: "single", options: YES_NO, required: true, showIf: (a) => (hasSymptom(a, "Hormigueo") || hasSymptom(a, "Entumecimiento")) && hasMedianDigits(a) },
 
   // Thumb side
   { id: "pulgar_pinza_agrava", section: "thumb_side", label: "¿Pinzar o agarrar lo empeora?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
   { id: "pulgar_cargar_agrava", section: "thumb_side", label: "¿Cargar peso (niños/bolsas) lo empeora?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
   { id: "pulgar_mover_reproduce", section: "thumb_side", label: "¿Mover el pulgar reproduce el dolor?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
+  { id: "pulgar_what", section: "thumb_side", label: "¿Duele el borde del pulgar de la muñeca si doblas la muñeca hacia la palma y apartas el pulgar hacia fuera?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
   { id: "pulgar_rigidez_matutina", section: "thumb_side", label: "¿Notas rigidez o crujido al mover el pulgar, especialmente por la mañana?", type: "single", options: YES_NO, required: true, showIf: (a) => (hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar")) && shouldShowSleepDependentQuestion("pulgar_rigidez_matutina", a.comienzo, a.inicio) },
 
   // Ulnar side
   { id: "menique_torsion_agrava", section: "ulnar_side", label: "¿Girar / retorcer la muñeca lo empeora?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del meñique") },
   { id: "menique_empujar_silla_agrava", section: "ulnar_side", label: "¿Empujarte para levantarte (silla/suelo) lo empeora?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del meñique") },
   { id: "menique_click_inestabilidad", section: "ulnar_side", label: "¿Notas chasquidos o inestabilidad en esa zona?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del meñique") },
+  { id: "menique_fovea", section: "ulnar_side", label: "¿Duele al presionar el huequito de la palma junto al hueso del meñique (justo debajo de la muñeca, lado cubital)?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del meñique") },
 
   // Clicking / locking
   { id: "bloqueo_atasca", section: "clicking_locking", label: "¿Se queda atascada la muñeca o algún movimiento?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Chasquidos") || hasSymptom(a, "Bloqueo") || hasSymptom(a, "Sensación de que algo se mueve dentro") },
@@ -544,6 +557,7 @@ export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: s
           `- Constante: ${answers.num_constante || "—"}`,
           `- Peor noche: ${answers.num_noche || "—"}`,
           `- Sacudir mejora: ${answers.num_sacudir_mejora || "—"}`,
+          answers.num_durkan ? `- Presión palma (Durkan): ${answers.num_durkan}` : "",
         ].join("\n")
       : "";
 
@@ -555,6 +569,7 @@ export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: s
           `- Pinza/agarre agrava: ${answers.pulgar_pinza_agrava || "—"}`,
           `- Cargar agrava: ${answers.pulgar_cargar_agrava || "—"}`,
           `- Mover pulgar reproduce: ${answers.pulgar_mover_reproduce || "—"}`,
+          answers.pulgar_what ? `- Dolor al doblar muñeca + apartar pulgar (WHAT): ${answers.pulgar_what}` : "",
           `- Rigidez/crujido matutino: ${answers.pulgar_rigidez_matutina || "—"}`,
         ].join("\n")
       : "";
@@ -566,6 +581,7 @@ export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: s
         `- Torsión agrava: ${answers.menique_torsion_agrava || "—"}`,
         `- Empujar silla agrava: ${answers.menique_empujar_silla_agrava || "—"}`,
         `- Click/inestabilidad: ${answers.menique_click_inestabilidad || "—"}`,
+        answers.menique_fovea ? `- Dolor al presionar el huequito palmar-cubital (fóvea): ${answers.menique_fovea}` : "",
       ].join("\n")
     : "";
 
@@ -595,11 +611,11 @@ export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: s
   const differentialHint = [
     "",
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
-    "- Dolor en lado del pulgar/base del pulgar + empeora al pinzar o mover el pulgar → tenosinovitis de De Quervain.",
-    "- Hormigueo/entumecimiento en pulgar-índice-medio + peor por la noche + sacudir la mano mejora → síndrome del túnel carpiano.",
+    "- Dolor en lado del pulgar/base del pulgar + empeora al pinzar o al doblar la muñeca y apartar el pulgar → tenosinovitis de De Quervain (cluster; no confirma).",
+    "- Hormigueo/entumecimiento en pulgar-índice-medio + peor por la noche + sacudir la mano mejora ± presión en la palma reproduce el hormigueo → síndrome del túnel carpiano (cluster; Durkan/Phalen no confirman).",
     "- Bulto o protuberancia visible, blando, en cara dorsal o palmar → ganglión (quiste sinovial).",
     "- Caída con la mano extendida + dolor en la tabaquera anatómica → riesgo de fractura de escafoides (priorizar imagen).",
-    "- Dolor en cara cubital (lado del meñique) + empeora al girar el antebrazo o cargar peso → lesión del complejo fibrocartilaginoso triangular (TFCC).",
+    "- Dolor en cara cubital (lado del meñique) + empeora al girar el antebrazo o cargar peso ± dolor al presionar el huequito palmar junto al meñique → lesión del complejo fibrocartilaginoso triangular (TFCC).",
     "- Dolor cubital dorsal + empeora al girar/rotar la muñeca → tendinopatía o subluxación del extensor cubital del carpo (ECU).",
     "- Dolor y rigidez matutina en la base del pulgar, progresivo, en paciente de mayor edad → rizartrosis (artrosis trapeciometacarpiana).",
     "- Caída sobre la mano extendida + deformidad evidente + edad avanzada → fractura de Colles / Smith.",
@@ -653,13 +669,16 @@ export const WRIST_LABEL_EN: Partial<Record<string, string>> = {
   num_constante: "Is it constant or intermittent?",
   num_noche: "Is it worse at night?",
   num_sacudir_mejora: "Does shaking the hand improve the symptoms?",
+  num_durkan: "If you press the centre of the palm (near the wrist) for a few seconds, does the same tingling appear in the thumb, index or middle finger?",
   pulgar_pinza_agrava: "Does pinching or gripping make it worse?",
   pulgar_cargar_agrava: "Does carrying weight (children/bags) make it worse?",
   pulgar_mover_reproduce: "Does moving the thumb reproduce the pain?",
+  pulgar_what: "Does the thumb-side of the wrist hurt if you bend the wrist toward the palm and move the thumb out to the side?",
   pulgar_rigidez_matutina: "Do you notice stiffness or crunching when moving the thumb, especially in the morning?",
   menique_torsion_agrava: "Does twisting/turning the wrist make it worse?",
   menique_empujar_silla_agrava: "Does pushing up from a chair/floor make it worse?",
   menique_click_inestabilidad: "Do you notice clicking or instability in that area?",
+  menique_fovea: "Does it hurt when pressing the little hollow on the palm next to the pinky bone (just below the wrist, little-finger side)?",
   bloqueo_atasca: "Does the wrist or a movement get stuck?",
   click_duele: "Is the click painful?",
   click_siente_desplaza: "Do you feel something shifting inside?",
@@ -671,6 +690,10 @@ export const WRIST_LABEL_EN: Partial<Record<string, string>> = {
 export const WRIST_OPTION_EN: Record<string, string> = {
   No: "No",
   Sí: "Yes",
+  "No estoy seguro": "I'm not sure",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
+  "No, es otra molestia": "No, it's a different problem",
+  "Sí, es el mismo": "Yes, it's the same",
   "Empezó poco a poco, sin causa clara": "Gradual onset with no clear cause",
   "Tras entrenamiento": "After training",
   "Tras levantar pesas": "After lifting weights",

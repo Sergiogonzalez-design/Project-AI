@@ -902,9 +902,10 @@ export const SHOULDER_LABEL_EN: Partial<Record<string, string>> = {
   lesion_previa_detalle: "Describe previous injuries or treatments",
 };
 
-export const SHOULDER_OPTION_EN: Record<string, string> = {
+export const SHOULDER_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
   "Ha sido ahora": "Just now",
   "Reciente (1-4 horas)": "Recent (1–4 hours)",
   "Menos de 48 horas": "Less than 48 hours",
@@ -1015,6 +1016,14 @@ export const SHOULDER_OPTION_EN: Record<string, string> = {
   "Hacia atrás": "Backward",
   "En varias direcciones": "In several directions",
   "No lo sé": "I don't know",
+  "Se ve torcido, deformado o muy distinto tras un golpe o ca�da": "Does it look twisted, deformed, or very different from normal after a hit or fall",
+  "No puedes mover el brazo en absoluto": "Are you completely unable to move the arm",
+  "Pérdida súbita de fuerza": "Sudden loss of strength in the arm",
+  "Pérdida de sensibilidad": "Loss of sensation (marked numbness)",
+  "Fiebre junto con el dolor": "Do you have a fever along with the pain",
+  "Dificultad respiratoria o dolor torácico": "Pain with breathing difficulty or chest pain",
+  "Luxación actual (hombro fuera de sitio ahora mismo)": "Does it feel like the shoulder is out of place right now",
+  "Dolor nocturno constante con pérdida de peso no explicada": "Constant night pain that doesn't improve with rest, with unexplained weight loss",
 };
 
 export const SHOULDER_SECTION_LABELS_EN: Record<string, string> = {

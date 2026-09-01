@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aikinora.local/schemas/clinical-relation.schema.json",
+  "title": "Physioguide clinical relation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "source_structure",
+    "target_region",
+    "relationship",
+    "clinical_context",
+    "evidence_level",
+    "referred_pattern_class",
+    "limitations",
+    "references"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Stable kebab-case id"
+    },
+    "source_structure": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_region": {
+      "type": "string",
+      "minLength": 1
+    },
+    "relationship": {
+      "type": "string",
+      "enum": [
+        "may_refer_pain_to",
+        "may_mimic",
+        "may_coexist_with",
+        "tested_by",
+        "differentiated_by",
+        "negative_test_does_not_exclude",
+        "raises_suspicion_when",
+        "red_flag_if"
+      ]
+    },
+    "clinical_context": {
+      "type": "string",
+      "minLength": 1
+    },
+    "supporting_evidence": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "evidence_level": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D", "insufficient"]
+    },
+    "referred_pattern_class": {
+      "type": "string",
+      "enum": ["experimental", "clinical", "traditional", "not_applicable"]
+    },
+    "diagnostic_accuracy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sensitivity": { "type": ["string", "null"] },
+        "specificity": { "type": ["string", "null"] },
+        "lr_positive": { "type": ["string", "null"] },
+        "lr_negative": { "type": ["string", "null"] },
+        "notes": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["unknown", "mixed", "cited", "do_not_invent"]
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "alternative_explanations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "recommended_examination": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "red_flags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["citation"],
+        "properties": {
+          "citation": { "type": "string" },
+          "pmid": { "type": "string" },
+          "doi": { "type": "string" },
+          "year": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

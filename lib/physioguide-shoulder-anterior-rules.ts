@@ -14,8 +14,10 @@ REGLAS:
 - Si hay luxación/«se sale»/aprensión → priorizar bloque INESTABILIDAD, no solo bíceps.
 - Anterior + elevación lateral → coexistencia frecuente con RCRSP.
 
-CLUSTER BÍCEPS:
-dolor en surco bicipital + Speed y/o Yergason con dolor FAMILIAR → bíceps ↑.
+CLUSTER BÍCEPS (Tier C):
+dolor en surco bicipital + Uppercut y/o Speed y/o Yergason con dolor FAMILIAR + palpación surco → bíceps ↑.
+
+SLAP SCREENING (Tier B — NUNCA confirmar): O'Brien profundo + Crank / Yergason + Anterior slide → sospecha labral ↑. Ver bloque SLAP_LABRUM_SCREEN.
 
 DIFERENCIAL: RCRSP, AC, inestabilidad, subescapular, cervical, pectoral (si pecho domina).
 
@@ -23,5 +25,6 @@ PRUEBAS (lenguaje cotidiano):
 - ¿Duele al tocar la ranura delante del hombro?
 - ¿Duele al levantar el brazo estirado hacia delante contra resistencia?
 - ¿Duele al girar la palma hacia arriba contra resistencia con el codo pegado?
+- ¿Duele delante al hacer fuerza como un «uppercut»?
 
 LENGUAJE: «compatible con irritación del tendón del bíceps». No «SLAP confirmado».`;

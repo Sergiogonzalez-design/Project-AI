@@ -785,6 +785,10 @@ export const FINGER_LABEL_EN: Partial<Record<string, string>> = {
 export const FINGER_OPTION_EN: Record<string, string> = {
   No: "No",
   Sí: "Yes",
+  "No estoy seguro": "I'm not sure",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
+  "No, es otra molestia": "No, it's a different problem",
+  "Sí, es el mismo": "Yes, it's the same",
   Pulgar: "Thumb",
   Índice: "Index",
   Medio: "Middle",

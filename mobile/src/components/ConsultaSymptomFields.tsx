@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ConsultaTextInput } from "./ConsultaTextInput";
 import { Colors } from "../lib/colors";
 import {
   LATERALITY_OPTIONS,
@@ -137,7 +138,7 @@ export function ConsultaSymptomFields({ value, onChange }: Props) {
         }
       />
       {value.nerveSymptoms === "Sí" && (
-        <TextInput
+        <ConsultaTextInput
           style={styles.input}
           placeholder="Describe dónde y qué notas"
           placeholderTextColor={Colors.textLight}
@@ -166,7 +167,7 @@ export function ConsultaSymptomFields({ value, onChange }: Props) {
         }
       />
       {value.previousSamePain === "Sí" && (
-        <TextInput
+        <ConsultaTextInput
           style={styles.input}
           placeholder="Cuándo aproximadamente (opcional)"
           placeholderTextColor={Colors.textLight}
@@ -176,7 +177,7 @@ export function ConsultaSymptomFields({ value, onChange }: Props) {
       )}
 
       <Text style={styles.sectionLabel}>¿Qué movimiento o actividad lo empeora más?</Text>
-      <TextInput
+      <ConsultaTextInput
         style={styles.input}
         placeholder="Ej: al correr, al girar, al levantar el brazo..."
         placeholderTextColor={Colors.textLight}
@@ -238,7 +239,7 @@ export function ConsultaSymptomFields({ value, onChange }: Props) {
         }
       />
       {value.radiatingPain === "Sí" && (
-        <TextInput
+        <ConsultaTextInput
           style={styles.input}
           placeholder="Hacia dónde se irradia"
           placeholderTextColor={Colors.textLight}

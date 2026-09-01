@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Keyboard, Platform, type KeyboardEvent } from "react-native";
+import { AppState, Keyboard, Platform, type KeyboardEvent } from "react-native";
 
 function overlapFromEvent(e: KeyboardEvent) {
   return Math.max(0, Math.round(e.endCoordinates?.height ?? 0));
@@ -44,12 +44,23 @@ export function useKeyboardHeight() {
     };
   }, []);
 
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") setHeight(0);
+    });
+    return () => sub.remove();
+  }, []);
+
   return height;
 }
 
-/** Bottom inset for a chat composer: keyboard overlap on iOS; 0 when closed (app disclaimer sits below). */
-export function composerBottomInset(keyboardHeight: number, _safeBottom: number) {
-  if (Platform.OS === "ios" && keyboardHeight > 0) return keyboardHeight;
-  if (Platform.OS === "android" && keyboardHeight > 0) return keyboardHeight;
-  return 0;
+/**
+ * Lift the composer by the keyboard height.
+ * On Android with softwareKeyboardLayoutMode "resize", the window already shrinks —
+ * extra padding would double-count.
+ */
+export function composerBottomInset(keyboardHeight: number, _unused = 0) {
+  if (keyboardHeight <= 0) return 0;
+  if (Platform.OS === "android") return 0;
+  return keyboardHeight;
 }

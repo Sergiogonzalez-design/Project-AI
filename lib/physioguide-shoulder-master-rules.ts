@@ -42,8 +42,10 @@ DOLOR FAMILIAR (transversal):
 «¿Es el mismo dolor al elevar, dormir de ese lado, lanzar o cruzar el brazo?»
 Test que reproduce dolor HABITUAL → peso ↑. Molestia nueva → peso ↓.
 
-CLUSTERS (Evidence DB — no inventar Sn/Sp):
-RCRSP | rotura manguito (debilidad+drop arm) | inestabilidad anterior (aprensión=miedo) | bíceps/no-SLAP | AC | capsulitis | cervical.
+CLUSTERS (Evidence DB — Tier A/B/C; no inventar Sn/Sp):
+Tier A: inestabilidad anterior (Apprehension+Relocation±Surprise) | AC (Paxinos+O'Brien) | cervical Wainner.
+Tier B: rotura manguito (Jobe/Full Can+RE débil+drop arm±lags) | infra/subescap subclusters | SLAP screening (O'Brien+Crank) | inestabilidad posterior (Kim+Jerk).
+Tier C: RCRSP | bíceps (Uppercut+Speed+Yergason) | capsulitis | escapular (SAT/SRT) | MDI (Sulcus+historia).
 
 LENGUAJE: «compatible con», «aumenta la sospecha», «apoya/baja la hipótesis».
 IMAGEN: RX si trauma/fractura; eco/RMN si déficit de manguito o inestabilidad persistente. Hallazgo ≠ causa automática.

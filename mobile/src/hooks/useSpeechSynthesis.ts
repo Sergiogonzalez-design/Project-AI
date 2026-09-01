@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { speechLocale, stripForSpeech } from "../lib/speech-utils";
 
 type SpeechApi = {
@@ -93,6 +94,16 @@ export function useSpeechSynthesis(options: Options = {}) {
     return () => {
       loadSpeech()?.stop();
     };
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "inactive" || state === "background") {
+        loadSpeech()?.stop();
+        setSpeakingId(null);
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   return {

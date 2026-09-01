@@ -203,6 +203,8 @@ export type ElbowAdaptiveAnswers = {
   // Self-test branch
   test_extension_muneca: string;
   test_flexion_muneca: string;
+  test_maudsley: string;
+  hormigueo_presion_palma: string;
   // History
   episodios_previos: string;
   episodios_previos_detalle: string;
@@ -257,6 +259,8 @@ export function defaultElbowAdaptiveAnswers(): ElbowAdaptiveAnswers {
     rom_limit_causa: "",
     test_extension_muneca: "",
     test_flexion_muneca: "",
+    test_maudsley: "",
+    hormigueo_presion_palma: "",
     episodios_previos: "",
     episodios_previos_detalle: "",
   };
@@ -485,6 +489,7 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
   { id: "hormigueo_dedos", section: "tingling", label: "¿Qué dedos están afectados?", type: "multi", options: TINGLING_FINGER_OPTIONS, required: true, showIf: hasTingling },
   { id: "hormigueo_constante", section: "tingling", label: "¿El hormigueo es constante o intermitente?", type: "single", options: ["Constante", "Intermitente"], required: true, showIf: hasTingling },
   { id: "hormigueo_flexion", section: "tingling", label: "¿Empieza o empeora al doblar el codo?", type: "single", options: YES_NO, required: true, showIf: hasTingling },
+  { id: "hormigueo_presion_palma", section: "tingling", label: "¿Empeora el hormigueo al apoyar la palma (manillar, peso sobre la muñeca)?", type: "single", options: YES_NO, required: true, showIf: (a) => hasTingling(a) && (a.hormigueo_dedos.includes("Meñique") || a.hormigueo_dedos.includes("Anular")) },
 
   // Locking
   { id: "bloqueo_atascado", section: "locking", label: "¿El codo se queda atascado?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Bloqueo") },
@@ -501,6 +506,7 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
 
   // Self-tests (gated to lateral / medial location)
   { id: "test_extension_muneca", section: "self_tests", label: "¿Duele en la parte externa del codo al estirar la muñeca contra resistencia?", type: "single", options: YES_NO, required: true, showIf: hasLateralElbowPain },
+  { id: "test_maudsley", section: "self_tests", label: "¿Duele el hueso de fuera del codo al empujar el dedo del medio hacia atrás?", type: "single", options: YES_NO, required: true, showIf: hasLateralElbowPain },
   { id: "test_flexion_muneca", section: "self_tests", label: "¿Duele en la parte interna al doblar la muñeca contra resistencia?", type: "single", options: YES_NO, required: true, showIf: hasMedialElbowPain },
 
   // History
@@ -707,7 +713,10 @@ export function formatElbowAdaptive(
       "— HORMIGUEO —",
       `Dedos: ${formatMulti(answers.hormigueo_dedos)}`,
       `Patrón: ${answers.hormigueo_constante}`,
-      `Desencadenado por flexión: ${answers.hormigueo_flexion}`
+      `Desencadenado por flexión: ${answers.hormigueo_flexion}`,
+      answers.hormigueo_presion_palma
+        ? `Empeora al apoyar la palma: ${answers.hormigueo_presion_palma}`
+        : ""
     );
   }
   if (hasSymptom(answers, "Bloqueo")) {
@@ -736,7 +745,8 @@ export function formatElbowAdaptive(
     lines.push("", "— AUTOEVALUACIÓN —");
     if (hasLateralElbowPain(answers)) {
       lines.push(
-        `Dolor externo al estirar muñeca contra resistencia: ${answers.test_extension_muneca || "—"}`
+        `Dolor externo al estirar muñeca contra resistencia: ${answers.test_extension_muneca || "—"}`,
+        `Dolor al empujar el dedo del medio hacia atrás: ${answers.test_maudsley || "—"}`
       );
     }
     if (hasMedialElbowPain(answers)) {
@@ -756,7 +766,8 @@ export function formatElbowAdaptive(
     "ORIENTACIÓN DIFERENCIAL (usar el cuestionario; no inventar datos):",
     "- Dolor externo del codo + duele al estirar la muñeca contra resistencia → epicondilitis lateral (codo de tenista).",
     "- Dolor interno del codo + duele al doblar la muñeca contra resistencia → epicondilitis medial (codo de golfista) / pronador.",
-    "- Hormigueo en dedo anular/meñique + empeora al doblar el codo o apoyarse con la palma hacia arriba → síndrome del túnel cubital.",
+    "- Hormigueo en dedo anular/meñique + empeora al doblar el codo → túnel cubital en el codo; si empeora al apoyar la palma/manillar → canal de Guyon.",
+    "- Dolor externo + duele al empujar el dedo del medio hacia atrás (hueso) → LET en cluster; si duele más el antebrazo → túnel radial / PIN / cuello.",
     "- Dolor e hinchazón en la punta posterior del codo, sin gran limitación funcional → bursitis olecraneana.",
     "- Dolor interno en lanzadores + inestabilidad en valgo → lesión del ligamento colateral cubital (UCL) del lanzador.",
     "- Pop/chasquido al levantar peso + hueco o bulto en cara anterior del brazo → rotura del tendón del bíceps distal.",
@@ -813,6 +824,7 @@ export const ELBOW_LABEL_EN: Partial<Record<string, string>> = {
   hormigueo_dedos: "Which fingers are affected?",
   hormigueo_constante: "Is the tingling constant or intermittent?",
   hormigueo_flexion: "Is it triggered by bending the elbow?",
+  hormigueo_presion_palma: "Does the tingling get worse when you lean on the palm (handlebar, weight on the wrist)?",
   bloqueo_atascado: "Does the elbow get stuck?",
   bloqueo_desbloqueo: "Can you unlock it yourself?",
   bloqueo_chasquido: "Does it click before unlocking?",
@@ -821,14 +833,16 @@ export const ELBOW_LABEL_EN: Partial<Record<string, string>> = {
   inestabilidad_posicion: "Does it happen when pushing yourself up from a chair or the floor with your palm facing up?",
   rom_limit_causa: "Why can't you fully bend or straighten it?",
   test_extension_muneca: "Does it hurt on the outside of the elbow when extending the wrist against resistance?",
+  test_maudsley: "Does the bony outside of the elbow hurt when you push the middle finger backwards?",
   test_flexion_muneca: "Does it hurt on the inside when flexing the wrist against resistance?",
   episodios_previos: "Have you had this elbow problem before?",
   episodios_previos_detalle: "Describe previous episodes or treatments",
 };
 
-export const ELBOW_OPTION_EN: Record<string, string> = {
+export const ELBOW_OPTION_EN = {
   No: "No",
   Sí: "Yes",
+  "No, es distinto o solo duele en ciertos gestos": "No, it's different or only hurts with certain movements",
   "Sí, es el mismo": "Yes, it's the same",
   "No, es otra molestia": "No, it's a different discomfort",
   "Ha sido ahora": "Just now",
@@ -932,6 +946,14 @@ export const ELBOW_OPTION_EN: Record<string, string> = {
   "Por falta de fuerza": "Because of lack of strength",
   Constante: "Constant",
   Intermitente: "Intermittent",
+  "Se ve torcido, deformado o muy distinto tras lesión": "Is there an obvious deformity after the injury",
+  "No puedes mover el codo en absoluto": "Are you completely unable to move the elbow",
+  "Hinchazón fuerte justo después de un golpe o caída": "Did it swell a lot right after a hit or fall",
+  "Fiebre junto con el dolor": "Do you have a fever along with the pain",
+  "Herida abierta": "Is there an open wound in the area",
+  "Pérdida súbita de fuerza": "Sudden loss of strength in the arm",
+  "Pérdida de sensibilidad": "Loss of sensation (marked numbness)",
+  "Dedos fríos, pálidos o azulados": "Cold, pale, or bluish fingers after the injury",
 };
 
 export const ELBOW_SECTION_LABELS_EN: Record<string, string> = {

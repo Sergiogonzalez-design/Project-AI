@@ -1,5 +1,7 @@
+import { formatValidationIssueMessage } from "../lib/consulta-validation";
 import React, { useEffect } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { ConsultaTextInput } from "./ConsultaTextInput";
 import {
   defaultElbowAdaptiveAnswers,
   detectElbowRedFlags,
@@ -17,7 +19,8 @@ import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
 import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
-import { redFlagsDetectedLabel, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
+import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
+import { consultaNavLabels } from "../lib/consulta-nav-labels";
 
 function ChipGroup({
   options,
@@ -130,7 +133,7 @@ function QuestionField({
     return (
       <View style={styles.field}>
         <Text style={styles.label}>{label}</Text>
-        <TextInput
+        <ConsultaTextInput
           style={styles.input}
           value={typeof val === "string" ? val : ""}
           onChangeText={(t) => onPatch({ [q.id]: t } as Partial<ElbowAdaptiveAnswers>)}
@@ -213,7 +216,7 @@ export function ConsultaAdaptiveElbow({
     if (!currentSection) return;
     const issue = validateElbowSection(currentSection, answers);
     if (issue) {
-      onSectionError(issue.message);
+      onSectionError(formatValidationIssueMessage(issue, locale, localizeElbowLabel(issue.questionId, issue.message.replace(/^Responde:\s*/, "").replace(/\.$/, ""), locale)));
       return;
     }
     onSectionError(null);
@@ -227,7 +230,7 @@ export function ConsultaAdaptiveElbow({
       {currentSection === "red_flags" && (
         <View style={styles.warnBox}>
           <Text style={styles.warnText}>
-            Estas preguntas detectan situaciones que pueden requerir atención médica urgente.
+            {redFlagsSectionIntro(locale)}
           </Text>
         </View>
       )}
@@ -235,7 +238,7 @@ export function ConsultaAdaptiveElbow({
       {urgent && currentSection !== "red_flags" && (
         <View style={styles.redBox}>
           <Text style={styles.redText}>
-            {redFlagsDetectedLabel(locale)} {triggered.join(", ")}.{redFlagsUrgencyNote(locale)}
+            {redFlagsDetectedLabel(locale)} {triggered.map((x) => localizeElbowOption(x, locale)).join(", ")}.{redFlagsUrgencyNote(locale)}
           </Text>
         </View>
       )}
@@ -251,12 +254,12 @@ export function ConsultaAdaptiveElbow({
       <View style={styles.navRow}>
         {sectionIndex > 0 && (
           <Pressable style={styles.navBtnOutline} onPress={() => onSectionIndexChange(sectionIndex - 1)}>
-            <Text style={styles.navBtnOutlineText}>Anterior</Text>
+            <Text style={styles.navBtnOutlineText}>{consultaNavLabels(locale).previous}</Text>
           </Pressable>
         )}
         {!isLastSection && (
           <Pressable style={styles.navBtn} onPress={handleNext}>
-            <Text style={styles.navBtnText}>Siguiente</Text>
+            <Text style={styles.navBtnText}>{consultaNavLabels(locale).next}</Text>
           </Pressable>
         )}
       </View>

@@ -19,6 +19,16 @@ Educational physiotherapy demonstration video, realistic clinic setting, soft ne
 
 ---
 
+# Batch 3 — Shoulder expansion 31 Aug 2026 (11 new tests)
+
+Full copy-paste pack with embedded initial images:
+→ **`SHOULDER_NEW_TESTS_VIDEO_PROMPTS.md`** (same folder)
+
+Changelog of what was added in code/RAG:
+→ `knowledge/PHYSIOGUIDE_SHOULDER_EXPANSION_2026-08-31.md`
+
+---
+
 ## 1. lachman
 IMAGE: public/clinical-tests/lachman.webp
 FILE OUT: lachman.mp4
@@ -273,7 +283,7 @@ Using this illustration as reference, animate anatomical snuffbox palpation: thu
 IMAGE: public/clinical-tests/thumb-axial-load.webp
 FILE OUT: thumb-axial-load.mp4
 PROMPT:
-Using this illustration as reference, animate axial load of the thumb for scaphoid screening: clinician compresses along the thumb metacarpal toward the wrist/scaphoid. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate axial load of the thumb for scaphoid screening: clinician compresses along the thumb metacarpal toward the wrist/scaphoid. Show a HAND and WRIST only — not a foot. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 
 ## 43. tfcc-ulnar-load
 IMAGE: public/clinical-tests/tfcc-ulnar-load.webp
@@ -292,3 +302,10 @@ IMAGE: public/clinical-tests/crossed-slr.webp
 FILE OUT: crossed-slr.mp4
 PROMPT:
 Using this illustration as reference, animate the crossed straight leg raise (well-leg raise): patient supine, clinician raises the asymptomatic straight leg while the symptomatic leg remains on the table. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+
+---
+
+# Batch 3 — Shoulder expansion (ids 46–56) — see dedicated pack
+
+Images are ready as `.webp`. Full prompts + embeds:
+→ **`SHOULDER_NEW_TESTS_VIDEO_PROMPTS.md`**

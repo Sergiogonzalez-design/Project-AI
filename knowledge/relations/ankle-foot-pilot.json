@@ -1,0 +1,227 @@
+{
+  "pilot": "ankle-foot",
+  "version": 1,
+  "notes": "Pilot only. No invented Sn/Sp. Traditional MTrP maps labeled traditional — not absolute anatomy. No Travell verbatim text.",
+  "relations": [
+    {
+      "id": "ottawa-raises-suspicion-when-malleolar-or-midfoot-criteria-met",
+      "source_structure": "ankle / midfoot fracture clinical decision rule construct",
+      "target_region": "malleoli / midfoot / fifth metatarsal / navicular",
+      "relationship": "raises_suspicion_when",
+      "clinical_context": "Acute ankle or midfoot trauma; apply Ottawa Ankle Rules before assuming simple sprain.",
+      "supporting_evidence": [
+        "Ottawa Ankle Rules validated to reduce unnecessary radiographs while catching clinically relevant fractures"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "cited",
+        "notes": "High sensitivity reported in validation literature — do not invent a specific percentage here; follow local protocol and original/rule summaries."
+      },
+      "limitations": [
+        "Not a soft-tissue sprain diagnostic tool",
+        "Intoxication, delayed presentation, and some populations need clinical judgment"
+      ],
+      "alternative_explanations": [
+        "Lateral ligament sprain without fracture",
+        "Syndesmosis injury",
+        "Peroneal tendon injury"
+      ],
+      "recommended_examination": [
+        "Ottawa criteria systematically",
+        "If rules positive → imaging pathway",
+        "If rules negative → functional sprain / syndesmosis screen as indicated"
+      ],
+      "red_flags": [
+        "Open injury / neurovascular compromise",
+        "High-energy trauma"
+      ],
+      "references": [
+        {
+          "citation": "Stiell IG et al. Decision rules for the use of radiography in acute ankle injuries (Ottawa Ankle Rules). JAMA / related validation papers.",
+          "year": 1993
+        },
+        {
+          "citation": "Bachmann LM et al. Accuracy of Ottawa ankle rules — systematic review / meta-analysis (qualitative: useful high-sensitivity rule).",
+          "year": 2003
+        }
+      ]
+    },
+    {
+      "id": "anterior-drawer-negative-does-not-exclude-atfl-sprain",
+      "source_structure": "ATFL / lateral ankle ligament complex",
+      "target_region": "lateral ankle",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Inversion mechanism with lateral pain/swelling; anterior drawer negative, especially early after injury.",
+      "supporting_evidence": [
+        "Drawer testing reliability and timing-dependent usefulness are limited in acute phase",
+        "Clinical diagnosis of lateral sprain is primarily history + location + Ottawa-negative fracture screen"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent Sn/Sp. Negative drawer ≠ ligaments cleared."
+      },
+      "limitations": [
+        "Pain, swelling, and guarding reduce validity acutely",
+        "Compare contralateral carefully"
+      ],
+      "alternative_explanations": [
+        "Syndesmosis",
+        "Fifth metatarsal / osteochondral injury",
+        "Peroneal tendons",
+        "Referred L5/S1"
+      ],
+      "recommended_examination": [
+        "Ottawa first if indicated",
+        "Talar tilt / squeeze / external rotation for syndesmosis suspicion",
+        "Functional load progression rather than single laxity test exclusion"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Vuurberg G et al. Diagnosis, treatment and prevention of ankle sprains: update of an evidence-based clinical guideline. BJSM.",
+          "year": 2018
+        },
+        {
+          "citation": "Croy T et al. Anterior drawer reliability / validity discussions in ankle instability literature (qualitative limitations).",
+          "year": 2013
+        }
+      ]
+    },
+    {
+      "id": "lumbar-s1-may-refer-or-mimic-lateral-foot-pain",
+      "source_structure": "lumbar nerve root / S1 pathway clinical",
+      "target_region": "lateral foot / posterior calf–heel continuum",
+      "relationship": "may_mimic",
+      "clinical_context": "Foot or heel pain without clear local mechanical findings; lumbar or radicular clues present.",
+      "supporting_evidence": [
+        "Radicular and somatic referred pain can present distally",
+        "Negative local ankle drawer does not address proximal neural sources"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Pattern-based differential; no numeric referral accuracy."
+      },
+      "limitations": [
+        "Most plantar heel pain is local fascia-related — do not over-call lumbar",
+        "Neurological exam required before claiming radicular"
+      ],
+      "alternative_explanations": [
+        "Plantar heel pain / fascia",
+        "Achilles tendinopathy",
+        "Sural nerve entrapment (uncommon)",
+        "Local sprain sequelae"
+      ],
+      "recommended_examination": [
+        "SLR / neurological screen when proximal clues",
+        "Windlass / fascia palpation for heel pain",
+        "Thompson if Achilles rupture suspected"
+      ],
+      "red_flags": [
+        "Cauda features if accompanied by severe lumbar neurological change"
+      ],
+      "references": [
+        {
+          "citation": "Delitto A et al. Low Back Pain CPG — referred and radicular pain framing.",
+          "year": 2012
+        },
+        {
+          "citation": "Martin RL et al. Heel Pain — Plantar Fasciitis CPG. JOSPT.",
+          "year": 2014
+        }
+      ]
+    },
+    {
+      "id": "thompson-raises-suspicion-when-absent-plantarflexion-squeeze",
+      "source_structure": "Achilles tendon rupture clinical construct",
+      "target_region": "posterior ankle / calf",
+      "relationship": "raises_suspicion_when",
+      "clinical_context": "Sudden pop, weakness of push-off; calf squeeze without plantarflexion.",
+      "supporting_evidence": [
+        "Thompson / Simmonds test is a standard clinical screen for complete Achilles rupture"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Useful clinical screen; still confirm per local pathway. Do not invent exact Sn/Sp in this JSON."
+      },
+      "limitations": [
+        "Partial ruptures may confuse",
+        "Plantaris / compensatory motion occasionally misleads"
+      ],
+      "alternative_explanations": [
+        "Medial gastroc tear",
+        "Deep vein issues (different picture)",
+        "Partial Achilles tendinopathy acute flare"
+      ],
+      "recommended_examination": [
+        "Thompson + gap palpation + Matles if trained",
+        "Urgent imaging / ortho pathway when rupture suspected",
+        "Do not treat as 'calf strain' if Thompson positive"
+      ],
+      "red_flags": [
+        "Suspected complete rupture — timely specialist pathway"
+      ],
+      "references": [
+        {
+          "citation": "Thompson TC / Simmonds FA classical descriptions; modern Achilles rupture diagnostic reviews.",
+          "year": 1962
+        },
+        {
+          "citation": "Garras DN et al. / Achilles rupture clinical diagnosis literature — combination of signs preferred.",
+          "year": 2012
+        }
+      ]
+    },
+    {
+      "id": "plantar-fascia-may-coexist-with-proximal-contributors",
+      "source_structure": "plantar fascia / plantar heel pain construct",
+      "target_region": "medioplantar heel",
+      "relationship": "may_coexist_with",
+      "clinical_context": "First-step heel pain with possible calf tightness, load-training errors, or lumbar clues.",
+      "supporting_evidence": [
+        "Plantar fasciitis CPGs emphasize load and contributing factors; proximal contributors are hypotheses not automatic causes"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Coexistence framing — not a single-test metric."
+      },
+      "limitations": [
+        "Do not auto-blame 'tight calves' or MTrP as sole cause",
+        "Windlass negative does not fully exclude fascia-related pain"
+      ],
+      "alternative_explanations": [
+        "Fat-pad contusion",
+        "Calcaneal stress fracture",
+        "S1 radicular mimic",
+        "Tarsal tunnel (less common)"
+      ],
+      "recommended_examination": [
+        "Windlass + fascia palpation with familiar pain",
+        "Calcaneal squeeze if stress fracture suspicion",
+        "Lumbar/neural screen only when indicated"
+      ],
+      "red_flags": [
+        "Night pain progressive — tumor/infection uncommon but screen history",
+        "Stress fracture risk (sudden mileage, osteoporosis)"
+      ],
+      "references": [
+        {
+          "citation": "Martin RL et al. Heel Pain — Plantar Fasciitis: Revision CPG. JOSPT.",
+          "year": 2014
+        },
+        {
+          "citation": "Riddle DL / plantar heel pain clinical literature — contributing factors framing.",
+          "year": 2003
+        }
+      ]
+    }
+  ]
+}

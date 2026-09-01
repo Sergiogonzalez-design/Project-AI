@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useHeaderHeight } from "@react-navigation/elements";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { composerBottomInset, useKeyboardHeight } from "../hooks/useKeyboardHeight";
+import { useOnAppBackground } from "../hooks/useAppLifecycle";
 import {
   ConsultaAdaptiveShoulder,
   isLastShoulderSection,
@@ -37,13 +38,17 @@ import {
 } from "../components/ConsultaAdaptiveWrist";
 import { AssistantMessageWithSources } from "../components/AssistantMessageWithSources";
 import { ConsultaAssistantBody } from "../components/ConsultaAssistantBody";
+import { stripVisibleMarkup } from "../lib/strip-visible-markup";
 import { FunctionalTestYesNo } from "../components/FunctionalTestYesNo";
 import {
   latestUnansweredFunctionalTests,
   splitFunctionalTests,
 } from "../lib/functional-test-answers";
 import { ConsultaGenericFields } from "../components/ConsultaGenericFields";
+import { QuestionnaireKeyboardProvider } from "../components/ConsultaTextInput";
 import { DismissKeyboard } from "../components/DismissKeyboard";
+import { scrollFocusedInputAboveKeyboard } from "../lib/scroll-focused-input-above-keyboard";
+import { AppBurgerMenu } from "../components/AppBurgerMenu";
 import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
 import { ScrollToBottomButton } from "../components/ScrollToBottomButton";
@@ -61,6 +66,7 @@ import {
   detectRedFlags,
   formatShoulderAdaptive,
   getVisibleShoulderSections,
+  localizeShoulderLabel,
   resolveShoulderQuestionnaireFocus,
   validateShoulderAdaptive,
   validateShoulderSection,
@@ -72,6 +78,7 @@ import {
   detectElbowRedFlags,
   formatElbowAdaptive,
   getVisibleElbowSections,
+  localizeElbowLabel,
   validateElbowAdaptive,
   validateElbowSection,
   withElbowHintsFromText,
@@ -82,6 +89,7 @@ import {
   detectFingerRedFlags,
   formatFingerAdaptive,
   getVisibleFingerSections,
+  localizeFingerLabel,
   validateFingerAdaptive,
   validateFingerSection,
   type FingerAdaptiveAnswers,
@@ -91,6 +99,7 @@ import {
   detectWristRedFlags,
   formatWristAdaptive,
   getVisibleWristSections,
+  localizeWristLabel,
   validateWristAdaptive,
   validateWristSection,
   type WristAdaptiveAnswers,
@@ -100,6 +109,7 @@ import {
   detectNeckRedFlags,
   formatNeckAdaptive,
   getVisibleNeckSections,
+  localizeNeckLabel,
   validateNeckAdaptive,
   validateNeckSection,
   type NeckAdaptiveAnswers,
@@ -109,6 +119,7 @@ import {
   detectHeadRedFlags,
   formatHeadAdaptive,
   getVisibleHeadSections,
+  localizeHeadLabel,
   validateHeadAdaptive,
   validateHeadSection,
   type HeadAdaptiveAnswers,
@@ -119,6 +130,7 @@ import {
   formatLowerLegAdaptive,
   bodyAreaLabelFromLowerLegAnswers,
   getVisibleLowerLegSections,
+  localizeLowerLegLabel,
   validateLowerLegAdaptive,
   validateLowerLegSection,
   withAnkleFootFocusFromText,
@@ -129,6 +141,7 @@ import {
   detectKneeRedFlags,
   formatKneeAdaptive,
   getVisibleKneeSections,
+  localizeKneeLabel,
   validateKneeAdaptive,
   validateKneeSection,
   type KneeAdaptiveAnswers,
@@ -138,6 +151,7 @@ import {
   detectBackRedFlags,
   formatBackAdaptive,
   getVisibleBackSections,
+  localizeBackLabel,
   validateBackAdaptive,
   validateBackSection,
   type BackAdaptiveAnswers,
@@ -148,6 +162,7 @@ import {
   formatHipAdaptive,
   getVisibleHipSections,
   hipBodyAreaLabelForAi,
+  localizeHipLabel,
   validateHipAdaptive,
   validateHipSection,
   type HipAdaptiveAnswers,
@@ -187,6 +202,10 @@ import {
   resolveBodyPartFromLocationReply,
 } from "../lib/detect-body-part";
 import {
+  decideFisioIntro,
+  decideFisioLocationReply,
+} from "../lib/fisio-case-flow";
+import {
   betweenPartsChoiceContext,
   isClearStartNextPart,
   isDeclineNextPart,
@@ -209,6 +228,7 @@ import {
   relatedInjuryFollowupContext,
   ensureAsksMoreRelatedQuestions,
   askMoreRelatedQuestionsPrompt,
+  resolveNextPendingZone,
   respondToUserMessage,
   shouldStartQuestionnaire,
   triageMessage,
@@ -218,9 +238,9 @@ import {
 } from "../lib/consulta-triage";
 import { callEdgeText, callEdgeJson } from "../lib/consulta-api";
 import {
-  detectConsultLanguage,
   type ConsultLanguage,
 } from "../lib/consult-language";
+import { formatValidationIssueMessage } from "../lib/consulta-validation";
 import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
@@ -236,6 +256,7 @@ import {
   fisioNewConsultHoursRemaining,
 } from "../lib/fisio-consult-cooldown";
 import { Colors } from "../lib/colors";
+import { screenHeaderTopInset } from "../lib/screen-header-insets";
 import { useI18n } from "../lib/i18n";
 import { getNotificationsEnabled } from "../lib/notifications";
 import {
@@ -253,8 +274,10 @@ import { TrustPanel } from "../components/ui/TrustPanel";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 import { useSpeechToText } from "../hooks/useSpeechToText";
 
-const WELCOME_MESSAGE =
-  "¿En qué puedo ayudarte? Cuéntame si tienes alguna molestia, duda sobre ejercicios o lo que necesites.";
+const WELCOME_MESSAGE_ES =
+  "¿En qué puedo ayudarte? Cuéntame si tienes alguna molestia o duda sobre ejercicios.";
+const WELCOME_MESSAGE_EN =
+  "How can I help you? Tell me if you have any discomfort or a question about exercises.";
 const WELCOME_ID = "welcome";
 
 type Phase = "intro" | "questionnaire" | "followup" | "complete";
@@ -280,7 +303,12 @@ function formatDate(iso: string, locale: "es" | "en" = "es") {
   });
 }
 
-type ConversationGroup = { label: string; items: Conversation[] };
+type ConversationGroup = {
+  label: string;
+  physioName?: string;
+  clinicName?: string | null;
+  items: Conversation[];
+};
 
 function groupConversationsByDate(
   conversations: Conversation[],
@@ -326,13 +354,13 @@ function groupConversationsByPhysio(conversations: Conversation[]): Conversation
   const indexByLabel = new Map<string, number>();
 
   for (const c of conversations) {
-    const name = c.physio_name?.trim() || "Fisioterapeuta";
-    const clinic = c.clinic_name?.trim();
-    const label = clinic ? `${name} — ${clinic}` : name;
+    const physioName = c.physio_name?.trim() || "Fisioterapeuta";
+    const clinicName = c.clinic_name?.trim() || null;
+    const label = clinicName ? `${physioName} — ${clinicName}` : physioName;
     const idx = indexByLabel.get(label);
     if (idx === undefined) {
       indexByLabel.set(label, groups.length);
-      groups.push({ label, items: [c] });
+      groups.push({ label, physioName, clinicName, items: [c] });
     } else {
       groups[idx].items.push(c);
     }
@@ -341,10 +369,27 @@ function groupConversationsByPhysio(conversations: Conversation[]): Conversation
   return groups;
 }
 
-function BoldText({ text, style, boldStyle }: {
+function splitHighlightParts(text: string, phrases?: string[]) {
+  if (!text || !phrases?.length) return [{ text, highlight: false }];
+  // Ignore tiny phrases — they split words mid-character ("Hola" → "Ho"/"la").
+  const present = phrases.filter(
+    (p) => p.length >= 3 && text.toLowerCase().includes(p.toLowerCase())
+  );
+  if (present.length === 0) return [{ text, highlight: false }];
+  const escaped = present.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const re = new RegExp(`(${escaped.join("|")})`, "gi");
+  return text.split(re).filter(Boolean).map((part) => ({
+    text: part,
+    highlight: present.some((p) => p.toLowerCase() === part.toLowerCase()),
+  }));
+}
+
+function BoldText({ text, style, boldStyle, highlightPhrases, highlightStyle }: {
   text: string;
   style?: object;
   boldStyle?: object;
+  highlightPhrases?: string[];
+  highlightStyle?: object;
 }) {
   const lines = text.split("\n");
 
@@ -361,18 +406,44 @@ function BoldText({ text, style, boldStyle }: {
           return null;
         }
 
-        const parts = line.split(/(\*\*[^*]+\*\*)/g);
+        const heading = line.replace(/^#{1,6}\s*/, "");
+        if (!heading.includes("**") && !(highlightPhrases && highlightPhrases.length > 0)) {
+          return (
+            <Text key={li}>
+              {stripVisibleMarkup(heading)}
+              {li < lines.length - 1 ? "\n" : ""}
+            </Text>
+          );
+        }
+        const parts = heading.split(/(\*\*[^*]+\*\*)/g);
         return (
           <Text key={li}>
             {parts.map((part, i) => {
-              if (part.startsWith("**") && part.endsWith("**")) {
+              const isBold = part.startsWith("**") && part.endsWith("**");
+              const inner = isBold
+                ? stripVisibleMarkup(part.slice(2, -2))
+                : stripVisibleMarkup(part);
+              if (!inner) return null;
+              const chunks = splitHighlightParts(inner, highlightPhrases);
+              if (chunks.length === 1 && !chunks[0].highlight) {
                 return (
-                  <Text key={i} style={[style, boldStyle ?? { fontWeight: "700" }]}>
-                    {part.slice(2, -2)}
+                  <Text key={i} style={isBold ? [style, boldStyle ?? { fontWeight: "700" }] : undefined}>
+                    {chunks[0].text}
                   </Text>
                 );
               }
-              return <Text key={i}>{part}</Text>;
+              return (
+                <Text key={i} style={isBold ? [style, boldStyle ?? { fontWeight: "700" }] : undefined}>
+                  {chunks.map((chunk, ci) => (
+                    <Text
+                      key={ci}
+                      style={chunk.highlight ? highlightStyle : undefined}
+                    >
+                      {chunk.text}
+                    </Text>
+                  ))}
+                </Text>
+              );
             })}
             {li < lines.length - 1 ? "\n" : ""}
           </Text>
@@ -382,7 +453,7 @@ function BoldText({ text, style, boldStyle }: {
   );
 }
 
-function welcomeMessage(content: string = WELCOME_MESSAGE): Message {
+function welcomeMessage(content: string = WELCOME_MESSAGE_ES): Message {
   return { id: WELCOME_ID, role: "assistant", content };
 }
 
@@ -411,6 +482,32 @@ type LinkedPhysioInfo = {
   clinic_name?: string | null;
 };
 
+const GENERIC_PHYSIO_LABELS = new Set([
+  "tu fisioterapeuta",
+  "fisioterapeuta",
+  "your physiotherapist",
+]);
+
+function collectPhysioHighlightPhrases(
+  linked: LinkedPhysioInfo | null,
+  conversations: Conversation[]
+): string[] {
+  const set = new Set<string>();
+  const add = (value?: string | null) => {
+    const trimmed = value?.trim();
+    if (!trimmed || trimmed.length < 3) return;
+    if (GENERIC_PHYSIO_LABELS.has(trimmed.toLowerCase())) return;
+    set.add(trimmed);
+  };
+  add(linked?.physio_name);
+  add(linked?.clinic_name);
+  for (const c of conversations) {
+    add(c.physio_name);
+    add(c.clinic_name);
+  }
+  return [...set].sort((a, b) => b.length - a.length);
+}
+
 type AIInquiriesScreenProps = {
   linkedPhysio?: LinkedPhysioInfo | null;
   onLinkedPhysioChange?: (physio: LinkedPhysioInfo) => void;
@@ -424,16 +521,23 @@ export function AIInquiriesScreen({
   guestMode = false,
   onCreateAccount,
 }: AIInquiriesScreenProps) {
-  const headerHeight = useHeaderHeight();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const keyboardHeight = useKeyboardHeight();
   const composerInset = composerBottomInset(keyboardHeight, insets.bottom);
   const { t, locale } = useI18n();
+  const consultLanguage = locale;
   const welcomeText = linkedPhysio
-    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name, { guest: guestMode })
-    : WELCOME_MESSAGE;
+    ? buildPhysioLinkedWelcome(linkedPhysio.physio_name, {
+        guest: guestMode,
+        clinicName: linkedPhysio.clinic_name,
+        language: locale,
+      })
+    : locale === "en"
+      ? WELCOME_MESSAGE_EN
+      : WELCOME_MESSAGE_ES;
   const introGreeting = linkedPhysio
-    ? buildPhysioLinkedIntroGreeting(linkedPhysio.physio_name)
+    ? buildPhysioLinkedIntroGreeting(linkedPhysio.physio_name, locale)
     : undefined;
   const fisioEdgeExtras = linkedPhysio
     ? {
@@ -442,6 +546,12 @@ export function AIInquiriesScreen({
         linkedClinicName: linkedPhysio.clinic_name ?? null,
       }
     : undefined;
+
+  useFocusEffect(
+    useCallback(() => {
+      navigation.setOptions({ headerShown: guestMode });
+    }, [navigation, guestMode])
+  );
 
   const [messages, setMessages] = useState<Message[]>([]);
   // Fisioterapia never boots into the intro animation — wait for history first.
@@ -459,6 +569,10 @@ export function AIInquiriesScreen({
   const [kneeAnswers, setKneeAnswers] = useState<KneeAdaptiveAnswers>(defaultKneeAdaptiveAnswers());
   const [backAnswers, setBackAnswers] = useState<BackAdaptiveAnswers>(defaultBackAdaptiveAnswers());
   const [hipAnswers, setHipAnswers] = useState<HipAdaptiveAnswers>(defaultHipAdaptiveAnswers());
+  const kneeAnswersRef = useRef(kneeAnswers);
+  const hipAnswersRef = useRef(hipAnswers);
+  kneeAnswersRef.current = kneeAnswers;
+  hipAnswersRef.current = hipAnswers;
   const [genericAnswers, setGenericAnswers] = useState(defaultGenericConsultaAnswers());
   const [shoulderSectionIndex, setShoulderSectionIndex] = useState(0);
   const [elbowSectionIndex, setElbowSectionIndex] = useState(0);
@@ -482,6 +596,8 @@ export function AIInquiriesScreen({
   >([]);
   const partEvaluationsRef = useRef(partEvaluations);
   partEvaluationsRef.current = partEvaluations;
+  /** Avoid sending the multi-zone resumen twice in one consulta. */
+  const multiPartSummarySentRef = useRef(false);
   const [functionalTestsCompletedParts, setFunctionalTestsCompletedParts] =
     useState<AdaptiveQuestionnairePart[]>([]);
   const functionalTestsCompletedRef = useRef(functionalTestsCompletedParts);
@@ -493,7 +609,6 @@ export function AIInquiriesScreen({
   const [pendingComplaintText, setPendingComplaintText] = useState<string | null>(
     null
   );
-  const [consultLanguage, setConsultLanguage] = useState<"es" | "en">(locale);
 
   const [chatInput, setChatInput] = useState("");
   const [attachedUri, setAttachedUri] = useState<string | null>(null);
@@ -502,6 +617,7 @@ export function AIInquiriesScreen({
   const [caseImageUrl, setCaseImageUrl] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [loadingModal, setLoadingModal] = useState(false);
+  const loadingModalStartedAtRef = useRef<number | null>(null);
   const [revealingMessageId, setRevealingMessageId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const pinRevealToStartRef = useRef(false);
@@ -510,7 +626,7 @@ export function AIInquiriesScreen({
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeTitle, setActiveTitle] = useState(t.consulta.newConsulta.replace("+ ", ""));
+  const [activeTitle, setActiveTitle] = useState(t.consulta.newConsulta);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -533,7 +649,10 @@ export function AIInquiriesScreen({
     symptomContext: string;
     patientSummary: string;
     language: ConsultLanguage;
+    /** True while Sí/No functional tests are still outstanding — do not send yet. */
+    awaitFunctionalTests?: boolean;
   } | null>(null);
+  const physioReportInFlightRef = useRef(false);
   const autoSpokenIdsRef = useRef<Set<string>>(new Set());
   const [conversationMode, setConversationMode] = useState(false);
   const conversationModeRef = useRef(false);
@@ -611,6 +730,14 @@ export function AIInquiriesScreen({
   };
   stopMicRef.current = stopMic;
 
+  useOnAppBackground(() => {
+    clearSilenceTimer();
+    conversationBusyRef.current = false;
+    stopMicRef.current();
+    cancelSpeech();
+    Keyboard.dismiss();
+  });
+
   function toggleConversationMode() {
     clearSilenceTimer();
     hearingTextRef.current = "";
@@ -631,6 +758,7 @@ export function AIInquiriesScreen({
 
   const chatScrollRef = useRef<ScrollView>(null);
   const questionnaireScrollRef = useRef<ScrollView>(null);
+  const questionnaireScrollY = useRef(0);
   const questionnaireTopY = useRef(0);
   const messageOffsets = useRef<Record<string, number>>({});
   const scrollMetrics = useRef({ offset: 0, viewport: 0, content: 0 });
@@ -674,11 +802,27 @@ export function AIInquiriesScreen({
     });
   }, []);
 
+  const ensureQuestionnaireFieldVisible = useCallback(() => {
+    scrollFocusedInputAboveKeyboard(
+      questionnaireScrollRef.current,
+      questionnaireScrollY.current,
+      keyboardHeight
+    );
+  }, [keyboardHeight]);
+
   useEffect(() => {
     if (keyboardHeight <= 0) return;
+    if (phase === "questionnaire") {
+      const t1 = setTimeout(ensureQuestionnaireFieldVisible, 50);
+      const t2 = setTimeout(ensureQuestionnaireFieldVisible, 300);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
     const t = setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 50);
     return () => clearTimeout(t);
-  }, [keyboardHeight]);
+  }, [keyboardHeight, phase, ensureQuestionnaireFieldVisible]);
 
   const scrollToMessageStart = useCallback((id: string, animated = true) => {
     const y = messageOffsets.current[id];
@@ -727,6 +871,50 @@ export function AIInquiriesScreen({
     updateScrollDownVisibility();
   }, [messages, chatLoading, phase, physioIntro, updateScrollDownVisibility]);
 
+  /** Never leave the full-screen "Analyzing…" overlay stuck after the AI reply is ready. */
+  useEffect(() => {
+    if (!loadingModal) {
+      loadingModalStartedAtRef.current = null;
+      return;
+    }
+    loadingModalStartedAtRef.current = Date.now();
+    const failSafe = setTimeout(() => {
+      setLoadingModal(false);
+      setChatLoading(false);
+    }, 120_000);
+    return () => clearTimeout(failSafe);
+  }, [loadingModal]);
+
+  function dismissQuestionnaireLoading() {
+    setChatLoading(false);
+    setLoadingModal(false);
+  }
+
+  function runPostQuestionnaireFollowUp(
+    conversationId: string,
+    completedPart: AdaptiveQuestionnairePart | "generic",
+    language: ConsultLanguage,
+    completedSummary: string,
+    areaLabel: string
+  ) {
+    void (async () => {
+      try {
+        await offerNextPendingPart(
+          conversationId,
+          completedPart,
+          language,
+          completedSummary,
+          areaLabel
+        );
+        if (await getNotificationsEnabled()) {
+          void refreshSmartReminders(locale);
+        }
+      } catch (err) {
+        console.error("Post-questionnaire follow-up failed:", err);
+      }
+    })();
+  }
+
   async function loadConversations(opts?: { skipAutoOpen?: boolean }) {
     const { data } = await supabase
       .from("conversations")
@@ -764,6 +952,7 @@ export function AIInquiriesScreen({
     setAwaitingNextPart(null);
     setPartEvaluations([]);
     partEvaluationsRef.current = [];
+    multiPartSummarySentRef.current = false;
     setFunctionalTestsCompletedParts([]);
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
@@ -842,7 +1031,7 @@ export function AIInquiriesScreen({
     setActiveTitle(
       linkedPhysio
         ? `Consulta con ${physioDisplayName(linkedPhysio.physio_name)}`
-        : t.consulta.newConsulta.replace("+ ", "")
+        : t.consulta.newConsulta
     );
     setMessages([]);
     setRevealingMessageId(null);
@@ -855,13 +1044,14 @@ export function AIInquiriesScreen({
     setAwaitingNextPart(null);
     setPartEvaluations([]);
     partEvaluationsRef.current = [];
+    multiPartSummarySentRef.current = false;
     setFunctionalTestsCompletedParts([]);
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
-    setInput("");
+    setChatInput("");
     setCaseImageUrl(null);
     setAttachedUri(null);
     setHistoryOpen(false);
@@ -940,6 +1130,7 @@ export function AIInquiriesScreen({
     setAwaitingNextPart(null);
     setPartEvaluations([]);
     partEvaluationsRef.current = [];
+    multiPartSummarySentRef.current = false;
     setFunctionalTestsCompletedParts([]);
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
@@ -949,8 +1140,7 @@ export function AIInquiriesScreen({
     setChatInput("");
     setAttachedUri(null);
     setCaseImageUrl(null);
-    setConsultLanguage(locale);
-    setHistoryOpen(false);
+        setHistoryOpen(false);
     setPhysioReportSentBanner(false);
     setFisioNewConsultDraft(true);
     setHistoryLoaded(true);
@@ -1037,7 +1227,7 @@ export function AIInquiriesScreen({
     if (linkedPhysio) return;
 
     setActiveId(null);
-    setActiveTitle(t.consulta.newConsulta.replace("+ ", ""));
+    setActiveTitle(t.consulta.newConsulta);
     setMessages([]);
     setRevealingMessageId(null);
     setShowScrollDown(false);
@@ -1072,6 +1262,7 @@ export function AIInquiriesScreen({
     setAwaitingNextPart(null);
     setPartEvaluations([]);
     partEvaluationsRef.current = [];
+    multiPartSummarySentRef.current = false;
     setFunctionalTestsCompletedParts([]);
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
@@ -1081,8 +1272,7 @@ export function AIInquiriesScreen({
     setChatInput("");
     setAttachedUri(null);
     setCaseImageUrl(null);
-    setConsultLanguage(locale);
-    setHistoryOpen(false);
+        setHistoryOpen(false);
   }
 
   function clearAttachment() {
@@ -1153,6 +1343,12 @@ export function AIInquiriesScreen({
 
   function pickConsultAttachment() {
     Alert.alert(t.consulta.attachFile, undefined, [
+      {
+        text: t.consulta.takePhoto,
+        onPress: () => {
+          void takeConsultPhoto();
+        },
+      },
       {
         text: t.consulta.choosePhoto,
         onPress: () => {
@@ -1259,14 +1455,26 @@ export function AIInquiriesScreen({
     patientSummary: string;
     language: ConsultLanguage;
   }): Promise<boolean> {
+    if (physioReportInFlightRef.current) {
+      return false;
+    }
+    physioReportInFlightRef.current = true;
     try {
       const { data: patientProfile } = await supabase
         .from("profiles")
         .select("physio_id")
         .eq("id", params.patientId)
         .maybeSingle();
-      const physioId = (patientProfile as { physio_id?: string | null } | null)?.physio_id;
-      if (!physioId) return false;
+      const physioId =
+        (patientProfile as { physio_id?: string | null } | null)?.physio_id ||
+        linkedPhysio?.physio_id ||
+        null;
+      if (!physioId && !linkedPhysio?.physio_id) {
+        console.error(
+          "No se pudo generar el informe: falta physio_id (perfil o código)."
+        );
+        return false;
+      }
 
       const raw = await callEdgeJson(
         {
@@ -1282,18 +1490,20 @@ export function AIInquiriesScreen({
         },
         fisioEdgeExtras
       );
-      const answer = (raw as { answer?: string } | null)?.answer;
+      const answer = (raw as { answer?: string } | null)?.answer?.trim();
       if (!answer) return false;
 
-      const { error: insertError } = await supabase.from("clinical_reports").insert({
-        patient_id: params.patientId,
-        physio_id: physioId,
-        conversation_id: params.conversationId,
-        body_area: params.bodyArea,
-        patient_summary: params.patientSummary,
-        physio_report: answer,
-      });
-      if (insertError) {
+      const { data: reportId, error: insertError } = await supabase.rpc(
+        "patient_submit_clinical_report",
+        {
+          p_conversation_id: params.conversationId,
+          p_body_area: params.bodyArea,
+          p_patient_summary: params.patientSummary,
+          p_physio_report: answer,
+          p_fallback_physio_id: physioId,
+        }
+      );
+      if (insertError || !reportId) {
         console.error("No se pudo guardar el informe para el fisioterapeuta:", insertError);
         return false;
       }
@@ -1301,6 +1511,8 @@ export function AIInquiriesScreen({
     } catch (err) {
       console.error("No se pudo generar el informe para el fisioterapeuta:", err);
       return false;
+    } finally {
+      physioReportInFlightRef.current = false;
     }
   }
 
@@ -1342,13 +1554,13 @@ export function AIInquiriesScreen({
       return formatLowerLegAdaptive(lowerLegAnswers, introBlock);
     }
     if (questionnairePart === "knee") {
-      return formatKneeAdaptive(kneeAnswers, introBlock);
+      return formatKneeAdaptive(kneeAnswersRef.current, introBlock);
     }
     if (questionnairePart === "back") {
       return formatBackAdaptive(backAnswers, introBlock);
     }
     if (questionnairePart === "hip") {
-      return formatHipAdaptive(hipAnswers, introBlock);
+      return formatHipAdaptive(hipAnswersRef.current, introBlock);
     }
     return formatGenericConsulta(genericAnswers, introBlock);
   }
@@ -1482,6 +1694,67 @@ export function AIInquiriesScreen({
     return pendingPartsFromText(initialMessage, evaluated).length > 0;
   }
 
+  function resolveNextZone(
+    completedPart?: AdaptiveQuestionnairePart | "generic"
+  ): AdaptiveQuestionnairePart | null {
+    return resolveNextPendingZone(
+      initialMessage,
+      evaluatedParts,
+      pendingParts,
+      awaitingNextPart,
+      completedPart
+    );
+  }
+
+  function ensureAwaitingNextZone(
+    completedPart: AdaptiveQuestionnairePart | "generic"
+  ): AdaptiveQuestionnairePart | null {
+    const next = resolveNextZone(completedPart);
+    if (!next) return null;
+    if (!awaitingNextPart) {
+      const evaluated = [
+        ...evaluatedParts,
+        ...(completedPart !== "generic"
+          ? [completedPart as AdaptiveQuestionnairePart]
+          : []),
+      ];
+      const queue =
+        pendingParts.length > 0
+          ? pendingParts
+          : pendingPartsFromText(initialMessage, evaluated);
+      setPendingParts(queue.filter((part) => part !== next));
+      setAwaitingNextPart(next);
+    }
+    return next;
+  }
+
+  async function promptNextZoneQuestionnaire(
+    conversationId: string,
+    completedPart: AdaptiveQuestionnairePart | "generic",
+    language: ConsultLanguage,
+    opts?: { functionalTestsDone?: boolean }
+  ): Promise<boolean> {
+    const next = ensureAwaitingNextZone(completedPart);
+    if (!next) return false;
+    await appendAssistantMessage(
+      conversationId,
+      nextPartReadyMessage(
+        completedPart,
+        next,
+        language,
+        initialMessage,
+        {
+          functionalTestsDone:
+            opts?.functionalTestsDone ??
+            isFunctionalTestsDoneForPart(
+              completedPart !== "generic" ? completedPart : undefined
+            ),
+        }
+      )
+    );
+    return true;
+  }
+
   function currentInjuryLabel(): string {
     if (partEvaluationsRef.current.length > 0) {
       return partEvaluationsRef.current.map((e) => e.label).join(", ");
@@ -1546,6 +1819,8 @@ export function AIInquiriesScreen({
     language: ConsultLanguage
   ) {
     if (linkedPhysio || evaluations.length < 2) return;
+    if (multiPartSummarySentRef.current) return;
+    multiPartSummarySentRef.current = true;
     try {
       const message = evaluations
         .map((e) => `=== ${e.label} ===\n${e.summary}`)
@@ -1562,7 +1837,8 @@ export function AIInquiriesScreen({
       );
       await appendAssistantMessage(conversationId, answer);
     } catch {
-      // Individual per-zone orientations already shown; summary is best-effort.
+      // Allow a later retry if the edge call failed before a message was shown.
+      multiPartSummarySentRef.current = false;
     }
   }
 
@@ -1630,14 +1906,17 @@ export function AIInquiriesScreen({
       setPendingParts([]);
       setAwaitingNextPart(null);
       if (linkedPhysio) return;
-      if (evaluations.length >= 2) {
-        await appendMultiPartFinalSummary(conversationId, evaluations, language);
-      }
       const offeredTests =
         Boolean(completedSummary) &&
         /\*\*Preguntas de valoración funcional\*\*|Functional assessment questions|\*\*Preguntas de valoraci[oó]n funcional\*\*/i.test(
           completedSummary ?? ""
         );
+      // Multi-zone resumen waits until the patient reports functional-test
+      // results for this last injury (see reportsFunctionalTestResults path).
+      // If this orientation did not offer tests, send the resumen now.
+      if (!offeredTests && evaluations.length >= 2) {
+        await appendMultiPartFinalSummary(conversationId, evaluations, language);
+      }
       await activateRelatedFollowup(conversationId, language, {
         offeredTests,
         askNow: !offeredTests,
@@ -1684,8 +1963,7 @@ export function AIInquiriesScreen({
       const imageUrl = consultVisionUrl(attachmentUrl);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
-      const lang = detectConsultLanguage(text, locale || consultLanguage);
-      setConsultLanguage(lang);
+      const lang = consultLanguage;
 
       setMessages((prev) => [
         ...prev,
@@ -1694,6 +1972,41 @@ export function AIInquiriesScreen({
       scrollToBottomAfterPaint();
 
       const triage = await triageMessage(text, imageUrl, lang, fisioEdgeExtras);
+
+      if (linkedPhysio) {
+        const decision = decideFisioIntro(text, lang);
+        if (decision.type === "steer_meta") {
+          await respondToInitialMessage(
+            text,
+            {
+              action: "respond",
+              intent: "general",
+              answer: triage.answer?.trim() || decision.message,
+            },
+            attachmentUrl,
+            lang
+          );
+          return;
+        }
+        if (decision.type === "clarify_location") {
+          setPendingComplaintText(text);
+          await respondToInitialMessage(
+            text,
+            {
+              action: "respond",
+              intent: "general",
+              answer: decision.message,
+            },
+            attachmentUrl,
+            lang
+          );
+          return;
+        }
+        if (!startQuestionnaireQueue(text, lang, decision.part)) {
+          beginQuestionnaire(text, decision.part, lang);
+        }
+        return;
+      }
 
       if (
         isMetaOrClarificationQuery(text) ||
@@ -1767,12 +2080,47 @@ export function AIInquiriesScreen({
   async function handleQuestionnaireSubmit() {
     setFormError(null);
 
+    // Prefer refs so "Enviar ahora (urgencia)" can setState + submit with the same answers.
+    const kneeAnswers = kneeAnswersRef.current;
+    const hipAnswers = hipAnswersRef.current;
+
     const focusIssue = (
-      issue: { message: string; section: string },
+      issue: { message: string; section: string; questionId: string },
       sections: readonly string[],
       setIndex: (i: number) => void
     ) => {
-      setFormError(issue.message);
+      const esFallback = issue.message
+        .replace(/^Responde:\s*/i, "")
+        .replace(/\.$/, "");
+      const localizedLabel = (() => {
+        switch (questionnairePart) {
+          case "shoulder":
+            return localizeShoulderLabel(issue.questionId, esFallback, locale);
+          case "elbow":
+            return localizeElbowLabel(issue.questionId, esFallback, locale);
+          case "wrist_hand":
+            return localizeWristLabel(issue.questionId, esFallback, locale);
+          case "finger":
+            return localizeFingerLabel(issue.questionId, esFallback, locale);
+          case "head":
+            return localizeHeadLabel(issue.questionId, esFallback, locale);
+          case "neck":
+            return localizeNeckLabel(issue.questionId, esFallback, locale);
+          case "ankle_foot":
+            return localizeLowerLegLabel(issue.questionId, esFallback, locale);
+          case "knee":
+            return localizeKneeLabel(issue.questionId, esFallback, locale);
+          case "back":
+            return localizeBackLabel(issue.questionId, esFallback, locale);
+          case "hip":
+            return localizeHipLabel(issue.questionId, esFallback, locale);
+          default:
+            return esFallback;
+        }
+      })();
+      setFormError(
+        formatValidationIssueMessage(issue, locale, localizedLabel)
+      );
       const idx = sections.findIndex((s) => s === issue.section);
       if (idx >= 0) setIndex(idx);
     };
@@ -1935,7 +2283,23 @@ export function AIInquiriesScreen({
     } else {
       const issue = validateGenericConsulta(genericAnswers);
       if (issue) {
-        setFormError(issue.message);
+        setFormError(
+          formatValidationIssueMessage(
+            issue,
+            locale,
+            locale === "en"
+              ? issue.questionId === "zona"
+                ? "Where does it hurt or bother you?"
+                : issue.questionId === "evolucion"
+                  ? "How long have you had this problem?"
+                  : issue.questionId === "inicio"
+                    ? "How did it start?"
+                    : issue.questionId === "mecanismo"
+                      ? "What might have caused it?"
+                      : issue.message.replace(/^Responde:\s*/, "").replace(/\.$/, "")
+              : issue.message.replace(/^Responde:\s*/, "").replace(/\.$/, "")
+          )
+        );
         return;
       }
     }
@@ -1951,7 +2315,8 @@ export function AIInquiriesScreen({
         : questionnairePart === "ankle_foot"
           ? bodyAreaLabelFromLowerLegAnswers(lowerLegAnswers, consultLanguage)
           : questionnairePart === "generic"
-            ? patientFacingPartLabel("generic", initialMessage, consultLanguage)
+            ? genericAnswers.zona.trim() ||
+              patientFacingPartLabel("generic", initialMessage, consultLanguage)
             : patientFacingPartLabel(questionnairePart, initialMessage, consultLanguage);
     const multiZoneScopeNote =
       detectedZones.length > 1
@@ -2090,8 +2455,20 @@ export function AIInquiriesScreen({
             genericAnswers.rf_perdida_sensibilidad === "Sí";
     const contextForAi =
       (redFlagsUrgent
-        ? `⚠️ PRIORIDAD ALTA — BANDERAS ROJAS DETECTADAS\n\n${symptomContext}`
+        ? consultLanguage === "en"
+          ? `⚠️ HIGH PRIORITY — RED FLAGS DETECTED\n\n${symptomContext}`
+          : `⚠️ PRIORIDAD ALTA — BANDERAS ROJAS DETECTADAS\n\n${symptomContext}`
         : symptomContext) + multiZoneScopeNote;
+
+    const physioPatientFlowNote = linkedPhysio
+      ? consultLanguage === "en"
+        ? redFlagsUrgent
+          ? `\n\nPHYSIOTHERAPY FLOW + URGENCY (CRITICAL): Red flags are present. This guidance is for the patient. Do NOT ask for functional tests or hop tests. Prioritize HOSPITAL / ER and imaging. Do NOT say the report was already sent to the physio.`
+          : `\n\nPHYSIOTHERAPY FLOW (CRITICAL): This guidance is for the patient. ALWAYS include the **Functional tests** section specific to the injured area. Do NOT say the report was already sent to the physio: they must answer the tests first.`
+        : redFlagsUrgent
+          ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas. Esta orientación es para el paciente. NO pidas pruebas funcionales ni hop. Prioriza HOSPITAL / URGENCIAS e imagen. NO digas que el informe ya se envió al fisio.`
+          : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`
+      : "";
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -2105,13 +2482,9 @@ export function AIInquiriesScreen({
             painLevel,
             hadTrauma: hadTraumaVal,
             description: initialMessage,
-            symptomContext:
-              contextForAi +
-              (redFlagsUrgent
-                ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas. Esta orientación es para el paciente. NO pidas pruebas funcionales ni hop. Prioriza HOSPITAL / URGENCIAS e imagen. NO digas que el informe ya se envió al fisio.`
-                : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`),
+            symptomContext: contextForAi + physioPatientFlowNote,
             conversationHistory: [],
-            language: consultLanguage,
+            language: locale,
             ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
           },
           fisioEdgeExtras
@@ -2197,7 +2570,7 @@ export function AIInquiriesScreen({
               physioName: linkedPhysio.physio_name,
               aiText: patientFacingAi,
               bodyArea: areaLabel,
-              language: consultLanguage,
+              language: locale,
             });
 
         pendingPhysioReportRef.current = {
@@ -2210,7 +2583,7 @@ export function AIInquiriesScreen({
           description: initialMessage,
           symptomContext: contextForAi,
           patientSummary: patientFacingAi,
-          language: consultLanguage,
+          language: locale,
         };
 
         const { data: aiMsg } = await supabase
@@ -2225,7 +2598,53 @@ export function AIInquiriesScreen({
         }
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
-        setPhase("followup");
+        dismissQuestionnaireLoading();
+
+        const awaitingTests =
+          !redFlagsUrgent &&
+          (splitFunctionalTests(combined)?.tests.length ?? 0) >= 2;
+
+        // Only send (and show “report sent”) when there are no outstanding Sí/No tests.
+        if (awaitingTests) {
+          pendingPhysioReportRef.current = {
+            ...pendingPhysioReportRef.current!,
+            awaitFunctionalTests: true,
+          };
+          setPhase("followup");
+        } else {
+          void (async () => {
+            const reportParams = pendingPhysioReportRef.current;
+            if (!reportParams) return;
+            const sent = await maybeGenerateAndSendPhysioReport(reportParams);
+            if (sent) {
+              setPhysioReportSentBanner(true);
+              pendingPhysioReportRef.current = null;
+              const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
+                guest: guestMode,
+                language: locale,
+              });
+              const { data: thanksMsg } = await supabase
+                .from("messages")
+                .insert({
+                  conversation_id: conversationId,
+                  role: "assistant",
+                  content: thanks,
+                })
+                .select("id, role, content")
+                .single();
+              if (thanksMsg) {
+                beginAssistantReveal(
+                  (thanksMsg as Message).id,
+                  (thanksMsg as Message).content
+                );
+                setMessages((prev) => [...prev, thanksMsg as Message]);
+              }
+              setPhase("complete");
+            } else {
+              setPhase("followup");
+            }
+          })();
+        }
         return;
       }
 
@@ -2283,16 +2702,14 @@ export function AIInquiriesScreen({
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
         setPhase("followup");
-        await offerNextPendingPart(
+        dismissQuestionnaireLoading();
+        runPostQuestionnaireFollowUp(
           activeId,
           questionnairePart,
           consultLanguage,
           answer,
           areaLabel
         );
-        if (await getNotificationsEnabled()) {
-          void refreshSmartReminders(locale);
-        }
         return;
       }
 
@@ -2369,16 +2786,14 @@ export function AIInquiriesScreen({
       markPartEvaluated(questionnairePart);
       setCaseImageUrl(null);
       setPhase("followup");
-      await offerNextPendingPart(
+      dismissQuestionnaireLoading();
+      runPostQuestionnaireFollowUp(
         conv.id,
         questionnairePart,
         consultLanguage,
         answer,
         areaLabel
       );
-      if (await getNotificationsEnabled()) {
-        void refreshSmartReminders(locale);
-      }
     } catch (err) {
       setFormError(
         err instanceof Error ? err.message : "No se pudo obtener la respuesta. Inténtalo de nuevo."
@@ -2426,52 +2841,20 @@ export function AIInquiriesScreen({
         userSaved = true;
       }
 
-      if (
-        linkedPhysio &&
-        partEvaluationsRef.current.length === 0 &&
-        evaluatedParts.length === 0 &&
-        !awaitingNextPart &&
-        pendingParts.length === 0
-      ) {
-        const combinedText = [initialMessage, text].filter(Boolean).join("\n").trim();
-        const source = shouldOpenSymptomQuestionnaire(combinedText) ? combinedText : text;
-        if (shouldOpenSymptomQuestionnaire(source)) {
-          await saveUserMessage();
-          if (imageUrl) setCaseImageUrl(imageUrl);
-          const refined = refineTriageBodyPart(triage, source);
-          if (
-            refined.action === "questionnaire" &&
-            refined.bodyPart &&
-            startQuestionnaireQueue(source, consultLanguage, refined.bodyPart)
-          ) {
-            return;
-          }
-          if (refined.intent === "symptom_other") {
-            const { part } = questionnaireForText(source);
-            if (
-              !startQuestionnaireQueue(
-                source,
-                consultLanguage,
-                part === "generic" ? "generic" : part
-              )
-            ) {
-              beginQuestionnaire(
-                source,
-                part === "generic" ? "generic" : part,
-                consultLanguage
-              );
-            }
-            return;
-          }
-          if (startQuestionnaireQueue(source, consultLanguage)) {
-            return;
-          }
-        }
-      }
-
-      // After "dónde te duele del brazo?" — open the questionnaire for the zone they named
-      if (pendingComplaintText && !linkedPhysio) {
+      // After "dónde te duele?" — open the questionnaire for the zone they named
+      if (pendingComplaintText) {
         await saveUserMessage();
+        if (linkedPhysio) {
+          const { part, contextText } = decideFisioLocationReply(
+            text,
+            pendingComplaintText
+          );
+          if (imageUrl) setCaseImageUrl(imageUrl);
+          if (!startQuestionnaireQueue(contextText, consultLanguage, part)) {
+            beginQuestionnaire(contextText, part, consultLanguage);
+          }
+          return;
+        }
         const resolved = resolveBodyPartFromLocationReply(text);
         if (
           resolved &&
@@ -2500,6 +2883,40 @@ export function AIInquiriesScreen({
           activeId,
           vagueArmClarifyMessage(consultLanguage)
         );
+        return;
+      }
+
+      if (
+        linkedPhysio &&
+        partEvaluationsRef.current.length === 0 &&
+        evaluatedParts.length === 0 &&
+        !awaitingNextPart &&
+        pendingParts.length === 0 &&
+        !pendingPhysioReportRef.current
+      ) {
+        await saveUserMessage();
+        if (imageUrl) setCaseImageUrl(imageUrl);
+        const combined = [initialMessage, text].filter(Boolean).join("\n").trim();
+        const latest = decideFisioIntro(text, consultLanguage);
+        const decision =
+          latest.type === "questionnaire" || latest.type === "clarify_location"
+            ? latest
+            : decideFisioIntro(combined, consultLanguage);
+        if (decision.type === "steer_meta") {
+          // Second chance: still no clear complaint → open generic questionnaire so a report can be made.
+          if (!startQuestionnaireQueue(combined || text, consultLanguage, "generic")) {
+            beginQuestionnaire(combined || text, "generic", consultLanguage);
+          }
+          return;
+        }
+        if (decision.type === "clarify_location") {
+          setPendingComplaintText(combined || text);
+          await appendAssistantMessage(activeId, decision.message);
+          return;
+        }
+        if (!startQuestionnaireQueue(combined || text, consultLanguage, decision.part)) {
+          beginQuestionnaire(combined || text, decision.part, consultLanguage);
+        }
         return;
       }
 
@@ -2563,10 +2980,9 @@ export function AIInquiriesScreen({
               painLevel: 0,
               hadTrauma: "No",
               description: text,
-              symptomContext: `${functionalTestResultsFollowupContext(consultLanguage)}
-${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
-  functionalTestsDone: true,
-})}`,
+              symptomContext: functionalTestResultsFollowupContext(consultLanguage, {
+                pendingNextZoneLabel: nextLabel,
+              }),
               conversationHistory: history,
               language: consultLanguage,
               ...(imageUrl ? { imageUrl } : {}),
@@ -2605,16 +3021,33 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           return;
         }
 
+        if (declinesMoreRelatedQuestions(text)) {
+          const completedForNext =
+            completedPart && completedPart !== "generic"
+              ? completedPart
+              : questionnairePart;
+          await promptNextZoneQuestionnaire(
+            activeId,
+            completedForNext,
+            consultLanguage,
+            { functionalTestsDone }
+          );
+          return;
+        }
+
         if (isDeclineNextPart(text)) {
           setAwaitingNextPart(null);
           setPendingParts([]);
-          await appendMultiPartFinalSummary(
-            activeId,
-            partEvaluationsRef.current,
-            consultLanguage
-          );
+          // Resumen only after last-injury functional tests (or if already done).
+          if (functionalTestsDone) {
+            await appendMultiPartFinalSummary(
+              activeId,
+              partEvaluationsRef.current,
+              consultLanguage
+            );
+          }
           await activateRelatedFollowup(activeId, consultLanguage, {
-            offeredTests: true,
+            offeredTests: !functionalTestsDone,
             askNow: false,
           });
           return;
@@ -2707,8 +3140,26 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       // Fisioterapia: after functional-test answers, generate report + completion (not before).
       const pendingPhysio = pendingPhysioReportRef.current;
       const answeringPendingPhysioTests =
-        Boolean(linkedPhysio && pendingPhysio) &&
-        (reportsFunctionalTestResults(text) || text.trim().length >= 25);
+        Boolean(linkedPhysio && pendingPhysio?.awaitFunctionalTests) &&
+        (reportsFunctionalTestResults(text) ||
+          /resultados de las pruebas funcionales|functional test results/i.test(
+            text
+          ));
+
+      // Retry report send only when not waiting on Sí/No functional tests.
+      if (
+        linkedPhysio &&
+        pendingPhysio &&
+        !physioReportSentBanner &&
+        !pendingPhysio.awaitFunctionalTests &&
+        !answeringPendingPhysioTests
+      ) {
+        const sent = await maybeGenerateAndSendPhysioReport(pendingPhysio);
+        if (sent) {
+          setPhysioReportSentBanner(true);
+          pendingPhysioReportRef.current = null;
+        }
+      }
 
       if (linkedPhysio && pendingPhysio && answeringPendingPhysioTests) {
         await saveUserMessage();
@@ -2734,6 +3185,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
 
         const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
           guest: guestMode,
+          language: locale,
         });
         const { data: aiMsg } = await supabase
           .from("messages")
@@ -2756,7 +3208,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         await saveUserMessage();
         const nudge = buildPhysioLinkedFunctionalTestsPrompt(
           linkedPhysio.physio_name,
-          consultLanguage
+          locale
         );
         await appendAssistantMessage(activeId, nudge);
         return;
@@ -2774,6 +3226,19 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               ? (questionnairePart as AdaptiveQuestionnairePart)
               : evaluatedParts[evaluatedParts.length - 1];
         if (completedPart) markFunctionalTestsDone(completedPart);
+
+        const moreZonesPending = hasMoreZonesPending(completedPart);
+        const nextZone = resolveNextZone(completedPart);
+        const nextLabel = nextZone
+          ? patientFacingPartLabel(nextZone, initialMessage, consultLanguage)
+          : null;
+        if (moreZonesPending && nextZone) {
+          ensureAwaitingNextZone(
+            completedPart && completedPart !== "generic"
+              ? completedPart
+              : questionnairePart
+          );
+        }
 
         const history = [
           ...messages
@@ -2797,23 +3262,25 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           },
         ].slice(-10);
 
-        const answer = ensureAsksMoreRelatedQuestions(
-          await callEdgeText(
-            {
-              bodyArea: "seguimiento",
-              onsetType: text,
-              painLevel: 0,
-              hadTrauma: "No",
-              description: text,
-              symptomContext: functionalTestResultsFollowupContext(consultLanguage),
-              conversationHistory: history,
-              language: consultLanguage,
-              ...(imageUrl ? { imageUrl } : {}),
-            },
-            fisioEdgeExtras
-          ),
-          consultLanguage
+        const rawAnswer = await callEdgeText(
+          {
+            bodyArea: "seguimiento",
+            onsetType: text,
+            painLevel: 0,
+            hadTrauma: "No",
+            description: text,
+            symptomContext: functionalTestResultsFollowupContext(consultLanguage, {
+              pendingNextZoneLabel: moreZonesPending ? nextLabel : null,
+            }),
+            conversationHistory: history,
+            language: consultLanguage,
+            ...(imageUrl ? { imageUrl } : {}),
+          },
+          fisioEdgeExtras
         );
+        const answer = moreZonesPending
+          ? rawAnswer
+          : ensureAsksMoreRelatedQuestions(rawAnswer, consultLanguage);
 
         const { data: aiMsg } = await supabase
           .from("messages")
@@ -2828,7 +3295,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
 
-        if (!hasMoreZonesPending(completedPart)) {
+        if (!moreZonesPending) {
+          // End of last injury's functional tests → multi-zone resumen, then follow-up Qs.
+          await appendMultiPartFinalSummary(
+            activeId,
+            partEvaluationsRef.current,
+            consultLanguage
+          );
           setRelatedFollowupActive(true);
           setPostGuidanceAsked(true);
           setShowUnrelatedCta(false);
@@ -2841,6 +3314,25 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         setShowUnrelatedCta(false);
 
         if (postGuidanceAsked && declinesMoreRelatedQuestions(text)) {
+          const lastEval =
+            partEvaluationsRef.current[partEvaluationsRef.current.length - 1];
+          const completedPart =
+            lastEval?.part && lastEval.part !== "generic"
+              ? lastEval.part
+              : questionnairePart !== "generic"
+                ? (questionnairePart as AdaptiveQuestionnairePart)
+                : evaluatedParts[evaluatedParts.length - 1] ?? "generic";
+          if (
+            hasMoreZonesPending(completedPart) &&
+            (await promptNextZoneQuestionnaire(
+              activeId,
+              completedPart,
+              consultLanguage,
+              { functionalTestsDone: isFunctionalTestsDoneForPart(completedPart) }
+            ))
+          ) {
+            return;
+          }
           await finishConsultaSession(activeId, consultLanguage);
           return;
         }
@@ -2998,8 +3490,10 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       clearSilenceTimer();
       stopMic();
       conversationBusyRef.current = true;
+    } else if (phase === "followup" && !chatLoading && !revealingMessageId) {
+      conversationBusyRef.current = false;
     }
-  }, [phase, stopMic, clearSilenceTimer]);
+  }, [phase, chatLoading, revealingMessageId, stopMic, clearSilenceTimer]);
 
   useEffect(() => {
     if (!conversationMode || !conversationBusyRef.current) return;
@@ -3037,10 +3531,19 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
     !activeId;
   const showFisioBootstrap =
     Boolean(linkedPhysio) && (!historyLoaded || (openingConversation && messages.length === 0));
+  const physioHighlightPhrases = collectPhysioHighlightPhrases(
+    linkedPhysio,
+    conversations
+  );
 
   function renderTopBar() {
     return (
-      <View style={styles.chatTopBar}>
+      <View
+        style={[
+          styles.chatTopBar,
+          !guestMode && { paddingTop: screenHeaderTopInset(insets) },
+        ]}
+      >
         <Pressable
           style={styles.menuBtn}
           onPress={() => {
@@ -3054,12 +3557,9 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         <Text style={styles.chatTopBarTitle} numberOfLines={1}>
           {activeTitle}
         </Text>
-        {!linkedPhysio && (
-          <Pressable style={styles.newBtn} onPress={startNewConsultation}>
-            <Ionicons name="add" size={16} color={Colors.white} />
-            <Text style={styles.newBtnText}>{t.consulta.new}</Text>
-          </Pressable>
-        )}
+        <View style={styles.chatTopBarActions}>
+          {!guestMode ? <AppBurgerMenu /> : <View style={styles.topBarSpacer} />}
+        </View>
       </View>
     );
   }
@@ -3081,7 +3581,15 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
         onRequestClose={() => setHistoryOpen(false)}
       >
         <View style={styles.historyOverlay}>
-          <View style={[styles.historyPanel, { marginTop: headerHeight }]}>
+          <View
+            style={[
+              styles.historyPanel,
+              {
+                paddingTop: screenHeaderTopInset(insets),
+                paddingBottom: insets.bottom,
+              },
+            ]}
+          >
             <View style={styles.historyHeader}>
               <Text style={styles.historyHeaderTitle}>
                 {linkedPhysio
@@ -3163,7 +3671,16 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               )}
               {groups.map((group) => (
                 <View key={group.label} style={styles.historyGroup}>
-                  <Text style={styles.historyGroupLabel}>{group.label}</Text>
+                  {group.physioName ? (
+                    <View style={styles.historyPhysioCard}>
+                      <Text style={styles.historyPhysioName}>{group.physioName}</Text>
+                      {group.clinicName ? (
+                        <Text style={styles.historyPhysioClinic}>{group.clinicName}</Text>
+                      ) : null}
+                    </View>
+                  ) : (
+                    <Text style={styles.historyGroupLabel}>{group.label}</Text>
+                  )}
                   {group.items.map((c) => {
                     const isActive = activeId === c.id;
                     return (
@@ -3240,14 +3757,20 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
       <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: composerInset }}>
         {renderTopBar()}
 
+        <QuestionnaireKeyboardProvider onFieldFocus={ensureQuestionnaireFieldVisible}>
         <ScrollView
           ref={questionnaireScrollRef}
           style={{ flex: 1 }}
-          contentContainerStyle={styles.messageList}
+          contentContainerStyle={[
+            styles.messageList,
+            keyboardHeight > 0 ? { paddingBottom: Math.max(24, keyboardHeight * 0.35) } : null,
+          ]}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets
-          onScrollBeginDrag={Keyboard.dismiss}
+          keyboardDismissMode="interactive"
+          onScroll={(e) => {
+            questionnaireScrollY.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
         >
           {messages.map((msg) => (
             <FadeInView
@@ -3288,7 +3811,13 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   <AssistantMessageWithSources
                     content={msg.content}
                     renderBody={(body) => (
-                      <BoldText text={body} style={styles.bubbleText} boldStyle={styles.bubbleBold} />
+                      <BoldText
+                        text={body}
+                        style={styles.bubbleText}
+                        boldStyle={styles.bubbleBold}
+                        highlightPhrases={physioHighlightPhrases}
+                        highlightStyle={styles.bubblePhysioHighlight}
+                      />
                     )}
                   />
                 )}
@@ -3302,7 +3831,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               questionnaireTopY.current = e.nativeEvent.layout.y;
             }}
           >
-            <TrustPanel locale={consultLanguage} />
+            <TrustPanel locale={locale} />
             {questionnairePart === "shoulder" ? (
               <>
                 <ConsultaAdaptiveShoulder
@@ -3312,7 +3841,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setShoulderSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                   focus={resolveShoulderQuestionnaireFocus(initialMessage)}
                 />
                 {isLastShoulderSection(
@@ -3325,7 +3854,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3339,7 +3868,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setElbowSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {isLastElbowSection(elbowAnswers, elbowSectionIndex) && (
                   <Pressable
@@ -3347,7 +3876,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3361,7 +3890,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setWristSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {isLastWristSection(wristAnswers, wristSectionIndex) && (
                   <Pressable
@@ -3369,7 +3898,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3383,7 +3912,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setFingerSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {isLastFingerSection(fingerAnswers, fingerSectionIndex) && (
                   <Pressable
@@ -3391,7 +3920,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3405,7 +3934,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setHeadSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {isLastHeadSection(headAnswers, headSectionIndex) && (
                   <Pressable
@@ -3413,7 +3942,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3427,7 +3956,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setNeckSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {isLastNeckSection(neckAnswers, neckSectionIndex) && (
                   <Pressable
@@ -3435,7 +3964,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3449,7 +3978,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setLowerLegSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {isLastLowerLegSection(lowerLegAnswers, lowerLegSectionIndex) && (
                   <Pressable
@@ -3457,7 +3986,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3471,7 +4000,12 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setKneeSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
+                  onSubmitUrgency={(next) => {
+                    kneeAnswersRef.current = next;
+                    setKneeAnswers(next);
+                    void handleQuestionnaireSubmit();
+                  }}
                 />
                 {isLastKneeSection(kneeAnswers, kneeSectionIndex) && (
                   <Pressable
@@ -3479,7 +4013,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3493,7 +4027,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setBackSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {isLastBackSection(backAnswers, backSectionIndex) && (
                   <Pressable
@@ -3501,7 +4035,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3515,7 +4049,12 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onSectionIndexChange={withQuestionnaireScroll(setHipSectionIndex)}
                   sectionError={formError}
                   onSectionError={setFormError}
-                  locale={consultLanguage}
+                  locale={locale}
+                  onSubmitUrgency={(next) => {
+                    hipAnswersRef.current = next;
+                    setHipAnswers(next);
+                    void handleQuestionnaireSubmit();
+                  }}
                 />
                 {isLastHipSection(hipAnswers, hipSectionIndex) && (
                   <Pressable
@@ -3523,7 +4062,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                     </Text>
                   </Pressable>
                 )}
@@ -3533,7 +4072,7 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 <ConsultaGenericFields
                   value={genericAnswers}
                   onChange={setGenericAnswers}
-                  locale={consultLanguage}
+                  locale={locale}
                 />
                 {formError ? <Text style={styles.error}>{formError}</Text> : null}
                 <Pressable
@@ -3541,13 +4080,14 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                   onPress={handleQuestionnaireSubmit}
                 >
                   <Text style={styles.submitBtnText}>
-                    {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                    {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
                   </Text>
                 </Pressable>
               </>
             )}
           </View>
         </ScrollView>
+        </QuestionnaireKeyboardProvider>
 
         <Modal visible={loadingModal} transparent animationType="fade">
           <View style={styles.modalOverlay}>
@@ -3651,13 +4191,19 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
           }}
         >
           <Text style={{ fontSize: 14, fontWeight: "700", color: "#065F46" }}>
-            Informe enviado a tu fisioterapeuta
+            {locale === "en"
+              ? "Report sent to your physiotherapist"
+              : "Informe enviado a tu fisioterapeuta"}
           </Text>
           <Text style={{ marginTop: 2, fontSize: 12, color: "#047857" }}>
-            El resumen clínico se ha enviado correctamente. Ya puede revisarlo antes de la cita.
+            {locale === "en"
+              ? "The clinical summary was sent successfully. They can review it before the appointment."
+              : "El resumen clínico se ha enviado correctamente. Ya puede revisarlo antes de la cita."}
           </Text>
           <Pressable onPress={() => setPhysioReportSentBanner(false)} style={{ marginTop: 6 }}>
-            <Text style={{ fontSize: 12, fontWeight: "700", color: "#065F46" }}>Cerrar</Text>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#065F46" }}>
+              {locale === "en" ? "Close" : "Cerrar"}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -3806,6 +4352,8 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                                   text={body}
                                   style={styles.bubbleText}
                                   boldStyle={styles.bubbleBold}
+                                  highlightPhrases={physioHighlightPhrases}
+                                  highlightStyle={styles.bubblePhysioHighlight}
                                 />
                               );
                             }
@@ -3816,16 +4364,20 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                                     text={parsed.before}
                                     style={styles.bubbleText}
                                     boldStyle={styles.bubbleBold}
+                                    highlightPhrases={physioHighlightPhrases}
+                                    highlightStyle={styles.bubblePhysioHighlight}
                                   />
                                 ) : null}
                                 <ConsultaAssistantBody
                                   text={`**${parsed.heading}**`}
                                   style={styles.bubbleText}
                                   boldStyle={styles.bubbleBold}
+                                  highlightPhrases={physioHighlightPhrases}
+                                  highlightStyle={styles.bubblePhysioHighlight}
                                 />
                                 <FunctionalTestYesNo
                                   tests={parsed.tests}
-                                  language={consultLanguage}
+                                  language={locale}
                                   disabled={chatLoading}
                                   onSubmit={(text) =>
                                     sendVoiceTurnRef.current(text)
@@ -3836,6 +4388,8 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                                     text={parsed.after}
                                     style={styles.bubbleText}
                                     boldStyle={styles.bubbleBold}
+                                    highlightPhrases={physioHighlightPhrases}
+                                    highlightStyle={styles.bubblePhysioHighlight}
                                   />
                                 ) : null}
                               </View>
@@ -3918,14 +4472,25 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
                 style={{
                   marginTop: 10,
                   fontSize: 14,
-                  lineHeight: 20,
+                  lineHeight: 22,
                   color: Colors.textSecondary,
                   textAlign: "center",
                 }}
               >
+                <Text style={styles.bubblePhysioHighlight}>
+                  {physioDisplayName(linkedPhysio.physio_name)}
+                </Text>
+                {linkedPhysio.clinic_name?.trim() ? (
+                  <>
+                    {" "}
+                    <Text style={styles.bubblePhysioHighlight}>
+                      {linkedPhysio.clinic_name.trim()}
+                    </Text>
+                  </>
+                ) : null}
                 {locale === "en"
-                  ? `${physioDisplayName(linkedPhysio.physio_name)} has received all the information about your injury and will be ready to treat you.`
-                  : `${physioDisplayName(linkedPhysio.physio_name)} ya ha recibido toda la información sobre tu molestia y podrá prepararse mejor para tu tratamiento.`}
+                  ? " has received all the information about your injury and will be ready to treat you."
+                  : " ya ha recibido toda la información sobre tu molestia y podrá prepararse mejor para tu tratamiento."}
               </Text>
               <Text
                 style={{
@@ -4146,23 +4711,15 @@ ${betweenPartsChoiceContext(doneLabel, nextLabel, consultLanguage, {
               placeholder={
                 conversationMode
                   ? listening
-                    ? locale === "en"
-                      ? "Listening… (3s silence = AI turn)"
-                      : "Te escucho… (3 s de silencio = turno de la IA)"
+                    ? t.consulta.placeholderListening
                     : phase === "questionnaire"
-                      ? locale === "en"
-                        ? "Complete the on-screen questionnaire…"
-                        : "Completa el cuestionario en pantalla…"
-                      : locale === "en"
-                        ? "Conversation active — AI is responding…"
-                        : "Conversación activa — la IA está respondiendo…"
-                  : phase === "intro"
-                  ? t.consulta.placeholderIntro
+                      ? t.consulta.placeholderQuestionnaire
+                      : t.consulta.placeholderConversation
                   : linkedPhysio
-                    ? locale === "en"
-                      ? "Reply about your case (report for your physio)…"
-                      : "Responde sobre tu caso (informe para tu fisio)…"
-                    : t.consulta.placeholderFollowup
+                    ? t.consulta.placeholderFisio
+                    : phase === "intro"
+                      ? t.consulta.placeholderIntro
+                      : t.consulta.placeholderFollowup
               }
               placeholderTextColor={Colors.textLight}
               value={chatInput}
@@ -4360,21 +4917,18 @@ const styles = StyleSheet.create({
     color: Colors.text,
     letterSpacing: -0.3,
   },
-  newBtn: {
+  chatTopBarActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    gap: 8,
+    minWidth: 40,
+    justifyContent: 'flex-end',
   },
-  newBtnText: { color: Colors.white, fontSize: 13, fontWeight: '700', letterSpacing: -0.1 },
+  /** Keeps the title centered when guest mode has no burger on the right. */
+  topBarSpacer: {
+    width: 40,
+    height: 40,
+  },
   historyOverlay: { flex: 1, flexDirection: 'row' },
   historyBackdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.35)' },
   historyPanel: {
@@ -4432,6 +4986,26 @@ const styles = StyleSheet.create({
   },
   historyList: { flex: 1, paddingHorizontal: 12 },
   historyGroup: { marginBottom: 8 },
+  historyPhysioCard: {
+    backgroundColor: Colors.primarySoft,
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  historyPhysioName: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: Colors.primaryDark,
+  },
+  historyPhysioClinic: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
   historyGroupLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -4542,10 +5116,19 @@ const styles = StyleSheet.create({
   chatScrollArea: { flex: 1, position: 'relative' },
   chatScroll: { flex: 1 },
   messageList: { padding: 16, paddingBottom: 12 },
-  bubbleRow: { flexDirection: 'row', marginBottom: 14, alignItems: 'flex-start' },
-  bubbleRowUser: { justifyContent: 'flex-end' },
-  bubbleRowAI: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '82%', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12 },
+  bubbleRow: {
+    flexDirection: "row",
+    marginBottom: 14,
+    alignItems: "flex-start",
+  },
+  bubbleRowUser: { justifyContent: "flex-end" },
+  bubbleRowAI: { justifyContent: "flex-start" },
+  bubble: {
+    maxWidth: "82%",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   bubbleUser: {
     backgroundColor: Colors.primary,
     borderBottomRightRadius: 6,
@@ -4560,13 +5143,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     borderBottomLeftRadius: 6,
-    shadowColor: '#0F172A',
+    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 1,
   },
-  bubbleText: { fontSize: 15, lineHeight: 22, color: Colors.text, letterSpacing: -0.1 },
+  /** Compact typing pill — hugs the three dots. */
+  loadingBubble: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  bubbleText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: Colors.text,
+    letterSpacing: -0.1,
+  },
   bubbleTextUser: { color: Colors.white },
   bubbleImage: {
     width: "100%",
@@ -4607,8 +5200,10 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   bubbleBold: { color: Colors.primary, fontWeight: '700' },
+  bubblePhysioHighlight: {
+    fontWeight: '700',
+  },
   bubbleDisclaimer: { marginTop: 8, fontSize: 11, color: Colors.textLight, lineHeight: 15 },
-  loadingBubble: { paddingVertical: 14, paddingHorizontal: 20 },
   questionnaireCard: {
     backgroundColor: Colors.white,
     borderRadius: 20,
@@ -4757,6 +5352,7 @@ const styles = StyleSheet.create({
   chatInput: {
     flex: 1,
     maxHeight: 120,
+    minHeight: 40,
     borderWidth: 0,
     borderRadius: 16,
     paddingHorizontal: 8,
