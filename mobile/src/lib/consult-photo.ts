@@ -36,7 +36,7 @@ export function parseConsultPhotoStoragePath(raw: string): string | null {
 export async function consultPhotoAccessUrl(
   stored: string | null | undefined
 ): Promise<string | null> {
-  if (!stored || isConsultPdfUrl(stored)) return null;
+  if (!stored) return null;
   if (stored.includes("/object/sign/") && stored.includes("token=")) {
     return stored;
   }
@@ -49,10 +49,23 @@ export async function consultPhotoAccessUrl(
   return data.signedUrl;
 }
 
-export function consultVisionUrl(url: string | null | undefined): string | null {
-  if (!url || isConsultPdfUrl(url)) return null;
-  if (url.startsWith("http")) return url;
-  return null;
+export async function signConsultMessageAttachments<
+  T extends { image_url?: string | null },
+>(messages: T[]): Promise<T[]> {
+  return Promise.all(
+    messages.map(async (m) => {
+      if (!m.image_url) return m;
+      const signed = await consultPhotoAccessUrl(m.image_url);
+      return signed ? { ...m, image_url: signed } : m;
+    })
+  );
+}
+
+export async function consultPhotoVisionUrl(
+  stored: string | null | undefined
+): Promise<string | null> {
+  if (!stored || isConsultPdfUrl(stored)) return null;
+  return consultPhotoAccessUrl(stored);
 }
 
 export function consultAttachmentCaption(

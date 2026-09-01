@@ -222,6 +222,8 @@ import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
   consultPhotoAccessUrl,
+  consultPhotoVisionUrl,
+  signConsultMessageAttachments,
   isConsultImageFile,
   isConsultPdfFile,
   isConsultPdfUrl,
@@ -1150,13 +1152,7 @@ export function ChatInterface({
 
       let msgs = (data as Message[]) ?? [];
 
-      msgs = await Promise.all(
-        msgs.map(async (m) => {
-          if (!m.image_url || isConsultPdfUrl(m.image_url)) return m;
-          const signed = await consultPhotoAccessUrl(m.image_url);
-          return signed ? { ...m, image_url: signed } : m;
-        })
-      );
+      msgs = await signConsultMessageAttachments(msgs);
 
       if (linkedPhysio) {
         const { data: report } = await supabase
@@ -1849,7 +1845,7 @@ export function ChatInterface({
     imageUrl?: string | null,
     language: ConsultLanguage = consultLanguage
   ) {
-    const visionUrl = await consultPhotoAccessUrl(imageUrl);
+    const visionUrl = await consultPhotoVisionUrl(imageUrl);
     let answer = triage.answer?.trim() ?? "";
 
     if (!answer) {
@@ -1980,15 +1976,23 @@ export function ChatInterface({
     setLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = consultLanguage;
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2004,7 +2008,7 @@ export function ChatInterface({
               intent: "general",
               answer: triage.answer?.trim() || decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2018,7 +2022,7 @@ export function ChatInterface({
               intent: "general",
               answer: decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2036,7 +2040,7 @@ export function ChatInterface({
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2052,7 +2056,7 @@ export function ChatInterface({
             intent: "general",
             answer: vagueArmClarifyMessage(lang),
           },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2087,7 +2091,7 @@ export function ChatInterface({
         return;
       }
 
-      await respondToInitialMessage(text, triage, attachmentUrl, lang);
+      await respondToInitialMessage(text, triage, attachmentPath, lang);
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       alert(err instanceof Error ? err.message : "Error al procesar tu mensaje.");
@@ -2798,12 +2802,20 @@ export function ChatInterface({
     setLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2816,7 +2828,7 @@ export function ChatInterface({
           conversation_id: activeId,
           role: "user",
           content: text,
-          image_url: attachmentUrl,
+          image_url: attachmentPath,
         });
         userSaved = true;
       }
@@ -2949,8 +2961,8 @@ export function ChatInterface({
               })),
             {
               role: "user" as const,
-              content: attachmentUrl
-                ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+              content: attachmentPath
+                ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
                 : text,
             },
           ].slice(-10);
@@ -3082,8 +3094,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3228,11 +3240,7 @@ export function ChatInterface({
           ? patientFacingPartLabel(nextZone, initialMessage, consultLanguage)
           : null;
         if (moreZonesPending && nextZone) {
-          ensureAwaitingNextZone(
-            completedPart && completedPart !== "generic"
-              ? completedPart
-              : questionnairePart
-          );
+          ensureAwaitingNextZone(completedPart ?? questionnairePart);
         }
 
         const conversationHistory = [
@@ -3251,8 +3259,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3369,8 +3377,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3427,8 +3435,8 @@ export function ChatInterface({
           })),
         {
           role: "user" as const,
-          content: attachmentUrl
-            ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+          content: attachmentPath
+            ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
             : text,
         },
       ].slice(-10);

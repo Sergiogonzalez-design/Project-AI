@@ -1063,7 +1063,7 @@ export function localizeShoulderLabel(
 }
 export function localizeShoulderOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return SHOULDER_OPTION_EN[option] ?? option;
+  return SHOULDER_OPTION_EN[option as keyof typeof SHOULDER_OPTION_EN] ?? option;
 }
 export function localizeShoulderSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (SHOULDER_SECTION_LABELS as any)[section] ?? section;

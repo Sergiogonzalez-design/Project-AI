@@ -178,6 +178,7 @@ async function resolveConsultImageUrl(
   adminClient: ReturnType<typeof createClient> | null
 ): Promise<string | null> {
   if (!raw || typeof raw !== "string") return null;
+  if (/\.pdf(?:\?|#|$)/i.test(raw)) return null;
   const path = parseConsultPhotoStoragePath(raw);
   if (!path || !path.startsWith(`${userId}/`)) return null;
   const trimmed = raw.trim();

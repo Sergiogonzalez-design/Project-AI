@@ -1489,7 +1489,7 @@ export function localizeHipLabel(
 
 export function localizeHipOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return HIP_OPTION_EN[option] ?? option;
+  return HIP_OPTION_EN[option as keyof typeof HIP_OPTION_EN] ?? option;
 }
 
 export function localizeHipSection(

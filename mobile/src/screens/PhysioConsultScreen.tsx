@@ -33,6 +33,8 @@ import { pickIllustratedTestsForPruebasQuery } from "../lib/clinical-test-images
 import {
   consultAttachmentCaption,
   consultPhotoAccessUrl,
+  consultPhotoVisionUrl,
+  signConsultMessageAttachments,
   isConsultImageMime,
   isConsultPdfUrl,
   MAX_CONSULT_ATTACHMENT_BYTES,
@@ -173,13 +175,14 @@ export function PhysioConsultScreen() {
       .select("id, role, content, image_url")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
-    setActiveId(id);
-    setActiveTitle(title);
-    setChatMessages(
+    const resolved = await signConsultMessageAttachments(
       ((msgs as ChatMessage[]) ?? []).length > 0
         ? ((msgs as ChatMessage[]) ?? [])
         : [welcomeMessage()]
     );
+    setActiveId(id);
+    setActiveTitle(title);
+    setChatMessages(resolved);
     setPhysioIntro(false);
     setHistoryOpen(false);
     setError(null);
@@ -307,13 +310,16 @@ export function PhysioConsultScreen() {
     setChatLoading(true);
     setError(null);
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
       const userMsg: ChatMessage = {
         id: `${Date.now()}-u`,
         role: "user",
         content: text,
-        image_url: attachmentUrl,
+        image_url: displayUrl ?? undefined,
       };
       setChatMessages((prev) => [...prev, userMsg]);
       const history = [...chatMessages, userMsg]
@@ -348,7 +354,7 @@ export function PhysioConsultScreen() {
         conversation_id: conversationId,
         role: "user",
         content: text,
-        image_url: attachmentUrl ?? null,
+        image_url: attachmentPath ?? null,
       });
 
       const { data, error: fnError } = await supabase.functions.invoke("ai-consult", {

@@ -1155,7 +1155,7 @@ export function localizeBackLabel(
 
 export function localizeBackOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return BACK_OPTION_EN[option] ?? option;
+  return BACK_OPTION_EN[option as keyof typeof BACK_OPTION_EN] ?? option;
 }
 
 export function localizeBackSection(

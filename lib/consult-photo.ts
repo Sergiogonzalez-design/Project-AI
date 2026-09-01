@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client";
-import { getSupabaseUrl } from "@/lib/supabase/env";
 
 export const CONSULT_PHOTOS_BUCKET = "consult-photos";
 export const PHOTO_ONLY_CAPTION = "(Foto de la lesión)";
@@ -34,11 +33,11 @@ export function parseConsultPhotoStoragePath(raw: string): string | null {
   }
 }
 
-/** Signed URL for vision models or thumbnails (private bucket). */
+/** Signed URL for display, download, or vision (private consult-photos bucket). */
 export async function consultPhotoAccessUrl(
   stored: string | null | undefined
 ): Promise<string | null> {
-  if (!stored || isConsultPdfUrl(stored)) return null;
+  if (!stored) return null;
   if (stored.includes("/object/sign/") && stored.includes("token=")) {
     return stored;
   }
@@ -52,11 +51,25 @@ export async function consultPhotoAccessUrl(
   return data.signedUrl;
 }
 
-/** @deprecated Prefer consultPhotoAccessUrl for private bucket. */
-export function consultVisionUrl(url: string | null | undefined): string | null {
-  if (!url || isConsultPdfUrl(url)) return null;
-  if (url.startsWith("http")) return url;
-  return null;
+/** Sign image_url fields when loading message history (paths → signed URLs). */
+export async function signConsultMessageAttachments<
+  T extends { image_url?: string | null },
+>(messages: T[]): Promise<T[]> {
+  return Promise.all(
+    messages.map(async (m) => {
+      if (!m.image_url) return m;
+      const signed = await consultPhotoAccessUrl(m.image_url);
+      return signed ? { ...m, image_url: signed } : m;
+    })
+  );
+}
+
+/** Signed URL for OpenAI vision; null for PDFs and non-images. */
+export async function consultPhotoVisionUrl(
+  stored: string | null | undefined
+): Promise<string | null> {
+  if (!stored || isConsultPdfUrl(stored)) return null;
+  return consultPhotoAccessUrl(stored);
 }
 
 export function consultAttachmentCaption(file: File): string {
@@ -112,7 +125,7 @@ export function compressConsultPhoto(file: File): Promise<File> {
   });
 }
 
-/** Returns storage path `{userId}/…` (store in messages.image_url). */
+/** Returns storage path `{userId}/…` (persist in messages.image_url). */
 export async function uploadConsultPhoto(file: File): Promise<string> {
   const supabase = createClient();
   const {
@@ -139,9 +152,4 @@ export async function uploadConsultPhoto(file: File): Promise<string> {
 
 export function isConsultPhotoUrl(url: string | null | undefined): boolean {
   return parseConsultPhotoStoragePath(url ?? "") != null;
-}
-
-/** Legacy helper — kept for PDF public links if any remain. */
-export function consultPhotoPublicUrl(path: string): string {
-  return `${getSupabaseUrl()}/storage/v1/object/public/${CONSULT_PHOTOS_BUCKET}/${path}`;
 }

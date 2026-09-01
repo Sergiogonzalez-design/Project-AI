@@ -245,6 +245,8 @@ import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
   consultPhotoAccessUrl,
+  consultPhotoVisionUrl,
+  signConsultMessageAttachments,
   isConsultImageMime,
   isConsultPdfUrl,
   MAX_CONSULT_ATTACHMENT_BYTES,
@@ -971,6 +973,8 @@ export function AIInquiriesScreen({
 
     let msgs = (data as Message[]) ?? [];
 
+    msgs = await signConsultMessageAttachments(msgs);
+
     if (linkedPhysio) {
       const { data: report } = await supabase
         .from("clinical_reports")
@@ -1381,7 +1385,7 @@ export function AIInquiriesScreen({
     const answer = await respondToUserMessage(
       text,
       triage,
-      await consultPhotoAccessUrl(imageUrl),
+      await consultPhotoVisionUrl(imageUrl),
       language,
       fisioEdgeExtras
     );
@@ -1955,15 +1959,23 @@ export function AIInquiriesScreen({
     setFormError(null);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = consultLanguage;
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -1979,7 +1991,7 @@ export function AIInquiriesScreen({
               intent: "general",
               answer: triage.answer?.trim() || decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -1993,7 +2005,7 @@ export function AIInquiriesScreen({
               intent: "general",
               answer: decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2011,7 +2023,7 @@ export function AIInquiriesScreen({
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2027,7 +2039,7 @@ export function AIInquiriesScreen({
             intent: "general",
             answer: vagueArmClarifyMessage(lang),
           },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2062,7 +2074,7 @@ export function AIInquiriesScreen({
         return;
       }
 
-      await respondToInitialMessage(text, triage, attachmentUrl, lang);
+      await respondToInitialMessage(text, triage, attachmentPath, lang);
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       setFormError(
@@ -2808,12 +2820,20 @@ export function AIInquiriesScreen({
     setChatLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = await consultPhotoAccessUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2826,7 +2846,7 @@ export function AIInquiriesScreen({
           conversation_id: activeId,
           role: "user",
           content: text,
-          image_url: attachmentUrl,
+          image_url: attachmentPath,
         });
         userSaved = true;
       }
@@ -2957,8 +2977,8 @@ export function AIInquiriesScreen({
               })),
             {
               role: "user" as const,
-              content: attachmentUrl
-                ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+              content: attachmentPath
+                ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
                 : text,
             },
           ].slice(-10);
@@ -3091,8 +3111,8 @@ export function AIInquiriesScreen({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
               : text,
           },
         ].slice(-10);
@@ -3246,8 +3266,8 @@ export function AIInquiriesScreen({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
               : text,
           },
         ].slice(-10);
@@ -3368,8 +3388,8 @@ export function AIInquiriesScreen({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
               : text,
           },
         ].slice(-10);
@@ -3430,8 +3450,8 @@ export function AIInquiriesScreen({
           })),
         {
           role: "user" as const,
-          content: attachmentUrl
-            ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+          content: attachmentPath
+            ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
             : text,
         },
       ].slice(-10);
