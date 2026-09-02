@@ -172,9 +172,7 @@ Para completarlo, responde a las siguientes preguntas y haz estas pruebas (en ca
   const tests =
     fromAiSafe.length >= 2 && testsLookLikeLanguage(fromAiSafe, language)
       ? fromAiSafe
-      : fallback.length >= 2
-        ? fallback
-        : fromAiSafe;
+      : fallback;
   if (tests.length < 2) return ack;
 
   const heading =

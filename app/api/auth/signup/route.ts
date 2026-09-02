@@ -21,8 +21,8 @@ export async function OPTIONS() {
 /**
  * Public signup:
  * - patient (default)
- * - clinic (self-serve clinic owner onboarding)
- * - physio only via clinic invite token (no self-serve physio)
+ * - clinic (self-serve owner; JWT app_metadata.account_type=clinic)
+ * - physio with or without invite (unlinked until they claim a clinic code)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -167,13 +167,8 @@ export async function POST(request: NextRequest) {
         display_name: displayName || null,
       });
 
-      const acceptKey =
-        (typeof (invite as { token?: string }).token === "string" &&
-          (invite as { token: string }).token.trim()) ||
-        clinicInvite;
-
       const { error: acceptErr } = await adminClient.rpc("clinic_accept_invite", {
-        p_token: acceptKey,
+        p_token: clinicInvite,
         p_user_id: data.user.id,
       });
       if (acceptErr) {

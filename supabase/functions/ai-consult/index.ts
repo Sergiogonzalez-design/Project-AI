@@ -1104,7 +1104,7 @@ Deno.serve(async (req) => {
     const { data: profile } = await supabase
       .from("profiles")
       .select(
-        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals, city, clinic_name, clinic_equipment, clinic_equipment_notes, account_type"
+        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals, city, clinic_name, clinic_equipment, clinic_equipment_notes, account_type, clinic_id"
       )
       .eq("id", user.id)
       .maybeSingle();
@@ -1443,11 +1443,33 @@ Deno.serve(async (req) => {
 
     if (mode === "physio_chat") {
       const accountType = (profile as { account_type?: string } | null)?.account_type;
-      if (!isClinicianAccount(accountType)) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), {
-          status: 403,
-          headers: { ...CORS, "Content-Type": "application/json" },
-        });
+      const profileClinicId = (profile as { clinic_id?: string | null } | null)?.clinic_id;
+      let allowed = accountType === "clinic";
+      if (accountType === "physio") {
+        allowed = Boolean(profileClinicId);
+        if (!allowed && adminClient) {
+          const { data: member } = await adminClient
+            .from("clinic_members")
+            .select("clinic_id")
+            .eq("user_id", user.id)
+            .limit(1)
+            .maybeSingle();
+          allowed = Boolean(member?.clinic_id);
+        }
+      }
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({
+            error:
+              accountType === "physio"
+                ? "Vincula tu clínica con el código de alta para usar el chat clínico."
+                : "Forbidden",
+          }),
+          {
+            status: 403,
+            headers: { ...CORS, "Content-Type": "application/json" },
+          }
+        );
       }
 
       const message = body.message?.trim() ?? "";

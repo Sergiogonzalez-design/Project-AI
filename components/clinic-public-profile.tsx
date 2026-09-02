@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
   clinicAccentSoft,
@@ -8,9 +9,12 @@ import {
 } from "@/lib/clinic-brand";
 import { displayClinicHoursText } from "@/lib/clinic-hours";
 import {
+  clinicInstagramHref,
   clinicMailtoHref,
   clinicTelHref,
+  clinicTikTokHref,
   clinicWebsiteHref,
+  clinicWhatsAppHref,
   formatClinicPostDate,
   type ClinicPost,
   type ClinicPublicProfile as ClinicPublic,
@@ -22,7 +26,7 @@ import {
 } from "@/lib/clinic-maps";
 import { createClient } from "@/lib/supabase/client";
 
-type TeamMember = { display_name: string };
+type TeamMember = { user_id?: string; display_name: string };
 type PageTab = "novedades" | "sobre" | "equipo";
 
 type Props = {
@@ -33,7 +37,7 @@ type Props = {
 
 export function ClinicPublicProfile({ clinic, team, posts }: Props) {
   const supabase = createClient();
-  const [tab, setTab] = useState<PageTab>("novedades");
+  const [tab, setTab] = useState<PageTab>(posts.length > 0 ? "novedades" : "sobre");
   const [saved, setSaved] = useState(false);
   const [canSave, setCanSave] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,6 +67,10 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
   });
   const mapsHref =
     clinic.google_maps_url || (query ? googleMapsSearchUrl(query) : null);
+  const waHref = clinicWhatsAppHref(clinic.whatsapp, clinic.phone);
+  const bookingHref = clinic.booking_url
+    ? clinicWebsiteHref(clinic.booking_url)
+    : null;
 
   async function toggleSave() {
     if (!canSave) return;
@@ -96,7 +104,7 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
     <div className="min-h-full bg-[#f3f4f6] pb-16">
       <div className="relative">
         <div
-          className="h-44 w-full sm:h-56 lg:h-64"
+          className="relative h-44 w-full sm:h-56 lg:h-64"
           style={{
             background: clinic.cover_url
               ? undefined
@@ -104,11 +112,13 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
           }}
         >
           {clinic.cover_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={clinic.cover_url}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
             />
           ) : null}
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
@@ -119,12 +129,17 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
         <div className="-mt-12 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:-mt-16 sm:p-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div
-              className="-mt-16 h-24 w-24 shrink-0 overflow-hidden rounded-[22px] border-4 border-white shadow-lg sm:-mt-20 sm:h-28 sm:w-28"
+              className="relative -mt-16 h-24 w-24 shrink-0 overflow-hidden rounded-[22px] border-4 border-white shadow-lg sm:-mt-20 sm:h-28 sm:w-28"
               style={{ background: soft }}
             >
               {clinic.logo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={clinic.logo_url} alt="" className="h-full w-full object-cover" />
+                <Image
+                  src={clinic.logo_url}
+                  alt=""
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
               ) : (
                 <div
                   className="flex h-full w-full items-center justify-center text-3xl font-bold text-white"
@@ -186,6 +201,21 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                 Llamar
               </a>
             ) : null}
+            {waHref ? (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#16A34A] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#15803d]"
+              >
+                WhatsApp
+              </a>
+            ) : null}
+            {bookingHref ? (
+              <a href={bookingHref} target="_blank" rel="noopener noreferrer" className={ghost}>
+                Pedir cita
+              </a>
+            ) : null}
             {clinic.contact_email ? (
               <a href={clinicMailtoHref(clinic.contact_email)} className={ghost}>
                 Email
@@ -204,6 +234,26 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                 className={ghost}
               >
                 Web
+              </a>
+            ) : null}
+            {clinic.instagram ? (
+              <a
+                href={clinicInstagramHref(clinic.instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={ghost}
+              >
+                Instagram
+              </a>
+            ) : null}
+            {clinic.tiktok ? (
+              <a
+                href={clinicTikTokHref(clinic.tiktok)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={ghost}
+              >
+                TikTok
               </a>
             ) : null}
             <button type="button" onClick={() => void shareProfile()} className={ghost}>
@@ -372,7 +422,7 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {team.map((p) => (
                     <li
-                      key={p.display_name}
+                      key={p.user_id || p.display_name}
                       className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3"
                     >
                       <div

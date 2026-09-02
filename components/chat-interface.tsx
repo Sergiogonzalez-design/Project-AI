@@ -252,6 +252,7 @@ import { AssistantMessageWithSources } from "@/components/assistant-message-with
 import { FunctionalTestYesNo } from "@/components/functional-test-yes-no";
 import {
   latestUnansweredFunctionalTests,
+  reconstructFunctionalTestsSection,
   splitFunctionalTests,
 } from "@/lib/functional-test-answers";
 import { createClient } from "@/lib/supabase/client";
@@ -4184,12 +4185,23 @@ export function ChatInterface({
                                   const parsed = splitFunctionalTests(body);
                                   const showButtons =
                                     Boolean(parsed) &&
+                                    (parsed?.tests.length ?? 0) >= 2 &&
                                     awaitingFunctionalTests?.messageId === msg.id &&
                                     !isRevealing;
-                                  if (!parsed || !showButtons) {
+                                  if (!parsed) {
                                     return (
                                       <div className="whitespace-pre-wrap break-words">
                                         {renderAssistantContent(body, physioHighlightPhrases)}
+                                      </div>
+                                    );
+                                  }
+                                  if (!showButtons) {
+                                    return (
+                                      <div className="whitespace-pre-wrap break-words">
+                                        {renderAssistantContent(
+                                          reconstructFunctionalTestsSection(parsed),
+                                          physioHighlightPhrases
+                                        )}
                                       </div>
                                     );
                                   }

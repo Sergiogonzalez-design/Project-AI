@@ -71,8 +71,8 @@ export function ClinicOnboardingForm() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
-      // clinic_create_own promotes patient→clinic when onboarding is incomplete
-      // (or JWT app_metadata says clinic).
+      // clinic_create_own requires JWT app_metadata.account_type=clinic
+      // (or an existing clinic profile). It does not promote incomplete patients.
 
       const descParts = [
         description.trim(),

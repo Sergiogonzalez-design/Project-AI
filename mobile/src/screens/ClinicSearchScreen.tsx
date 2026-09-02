@@ -16,9 +16,12 @@ import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/nativ
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { WEB_APP_URL } from "../lib/admin-api";
 import {
+  clinicInstagramHref,
   clinicMailtoHref,
   clinicTelHref,
+  clinicTikTokHref,
   clinicWebsiteHref,
+  clinicWhatsAppHref,
   formatClinicPostDate,
   type ClinicFeedPost,
   type ClinicPost,
@@ -268,6 +271,7 @@ function ClinicProfileView({
       }
       setClinic(row);
       setPosts((postRows as ClinicPost[]) ?? []);
+      setPageTab(((postRows as ClinicPost[]) ?? []).length > 0 ? "novedades" : "sobre");
       const { data: fav } = await supabase.rpc("clinic_is_favorited", {
         p_clinic_id: row.id,
       });
@@ -320,6 +324,10 @@ function ClinicProfileView({
   const accent = normalizeClinicAccent(clinic.accent_color);
   const chips = parseClinicSpecialties(clinic.specialties);
   const hoursDisplay = displayClinicHoursText(clinic.hours);
+  const waHref = clinicWhatsAppHref(clinic.whatsapp, clinic.phone);
+  const bookingHref = clinic.booking_url
+    ? clinicWebsiteHref(clinic.booking_url)
+    : null;
 
   return (
     <ScrollView contentContainerStyle={styles.profileWrap}>
@@ -361,6 +369,12 @@ function ClinicProfileView({
           {clinic.phone ? (
             <Action label="Llamar" onPress={() => void Linking.openURL(clinicTelHref(clinic.phone!))} />
           ) : null}
+          {waHref ? (
+            <Action label="WhatsApp" onPress={() => void Linking.openURL(waHref)} />
+          ) : null}
+          {bookingHref ? (
+            <Action label="Cita" onPress={() => void Linking.openURL(bookingHref)} />
+          ) : null}
           {clinic.contact_email ? (
             <Action
               label="Email"
@@ -374,6 +388,18 @@ function ClinicProfileView({
             <Action
               label="Web"
               onPress={() => void Linking.openURL(clinicWebsiteHref(clinic.website!))}
+            />
+          ) : null}
+          {clinic.instagram ? (
+            <Action
+              label="Instagram"
+              onPress={() => void Linking.openURL(clinicInstagramHref(clinic.instagram!))}
+            />
+          ) : null}
+          {clinic.tiktok ? (
+            <Action
+              label="TikTok"
+              onPress={() => void Linking.openURL(clinicTikTokHref(clinic.tiktok!))}
             />
           ) : null}
           <Action label="Compartir" onPress={() => void share()} />

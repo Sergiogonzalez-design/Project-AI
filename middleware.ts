@@ -38,7 +38,9 @@ function isGuestAllowedPath(pathname: string): boolean {
     pathname === "/terminos" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/") ||
-    pathname.startsWith("/centro/")
+    pathname.startsWith("/centro/") ||
+    pathname === "/buscar" ||
+    pathname.startsWith("/buscar/")
   );
 }
 
@@ -119,6 +121,8 @@ export async function middleware(request: NextRequest) {
     pathname === "/privacidad" ||
     pathname === "/terminos" ||
     pathname.startsWith("/centro/") ||
+    pathname === "/buscar" ||
+    pathname.startsWith("/buscar/") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/supabase-health" ||

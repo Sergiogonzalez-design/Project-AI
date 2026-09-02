@@ -44,6 +44,7 @@ import { stripVisibleMarkup } from "../lib/strip-visible-markup";
 import { FunctionalTestYesNo } from "../components/FunctionalTestYesNo";
 import {
   latestUnansweredFunctionalTests,
+  reconstructFunctionalTestsSection,
   splitFunctionalTests,
 } from "../lib/functional-test-answers";
 import { ConsultaGenericFields } from "../components/ConsultaGenericFields";
@@ -4463,12 +4464,25 @@ export function AIInquiriesScreen({
                             const parsed = splitFunctionalTests(body);
                             const showButtons =
                               Boolean(parsed) &&
+                              (parsed?.tests.length ?? 0) >= 2 &&
                               awaitingFunctionalTests?.messageId === msg.id &&
                               !isRevealing;
-                            if (!parsed || !showButtons) {
+                            if (!parsed) {
                               return (
                                 <ConsultaAssistantBody
                                   text={body}
+                                  style={styles.bubbleText}
+                                  boldStyle={styles.bubbleBold}
+                                  highlightPhrases={physioHighlightPhrases}
+                                  highlightStyle={styles.bubblePhysioHighlight}
+                                  onClinicPress={openClinicProfile}
+                                />
+                              );
+                            }
+                            if (!showButtons) {
+                              return (
+                                <ConsultaAssistantBody
+                                  text={reconstructFunctionalTestsSection(parsed)}
                                   style={styles.bubbleText}
                                   boldStyle={styles.bubbleBold}
                                   highlightPhrases={physioHighlightPhrases}

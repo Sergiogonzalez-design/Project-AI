@@ -62,6 +62,10 @@ type ClinicRecord = {
   hours?: string | null;
   equipment?: string[] | null;
   billing_status: string;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  tiktok?: string | null;
+  booking_url?: string | null;
 };
 
 export function ClinicHomeScreen() {
@@ -73,6 +77,10 @@ export function ClinicHomeScreen() {
   const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
   const [website, setWebsite] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [tiktok, setTiktok] = useState("");
+  const [bookingUrl, setBookingUrl] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [isListed, setIsListed] = useState(true);
   const [tagline, setTagline] = useState("");
@@ -165,6 +173,10 @@ export function ClinicHomeScreen() {
     setCity(row.city ?? "");
     setPhone(row.phone ?? "");
     setWebsite(row.website ?? "");
+    setWhatsapp(row.whatsapp ?? "");
+    setInstagram(row.instagram ?? "");
+    setTiktok(row.tiktok ?? "");
+    setBookingUrl(row.booking_url ?? "");
     setContactEmail(row.contact_email ?? "");
     setIsListed(row.is_listed !== false);
     setTagline(row.tagline ?? "");
@@ -217,6 +229,10 @@ export function ClinicHomeScreen() {
         p_city: city.trim() || "",
         p_phone: phone.trim() || "",
         p_website: website.trim() || "",
+        p_whatsapp: whatsapp.trim() || "",
+        p_instagram: instagram.trim() || "",
+        p_tiktok: tiktok.trim() || "",
+        p_booking_url: bookingUrl.trim() || "",
         p_contact_email: contactEmail.trim() || "",
         p_is_listed: isListed,
         p_tagline: tagline.trim().slice(0, 120) || "",
@@ -259,7 +275,7 @@ export function ClinicHomeScreen() {
   const equipmentKey = JSON.stringify(equipment);
 
   useEffect(() => {
-    if (loading || !clinic) return;
+    if (loading || !clinic || uploadingBrand) return;
     if (!hydratedRef.current) {
       hydratedRef.current = true;
       return;
@@ -267,7 +283,7 @@ export function ClinicHomeScreen() {
     setSaveStatus("idle");
     const t = setTimeout(() => {
       void save({ fromAutosave: true });
-    }, 750);
+    }, 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- autosave on field changes
   }, [
@@ -280,12 +296,17 @@ export function ClinicHomeScreen() {
     city,
     phone,
     website,
+    whatsapp,
+    instagram,
+    tiktok,
+    bookingUrl,
     contactEmail,
     isListed,
     accent,
     hoursSerialized,
     specialtiesKey,
     equipmentKey,
+    uploadingBrand,
   ]);
 
   async function uploadClinicImage(kind: "logo" | "cover") {
@@ -829,6 +850,47 @@ export function ClinicHomeScreen() {
         onChangeText={setPhone}
         onFocus={onFieldFocus}
         keyboardType="phone-pad"
+      />
+      <Text style={styles.label}>WhatsApp</Text>
+      <TextInput
+        style={styles.input}
+        value={whatsapp}
+        onChangeText={setWhatsapp}
+        onFocus={onFieldFocus}
+        keyboardType="phone-pad"
+        placeholder="+34 6XX…"
+        placeholderTextColor="#94A3B8"
+      />
+      <Text style={styles.label}>Pedir cita (URL)</Text>
+      <TextInput
+        style={styles.input}
+        value={bookingUrl}
+        onChangeText={setBookingUrl}
+        onFocus={onFieldFocus}
+        autoCapitalize="none"
+        keyboardType="url"
+        placeholder="https://…"
+        placeholderTextColor="#94A3B8"
+      />
+      <Text style={styles.label}>Instagram</Text>
+      <TextInput
+        style={styles.input}
+        value={instagram}
+        onChangeText={setInstagram}
+        onFocus={onFieldFocus}
+        autoCapitalize="none"
+        placeholder="@clinica"
+        placeholderTextColor="#94A3B8"
+      />
+      <Text style={styles.label}>TikTok</Text>
+      <TextInput
+        style={styles.input}
+        value={tiktok}
+        onChangeText={setTiktok}
+        onFocus={onFieldFocus}
+        autoCapitalize="none"
+        placeholder="@clinica"
+        placeholderTextColor="#94A3B8"
       />
       <Text style={styles.label}>Email de contacto</Text>
       <TextInput

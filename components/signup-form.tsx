@@ -32,6 +32,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
   const [convertingGuest, setConvertingGuest] = useState(false);
   const [invite, setInvite] = useState<InviteInfo | null>(null);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [asPhysio, setAsPhysio] = useState(false);
   const activeInvite = (inviteCode || clinicInviteToken || "").trim();
   const joiningClinic = Boolean(activeInvite && invite?.clinic_name);
 
@@ -92,7 +93,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
         body: JSON.stringify({
           email: emailNorm,
           password,
-          accountType: key ? "physio" : "patient",
+          accountType: key || asPhysio ? "physio" : "patient",
           clinicInvite: key || undefined,
         }),
       });
@@ -161,6 +162,17 @@ export function SignupForm({ clinicInviteToken }: Props) {
             Con código te registras como fisioterapeuta vinculado a esa clínica.
             También puedes vincularlo después al iniciar sesión o en Clínica.
           </p>
+          {!joiningClinic ? (
+            <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={asPhysio}
+                onChange={(e) => setAsPhysio(e.target.checked)}
+                className="h-4 w-4 accent-blue-600"
+              />
+              Soy fisioterapeuta (me vincularé a una clínica más tarde)
+            </label>
+          ) : null}
         </div>
       ) : null}
 

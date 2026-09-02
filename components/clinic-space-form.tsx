@@ -23,6 +23,7 @@ import {
   type ClinicHoursSchedule,
 } from "@/lib/clinic-hours";
 import { ClinicHoursEditor } from "@/components/clinic-hours-editor";
+import { compressClinicImage } from "@/lib/compress-clinic-image";
 import {
   clinicMapsQuery,
   googleMapsEmbedUrl,
@@ -59,6 +60,10 @@ export type ClinicRecord = {
   hours: string | null;
   equipment: string[] | null;
   billing_status: string;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  tiktok?: string | null;
+  booking_url?: string | null;
 };
 
 export function ClinicSpaceForm() {
@@ -76,6 +81,10 @@ export function ClinicSpaceForm() {
   const [description, setDescription] = useState("");
   const [phone, setPhone] = useState("");
   const [website, setWebsite] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [tiktok, setTiktok] = useState("");
+  const [bookingUrl, setBookingUrl] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
@@ -101,6 +110,7 @@ export function ClinicSpaceForm() {
   const [accentHexDraft, setAccentHexDraft] = useState("#2563EB");
   const hydratedRef = useRef(false);
   const saveGenRef = useRef(0);
+  const [uploadingBrand, setUploadingBrand] = useState(false);
 
   const fill = useCallback((row: ClinicRecord) => {
     setClinic(row);
@@ -109,6 +119,10 @@ export function ClinicSpaceForm() {
     setDescription(row.description ?? "");
     setPhone(row.phone ?? "");
     setWebsite(row.website ?? "");
+    setWhatsapp(row.whatsapp ?? "");
+    setInstagram(row.instagram ?? "");
+    setTiktok(row.tiktok ?? "");
+    setBookingUrl(row.booking_url ?? "");
     setAddress(row.address ?? "");
     setCity(row.city ?? "");
     setPostalCode(row.postal_code ?? "");
@@ -169,6 +183,10 @@ export function ClinicSpaceForm() {
         p_description: description.trim() || "",
         p_phone: phone.trim() || "",
         p_website: website.trim() || "",
+        p_whatsapp: whatsapp.trim() || "",
+        p_instagram: instagram.trim() || "",
+        p_tiktok: tiktok.trim() || "",
+        p_booking_url: bookingUrl.trim() || "",
         p_address: address.trim() || "",
         p_city: city.trim() || "",
         p_postal_code: postalCode.trim() || "",
@@ -204,14 +222,14 @@ export function ClinicSpaceForm() {
   const equipmentKey = JSON.stringify(equipment);
 
   useEffect(() => {
-    if (loading || !clinic) return;
+    if (loading || !clinic || uploadingBrand) return;
     if (!hydratedRef.current) {
       hydratedRef.current = true;
       return;
     }
     const t = window.setTimeout(() => {
       void handleSave({ fromAutosave: true });
-    }, 750);
+    }, 1500);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- debounced autosave
   }, [
@@ -222,6 +240,10 @@ export function ClinicSpaceForm() {
     description,
     phone,
     website,
+    whatsapp,
+    instagram,
+    tiktok,
+    bookingUrl,
     address,
     city,
     postalCode,
@@ -231,6 +253,7 @@ export function ClinicSpaceForm() {
     hoursSerialized,
     specialtiesKey,
     equipmentKey,
+    uploadingBrand,
   ]);
 
   async function uploadImage(
@@ -239,27 +262,36 @@ export function ClinicSpaceForm() {
   ) {
     if (!clinic) return;
     setError(null);
-    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const path = `${clinic.id}/${kind}.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from("clinic-logos")
-      .upload(path, file, { upsert: true, contentType: file.type });
-    if (upErr) {
-      setError(upErr.message);
-      return;
+    setUploadingBrand(true);
+    try {
+      const compressed = await compressClinicImage(file, {
+        maxEdge: kind === "cover" ? 1600 : 800,
+        quality: kind === "cover" ? 0.8 : 0.85,
+        name: `${kind}.jpg`,
+      });
+      const path = `${clinic.id}/${kind}.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from("clinic-logos")
+        .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) {
+        setError(upErr.message);
+        return;
+      }
+      const { data } = supabase.storage.from("clinic-logos").getPublicUrl(path);
+      const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
+      const payload =
+        kind === "logo" ? { p_logo_url: publicUrl } : { p_cover_url: publicUrl };
+      const { data: row, error: saveErr } = await supabase.rpc("clinic_update_own", payload);
+      if (saveErr) {
+        setError(saveErr.message);
+        return;
+      }
+      if (row) fill(row as ClinicRecord);
+      else if (kind === "logo") setLogoUrl(publicUrl);
+      else setCoverUrl(publicUrl);
+    } finally {
+      setUploadingBrand(false);
     }
-    const { data } = supabase.storage.from("clinic-logos").getPublicUrl(path);
-    const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
-    const payload =
-      kind === "logo" ? { p_logo_url: publicUrl } : { p_cover_url: publicUrl };
-    const { data: row, error: saveErr } = await supabase.rpc("clinic_update_own", payload);
-    if (saveErr) {
-      setError(saveErr.message);
-      return;
-    }
-    if (row) fill(row as ClinicRecord);
-    else if (kind === "logo") setLogoUrl(publicUrl);
-    else setCoverUrl(publicUrl);
   }
 
   if (loading) {
@@ -733,6 +765,42 @@ export function ClinicSpaceForm() {
           <div>
             <label className={labelClass}>Teléfono</label>
             <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClass}>WhatsApp</label>
+            <input
+              className={inputClass}
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="+34 6XX… o wa.me"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Pedir cita (URL)</label>
+            <input
+              className={inputClass}
+              value={bookingUrl}
+              onChange={(e) => setBookingUrl(e.target.value)}
+              placeholder="https://…"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Instagram</label>
+            <input
+              className={inputClass}
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              placeholder="@clinica"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>TikTok</label>
+            <input
+              className={inputClass}
+              value={tiktok}
+              onChange={(e) => setTiktok(e.target.value)}
+              placeholder="@clinica"
+            />
           </div>
           <div>
             <label className={labelClass}>Email de contacto</label>
