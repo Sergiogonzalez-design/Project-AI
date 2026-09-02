@@ -9,10 +9,20 @@ import {
 import {
   CLINIC_ACCENT_SWATCHES,
   CLINIC_SPECIALTY_PRESETS,
+  customClinicSpecialties,
+  customEquipmentKey,
+  listCustomEquipmentForCategory,
   normalizeClinicAccent,
+  parseClinicAccentHex,
   parseClinicSpecialties,
 } from "@/lib/clinic-brand";
 import { PHYSIO_EQUIPMENT_CATEGORIES } from "@/lib/physio-equipment-options";
+import {
+  parseClinicHours,
+  serializeClinicHours,
+  type ClinicHoursSchedule,
+} from "@/lib/clinic-hours";
+import { ClinicHoursEditor } from "@/components/clinic-hours-editor";
 import {
   clinicMapsQuery,
   googleMapsEmbedUrl,
@@ -75,9 +85,22 @@ export function ClinicSpaceForm() {
   const [isListed, setIsListed] = useState(true);
   const [accent, setAccent] = useState("#2563EB");
   const [specialties, setSpecialties] = useState<string[]>([]);
-  const [hours, setHours] = useState("");
+  const [hoursSchedule, setHoursSchedule] = useState<ClinicHoursSchedule>(() =>
+    parseClinicHours(null).schedule,
+  );
+  const [hoursLegacy, setHoursLegacy] = useState<string | null>(null);
   const [equipment, setEquipment] = useState<string[]>([]);
   const [customSpecialty, setCustomSpecialty] = useState("");
+  const [specialtyOtherOpen, setSpecialtyOtherOpen] = useState(false);
+  const [customEquipmentDraft, setCustomEquipmentDraft] = useState<
+    Record<string, string>
+  >({});
+  const [equipmentOtherOpen, setEquipmentOtherOpen] = useState<
+    Record<string, boolean>
+  >({});
+  const [accentHexDraft, setAccentHexDraft] = useState("#2563EB");
+  const hydratedRef = useRef(false);
+  const saveGenRef = useRef(0);
 
   const fill = useCallback((row: ClinicRecord) => {
     setClinic(row);
@@ -94,9 +117,21 @@ export function ClinicSpaceForm() {
     setContactEmail(row.contact_email ?? "");
     setIsListed(row.is_listed !== false);
     setAccent(normalizeClinicAccent(row.accent_color));
+    setAccentHexDraft(normalizeClinicAccent(row.accent_color));
     setSpecialties(parseClinicSpecialties(row.specialties));
-    setHours(row.hours ?? "");
-    setEquipment(Array.isArray(row.equipment) ? row.equipment.filter(Boolean) : []);
+    setSpecialtyOtherOpen(
+      customClinicSpecialties(parseClinicSpecialties(row.specialties)).length > 0,
+    );
+    const parsedHours = parseClinicHours(row.hours);
+    setHoursSchedule(parsedHours.schedule);
+    setHoursLegacy(parsedHours.legacyText);
+    const eq = Array.isArray(row.equipment) ? row.equipment.filter(Boolean) : [];
+    setEquipment(eq);
+    const open: Record<string, boolean> = {};
+    for (const cat of PHYSIO_EQUIPMENT_CATEGORIES) {
+      if (listCustomEquipmentForCategory(eq, cat.id).length > 0) open[cat.id] = true;
+    }
+    setEquipmentOtherOpen(open);
   }, []);
 
   useEffect(() => {
@@ -118,7 +153,12 @@ export function ClinicSpaceForm() {
     );
   }
 
-  async function handleSave() {
+  async function handleSave(opts?: { fromAutosave?: boolean }) {
+    if (!name.trim()) {
+      if (!opts?.fromAutosave) setError("El nombre de la clínica es obligatorio.");
+      return;
+    }
+    const gen = ++saveGenRef.current;
     setError(null);
     setSaved(false);
     setSaving(true);
@@ -138,18 +178,60 @@ export function ClinicSpaceForm() {
         p_tagline: tagline.trim().slice(0, 120) || "",
         p_accent_color: accent,
         p_specialties: specialties,
-        p_hours: hours.trim() || "",
+        p_hours: serializeClinicHours(hoursSchedule),
         p_equipment: equipment,
       });
       if (err) throw new Error(err.message);
-      if (data) fill(data as ClinicRecord);
+      if (gen !== saveGenRef.current) return;
+      if (data) {
+        const row = data as ClinicRecord;
+        setClinic((prev) => (prev ? { ...prev, ...row } : row));
+        setHoursLegacy(null);
+        if (row.logo_url != null) setLogoUrl(row.logo_url);
+        if (row.cover_url != null) setCoverUrl(row.cover_url);
+      }
       setSaved(true);
     } catch (e) {
+      if (gen !== saveGenRef.current) return;
       setError(e instanceof Error ? e.message : "No se pudo guardar.");
     } finally {
-      setSaving(false);
+      if (gen === saveGenRef.current) setSaving(false);
     }
   }
+
+  const hoursSerialized = serializeClinicHours(hoursSchedule);
+  const specialtiesKey = JSON.stringify(specialties);
+  const equipmentKey = JSON.stringify(equipment);
+
+  useEffect(() => {
+    if (loading || !clinic) return;
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      return;
+    }
+    const t = window.setTimeout(() => {
+      void handleSave({ fromAutosave: true });
+    }, 750);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounced autosave
+  }, [
+    loading,
+    clinic?.id,
+    name,
+    tagline,
+    description,
+    phone,
+    website,
+    address,
+    city,
+    postalCode,
+    contactEmail,
+    isListed,
+    accent,
+    hoursSerialized,
+    specialtiesKey,
+    equipmentKey,
+  ]);
 
   async function uploadImage(
     file: File,
@@ -266,7 +348,18 @@ export function ClinicSpaceForm() {
                 </span>
               )}
             </button>
-            <p className="pb-1 text-xs text-slate-500">Portada 16:5 y logo cuadrado.</p>
+            <div className="pb-1">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="text-xs font-semibold text-blue-600 hover:underline"
+              >
+                {logoUrl ? "Cambiar logo" : "Añadir logo"}
+              </button>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Portada arriba y logo cuadrado — van encima del nombre en tu ficha pública.
+              </p>
+            </div>
           </div>
           <input
             ref={fileRef}
@@ -279,26 +372,42 @@ export function ClinicSpaceForm() {
               e.target.value = "";
             }}
           />
+          <div className="mt-4 space-y-3 border-t border-neutral-100 pt-4">
+            <Link
+              href="/clinica/equipo"
+              className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-slate-50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
+            >
+              <span>
+                <span className="block text-sm font-bold text-neutral-900">
+                  Equipo
+                </span>
+                <span className="mt-0.5 block text-xs text-neutral-500">
+                  Invitar fisioterapeutas y gestionar el alta
+                </span>
+              </span>
+              <span className="text-sm font-semibold text-blue-600">Abrir →</span>
+            </Link>
+            <div>
+              <label className={labelClass}>Nombre</label>
+              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelClass}>Eslogan (como LinkedIn)</label>
+              <input
+                className={inputClass}
+                value={tagline}
+                maxLength={120}
+                onChange={(e) => setTagline(e.target.value)}
+                placeholder="Fisioterapia deportiva en el centro de Madrid"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-bold text-neutral-900">Identidad</h2>
         <div className="mt-4 space-y-3">
-          <div>
-            <label className={labelClass}>Nombre</label>
-            <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>Eslogan (como LinkedIn)</label>
-            <input
-              className={inputClass}
-              value={tagline}
-              maxLength={120}
-              onChange={(e) => setTagline(e.target.value)}
-              placeholder="Fisioterapia deportiva en el centro de Madrid"
-            />
-          </div>
           <div>
             <label className={labelClass}>Descripción</label>
             <textarea
@@ -311,20 +420,72 @@ export function ClinicSpaceForm() {
           </div>
           <div>
             <label className={labelClass}>Color de marca</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {CLINIC_ACCENT_SWATCHES.map((swatch) => (
                 <button
                   key={swatch.hex}
                   type="button"
                   title={swatch.label}
-                  onClick={() => setAccent(swatch.hex)}
+                  onClick={() => {
+                    setAccent(swatch.hex);
+                    setAccentHexDraft(swatch.hex);
+                  }}
                   className={`h-8 w-8 rounded-full border-2 ${
                     accent === swatch.hex ? "border-slate-900" : "border-white"
                   } shadow`}
                   style={{ background: swatch.hex }}
                 />
               ))}
+              <label
+                className="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 shadow"
+                title="Elegir cualquier color"
+              >
+                <span
+                  className="absolute inset-0"
+                  style={{ background: accent }}
+                />
+                <input
+                  type="color"
+                  value={accent}
+                  onChange={(e) => {
+                    const hex = normalizeClinicAccent(e.target.value);
+                    setAccent(hex);
+                    setAccentHexDraft(hex);
+                  }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  aria-label="Elegir color personalizado"
+                />
+              </label>
             </div>
+            <div className="mt-2 flex max-w-xs items-center gap-2">
+              <input
+                className={inputClass}
+                value={accentHexDraft}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setAccentHexDraft(raw);
+                  const parsed = parseClinicAccentHex(raw);
+                  if (parsed) setAccent(parsed);
+                }}
+                onBlur={() => {
+                  const parsed = parseClinicAccentHex(accentHexDraft);
+                  const hex = parsed ?? accent;
+                  setAccent(hex);
+                  setAccentHexDraft(hex);
+                }}
+                placeholder="#2563EB"
+                maxLength={7}
+                aria-label="Código hex del color"
+              />
+              <span
+                className="h-9 w-9 shrink-0 rounded-lg border border-slate-200"
+                style={{ background: accent }}
+                title={accent}
+              />
+            </div>
+            <p className="mt-1 text-xs text-neutral-500">
+              Elige un color rápido o usa el selector / código hex para cualquier tono.
+            </p>
           </div>
           <div>
             <label className={labelClass}>Especialidades</label>
@@ -347,75 +508,198 @@ export function ClinicSpaceForm() {
                   </button>
                 );
               })}
-            </div>
-            <div className="mt-2 flex gap-2">
-              <input
-                className={inputClass}
-                value={customSpecialty}
-                onChange={(e) => setCustomSpecialty(e.target.value)}
-                placeholder="Otra especialidad"
-              />
+              {customClinicSpecialties(specialties).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => toggleSpecialty(s)}
+                  className="rounded-full px-3 py-1 text-xs font-semibold text-white"
+                  style={{ background: accent }}
+                  title="Toca para quitar"
+                >
+                  {s} ×
+                </button>
+              ))}
               <button
                 type="button"
-                className="shrink-0 rounded-xl border border-slate-200 px-3 text-sm font-semibold"
-                onClick={() => {
-                  const s = customSpecialty.trim();
-                  if (s && !specialties.includes(s)) setSpecialties((p) => [...p, s]);
-                  setCustomSpecialty("");
-                }}
+                onClick={() => setSpecialtyOtherOpen((v) => !v)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  specialtyOtherOpen
+                    ? "text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+                style={specialtyOtherOpen ? { background: accent } : undefined}
               >
-                Añadir
+                Otro
               </button>
             </div>
+            {specialtyOtherOpen ? (
+              <div className="mt-2 flex gap-2">
+                <input
+                  className={inputClass}
+                  value={customSpecialty}
+                  onChange={(e) => setCustomSpecialty(e.target.value)}
+                  placeholder="Escribe otra especialidad…"
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    const s = customSpecialty.trim();
+                    if (s && !specialties.includes(s)) {
+                      setSpecialties((p) => [...p, s]);
+                    }
+                    setCustomSpecialty("");
+                  }}
+                />
+                <button
+                  type="button"
+                  className="shrink-0 rounded-xl border border-slate-200 px-3 text-sm font-semibold"
+                  onClick={() => {
+                    const s = customSpecialty.trim();
+                    if (s && !specialties.includes(s)) {
+                      setSpecialties((p) => [...p, s]);
+                    }
+                    setCustomSpecialty("");
+                  }}
+                >
+                  Añadir
+                </button>
+              </div>
+            ) : null}
           </div>
           <div>
             <label className={labelClass}>Equipo y servicios</label>
             <p className="mb-2 text-xs text-neutral-500">
               Lo que ofreces en el centro (p. ej. ecógrafo). Physio lo usa para
-              recomendar tu clínica a pacientes de tu ciudad.
+              recomendar tu clínica a pacientes de tu ciudad. Usa «Otro» si falta
+              algo en la lista.
             </p>
-            {PHYSIO_EQUIPMENT_CATEGORIES.map((cat) => (
-              <div key={cat.id} className="mb-3">
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-neutral-400">
-                  {cat.title}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {cat.options.map((opt) => {
-                    const on = equipment.includes(opt.id);
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() =>
-                          setEquipment((prev) =>
-                            on ? prev.filter((x) => x !== opt.id) : [...prev, opt.id]
-                          )
+            {PHYSIO_EQUIPMENT_CATEGORIES.map((cat) => {
+              const customLabels = listCustomEquipmentForCategory(equipment, cat.id);
+              const otherOpen = Boolean(equipmentOtherOpen[cat.id]);
+              return (
+                <div key={cat.id} className="mb-3">
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-neutral-400">
+                    {cat.title}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {cat.options.map((opt) => {
+                      const on = equipment.includes(opt.id);
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() =>
+                            setEquipment((prev) =>
+                              on
+                                ? prev.filter((x) => x !== opt.id)
+                                : [...prev, opt.id],
+                            )
+                          }
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            on
+                              ? "text-white"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                          style={on ? { background: accent } : undefined}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                    {customLabels.map((label) => {
+                      const key = customEquipmentKey(cat.id, label);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() =>
+                            setEquipment((prev) => prev.filter((x) => x !== key))
+                          }
+                          className="rounded-full px-3 py-1 text-xs font-semibold text-white"
+                          style={{ background: accent }}
+                          title="Toca para quitar"
+                        >
+                          {label} ×
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEquipmentOtherOpen((prev) => ({
+                          ...prev,
+                          [cat.id]: !prev[cat.id],
+                        }))
+                      }
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        otherOpen
+                          ? "text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                      style={otherOpen ? { background: accent } : undefined}
+                    >
+                      Otro
+                    </button>
+                  </div>
+                  {otherOpen ? (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        className={inputClass}
+                        value={customEquipmentDraft[cat.id] ?? ""}
+                        onChange={(e) =>
+                          setCustomEquipmentDraft((prev) => ({
+                            ...prev,
+                            [cat.id]: e.target.value,
+                          }))
                         }
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          on
-                            ? "text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
-                        style={on ? { background: accent } : undefined}
+                        placeholder={`Otro en ${cat.title.toLowerCase()}…`}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const label = (customEquipmentDraft[cat.id] ?? "").trim();
+                          if (!label) return;
+                          const key = customEquipmentKey(cat.id, label);
+                          setEquipment((prev) =>
+                            prev.includes(key) ? prev : [...prev, key],
+                          );
+                          setCustomEquipmentDraft((prev) => ({
+                            ...prev,
+                            [cat.id]: "",
+                          }));
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="shrink-0 rounded-xl border border-slate-200 px-3 text-sm font-semibold"
+                        onClick={() => {
+                          const label = (customEquipmentDraft[cat.id] ?? "").trim();
+                          if (!label) return;
+                          const key = customEquipmentKey(cat.id, label);
+                          setEquipment((prev) =>
+                            prev.includes(key) ? prev : [...prev, key],
+                          );
+                          setCustomEquipmentDraft((prev) => ({
+                            ...prev,
+                            [cat.id]: "",
+                          }));
+                        }}
                       >
-                        {opt.label}
+                        Añadir
                       </button>
-                    );
-                  })}
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <div>
-            <label className={labelClass}>Horario</label>
-            <textarea
-              className={inputClass}
-              rows={3}
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              placeholder={"L–V 8:00–20:00\nSábados 9:00–14:00"}
-            />
-          </div>
+          <ClinicHoursEditor
+            value={hoursSchedule}
+            onChange={(next) => {
+              setHoursSchedule(next);
+              setHoursLegacy(null);
+            }}
+            legacyText={hoursLegacy}
+          />
         </div>
       </div>
 
@@ -507,16 +791,17 @@ export function ClinicSpaceForm() {
       <ClinicNovedadesForm clinicId={clinic.id} />
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {saved ? <p className="text-sm font-semibold text-emerald-700">Cambios guardados.</p> : null}
-
-      <button
-        type="button"
-        onClick={() => void handleSave()}
-        disabled={saving}
-        className="btn-primary px-5 py-2.5 text-sm disabled:opacity-60"
+      <p
+        className={`text-sm font-semibold ${
+          saved ? "text-emerald-700" : saving ? "text-slate-500" : "text-slate-400"
+        }`}
       >
-        {saving ? "Guardando…" : "Guardar página"}
-      </button>
+        {saving
+          ? "Guardando…"
+          : saved
+            ? "Cambios guardados automáticamente."
+            : "Los cambios se guardan solos."}
+      </p>
     </div>
   );
 }

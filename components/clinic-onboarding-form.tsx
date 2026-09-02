@@ -71,19 +71,8 @@ export function ClinicOnboardingForm() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
 
-      // Repair if handle_new_user left the row as patient (JWT must already say clinic).
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_type")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile?.account_type !== "clinic") {
-        const { error: repairErr } = await supabase
-          .from("profiles")
-          .update({ account_type: "clinic" })
-          .eq("id", user.id);
-        if (repairErr) throw new Error(repairErr.message);
-      }
+      // clinic_create_own promotes patient→clinic when onboarding is incomplete
+      // (or JWT app_metadata says clinic).
 
       const descParts = [
         description.trim(),

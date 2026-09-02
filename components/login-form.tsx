@@ -26,6 +26,7 @@ export function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState(initialCode);
+  const [clinicStaffCode, setClinicStaffCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [guestError, setGuestError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,16 +46,43 @@ export function LoginForm({
     e.preventDefault();
     setError(null);
     setGuestError(null);
+    const staffCode = clinicStaffCode.trim();
     setLoading(true);
     try {
       const supabase = createClient();
+      if (staffCode) {
+        const { data } = await supabase.rpc("clinic_lookup_invite", {
+          p_token: staffCode,
+        });
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row?.clinic_name) {
+          setError("Código de clínica no válido o caducado.");
+          return;
+        }
+      }
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
-      if (signError) { setError(signError.message); return; }
+      if (signError) {
+        setError(signError.message);
+        return;
+      }
+      if (staffCode) {
+        const { error: claimErr } = await supabase.rpc("clinic_claim_invite", {
+          p_token: staffCode,
+        });
+        if (claimErr) {
+          setError(claimErr.message);
+          return;
+        }
+      }
       const safeNext =
-        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/consulta";
+        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+          ? nextPath
+          : staffCode
+            ? "/fisio"
+            : "/consulta";
       router.replace(safeNext);
       router.refresh();
     } finally {
@@ -142,6 +170,25 @@ export function LoginForm({
             disabled={busy}
             className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
+        </div>
+
+        <div className="mb-4 flex flex-col gap-1.5">
+          <label className="text-sm font-semibold text-slate-700">
+            Código de clínica (fisios, opcional)
+          </label>
+          <input
+            value={clinicStaffCode}
+            onChange={(e) => setClinicStaffCode(e.target.value.toUpperCase())}
+            placeholder="Ej. AB12CD"
+            disabled={busy}
+            autoCapitalize="characters"
+            spellCheck={false}
+            className="rounded-xl border border-blue-200 px-4 py-3 text-sm font-semibold tracking-widest text-slate-800 placeholder:tracking-normal placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          />
+          <p className="text-xs text-slate-500">
+            Si eres fisioterapeuta, puedes vincular tu clínica al entrar o
+            después en Clínica.
+          </p>
         </div>
 
         {infoMessage ? (

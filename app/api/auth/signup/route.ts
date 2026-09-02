@@ -18,7 +18,12 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
-/** Public signup: patient accounts only (physio via clinic invite; no self-serve physio/clinic). */
+/**
+ * Public signup:
+ * - patient (default)
+ * - clinic (self-serve clinic owner onboarding)
+ * - physio only via clinic invite token (no self-serve physio)
+ */
 export async function POST(request: NextRequest) {
   try {
     const limit = checkRateLimit(rateLimitKey(request.headers, "signup"), 10, 60_000);
@@ -51,6 +56,7 @@ export async function POST(request: NextRequest) {
     };
     const email = body.email?.trim().toLowerCase() ?? "";
     const password = body.password ?? "";
+    const requestedType = body.accountType ?? "patient";
 
     if (!email || password.length < 6) {
       return NextResponse.json(
@@ -110,16 +116,20 @@ export async function POST(request: NextRequest) {
         );
       }
       const invite = Array.isArray(inviteRows) ? inviteRows[0] : inviteRows;
-      if (!invite?.email) {
+      if (!invite || !(invite as { clinic_name?: string }).clinic_name) {
         return NextResponse.json(
           { error: "La invitación no es válida o ha caducado." },
           { status: 400, headers: CORS }
         );
       }
-      if (String(invite.email).toLowerCase() !== email) {
+      const inviteEmail =
+        typeof (invite as { email?: string | null }).email === "string"
+          ? String((invite as { email: string }).email).trim().toLowerCase()
+          : "";
+      if (inviteEmail && inviteEmail !== email) {
         return NextResponse.json(
           {
-            error: `Usa el correo de la invitación (${invite.email}).`,
+            error: `Usa el correo de la invitación (${inviteEmail}).`,
           },
           { status: 400, headers: CORS }
         );
@@ -145,22 +155,40 @@ export async function POST(request: NextRequest) {
       }
 
       const displayName =
-        typeof invite.display_name === "string" ? invite.display_name.trim() : "";
+        typeof (invite as { display_name?: string | null }).display_name === "string"
+          ? String((invite as { display_name: string }).display_name).trim()
+          : "";
       await adminClient.from("profiles").upsert({
         id: data.user.id,
-        onboarding_completed: Boolean(displayName),
+        // Always ask for nombre completo in physio onboarding.
+        onboarding_completed: false,
         is_admin: false,
         account_type: "physio",
         display_name: displayName || null,
       });
 
+      const acceptKey =
+        (typeof (invite as { token?: string }).token === "string" &&
+          (invite as { token: string }).token.trim()) ||
+        clinicInvite;
+
       const { error: acceptErr } = await adminClient.rpc("clinic_accept_invite", {
-        p_token: clinicInvite,
+        p_token: acceptKey,
         p_user_id: data.user.id,
       });
       if (acceptErr) {
+        // Roll back orphan physio accounts (created but not linked to clinic).
+        try {
+          await adminClient.auth.admin.deleteUser(data.user.id);
+        } catch {
+          // ignore cleanup errors
+        }
         return NextResponse.json(
-          { error: acceptErr.message },
+          {
+            error:
+              acceptErr.message ||
+              "No se pudo vincular con la clínica. Pide un código nuevo al titular.",
+          },
           { status: 400, headers: CORS }
         );
       }
@@ -168,11 +196,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, accountType: "physio" }, { headers: CORS });
     }
 
+    // Physio without invite code: account is created unlinked; they claim the
+    // clinic code later at login or on the Clínica screen.
+    if (requestedType === "physio") {
+      const { data, error } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        app_metadata: { account_type: "physio" },
+      });
+      if (error) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 400, headers: CORS }
+        );
+      }
+      if (!data.user) {
+        return NextResponse.json(
+          { error: "No se pudo crear la cuenta." },
+          { status: 500, headers: CORS }
+        );
+      }
+      await adminClient.from("profiles").upsert({
+        id: data.user.id,
+        onboarding_completed: false,
+        is_admin: false,
+        account_type: "physio",
+      });
+      return NextResponse.json({ ok: true, accountType: "physio" }, { headers: CORS });
+    }
+
+    const accountType: "patient" | "clinic" =
+      requestedType === "clinic" ? "clinic" : "patient";
+
     const { data, error } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      app_metadata: { account_type: "patient" },
+      app_metadata: { account_type: accountType },
     });
 
     if (error) {
@@ -182,7 +243,7 @@ export async function POST(request: NextRequest) {
     if (data.user) {
       const { error: metaErr } = await adminClient.auth.admin.updateUserById(
         data.user.id,
-        { app_metadata: { account_type: "patient" } }
+        { app_metadata: { account_type: accountType } }
       );
       if (metaErr) {
         return NextResponse.json({ error: metaErr.message }, { status: 400, headers: CORS });
@@ -192,7 +253,7 @@ export async function POST(request: NextRequest) {
         id: data.user.id,
         onboarding_completed: false,
         is_admin: false,
-        account_type: "patient",
+        account_type: accountType,
       });
       if (profileErr) {
         return NextResponse.json(
@@ -202,7 +263,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, accountType: "patient" }, { headers: CORS });
+    return NextResponse.json({ ok: true, accountType }, { headers: CORS });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500, headers: CORS });

@@ -46,6 +46,7 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
+  const [clinicStaffCode, setClinicStaffCode] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
@@ -58,13 +59,35 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
       setError(t.auth.emailPasswordRequired);
       return;
     }
+    const staffCode = clinicStaffCode.trim();
+    if (staffCode) {
+      const { data } = await supabase.rpc("clinic_lookup_invite", {
+        p_token: staffCode,
+      });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row?.clinic_name) {
+        setError("Código de clínica no válido o caducado.");
+        return;
+      }
+    }
     setLoading(true);
     try {
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password,
       });
-      if (signError) setError(translateAuthError(signError.message, t));
+      if (signError) {
+        setError(translateAuthError(signError.message, t));
+        return;
+      }
+      if (staffCode) {
+        const { error: claimErr } = await supabase.rpc("clinic_claim_invite", {
+          p_token: staffCode,
+        });
+        if (claimErr) {
+          setError(claimErr.message);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -173,6 +196,24 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
             ref={passwordRef}
             onSubmitEditing={handleLogin}
           />
+
+          <View style={{ height: 12 }} />
+
+          <AuthTextField
+            label="Código de clínica (fisios, opcional)"
+            placeholder="Ej. AB12CD"
+            value={clinicStaffCode}
+            onChangeText={(v) => setClinicStaffCode(v.toUpperCase())}
+            editable={!busy}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            autoComplete="off"
+            textContentType="none"
+          />
+          <Text style={styles.physioInviteHint}>
+            Si eres fisioterapeuta, puedes vincular tu clínica al entrar. También
+            puedes hacerlo después en Clínica.
+          </Text>
 
           <Pressable
             onPress={onForgot}
@@ -327,6 +368,14 @@ const styles = StyleSheet.create({
   forgotText: { fontSize: 13, fontWeight: "700", color: Colors.primary },
   switchRow: { marginTop: 24, alignItems: "center" },
   switchText: { fontSize: 14, color: Colors.textSecondary },
+  physioInviteHint: {
+    marginTop: 10,
+    textAlign: "center",
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.textSecondary,
+    paddingHorizontal: 12,
+  },
   switchLink: { color: Colors.primary, fontWeight: "700" },
   dividerRow: {
     marginTop: 22,

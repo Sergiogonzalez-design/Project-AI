@@ -76,10 +76,86 @@ export type ClinicRecommendRow = {
 function equipmentLabels(ids: string[] | null | undefined): string {
   if (!ids?.length) return "";
   return ids
-    .map((id) => EQUIPMENT_LABELS[id] ?? id)
+    .map((id) => {
+      const known = EQUIPMENT_LABELS[id];
+      if (known) return known;
+      // custom:{categoryId}:{label} from clinic profile «Otro»
+      if (id.startsWith("custom:")) {
+        const rest = id.slice("custom:".length);
+        const colon = rest.indexOf(":");
+        if (colon > 0) return rest.slice(colon + 1).trim() || id;
+      }
+      return id;
+    })
     .filter(Boolean)
     .slice(0, 6)
     .join(", ");
+}
+
+/**
+ * PRIORIDAD ALTA: replace AIKinora clinics with hospital / ER guidance.
+ * Uses profile city when available (no GPS yet).
+ */
+export function buildHospitalRecommendPrompt(
+  city: string | null,
+  language: "es" | "en"
+): string {
+  const cityLabel = city?.trim() || "";
+
+  if (language === "en") {
+    if (cityLabel) {
+      return `HOSPITALS / ER — HIGH PRIORITY (CRITICAL — DO NOT RECOMMEND AIKINORA CLINICS):
+Patient location (city on profile): ${cityLabel}.
+Include a section titled exactly:
+Hospitals / ER near you
+RULES:
+- Do NOT include **Clinics on AIKinora near you**. Clinics are wrong when the patient must go to hospital now.
+- Name 2–3 well-known public hospitals / emergency departments in or very near ${cityLabel} that typically have ER (Urgencias). Prefer major reference / university / public hospitals if you know them for that city.
+- Do NOT invent street addresses, phone numbers, wait times, or Google Maps links. If unsure of a name, say go to the nearest Hospital Emergency Department in ${cityLabel} and open Maps with “emergency room near me” / “urgencias ${cityLabel}”.
+- Remind: if symptoms worsen (loss of consciousness, chest pain, inability to breathe, severe bleeding) call emergency services (112 in Spain / local equivalent).
+- Make clear the priority is HOSPITAL / ER NOW, not physiotherapy clinics.
+- Do NOT write /centro/… paths for hospitals (they are not app profiles / not tappable buttons).`;
+    }
+    return `HOSPITALS / ER — HIGH PRIORITY (CRITICAL — DO NOT RECOMMEND AIKINORA CLINICS):
+The patient has NO city/location on their profile.
+Include a section titled exactly:
+Hospitals / ER near you
+RULES:
+- Do NOT include **Clinics on AIKinora near you**.
+- Do NOT invent a specific hospital name for a city you do not know.
+- Tell them to go NOW to the nearest Hospital Emergency Department (Urgencias).
+- Tell them how to find it: open Google Maps / Apple Maps and search “emergency room near me” or “urgencias hospital”; or ask someone nearby / taxi / emergency services.
+- If severe or unsure how to get there: call 112 (Spain) or local emergency number.
+- Still name the destination clearly: Hospital / Emergency Department — not a physio clinic.
+- Do NOT write /centro/… paths for hospitals (they are not app profiles / not tappable buttons).`;
+  }
+
+  if (cityLabel) {
+    return `HOSPITALES / URGENCIAS — PRIORIDAD ALTA (CRÍTICO — NO RECOMIENDES CLÍNICAS AIKINORA):
+Ubicación del paciente (ciudad en el perfil): ${cityLabel}.
+Incluye una sección titulada exactamente:
+Hospitales / Urgencias cerca de ti
+REGLAS:
+- NO incluyas **Clínicas en AIKinora cerca de ti**. Con PRIORIDAD ALTA las clínicas de fisio no aplican: debe ir a hospital.
+- Nombra 2–3 hospitales públicos / servicios de Urgencias bien conocidos en o muy cerca de ${cityLabel}. Prioriza hospitales de referencia / universitarios / públicos si los conoces para esa ciudad.
+- NO inventes direcciones exactas, teléfonos, tiempos de espera ni enlaces de Maps. Si no estás seguro de un nombre, di que vaya a Urgencias del hospital más cercano en ${cityLabel} y busque en Maps «urgencias ${cityLabel}» o «hospital urgencias cerca».
+- Recuerda: si empeora (pérdida de consciencia, dolor torácico, no puede respirar, sangrado grave) llame al 112.
+- Deja claro que la prioridad es HOSPITAL / URGENCIAS YA, no una clínica de fisioterapia.
+- NO uses rutas /centro/… para hospitales (no son fichas de la app / no son botones).`;
+  }
+
+  return `HOSPITALES / URGENCIAS — PRIORIDAD ALTA (CRÍTICO — NO RECOMIENDES CLÍNICAS AIKINORA):
+El paciente NO tiene ciudad/ubicación en el perfil.
+Incluye una sección titulada exactamente:
+Hospitales / Urgencias cerca de ti
+REGLAS:
+- NO incluyas **Clínicas en AIKinora cerca de ti**.
+- NO inventes el nombre de un hospital concreto de una ciudad que no conoces.
+- Di que debe ir YA a Urgencias del hospital más cercano.
+- Cómo encontrarlo: abrir Google Maps / Apple Maps y buscar «urgencias cerca de mí» o «hospital urgencias»; o pedir ayuda a alguien / taxi / 112.
+- Si es grave o no sabe cómo llegar: llamar al 112.
+- Nombra el destino con claridad: Hospital / Urgencias — no una clínica de fisioterapia.
+- NO uses rutas /centro/… para hospitales (no son fichas de la app / no son botones).`;
 }
 
 export function buildClinicRecommendPrompt(
@@ -106,7 +182,8 @@ export function buildClinicRecommendPrompt(
 There are NO registered, listed clinics to recommend right now${cityLabel ? ` in ${cityLabel}` : ""}.
 Include a short section titled exactly:
 Clinics on AIKinora near you
-Say honestly that none are listed yet and they can look later in Search. NEVER invent clinic names, addresses, or services. Do NOT ask the patient to enter their city.`;
+Say honestly that none are listed yet and they can look later in Search. NEVER invent clinic names, addresses, or services. Do NOT ask the patient to enter their city.
+If THIS case is hospital-urgent / HIGH PRIORITY: omit the clinics section and use Hospitals / ER near you instead (do not recommend physio clinics).`;
     }
     const scope = cityLabel
       ? `Patient city: ${cityLabel}. Prefer these local clinics.`
@@ -115,10 +192,14 @@ Say honestly that none are listed yet and they can look later in Search. NEVER i
 ${scope}
 ${recs.map(lineFor).join("\n")}
 RULES:
-- In EVERY Consulta reply include section titled exactly: Clinics on AIKinora near you
+- In EVERY non-urgent Consulta reply include section titled exactly: Clinics on AIKinora near you
+- If HIGH PRIORITY / hospital: omit clinics entirely; use Hospitals / ER near you instead.
 - Recommend 2–3 from this list (or all if fewer). Prefer clinics whose equipment/specialties fit the injury (e.g. ultrasound → clinic with Ecógrafo).
 - You may say why it fits ONLY using listed equipment/specialties/city. Do not invent a service that is not listed.
-- Link as /centro/{slug}. Do not invent URLs.`;
+- BUTTON FORMAT (CRITICAL — app turns these into tappable buttons): write EACH clinic on its own line exactly like:
+  1. Clinic Name | /centro/{slug} | city · key equipment
+  Always include the /centro/{slug} path from the list. Never invent slugs.
+- Hospitals / ER names must NEVER use /centro/… (they have no profile in the app).`;
   }
 
   if (!recs.length) {
@@ -126,7 +207,8 @@ RULES:
 AHORA MISMO no hay clínicas registradas y visibles para recomendar${cityLabel ? ` en ${cityLabel}` : ""}.
 Incluye una sección breve titulada exactamente:
 Clínicas en AIKinora cerca de ti
-Di con honestidad que aún no hay centros de AIKinora listados y que puede mirar más adelante en Buscar. NUNCA inventes nombres, direcciones ni servicios. NO pidas la ciudad.`;
+Di con honestidad que aún no hay centros de AIKinora listados y que puede mirar más adelante en Buscar. NUNCA inventes nombres, direcciones ni servicios. NO pidas la ciudad.
+Si ESTE caso es PRIORIDAD ALTA / hospital: omite clínicas y usa Hospitales / Urgencias cerca de ti.`;
   }
   const scope = cityLabel
     ? `Ciudad del paciente: ${cityLabel}. Prioriza estas clínicas locales.`
@@ -135,8 +217,12 @@ Di con honestidad que aún no hay centros de AIKinora listados y que puede mirar
 ${scope}
 ${recs.map(lineFor).join("\n")}
 REGLAS:
-- En CADA respuesta de Consulta incluye la sección titulada exactamente: Clínicas en AIKinora cerca de ti
+- En CADA respuesta de Consulta NO urgente incluye la sección titulada exactamente: Clínicas en AIKinora cerca de ti
+- Si PRIORIDAD ALTA / hospital: omite clínicas por completo; usa Hospitales / Urgencias cerca de ti.
 - Recomienda 2–3 de esta lista (o todas si hay menos). Prioriza las que encajen con la lesión (p. ej. si hace falta ecografía, prefiere las que tengan Ecógrafo).
 - Explica por qué encaja SOLO con el equipo/especialidades/ciudad listados. No inventes un servicio que no figure.
-- Enlaza como /centro/{slug}. No inventes URLs.`;
+- FORMATO BOTÓN (CRÍTICO — la app convierte cada línea en un botón): escribe CADA clínica en su propia línea exactamente así:
+  1. Nombre de la clínica | /centro/{slug} | ciudad · equipo clave
+  Incluye SIEMPRE la ruta /centro/{slug} de la lista. Nunca inventes slugs.
+- Los hospitales / urgencias NUNCA llevan /centro/… (no tienen ficha en la app).`;
 }

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { composerBottomInset, useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { useOnAppBackground } from "../hooks/useAppLifecycle";
+import type { TabParamList } from "../navigation/AppTabs";
 import {
   ConsultaAdaptiveShoulder,
   isLastShoulderSection,
@@ -236,6 +238,11 @@ import {
   wantsToContinueToNextQuestionnaire,
   type AdaptiveQuestionnairePart,
 } from "../lib/consulta-triage";
+import {
+  affirmsExerciseOffer,
+  buildPostConsultCaseSummary,
+  declinesExerciseOffer,
+} from "../lib/consulta-exercise-offer";
 import { callEdgeText, callEdgeJson } from "../lib/consulta-api";
 import {
   type ConsultLanguage,
@@ -523,7 +530,13 @@ export function AIInquiriesScreen({
   guestMode = false,
   onCreateAccount,
 }: AIInquiriesScreenProps) {
-  const navigation = useNavigation();
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const openClinicProfile = useCallback(
+    (clinicSlug: string) => {
+      navigation.navigate("ClinicSearch", { clinicSlug });
+    },
+    [navigation]
+  );
   const insets = useSafeAreaInsets();
   const keyboardHeight = useKeyboardHeight();
   const composerInset = composerBottomInset(keyboardHeight, insets.bottom);
@@ -606,6 +619,7 @@ export function AIInquiriesScreen({
   functionalTestsCompletedRef.current = functionalTestsCompletedParts;
   const [relatedFollowupActive, setRelatedFollowupActive] = useState(false);
   const [postGuidanceAsked, setPostGuidanceAsked] = useState(false);
+  const [exerciseOfferActive, setExerciseOfferActive] = useState(false);
   const [showUnrelatedCta, setShowUnrelatedCta] = useState(false);
   /** Original complaint while we ask where on the arm/leg it hurts. */
   const [pendingComplaintText, setPendingComplaintText] = useState<string | null>(
@@ -959,6 +973,7 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setCaseImageUrl(null);
@@ -1053,6 +1068,7 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setChatInput("");
@@ -1139,6 +1155,7 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setChatInput("");
@@ -1271,6 +1288,7 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setChatInput("");
@@ -1659,6 +1677,7 @@ export function AIInquiriesScreen({
     setShowUnrelatedCta(false);
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     const closing = consultaFinishedCloseMessage(language);
     try {
       const { data: aiMsg } = await supabase
@@ -1799,6 +1818,7 @@ export function AIInquiriesScreen({
     options?: { askNow?: boolean; offeredTests?: boolean }
   ) {
     setRelatedFollowupActive(true);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     if (options?.askNow || options?.offeredTests === false) {
       await appendAssistantMessage(
@@ -1807,6 +1827,64 @@ export function AIInquiriesScreen({
       );
       setPostGuidanceAsked(true);
     }
+  }
+
+  function postConsultCaseSummaryForAi(): string {
+    const evaluations = partEvaluationsRef.current.map((e) => ({
+      label: e.label,
+      summary: e.summary,
+    }));
+    if (evaluations.length > 0) {
+      return buildPostConsultCaseSummary(evaluations, []);
+    }
+    const assistantTexts = messages
+      .filter(
+        (m) =>
+          m.role === "assistant" &&
+          !isConsultaFinishedCloseMessage(m.content),
+      )
+      .slice(-5)
+      .map((m) => m.content);
+    return buildPostConsultCaseSummary([], assistantTexts);
+  }
+
+  async function sendPostConsultExerciseOffer(conversationId: string) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callEdgeText(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "offer",
+        message: caseSummary,
+        bodyArea,
+        language: consultLanguage,
+      },
+      fisioEdgeExtras,
+    );
+    await appendAssistantMessage(conversationId, answer);
+    setRelatedFollowupActive(false);
+    setExerciseOfferActive(true);
+    setPostGuidanceAsked(false);
+  }
+
+  async function sendPostConsultExercisePlan(
+    conversationId: string,
+    patientReply: string,
+  ) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callEdgeText(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "plan",
+        message: caseSummary,
+        bodyArea,
+        description: patientReply,
+        language: consultLanguage,
+      },
+      fisioEdgeExtras,
+    );
+    await appendAssistantMessage(conversationId, answer);
   }
 
   async function appendMultiPartFinalSummary(
@@ -2474,8 +2552,8 @@ export function AIInquiriesScreen({
           ? `\n\nPHYSIOTHERAPY FLOW + URGENCY (CRITICAL): Red flags are present. This guidance is for the patient. Do NOT ask for functional tests or hop tests. Prioritize HOSPITAL / ER and imaging. Do NOT say the report was already sent to the physio.`
           : `\n\nPHYSIOTHERAPY FLOW (CRITICAL): This guidance is for the patient. ALWAYS include the **Functional tests** section specific to the injured area. Do NOT say the report was already sent to the physio: they must answer the tests first.`
         : redFlagsUrgent
-          ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas. Esta orientación es para el paciente. NO pidas pruebas funcionales ni hop. Prioriza HOSPITAL / URGENCIAS e imagen. NO digas que el informe ya se envió al fisio.`
-          : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`
+          ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas / PRIORIDAD ALTA. Esta orientación es para el paciente. OMITÉ **Pruebas funcionales** y **Clínicas en AIKinora cerca de ti**. NO pidas hop ni «aplica hielo» como prueba. Hielo/reposo solo en **Qué hacer mientras tanto**. Prioriza HOSPITAL / URGENCIAS e imagen en **Qué debes hacer ahora**. Incluye **Hospitales / Urgencias cerca de ti**. NO digas que el informe ya se envió al fisio.`
+          : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** (movimientos Sí/No; NO mezclar hielo/reposo ahí). NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`
       : "";
 
     try {
@@ -3319,6 +3397,30 @@ export function AIInquiriesScreen({
         return;
       }
 
+      if (exerciseOfferActive && !linkedPhysio) {
+        await saveUserMessage();
+        setShowUnrelatedCta(false);
+        setChatLoading(true);
+        setLoadingModal(true);
+        try {
+          if (declinesExerciseOffer(text)) {
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          if (affirmsExerciseOffer(text)) {
+            await sendPostConsultExercisePlan(activeId, text);
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          await sendPostConsultExercisePlan(activeId, text);
+          await finishConsultaSession(activeId, consultLanguage);
+        } finally {
+          setChatLoading(false);
+          setLoadingModal(false);
+        }
+        return;
+      }
+
       if (relatedFollowupActive && !linkedPhysio) {
         await saveUserMessage();
         setShowUnrelatedCta(false);
@@ -3343,7 +3445,14 @@ export function AIInquiriesScreen({
           ) {
             return;
           }
-          await finishConsultaSession(activeId, consultLanguage);
+          setChatLoading(true);
+          setLoadingModal(true);
+          try {
+            await sendPostConsultExerciseOffer(activeId);
+          } finally {
+            setChatLoading(false);
+            setLoadingModal(false);
+          }
           return;
         }
 
@@ -4364,6 +4473,7 @@ export function AIInquiriesScreen({
                                   boldStyle={styles.bubbleBold}
                                   highlightPhrases={physioHighlightPhrases}
                                   highlightStyle={styles.bubblePhysioHighlight}
+                                  onClinicPress={openClinicProfile}
                                 />
                               );
                             }
@@ -4376,6 +4486,7 @@ export function AIInquiriesScreen({
                                     boldStyle={styles.bubbleBold}
                                     highlightPhrases={physioHighlightPhrases}
                                     highlightStyle={styles.bubblePhysioHighlight}
+                                    onClinicPress={openClinicProfile}
                                   />
                                 ) : null}
                                 <ConsultaAssistantBody
@@ -4400,6 +4511,7 @@ export function AIInquiriesScreen({
                                     boldStyle={styles.bubbleBold}
                                     highlightPhrases={physioHighlightPhrases}
                                     highlightStyle={styles.bubblePhysioHighlight}
+                                    onClinicPress={openClinicProfile}
                                   />
                                 ) : null}
                               </View>

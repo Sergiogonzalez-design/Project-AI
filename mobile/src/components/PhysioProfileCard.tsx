@@ -38,6 +38,7 @@ export function PhysioProfileCard() {
   const [profile, setProfile] = useState<PhysioProfileData | null>(null);
   const [fullName, setFullName] = useState("");
   const [clinicName, setClinicName] = useState("");
+  const [linkedClinic, setLinkedClinic] = useState(false);
 
   function fillForm(data: PhysioProfileData) {
     setFullName(data.display_name ?? "");
@@ -52,16 +53,28 @@ export function PhysioProfileCard() {
       } = await supabase.auth.getUser();
       if (!user || cancelled) return;
       setUserId(user.id);
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, clinic_name")
-        .eq("id", user.id)
-        .maybeSingle();
+      const [{ data }, { data: clinicRow }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("display_name, clinic_name")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase.rpc("clinic_get_own"),
+      ]);
       if (cancelled) return;
-      if (data) {
-        setProfile(data as PhysioProfileData);
-        fillForm(data as PhysioProfileData);
+      let next: PhysioProfileData = {
+        display_name: data?.display_name ?? null,
+        clinic_name: data?.clinic_name ?? null,
+      };
+      if (clinicRow && typeof clinicRow === "object" && "name" in clinicRow) {
+        const name = String((clinicRow as { name?: string }).name ?? "");
+        if (name) {
+          next = { ...next, clinic_name: name };
+          setLinkedClinic(true);
+        }
       }
+      setProfile(next);
+      fillForm(next);
       setLoading(false);
     }
     void load();
@@ -80,12 +93,20 @@ export function PhysioProfileCard() {
     try {
       const updated: PhysioProfileData = {
         display_name: fullName.trim(),
-        clinic_name: clinicName.trim() || null,
+        clinic_name: linkedClinic
+          ? clinicName.trim() || null
+          : clinicName.trim() || null,
       };
       const { error: saveErr } = await supabase
         .from("profiles")
         .update({
-          ...updated,
+          display_name: updated.display_name,
+          // Keep linked clinic name; don't overwrite with empty when linked.
+          ...(linkedClinic
+            ? clinicName.trim()
+              ? { clinic_name: clinicName.trim() }
+              : {}
+            : { clinic_name: updated.clinic_name }),
           onboarding_completed: true,
           updated_at: new Date().toISOString(),
         })
@@ -124,11 +145,11 @@ export function PhysioProfileCard() {
         {hasData ? (
           <>
             <Row label="Nombre" value={profile?.display_name} />
-            <Row label="Clínica o centro" value={profile?.clinic_name} />
+            <Row label="Clínica" value={profile?.clinic_name} />
           </>
         ) : (
           <Text style={styles.emptyText}>
-            Añade tu nombre y el de tu clínica para identificarte ante tus pacientes.
+            Añade tu nombre completo. La clínica viene de tu invitación.
           </Text>
         )}
       </View>
@@ -154,17 +175,17 @@ export function PhysioProfileCard() {
             placeholderTextColor={Colors.textSecondary}
           />
 
-          <Text style={styles.fieldLabel}>Clínica o centro</Text>
-          <TextInput
-            style={styles.input}
-            value={clinicName}
-            onChangeText={setClinicName}
-            placeholder="Ej: Clínica AIKinora"
-            placeholderTextColor={Colors.textSecondary}
-          />
-          <Text style={styles.hint}>
-            Aparecerá en el enlace de invitación para tus pacientes (opcional).
-          </Text>
+          {clinicName ? (
+            <View style={styles.clinicBox}>
+              <Text style={styles.fieldLabel}>Clínica</Text>
+              <Text style={styles.clinicValue}>{clinicName}</Text>
+              <Text style={styles.hint}>
+                {linkedClinic
+                  ? "Asignada desde tu invitación. No se puede cambiar aquí."
+                  : "Nombre de la clínica."}
+              </Text>
+            </View>
+          ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -237,6 +258,18 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginTop: 14,
     marginBottom: 6,
+  },
+  clinicBox: { marginTop: 8 },
+  clinicValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   hint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
   input: {

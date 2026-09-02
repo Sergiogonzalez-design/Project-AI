@@ -1,4 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import React from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppBackButton } from "../components/AppBackButton";
@@ -19,7 +21,7 @@ import { ProfileScreen } from "../screens/ProfileScreen";
 export type TabParamList = {
   AIInquiries: undefined;
   PhysioLink: undefined;
-  ClinicSearch: undefined;
+  ClinicSearch: { clinicSlug?: string } | undefined;
   Patients: undefined;
   PhysioConsult: undefined;
   ClinicConsult: undefined;
@@ -31,6 +33,13 @@ export type TabParamList = {
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
+
+function ClinicTeamBackButton() {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  return (
+    <AppBackButton onPress={() => navigation.navigate("ClinicHome")} />
+  );
+}
 
 type AppTabsProps = {
   isAdmin?: boolean;
@@ -94,9 +103,17 @@ export function AppTabs({
             options={{ title: t.headers.clinica }}
           />
           <Tab.Screen
+            name="ClinicSearch"
+            component={ClinicSearchScreen}
+            options={{ title: t.headers.buscar }}
+          />
+          <Tab.Screen
             name="ClinicTeam"
             component={ClinicTeamScreen}
-            options={{ title: "Equipo" }}
+            options={{
+              title: "Equipo",
+              headerLeft: () => <ClinicTeamBackButton />,
+            }}
           />
         </>
       ) : isPhysio ? (
@@ -110,6 +127,11 @@ export function AppTabs({
             name="PhysioConsult"
             component={PhysioConsultScreen}
             options={{ title: t.headers.consulta, headerLeft: () => null }}
+          />
+          <Tab.Screen
+            name="ClinicSearch"
+            component={ClinicSearchScreen}
+            options={{ title: t.headers.buscar }}
           />
         </>
       ) : (

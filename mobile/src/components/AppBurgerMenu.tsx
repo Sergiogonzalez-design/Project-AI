@@ -52,12 +52,13 @@ export function AppBurgerMenu({
       ? [
           { route: "ClinicConsult", label: t.headers.consulta },
           { route: "ClinicHome", label: t.headers.clinica },
-          { route: "ClinicTeam", label: "Equipo" },
+          { route: "ClinicSearch", label: t.headers.buscar },
         ]
       : isPhysio
       ? [
           { route: "Patients", label: t.headers.clinica },
           { route: "PhysioConsult", label: t.headers.consulta },
+          { route: "ClinicSearch", label: t.headers.buscar },
         ]
       : [
           { route: "AIInquiries", label: t.headers.consulta },
