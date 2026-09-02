@@ -41,6 +41,10 @@ import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-phot
 import { supabase } from "../lib/supabase";
 import { screenHeaderBarPadding } from "../lib/screen-header-insets";
 import type { TabParamList } from "../navigation/AppTabs";
+import {
+  PhysioClinicInfoCard,
+  type PhysioClinicSummary,
+} from "../components/PhysioClinicInfoCard";
 
 type PhysioPatient = {
   id: string;
@@ -105,6 +109,10 @@ export function PhysioPatientsScreen() {
   const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
   const [clinicName, setClinicName] = useState<string | null>(null);
+  const [clinic, setClinic] = useState<PhysioClinicSummary | null>(null);
+  const [claimCode, setClaimCode] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
   const inviteLink = inviteCode
     ? `${WEB_APP_URL}/login?code=${encodeURIComponent(inviteCode)}`
     : null;
@@ -218,11 +226,27 @@ export function PhysioPatientsScreen() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, clinic_name")
+        .select("display_name, clinic_name, clinic_id")
         .eq("id", user.id)
         .single();
       setPhysioName(profile?.display_name ?? null);
       setClinicName(profile?.clinic_name ?? null);
+    }
+
+    const { data: clinicRow } = await supabase.rpc("clinic_get_own");
+    if (clinicRow && typeof clinicRow === "object" && "id" in clinicRow && clinicRow.id) {
+      const row = clinicRow as PhysioClinicSummary;
+      setClinic(row);
+      if (row.name) setClinicName(row.name);
+      // Keep profile.clinic_name aligned with the org (invite clinic).
+      if (user && row.name) {
+        void supabase
+          .from("profiles")
+          .update({ clinic_name: row.name, clinic_id: row.id })
+          .eq("id", user.id);
+      }
+    } else {
+      setClinic(null);
     }
 
     const { data: code, error: codeError } = await supabase.rpc(
@@ -269,6 +293,32 @@ export function PhysioPatientsScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function claimClinic() {
+    const code = claimCode.trim();
+    if (!code) {
+      setClaimError("Introduce el código de alta de tu clínica.");
+      return;
+    }
+    setClaimBusy(true);
+    setClaimError(null);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("clinic_claim_invite", {
+        p_token: code,
+      });
+      if (rpcError) throw new Error(rpcError.message);
+      const row = (Array.isArray(data) ? data[0] : data) as PhysioClinicSummary | null;
+      if (!row?.id) throw new Error("No se pudo vincular la clínica.");
+      setClinic(row);
+      setClinicName(row.name);
+      setClaimCode("");
+      await load();
+    } catch (e) {
+      setClaimError(e instanceof Error ? e.message : "No se pudo vincular.");
+    } finally {
+      setClaimBusy(false);
+    }
+  }
 
   async function regenerateCode() {
     setCodeBusy(true);
@@ -664,6 +714,39 @@ export function PhysioPatientsScreen() {
         </Text>
         <AiOrientationDisclaimer style={{ marginBottom: 12 }} />
 
+        {clinic ? (
+          <PhysioClinicInfoCard clinic={clinic} />
+        ) : !loading ? (
+          <View style={styles.claimCard}>
+            <Text style={styles.claimTitle}>Vincula tu clínica</Text>
+            <Text style={styles.claimLead}>
+              Tu cuenta aún no está unida a una clínica. Pide el código de alta
+              al titular e introdúcelo aquí para ver la ficha del centro.
+            </Text>
+            <TextInput
+              style={styles.claimInput}
+              value={claimCode}
+              onChangeText={(v) => setClaimCode(v.toUpperCase())}
+              placeholder="Código de alta (ej. AB12CD)"
+              placeholderTextColor={Colors.textLight}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+            {claimError ? <Text style={styles.errorText}>{claimError}</Text> : null}
+            <Pressable
+              style={styles.claimBtn}
+              onPress={() => void claimClinic()}
+              disabled={claimBusy}
+            >
+              {claimBusy ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.claimBtnText}>Vincular clínica</Text>
+              )}
+            </Pressable>
+          </View>
+        ) : null}
+
         {error ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
@@ -921,6 +1004,47 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   errorText: { color: "#991B1B", fontSize: 13 },
+  claimCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 16,
+  },
+  claimTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: Colors.text,
+  },
+  claimLead: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    color: Colors.textSecondary,
+    marginBottom: 12,
+  },
+  claimInput: {
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 2,
+    color: Colors.text,
+    backgroundColor: Colors.background,
+    marginBottom: 10,
+  },
+  claimBtn: {
+    marginTop: 4,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  claimBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   card: {
     backgroundColor: Colors.white,
     borderRadius: 16,

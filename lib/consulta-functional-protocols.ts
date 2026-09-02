@@ -1711,8 +1711,9 @@ export function buildUniversalNonUrgentPathwayPrompt(bodyArea: string): string {
   const imagingEn = imagingAfterFailedRetest(bodyArea || "general", "en");
   return [
     "PROTOCOLO UNIVERSAL NO URGENTE (obligatorio en TODAS las zonas):",
-    "1) OBLIGATORIO: pide **Pruebas funcionales** (3–6 preguntas SÍ/NO en lenguaje cotidiano, SIN nombres clínicos). El paciente las responde con botones Sí/No; no pidas texto libre ni escalas.",
-    `2) Si los tests sugieren lesión/molestia relevante → reposo relativo ${UNIVERSAL_REST_HOURS.min}–${UNIVERSAL_REST_HOURS.max} h (frío/elevación si hay inflamación).`,
+    "0) Si PRIORIDAD ALTA / hospital / banderas rojas → IGNORA este protocolo: omite **Pruebas funcionales**; hielo/reposo solo en recomendaciones; hospital en **Qué debes hacer ahora**.",
+    "1) OBLIGATORIO (solo si NO es urgente): pide **Pruebas funcionales** (3–6 preguntas SÍ/NO de movimiento, SIN nombres clínicos). NO pongas hielo/reposo/elevación aquí — eso va en **Qué hacer mientras tanto**. El paciente responde con botones Sí/No; no pidas texto libre ni escalas.",
+    `2) Si los tests sugieren lesión/molestia relevante → reposo relativo ${UNIVERSAL_REST_HOURS.min}–${UNIVERSAL_REST_HOURS.max} h (frío/elevación si hay inflamación) en recomendaciones, no como prueba.`,
     `3) Retest: repetir los MISMOS tests tras ese plazo (aviso ~${UNIVERSAL_REST_HOURS.notify} h).`,
     "4) Si el retest no mejora o sigue doliendo → imagen adaptada a la zona (NO en la primera pasada, salvo urgencia).",
     `   Imagen sugerida para "${bodyArea || "esta zona"}": ES: ${imagingEs} | EN: ${imagingEn}`,

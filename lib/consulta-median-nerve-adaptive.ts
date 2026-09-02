@@ -731,7 +731,7 @@ export function localizeMedianNerveLabel(id: string, fallback: string, locale: C
 
 export function localizeMedianNerveOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return MEDIAN_NERVE_OPTION_EN[option] ?? option;
+  return MEDIAN_NERVE_OPTION_EN[option as keyof typeof MEDIAN_NERVE_OPTION_EN] ?? option;
 }
 
 export function localizeMedianNerveSection(section: string, locale: ConsultLocale): string {

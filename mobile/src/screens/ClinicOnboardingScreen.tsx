@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthBackBar } from "../components/AuthBackBar";
 import { Colors } from "../lib/colors";
 import { clinicMapsQuery, googleMapsSearchUrl } from "../lib/clinic-maps";
+import { scrollFocusedInputAboveKeyboard } from "../lib/scroll-focused-input-above-keyboard";
 import { supabase } from "../lib/supabase";
 
 type Props = { onComplete: () => void };
@@ -35,6 +36,52 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetY = useRef(0);
+
+  const ensureFocusedFieldVisible = useCallback(() => {
+    scrollFocusedInputAboveKeyboard(
+      scrollRef.current,
+      scrollOffsetY.current,
+      keyboardHeight,
+      32,
+    );
+  }, [keyboardHeight]);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (keyboardHeight <= 0) return;
+    const t1 = setTimeout(ensureFocusedFieldVisible, 50);
+    const t2 = setTimeout(ensureFocusedFieldVisible, 280);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [keyboardHeight, ensureFocusedFieldVisible]);
+
+  function onFieldFocus() {
+    // Wait for keyboard + layout, then scroll the focused input above it.
+    setTimeout(ensureFocusedFieldVisible, 100);
+    setTimeout(ensureFocusedFieldVisible, 350);
+  }
 
   function validateStep1(): boolean {
     if (!ownerName.trim()) {
@@ -75,18 +122,8 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada.");
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_type")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile?.account_type !== "clinic") {
-        const { error: repairErr } = await supabase
-          .from("profiles")
-          .update({ account_type: "clinic" })
-          .eq("id", user.id);
-        if (repairErr) throw new Error(repairErr.message);
-      }
+      // clinic_create_own requires JWT app_metadata.account_type=clinic
+      // (or an existing clinic profile). It does not promote incomplete patients.
 
       const descParts = [
         description.trim(),
@@ -138,13 +175,24 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           style={styles.flex}
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            keyboardHeight > 0
+              ? { paddingBottom: Math.max(64, keyboardHeight + 48) }
+              : null,
+          ]}
           keyboardShouldPersistTaps="handled"
-          onScrollBeginDrag={Keyboard.dismiss}
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+          onScroll={(e) => {
+            scrollOffsetY.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
         >
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
           <Text style={styles.title}>Alta de clínica</Text>
@@ -161,6 +209,7 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={ownerName}
                 onChangeText={setOwnerName}
+                onFocus={onFieldFocus}
                 placeholder="Nombre y apellidos"
                 placeholderTextColor={Colors.textLight}
               />
@@ -170,6 +219,7 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={clinicName}
                 onChangeText={setClinicName}
+                onFocus={onFieldFocus}
                 placeholder="Ej: Clínica AIKinora"
                 placeholderTextColor={Colors.textLight}
               />
@@ -179,6 +229,7 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={phone}
                 onChangeText={setPhone}
+                onFocus={onFieldFocus}
                 placeholder="+34 600 000 000"
                 placeholderTextColor={Colors.textLight}
                 keyboardType="phone-pad"
@@ -225,6 +276,7 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={address}
                 onChangeText={setAddress}
+                onFocus={onFieldFocus}
                 placeholder="Calle y número"
                 placeholderTextColor={Colors.textLight}
               />
@@ -234,6 +286,7 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={city}
                 onChangeText={setCity}
+                onFocus={onFieldFocus}
                 placeholder="Madrid"
                 placeholderTextColor={Colors.textLight}
               />
@@ -243,6 +296,7 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={postalCode}
                 onChangeText={setPostalCode}
+                onFocus={onFieldFocus}
                 placeholder="28001"
                 placeholderTextColor={Colors.textLight}
                 keyboardType="number-pad"
@@ -253,6 +307,7 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={styles.input}
                 value={website}
                 onChangeText={setWebsite}
+                onFocus={onFieldFocus}
                 placeholder="https://"
                 placeholderTextColor={Colors.textLight}
                 autoCapitalize="none"
@@ -264,9 +319,11 @@ export function ClinicOnboardingScreen({ onComplete }: Props) {
                 style={[styles.input, styles.area]}
                 value={description}
                 onChangeText={setDescription}
+                onFocus={onFieldFocus}
                 placeholder="Deportiva, pediátrica, suelo pélvico…"
                 placeholderTextColor={Colors.textLight}
                 multiline
+                blurOnSubmit={false}
               />
               <Text style={styles.hint}>
                 Visible en la ficha pública de la clínica.
@@ -359,7 +416,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     marginBottom: 8,
   },
-  area: { minHeight: 80, textAlignVertical: "top" },
+  area: { minHeight: 100, textAlignVertical: "top" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
   chip: {
     borderWidth: 1.5,

@@ -11,11 +11,17 @@ import {
   TextInput,
   View,
 } from "react-native";
+import type { RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { WEB_APP_URL } from "../lib/admin-api";
 import {
+  clinicInstagramHref,
   clinicMailtoHref,
   clinicTelHref,
+  clinicTikTokHref,
   clinicWebsiteHref,
+  clinicWhatsAppHref,
   formatClinicPostDate,
   type ClinicFeedPost,
   type ClinicPost,
@@ -26,13 +32,18 @@ import {
   normalizeClinicAccent,
   parseClinicSpecialties,
 } from "../lib/clinic-brand";
+import { displayClinicHoursText } from "../lib/clinic-hours";
 import { clinicMapsQuery, googleMapsSearchUrl } from "../lib/clinic-maps";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
+import type { TabParamList } from "../navigation/AppTabs";
 
 type Tab = "explorar" | "guardadas" | "novedades";
 
 export function ClinicSearchScreen() {
+  const route = useRoute<RouteProp<TabParamList, "ClinicSearch">>();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<TabParamList, "ClinicSearch">>();
   const [tab, setTab] = useState<Tab>("explorar");
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
@@ -42,6 +53,13 @@ export function ClinicSearchScreen() {
   const [slug, setSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const next = route.params?.clinicSlug?.trim();
+      if (next) setSlug(next);
+    }, [route.params?.clinicSlug])
+  );
 
   const loadExplore = useCallback(async () => {
     setLoading(true);
@@ -81,7 +99,15 @@ export function ClinicSearchScreen() {
   }, [tab, slug, loadExplore, loadFavorites, loadFeed]);
 
   if (slug) {
-    return <ClinicProfileView slug={slug} onBack={() => setSlug(null)} />;
+    return (
+      <ClinicProfileView
+        slug={slug}
+        onBack={() => {
+          setSlug(null);
+          navigation.setParams({ clinicSlug: undefined });
+        }}
+      />
+    );
   }
 
   const list = tab === "guardadas" ? favorites : results;
@@ -245,6 +271,7 @@ function ClinicProfileView({
       }
       setClinic(row);
       setPosts((postRows as ClinicPost[]) ?? []);
+      setPageTab(((postRows as ClinicPost[]) ?? []).length > 0 ? "novedades" : "sobre");
       const { data: fav } = await supabase.rpc("clinic_is_favorited", {
         p_clinic_id: row.id,
       });
@@ -296,6 +323,11 @@ function ClinicProfileView({
 
   const accent = normalizeClinicAccent(clinic.accent_color);
   const chips = parseClinicSpecialties(clinic.specialties);
+  const hoursDisplay = displayClinicHoursText(clinic.hours);
+  const waHref = clinicWhatsAppHref(clinic.whatsapp, clinic.phone);
+  const bookingHref = clinic.booking_url
+    ? clinicWebsiteHref(clinic.booking_url)
+    : null;
 
   return (
     <ScrollView contentContainerStyle={styles.profileWrap}>
@@ -337,6 +369,12 @@ function ClinicProfileView({
           {clinic.phone ? (
             <Action label="Llamar" onPress={() => void Linking.openURL(clinicTelHref(clinic.phone!))} />
           ) : null}
+          {waHref ? (
+            <Action label="WhatsApp" onPress={() => void Linking.openURL(waHref)} />
+          ) : null}
+          {bookingHref ? (
+            <Action label="Cita" onPress={() => void Linking.openURL(bookingHref)} />
+          ) : null}
           {clinic.contact_email ? (
             <Action
               label="Email"
@@ -350,6 +388,18 @@ function ClinicProfileView({
             <Action
               label="Web"
               onPress={() => void Linking.openURL(clinicWebsiteHref(clinic.website!))}
+            />
+          ) : null}
+          {clinic.instagram ? (
+            <Action
+              label="Instagram"
+              onPress={() => void Linking.openURL(clinicInstagramHref(clinic.instagram!))}
+            />
+          ) : null}
+          {clinic.tiktok ? (
+            <Action
+              label="TikTok"
+              onPress={() => void Linking.openURL(clinicTikTokHref(clinic.tiktok!))}
             />
           ) : null}
           <Action label="Compartir" onPress={() => void share()} />
@@ -383,10 +433,10 @@ function ClinicProfileView({
         ) : (
           <>
             {clinic.description ? <Text style={styles.body}>{clinic.description}</Text> : null}
-            {clinic.hours ? (
+            {hoursDisplay ? (
               <>
                 <Text style={styles.section}>Horario</Text>
-                <Text style={styles.body}>{clinic.hours}</Text>
+                <Text style={styles.body}>{hoursDisplay}</Text>
               </>
             ) : null}
             {clinic.address ? (

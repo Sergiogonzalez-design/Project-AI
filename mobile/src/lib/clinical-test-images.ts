@@ -835,7 +835,9 @@ export function illustratedClinicalTestsPromptBlock(): string {
   }).join("\n");
 
   return `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
-Cuando listes pruebas/maniobras/tests/pruebas funcionales numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
+ÁMBITO: SOLO chat/informe para FISIOTERAPEUTA (listas de exploración en consulta). NUNCA uses este catálogo en la sección **Pruebas funcionales** que ve el paciente (Sí/No en casa): ahí solo movimientos cotidianos autoejecutables, sin nombres de maniobras clínicas.
+
+Cuando listes pruebas/maniobras/tests numeradas PARA EL FISIO (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
 
 VÍDEOS (CRÍTICO — fuerza del producto):
 - Si el fisioterapeuta pide pruebas, tests, maniobras o «pruebas funcionales» de una zona, responde SIEMPRE con lista numerada usando EXACTAMENTE los nombres canónicos del grupo de ESA zona.

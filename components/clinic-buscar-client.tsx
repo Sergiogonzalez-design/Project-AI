@@ -11,6 +11,7 @@ type Tab = "explorar" | "guardadas" | "novedades";
 export function ClinicBuscarClient() {
   const supabase = createClient();
   const [tab, setTab] = useState<Tab>("explorar");
+  const [signedIn, setSignedIn] = useState(false);
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
   const [results, setResults] = useState<ClinicSearchCard[]>([]);
@@ -34,6 +35,12 @@ export function ClinicBuscarClient() {
   const loadFavorites = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setFavorites([]);
+      setLoading(false);
+      return;
+    }
     const { data, error: err } = await supabase.rpc("clinic_list_favorites");
     if (err) setError(err.message);
     else setFavorites((data as ClinicSearchCard[]) ?? []);
@@ -43,10 +50,20 @@ export function ClinicBuscarClient() {
   const loadFeed = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setFeed([]);
+      setLoading(false);
+      return;
+    }
     const { data, error: err } = await supabase.rpc("clinic_feed_posts");
     if (err) setError(err.message);
     else setFeed((data as ClinicFeedPost[]) ?? []);
     setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
   }, [supabase]);
 
   useEffect(() => {
@@ -191,7 +208,9 @@ export function ClinicBuscarClient() {
               return (
                 <p className="text-sm text-slate-500">
                   {tab === "guardadas"
-                    ? "Todavía no has guardado ninguna clínica."
+                    ? signedIn
+                      ? "Todavía no has guardado ninguna clínica."
+                      : "Inicia sesión para guardar clínicas."
                     : "No hay clínicas que coincidan. Prueba otra ciudad o nombre."}
                 </p>
               );

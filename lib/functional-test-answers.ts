@@ -1,3 +1,7 @@
+import {
+  filterPatientSafeFunctionalTests,
+} from "@/lib/patient-safe-functional-tests";
+
 export type FunctionalTestItem = {
   n: number;
   /** May include a trailing ⟦media-id⟧ marker for demo video lookup. */
@@ -44,7 +48,7 @@ export function splitFunctionalTests(content: string): {
   if (headingIndex === -1) return null;
 
   const tests: FunctionalTestItem[] = [];
-  let lastTestLine = -1;
+  let lastTestLine = headingIndex;
   for (let i = headingIndex + 1; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (!trimmed) continue;
@@ -62,14 +66,32 @@ export function splitFunctionalTests(content: string): {
     }
   }
 
-  if (tests.length < 2) return null;
-
+  // Always consume the numbered block so clinician names never leak as markdown.
+  const safe = filterPatientSafeFunctionalTests(tests);
   return {
     before: lines.slice(0, headingIndex).join("\n").trimEnd(),
     heading,
-    tests,
+    tests: safe,
     after: lines.slice(lastTestLine + 1).join("\n").trim(),
   };
+}
+
+/** Rebuild the section without clinician-named tests (safe to show as markdown). */
+export function reconstructFunctionalTestsSection(parsed: {
+  before: string;
+  heading: string;
+  tests: FunctionalTestItem[];
+  after: string;
+}): string {
+  const list = parsed.tests
+    .map((t) => `${t.n}. ${t.prompt.replace(/⟦[a-z0-9-]+⟧\s*$/i, "").trim()}`)
+    .join("\n");
+  const parts = [parsed.before];
+  if (parsed.tests.length > 0) {
+    parts.push(`**${parsed.heading}**`, list);
+  }
+  parts.push(parsed.after);
+  return parts.filter((p) => p && p.trim()).join("\n\n");
 }
 
 export function formatFunctionalTestAnswers(
@@ -102,7 +124,7 @@ export function latestUnansweredFunctionalTests(
     }
     if (msg.role !== "assistant") continue;
     const parsed = splitFunctionalTests(msg.content);
-    if (parsed) {
+    if (parsed && parsed.tests.length >= 2) {
       return {
         messageId: msg.id,
         tests: parsed.tests,

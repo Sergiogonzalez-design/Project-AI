@@ -83,7 +83,18 @@ const LABEL_BY_ID = new Map(
 );
 
 export function physioEquipmentLabel(id: string): string {
-  return LABEL_BY_ID.get(id) ?? id;
+  const known = LABEL_BY_ID.get(id);
+  if (known) return known;
+  // Clinic profile «Otro» entries: custom:{categoryId}:{label}
+  if (id.startsWith("custom:")) {
+    const rest = id.slice("custom:".length);
+    const colon = rest.indexOf(":");
+    if (colon > 0) {
+      const label = rest.slice(colon + 1).trim();
+      if (label) return label;
+    }
+  }
+  return id;
 }
 
 export function formatPhysioEquipmentLabels(ids: string[] | null | undefined): string[] {

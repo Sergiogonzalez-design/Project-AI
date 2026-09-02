@@ -1037,7 +1037,7 @@ export function localizeNeckLabel(id: string, fallback: string, locale: ConsultL
 }
 export function localizeNeckOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return NECK_OPTION_EN[option] ?? option;
+  return NECK_OPTION_EN[option as keyof typeof NECK_OPTION_EN] ?? option;
 }
 export function localizeNeckSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (NECK_SECTION_LABELS as any)[section] ?? section;

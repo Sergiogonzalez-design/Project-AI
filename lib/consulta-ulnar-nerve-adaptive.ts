@@ -750,7 +750,7 @@ export function localizeUlnarNerveLabel(id: string, fallback: string, locale: Co
 
 export function localizeUlnarNerveOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return ULNAR_NERVE_OPTION_EN[option] ?? option;
+  return ULNAR_NERVE_OPTION_EN[option as keyof typeof ULNAR_NERVE_OPTION_EN] ?? option;
 }
 
 export function localizeUlnarNerveSection(section: string, locale: ConsultLocale): string {

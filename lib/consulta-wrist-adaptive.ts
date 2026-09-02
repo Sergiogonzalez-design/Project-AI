@@ -826,7 +826,7 @@ export function localizeWristLabel(id: string, fallback: string, locale: Consult
 }
 export function localizeWristOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return WRIST_OPTION_EN[option] ?? option;
+  return WRIST_OPTION_EN[option as keyof typeof WRIST_OPTION_EN] ?? option;
 }
 export function localizeWristSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (WRIST_SECTION_LABELS as any)[section] ?? section;

@@ -695,7 +695,7 @@ export function localizePlantarFasciaLabel(id: string, fallback: string, locale:
 
 export function localizePlantarFasciaOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return PLANTAR_FASCIA_OPTION_EN[option] ?? option;
+  return PLANTAR_FASCIA_OPTION_EN[option as keyof typeof PLANTAR_FASCIA_OPTION_EN] ?? option;
 }
 
 export function localizePlantarFasciaSection(section: string, locale: ConsultLocale): string {

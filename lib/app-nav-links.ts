@@ -13,6 +13,7 @@ export const PATIENT_NAV_LINKS: AppNavLink[] = [
 export const PHYSIO_NAV_LINKS: AppNavLink[] = [
   { href: "/fisio", label: "Clínica" },
   { href: "/fisio/consulta", label: "Consulta" },
+  { href: "/buscar", label: "Buscar" },
   { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "/perfil", label: "Perfil" },
 ];
@@ -21,7 +22,7 @@ export const PHYSIO_NAV_LINKS: AppNavLink[] = [
 export const CLINIC_NAV_LINKS: AppNavLink[] = [
   { href: "/clinica/consulta", label: "Consulta" },
   { href: "/clinica", label: "Clínica" },
-  { href: "/clinica/equipo", label: "Equipo" },
+  { href: "/buscar", label: "Buscar" },
   { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "/perfil", label: "Perfil" },
 ];

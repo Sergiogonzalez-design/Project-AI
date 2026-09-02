@@ -38,6 +38,10 @@ Purpose · Position · Procedure · Positive · Pain location · Familiar pain �
 | `evidence-levels-A-D.md` | Jerarquía A–D / insufficient |
 | `test-reliability-framework.md` | Fiabilidad cualitativa; MTrP cautela |
 | `referred-pain-*.md` | Cervical, hombro, lumbar, cadera, rodilla, tobillo/pie, codo/muñeca, cabeza |
+| `readaptation-master.md` | Marco fases, dolor ≤3/10, regla 24 h, carga Gabbett, Rio isométricos, red flags |
+| `readaptation-protocols-upper.md` | Hombro RCRSP, inestabilidad prep, codo, muñeca/mano, cervical |
+| `readaptation-protocols-lower.md` | GTPS, ingle, PFPS, rotuliano, LCA temprano, esguince, fascia plantar |
+| `readaptation-protocols-spine-core.md` | Lumbar McGill/McKenzie cautela, torácica, core, respiración |
 
 Razonamiento transversal (también ingestables):
 

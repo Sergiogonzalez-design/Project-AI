@@ -38,7 +38,9 @@ function isGuestAllowedPath(pathname: string): boolean {
     pathname === "/terminos" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/") ||
-    pathname.startsWith("/centro/")
+    pathname.startsWith("/centro/") ||
+    pathname === "/buscar" ||
+    pathname.startsWith("/buscar/")
   );
 }
 
@@ -119,6 +121,8 @@ export async function middleware(request: NextRequest) {
     pathname === "/privacidad" ||
     pathname === "/terminos" ||
     pathname.startsWith("/centro/") ||
+    pathname === "/buscar" ||
+    pathname.startsWith("/buscar/") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/supabase-health" ||
@@ -254,6 +258,8 @@ export async function middleware(request: NextRequest) {
         pathname === "/sobre-nosotros" ||
         pathname.startsWith("/sobre-nosotros/") ||
         pathname.startsWith("/centro/") ||
+        pathname === "/buscar" ||
+        pathname.startsWith("/buscar/") ||
         pathname === "/privacidad" ||
         pathname === "/terminos";
       if (!onClinicArea && !onSharedSite) {
@@ -270,6 +276,8 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith("/perfil/") ||
         pathname === "/sobre-nosotros" ||
         pathname.startsWith("/sobre-nosotros/") ||
+        pathname === "/buscar" ||
+        pathname.startsWith("/buscar/") ||
         pathname === "/privacidad" ||
         pathname === "/terminos" ||
         pathname.startsWith("/centro/");

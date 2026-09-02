@@ -730,7 +730,7 @@ export function localizeRadialNerveLabel(id: string, fallback: string, locale: C
 
 export function localizeRadialNerveOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return RADIAL_NERVE_OPTION_EN[option] ?? option;
+  return RADIAL_NERVE_OPTION_EN[option as keyof typeof RADIAL_NERVE_OPTION_EN] ?? option;
 }
 
 export function localizeRadialNerveSection(section: string, locale: ConsultLocale): string {

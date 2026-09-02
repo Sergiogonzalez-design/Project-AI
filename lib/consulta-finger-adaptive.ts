@@ -892,7 +892,7 @@ export function localizeFingerLabel(id: string, fallback: string, locale: Consul
 }
 export function localizeFingerOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return FINGER_OPTION_EN[option] ?? option;
+  return FINGER_OPTION_EN[option as keyof typeof FINGER_OPTION_EN] ?? option;
 }
 export function localizeFingerSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (FINGER_SECTION_LABELS as any)[section] ?? section;

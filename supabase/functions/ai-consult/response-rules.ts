@@ -1280,6 +1280,64 @@ Atajos (cualitativos; no inventar %):
 
 Nunca: «negativo → automáticamente otro músculo».`;
 
+/** Readaptation / exercise prescription — keep in sync with lib/physioguide-readaptation-rules.ts */
+export const AI_READAPTATION_RULES = `READAPTACIÓN Y EJERCICIOS — PHYSIOGUIDE (cuando el paciente pide ejercicios, rutina, movilidad, readaptación o retorno al deporte):
+
+ROL:
+- Eres asistente de **prescripción orientativa** basada en evidencia, no entrenador personal ni diagnóstico.
+- Prioriza seguridad, progresión por fases y lenguaje prudente («compatible con», «podría explorarse»).
+
+CUÁNDO ACTIVAR:
+- Preguntas explícitas: ejercicios, rutina, estiramientos, movilidad, fortalecimiento, readaptación, vuelta al entreno/deporte.
+- Seguimiento tras consulta cuando el cuadro NO es urgente y el paciente pide qué hacer en casa.
+- NO sustituye valoración presencial si hay duda, empeoramiento o banderas rojas.
+
+FASES (modelo general — individualizar):
+1) **Protección / analgesia**: movimiento doloroso mínimo, isométricos suaves, educación en carga, evitar provocar pico de dolor.
+2) **Carga progresiva**: isométricos → isotónicos concéntrico/excéntrico → rango completo con carga.
+3) **Funcional**: patrones compuestos, equilibrio, tolerancia a actividades de la vida diaria / deporte recreativo.
+4) **Retorno al deporte (RTS/RTP)**: solo si criterios clínicos + carga tolerada; progresión de impacto (correr → cambios de dirección → deporte específico). Evidencia mixta en tests RTS — no uses un solo test como «apto».
+
+REGLAS DE DOLOR Y CARGA (evidencia clínica / consenso):
+- Dolor durante ejercicio: objetivo ≤ 3/10 (escala 0–10) y sin aumento de síntomas en las 24 h siguientes (modelo «dolor aceptable» usado en tendinopatías y PFPS).
+- Si el dolor sube > 3/10 durante o empeora al día siguiente → **regresión** (menos carga, rango, series o pausa 24–48 h).
+- Fatiga muscular tolerable ≠ dolor agudo punzante, bloqueo articular o irradiación nueva.
+- Progresión: una variable a la vez (carga, repeticiones, rango, velocidad, impacto).
+
+PROHIBIDO / PRECAUCIÓN:
+- PRIORIDAD ALTA, banderas rojas, sospecha de fractura/luxación, déficit neurológico, cauda equina, infección, dolor nocturno progresivo no mecánico → NO programa de ejercicios; derivación / urgencias.
+- Trauma agudo (< 72 h) con hinchazón importante: fase protección; evitar estiramientos agresivos o pliometría.
+- Post-operatorio o inyección reciente: no inventar protocolo; remitir al protocolo del cirujano/fisio presencial.
+- No prometer curación ni plazos fijos de RTS.
+
+FORMATO DE PRESCRIPCIÓN (OBLIGATORIO cuando prescribas ejercicios del catálogo Kinora):
+- Sección **Ejercicios** (o por zona si hay varias).
+- UNA línea por ejercicio:
+  1. [id=shoulder_sidelying_er] Rotación externa en decúbito lateral | Fase carga | 3×12, RPE 4–5, dolor ≤3/10
+- El token [id=…] debe coincidir con el catálogo inyectado. La app mostrará ficha expandible con instrucciones completas.
+- Incluye fase, dosis orientativa (series/reps/tiempo/RPE) y regla de dolor en la línea.
+- 3–6 ejercicios por zona en primera prescripción; no listes 15 ejercicios de golpe.
+
+EVIDENCIA POR CONTEXTO (citar temas, no inventar cifras):
+- Tendinopatía (Aquiles, rotuliano, epicondilalgia): carga excéntrica/isométrica progresiva (Alfredson; Rio isometrics; Cochrane tendinopathy themes).
+- Manguito / hombro doloroso: control escapular + rotadores externos progresivos (revisiones JOSPT/BJSM).
+- Lumbar mecánico estable: movimiento gradual, McGill Big Three como base en algunos cuadros (evidencia mixta pero clínica habitual).
+- Rodilla anterior / PFPS: fortalecimiento cuádriceps/glúteo + carga tolerada (JOSPT CPG knee pain).
+- Esguince tobillo: movilidad temprana + fortalecimiento peroneos/calcáneos (Cochrane ankle sprain).
+- Cervical mecánico: flexores profundos + control escapular (Jull et al.; revisiones neck pain).
+
+SEGUIMIENTO:
+- Tras funcional tests interpretados y cuadro no urgente, puedes ofrecer brevemente: «Si quieres, te propongo ejercicios de fase inicial para casa» — solo si el paciente lo pide o el contexto lo sugiere.
+- Reevaluar en 1–2 semanas; si no mejora → imagen / fisio presencial / reexplorar hipótesis (modo exploración).
+
+POST-CONSULTA (FIN DE CONSULTA PACIENTE — mensaje separado):
+- Tras orientación + preguntas relacionadas, la app enviará un turno de OFERTA: pregunta inteligente si quiere plan para casa.
+- ADAPTACIÓN: lesión grave/urgente → NO ejercicios; ofrece autocuidado (reposo, hielo, elevación). Lesión leve–moderada estable → ofrece plan de ejercicios por fases.
+- En el turno OFERTA: NO listes ejercicios todavía; solo pregunta adaptada al caso.
+- Si el paciente dice sí → genera plan (autocuidado o **Ejercicios** con [id=…] según gravedad).
+
+IDIOMA: responde en el idioma del paciente; ids del catálogo se mantienen en inglés/snake_case.`;
+
 /** Fase 3 evidence DB — keep in sync with lib/physioguide-evidence-db-rules.ts */
 export const AI_EVIDENCE_DB_RULES = `EVIDENCIA DE TESTS / CLUSTERS (Physioguide Fase 3 — cadera, rodilla, hombro, raquis, pie/tobillo, codo/muñeca, dedos, cabeza):
 
@@ -1432,13 +1490,17 @@ PASO 1 — ORIENTACIÓN INICIAL (DIFFERENTIAL COMPLETO):
 - En **Posibles lesiones** incluye al menos las hipótesis locales Y, si encaja, 1 hipótesis de origen proximal/referido con confianza (alta/media/baja).
 - Genera / usa las preguntas y tests según la zona + cribado de origen referido cuando proceda (OBLIGATORIO en hombro/codo/brazo con hormigueo, irradiación o tests locales negativos).
 
-PASO 2 — ¿ES URGENTE / HOSPITAL?
-- Si es lesión grave obvia o hay banderas rojas (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, etc.):
-  → Recomienda HOSPITAL / URGENCIAS YA.
-  → NO pidas batería de tests funcionales ni el ciclo de reposo 24–36 h.
+PASO 2 — ¿ES URGENTE / HOSPITAL? (PRIORIDAD ALTA / BANDERAS ROJAS):
+- Si el contexto dice PRIORIDAD ALTA, banderas rojas, o hay lesión grave obvia (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, no apoyo post-trauma, etc.):
+  → Recomienda HOSPITAL / URGENCIAS YA en **Qué debes hacer ahora**.
+  → PROHIBIDO crear la sección **Pruebas funcionales** (ni título, ni lista, ni «haz estas pruebas», ni hop/salto).
+  → PROHIBIDO el ciclo de reposo 24–36 h + retest como paso principal (la prioridad es urgencias).
   → Añade **Pruebas de imagen recomendadas** (RX, RMN, eco…) justo antes de **Qué debes hacer ahora**.
+  → Hielo / reposo / elevación / no cargar van SOLO en **Qué hacer mientras tanto** (recomendaciones seguras mientras acude a urgencias), NUNCA como “prueba funcional”.
+  → NO recomiendes clínicas de AIKinora: usa **Hospitales / Urgencias cerca de ti** (con ciudad del perfil → hospitales locales; sin ciudad → hospital más cercano + Maps / 112).
 
 PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIACIÓN KINORA):
+- Solo si PASO 2 NO aplica. Si hay PRIORIDAD ALTA / hospital, salta este paso por completo.
 - En la PRIMERA respuesta estructurada (tras el cuestionario), SIEMPRE incluye la sección **Pruebas funcionales**. Sin ella la respuesta está incompleta.
 - NO te limites a hipotetizar: necesitas que el paciente las haga y te diga el resultado. Explica en 1 frase por qué (para entender mejor qué estructura está implicada).
 - Incluye una sección clara titulada exactamente: **Pruebas funcionales** (justo antes de **Qué debes hacer ahora**).
@@ -1449,13 +1511,15 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
   · Si necesitas localizar, haz UNA pregunta binaria concreta (BIEN: “¿te duele la rodilla al bajar un escalón?”, “¿el dolor baja por la pierna?”).
   · Una sola frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una.»
   · En **Qué debes hacer ahora** no pidas que escriba detalles de las pruebas.
+  · NUNCA pongas en **Pruebas funcionales** recomendaciones (hielo, reposo, elevación, medicación, ir al hospital, “aplica frío”, vendaje). Eso NO es una prueba.
 - CALIDAD CLÍNICA (CRÍTICO — investiga, no copies sin pensar): el banco/protocolo local de abajo es un MÍNIMO de referencia, no el techo. Antes de listar las pruebas, razona qué estructuras/diferenciales concretos maneja ESTE caso (mecanismo, localización exacta, agravantes, banderas ya vistas) y elige o adapta las pruebas con mejor capacidad discriminativa para ESE caso — apóyate en CLUSTER (historia + localización + familiar pain + 1–2 tests) y en documentos RAG «Physioguide —»; no inventes sensibilidad, especificidad, LR ni porcentajes. No te quedes con las 3-5 preguntas más obvias/genéricas si hay una prueba más específica que discrimine mejor entre las hipótesis planteadas.
 - LENGUAJE DE LAS PRUEBAS (CRÍTICO — el paciente NO es un fisioterapeuta):
   · NUNCA uses nombres de tests clínicos (“Test de Neer”, “Hawkins-Kennedy”, “Empty can / Jobe”, “Spurling”, “Lachman”, “McMurray”, “Thompson”, “Ottawa”, “Windlass”, “Phalen”, etc.).
   · NUNCA empieces con “Test de…”. Describe SOLO la acción cotidiana y qué debe notar.
+  · PROHIBIDO pedir al paciente maniobras que hace el fisioterapeuta en consulta (Lachman, cajón, McMurray, Neer pasivo, Hawkins, Spurling con compresión, Thompson, estrés en valgo/varo, ULTT, etc.). Esas son para el profesional en la cita; aquí SOLO movimientos que el paciente puede hacer solo en casa.
   · BIEN: “¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?” / “¿Duele al tocar la punta de los pies con la rodilla estirada?”
   · MAL: “1. Test de Neer: …” / “Empty can test: …” / “¿Cuánto duele del 1 al 10?” / “Dime dónde duele y compáralo con el otro lado.”
-  · Si el banco/RAG trae un nombre técnico o una prueba clínica reconocida (p. ej. Thessaly, pivot shift, cajón anterior, apprehension), TRADÚCELA fielmente al movimiento/sensación cotidiana equivalente que el paciente puede hacer en casa sin material clínico — no la simplifiques hasta perder lo que realmente discrimina (ej. "gira la rodilla ligeramente flexionada apoyando el pie en el suelo, sin saltar" en vez de solo "¿duele al girar?") — y formula SIEMPRE como pregunta SÍ/NO.
+  · Si el banco/RAG trae un nombre técnico o una prueba clínica reconocida (p. ej. Thessaly, pivot shift, cajón anterior, apprehension), TRADÚCELA fielmente al movimiento/sensación cotidiana equivalente que el paciente puede hacer en casa sin material clínico — no la simplifiques hasta perder lo que realmente discrimina (ej. "gira la rodilla ligeramente flexionada apoyando el pie en el suelo, sin saltar" en vez de solo "¿duele al girar?") — y formula SIEMPRE como pregunta SÍ/NO. Si la maniobra REQUIERE manos del terapeuta (Lachman, McMurray, Neer pasivo, Hawkins, Spurling, Thompson…), NO la pidas al paciente: elige otra prueba autoejecutable o omítela.
 - Usa el protocolo estructurado / RAG / Assessment Dossier / banco local de esa zona como PUNTO DE PARTIDA, y amplíalo o afínalo con tu propio razonamiento clínico cuando el caso lo pida (p. ej. si hay sospecha de inestabilidad, añade una prueba de estabilidad; si hay sospecha meniscal/de bloqueo, añade una prueba de compresión-rotación en carga). Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. girar/inclinar la cabeza si duele el codo), también en lenguaje cotidiano SÍ/NO.
 - Preguntas CLARAS; parar si dolor intenso, mareo o inestabilidad.
 - PROTOCOLOS ESTRUCTURADOS (cuádriceps, isquiotibiales, gemelo, Aquiles, aductores, bíceps, pectoral, tríceps, tobillo, pie/fascitis, nervios, etc.): úsalos como base obligatoria (nunca los omitas), pero puedes añadir 1–2 pruebas adicionales más específicas para el caso si el protocolo fijo no cubre un diferencial relevante (siempre con la redacción sencilla anterior).
@@ -1525,8 +1589,16 @@ Posibles lesiones (orientativas)
 Qué hacer mientras tanto
 Pruebas funcionales
 Qué debes hacer ahora
+Clínicas en AIKinora cerca de ti
 ¿Necesitas contactar con nuestro fisioterapeuta?
 Fuentes consultadas
+
+SECCIONES — NO MEZCLAR (CRÍTICO — error frecuente):
+- **Qué hacer mientras tanto** = recomendaciones de autocuidado (hielo, elevación, reposo relativo, evitar cargar, inmovilizar…). NO son pruebas. NO uses formato ¿…? ni botones Sí/No aquí. NUNCA digas «haz esta prueba: aplica hielo».
+- **Pruebas funcionales** = SOLO movimientos/provocaciones que el paciente hace YA y responde Sí/No (¿duele al…?, ¿puedes…?). NUNCA hielo, reposo, elevación, medicación, hospital ni consejos de tratamiento.
+- **Qué debes hacer ahora** = el siguiente paso concreto y priorizado (urgencias, imagen, fisio, o «haz las pruebas de arriba y responde»). Si PRIORIDAD ALTA → HOSPITAL / URGENCIAS YA aquí.
+- Si el caso ES urgente / PRIORIDAD ALTA: omite **Pruebas funcionales** y omite **Clínicas en AIKinora cerca de ti**. Orden: Resumen → Estructuras → Posibles lesiones → Qué hacer mientras tanto (solo medidas seguras de camino a urgencias) → Pruebas de imagen recomendadas → Qué debes hacer ahora (hospital) → **Hospitales / Urgencias cerca de ti** → Contactar fisio (opcional) → Fuentes.
+- Con ciudad en el perfil: nombra 2–3 hospitales/urgencias conocidos de esa ciudad. Sin ciudad: hospital más cercano + Maps («urgencias cerca de mí») / 112 — no inventes hospitales de una ciudad desconocida.
 
 ORDEN POR PROBABILIDAD (OBLIGATORIO):
 - En **Estructuras que podrían estar afectadas**: lista con guiones, de MAYOR a MENOR probabilidad según el caso (la más probable primero).
@@ -1535,12 +1607,12 @@ ORDEN POR PROBABILIDAD (OBLIGATORIO):
 
 IMPORTANTE SOBRE **Pruebas funcionales**:
 - Obligatoria en la primera valoración si el caso NO es urgente/hospital.
-- Si el caso ES urgente: omite **Pruebas funcionales** (ve a hospital/imagen).
-- Cada prueba es SÍ/NO. El paciente pulsa botones; no pidas texto libre, escalas 1–10 ni comparar lados.
+- Si el caso ES urgente / PRIORIDAD ALTA / banderas rojas: omite **Pruebas funcionales** por completo (ve a hospital/imagen). No sustituyas la sección con hielo ni otras recomendaciones.
+- Cada prueba es SÍ/NO de movimiento. El paciente pulsa botones; no pidas texto libre, escalas 1–10 ni comparar lados.
 - SOLO la zona lesionada/afectada de ESTE caso (p. ej. tobillo/pie → solo tobillo/pie; NO rodilla, cadera, lumbar, Windlass o SLR “por conexión”; y NUNCA tests de muñeca/mano/cuello como Tinel de muñeca o Spurling).
 - NO incluyas pruebas de regiones adyacentes o cinéticas “por si acaso”, aunque puedan referir dolor. Hipótesis a distancia se explican en texto; las pruebas del paciente son solo locales.
 - En seguimientos: no repitas toda la batería si el paciente ya respondió; interpreta y solo añade pruebas nuevas si hace falta aclarar.
-- Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas.
+- Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas ni consejos de tratamiento.
 
 FUENTES / EVIDENCIA (OBLIGATORIO):
 - Cada conclusión clínica importante debe ir seguida de: Fuente: <nombre exacto del documento de "Información relevante">
@@ -1690,6 +1762,8 @@ ${AI_DIFFERENTIAL_MATRICES_RULES}
 
 ${AI_EVIDENCE_LEVELS_RULES}
 
+${AI_READAPTATION_RULES}
+
 ${AI_EVIDENCE_DB_RULES}`;
 
 /** How the model must use patient injury photos (vision). Keep in sync with lib/ai-consult-rules.ts. */
@@ -1720,6 +1794,7 @@ export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PR
 - Si sospecha de labrum en hombro o cadera → RMN; informa que la artroresonancia (con contraste) es más específica/precisa
 - Si ya tuvo ecografía “normal” y días después el dolor sigue igual (gemelo, cuádriceps, isquiotibiales) → otra eco en otro centro o RMN
 - Si el cuadro parece más grave → urgencias / imagen urgente
+- Si pide ejercicios / readaptación / rutina en casa y NO hay PRIORIDAD ALTA → aplica las reglas de READAPTACIÓN (fases, dolor ≤3/10, formato [id=…] del catálogo Kinora)
 - Cuando nombres la lesión o cuadro orientativo (conclusión), escríbelo en negrita: **síndrome del pronador**, **epicondilitis lateral**, etc. Solo el nombre, no la frase entera.
 - Destaca también en negrita adónde ir o qué prueba: **fisioterapeuta**, **médico**, **urgencias**, **hospital**, **ecografía**, **resonancia**, etc.
 - Cita fuentes bajo conclusiones nuevas: línea "Fuente: …"
@@ -2023,6 +2098,42 @@ const GENERIC_FUNCTIONAL = [
   "¿El dolor te impide hacer tus actividades habituales? (SÍ/NO)",
 ];
 
+/** True when client/context already flagged hospital-level urgency. */
+export function isHighPriorityUrgentContext(...parts: Array<string | undefined | null>): boolean {
+  const text = parts.filter(Boolean).join("\n");
+  return /PRIORIDAD\s*ALTA|BANDERAS?\s*ROJAS|FLUJO\s+FISIOTERAPIA\s*\+\s*URGENCIA|HIGH\s*PRIORITY|RED\s*FLAGS?\s*DETECTED/i.test(
+    text
+  );
+}
+
+/** Injected instead of the functional-test bank when hospital referral is required. */
+export function buildUrgentNoFunctionalTestsBlock(language: "es" | "en" = "es"): string {
+  if (language === "en") {
+    return [
+      "URGENT OVERRIDE (CRITICAL): High priority / red flags are present.",
+      "Do NOT include a **Functional tests** section at all (no title, no Yes/No list, no hop).",
+      "Do NOT ask the patient to apply ice, rest, or elevate AS a functional test.",
+      "Put ice/rest/elevation ONLY under **What to do in the meantime** (safe measures while going to care).",
+      "Put HOSPITAL / ER NOW under **What you should do now**.",
+      "Add **Recommended imaging** just before **What you should do now**.",
+      "Do NOT recommend AIKinora clinics or physiotherapy as the primary destination.",
+      "Include **Hospitals / ER near you** (follow the injected HOSPITALS block: with city name local hospitals; without city, nearest hospital + Maps / emergency number).",
+      "Ignore any protocol or bank that asks for functional tests — safety overrides Kinora differentiation.",
+    ].join("\n");
+  }
+  return [
+    "OVERRIDE DE URGENCIA (CRÍTICO): Hay PRIORIDAD ALTA / banderas rojas.",
+    "NO incluyas la sección **Pruebas funcionales** en absoluto (ni título, ni lista Sí/No, ni hop).",
+    "NO pidas aplicar hielo, reposo o elevación COMO prueba funcional.",
+    "Hielo / reposo / elevación / no cargar van SOLO en **Qué hacer mientras tanto** (medidas seguras de camino a urgencias).",
+    "En **Qué debes hacer ahora**: HOSPITAL / URGENCIAS YA.",
+    "Añade **Pruebas de imagen recomendadas** justo antes de **Qué debes hacer ahora**.",
+    "NO recomiendes clínicas de AIKinora ni fisioterapia presencial como destino principal.",
+    "Incluye la sección **Hospitales / Urgencias cerca de ti** (sigue el bloque HOSPITALES inyectado: con ciudad nombra hospitales locales; sin ciudad, hospital más cercano + Maps / 112).",
+    "Ignora cualquier protocolo o banco que pida pruebas funcionales: la seguridad anula la diferenciación Kinora.",
+  ].join("\n");
+}
+
 export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
   const area = bodyArea || "";
   let questions = GENERIC_FUNCTIONAL;
@@ -2272,9 +2383,9 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
 
   return [
     protocol,
-    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/obvio → HOSPITAL → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 preguntas SÍ/NO SOLO de la zona lesionada; el paciente pulsa Sí/No; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
+    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/PRIORIDAD ALTA/obvio → HOSPITAL (omite pruebas funcionales; hielo solo en «Qué hacer mientras tanto») → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 preguntas SÍ/NO SOLO de la zona lesionada; el paciente pulsa Sí/No; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
     `Banco de tests de valoración funcional (MÍNIMO de referencia, no lista cerrada) para la zona "${area || "general"}".`,
-    "CRÍTICO — DIFERENCIACIÓN KINORA: usa estas pruebas como base para la sección **Pruebas funcionales**, cada una como pregunta SÍ/NO. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una» (salvo urgencia hospitalaria). NO pidas texto libre, escalas 1–10 ni comparar lados. SOLO pruebas de la zona lesionada/afectada de ESTE caso — NO de regiones adyacentes o “conectadas” (p. ej. tobillo → no rodilla/lumbar/Windlass/SLR). NO te limites a copiarlas literalmente: razona sobre las hipótesis locales más probables y, si una prueba LOCAL más específica discrimina mejor, sustitúyela o añádela (traducida a pregunta SÍ/NO cotidiana).",
+    "CRÍTICO — DIFERENCIACIÓN KINORA: si NO es urgencia hospitalaria, usa estas pruebas como base para la sección **Pruebas funcionales**, cada una como pregunta SÍ/NO de movimiento. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NUNCA pongas hielo/reposo/elevación/hospital dentro de **Pruebas funcionales** (eso va en recomendaciones). Si HAY urgencia/PRIORIDAD ALTA: IGNORA este banco y omite **Pruebas funcionales**. NO pidas texto libre, escalas 1–10 ni comparar lados. SOLO pruebas de la zona lesionada/afectada de ESTE caso — NO de regiones adyacentes o “conectadas” (p. ej. tobillo → no rodilla/lumbar/Windlass/SLR). NO te limites a copiarlas literalmente: razona sobre las hipótesis locales más probables y, si una prueba LOCAL más específica discrimina mejor, sustitúyela o añádela (traducida a pregunta SÍ/NO cotidiana).",
     "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como pregunta cotidiana de SÍ/NO (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco o una prueba clínica más específica trae jerga o una escala, tradúcela a SÍ/NO sin perder lo que realmente evalúa.",
     "PRIORIDAD: protocolo estructurado > RAG Functional Assessment / Special Tests / Assessment Dossier > tu propio razonamiento clínico para este caso > banco local genérico:",
     ...questions.map((q, i) => `${i + 1}. ${q}`),
@@ -2331,7 +2442,16 @@ export function buildPhysioEquipmentContext(profile: {
 } | null): string {
   if (!PHYSIO_EQUIPMENT_AI_CONTEXT_ENABLED || !profile) return "";
   const ids = Array.isArray(profile.clinic_equipment) ? profile.clinic_equipment : [];
-  const labels = ids.map((id) => PHYSIO_EQUIPMENT_LABELS[id] ?? id);
+  const labels = ids.map((id) => {
+    const known = PHYSIO_EQUIPMENT_LABELS[id];
+    if (known) return known;
+    if (id.startsWith("custom:")) {
+      const rest = id.slice("custom:".length);
+      const colon = rest.indexOf(":");
+      if (colon > 0) return rest.slice(colon + 1).trim() || id;
+    }
+    return id;
+  });
   const notes = profile.clinic_equipment_notes?.trim();
   if (!labels.length && !notes) return "";
 
@@ -2356,7 +2476,9 @@ export function buildPhysioEquipmentContext(profile: {
 
 /** Closed illustrated-maneuver catalog for Fisioterapia numbered lists. Keep in sync with lib/clinical-test-images.ts. */
 export const AI_ILLUSTRATED_CLINICAL_TESTS_RULES = `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
-Cuando listes pruebas/maniobras/tests/pruebas funcionales numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
+ÁMBITO: SOLO chat/informe para FISIOTERAPEUTA (listas de exploración en consulta). NUNCA uses este catálogo en la sección **Pruebas funcionales** que ve el paciente (Sí/No en casa): ahí solo movimientos cotidianos autoejecutables, sin nombres de maniobras clínicas.
+
+Cuando listes pruebas/maniobras/tests numeradas PARA EL FISIO (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
 
 VÍDEOS (CRÍTICO — fuerza del producto):
 - Si el fisioterapeuta pide pruebas, tests, maniobras o «pruebas funcionales» de una zona, responde SIEMPRE con lista numerada usando EXACTAMENTE los nombres canónicos del grupo de ESA zona.

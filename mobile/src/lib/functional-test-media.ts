@@ -304,8 +304,25 @@ export function resolveFunctionalTestMedia(opts: {
     if (hit) return hit;
   }
 
-  // Last resort: clinical special-test names if the AI used them.
-  return findClinicalTestImage(stripFunctionalMediaMarker(opts.prompt));
+  // Last resort: only match clinical names that are still patient-safe demos
+  // (heel raise, hop, etc.). Never attach Lachman/Neer/… clinician videos
+  // to patient Sí/No prompts just because the AI used a catalog name.
+  const clinical = findClinicalTestImage(stripFunctionalMediaMarker(opts.prompt));
+  if (!clinical) return null;
+  const PATIENT_SAFE_CLINICAL_MEDIA = new Set([
+    "heel-raise",
+    "hop-test",
+    "windlass",
+    "trendelenburg",
+    "phalen",
+    "painful-arc",
+    "drop-arm",
+    "speed",
+    "cozen",
+    "schober",
+    "elbow-flexion-cubital",
+  ]);
+  return PATIENT_SAFE_CLINICAL_MEDIA.has(clinical.id) ? clinical : null;
 }
 
 export function mediaIdForProtocolItem(itemId: string): string | null {

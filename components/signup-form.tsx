@@ -12,8 +12,10 @@ const inputClass =
 
 type InviteInfo = {
   clinic_name: string;
-  email: string;
+  email: string | null;
   display_name: string | null;
+  invite_code?: string | null;
+  token?: string | null;
 };
 
 type Props = {
@@ -24,11 +26,15 @@ export function SignupForm({ clinicInviteToken }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState(clinicInviteToken ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [convertingGuest, setConvertingGuest] = useState(false);
   const [invite, setInvite] = useState<InviteInfo | null>(null);
-  const joiningClinic = Boolean(clinicInviteToken);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [asPhysio, setAsPhysio] = useState(false);
+  const activeInvite = (inviteCode || clinicInviteToken || "").trim();
+  const joiningClinic = Boolean(activeInvite && invite?.clinic_name);
 
   useEffect(() => {
     const supabase = createClient();
@@ -38,22 +44,38 @@ export function SignupForm({ clinicInviteToken }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!clinicInviteToken) return;
+    const key = (inviteCode || clinicInviteToken || "").trim();
+    if (!key) {
+      setInvite(null);
+      return;
+    }
     const supabase = createClient();
-    void supabase
-      .rpc("clinic_lookup_invite", { p_token: clinicInviteToken })
-      .then(({ data }) => {
+    const t = window.setTimeout(() => {
+      void supabase.rpc("clinic_lookup_invite", { p_token: key }).then(({ data }) => {
         const row = Array.isArray(data) ? data[0] : data;
-        if (row?.email) {
+        if (row?.clinic_name) {
           setInvite(row as InviteInfo);
-          setEmail(String(row.email));
+          if (row.email) setEmail(String(row.email));
+        } else {
+          setInvite(null);
         }
       });
-  }, [clinicInviteToken]);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [inviteCode, clinicInviteToken]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!acceptedLegal) {
+      setError("Debes aceptar la Política de privacidad y los Términos de uso.");
+      return;
+    }
+    const key = activeInvite;
+    if (key && !invite?.clinic_name) {
+      setError("Código o enlace de clínica no válido o caducado.");
+      return;
+    }
     setLoading(true);
     try {
       const emailNorm = email.trim().toLowerCase();
@@ -71,7 +93,8 @@ export function SignupForm({ clinicInviteToken }: Props) {
         body: JSON.stringify({
           email: emailNorm,
           password,
-          clinicInvite: clinicInviteToken || undefined,
+          accountType: key || asPhysio ? "physio" : "patient",
+          clinicInvite: key || undefined,
         }),
       });
       const payload = (await res.json()) as { error?: string };
@@ -91,7 +114,12 @@ export function SignupForm({ clinicInviteToken }: Props) {
         setError(signError.message);
         return;
       }
-      router.replace("/onboarding");
+      if (key) {
+        await supabase.rpc("clinic_claim_invite", { p_token: key });
+        router.replace("/onboarding");
+      } else {
+        router.replace("/onboarding");
+      }
       router.refresh();
     } finally {
       setLoading(false);
@@ -110,18 +138,42 @@ export function SignupForm({ clinicInviteToken }: Props) {
           <p className="mt-1 text-sm text-slate-500">
             {convertingGuest
               ? "Crea tu cuenta para seguir usando la IA"
-              : joiningClinic && invite
-                ? `Te unes a ${invite.clinic_name} como fisioterapeuta`
+              : joiningClinic
+                ? `Te unes a ${invite?.clinic_name} como fisioterapeuta`
                 : "Regístrate para usar AIKinora"}
           </p>
         </div>
       </div>
 
-      {!joiningClinic && !convertingGuest ? (
-        <p className="mb-5 text-xs leading-relaxed text-slate-500">
-          Las cuentas de fisioterapeuta o clínica se crean con invitación. Si eres
-          profesional, pide acceso a tu clínica o contacta con el equipo.
-        </p>
+      {!convertingGuest ? (
+        <div className="mb-4 flex flex-col gap-1.5">
+          <label className="text-sm font-semibold text-slate-700">
+            Código de clínica (fisios, opcional)
+          </label>
+          <input
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+            className={inputClass}
+            placeholder="Ej. AB12CD"
+            autoCapitalize="characters"
+            spellCheck={false}
+          />
+          <p className="text-xs text-slate-500">
+            Con código te registras como fisioterapeuta vinculado a esa clínica.
+            También puedes vincularlo después al iniciar sesión o en Clínica.
+          </p>
+          {!joiningClinic ? (
+            <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={asPhysio}
+                onChange={(e) => setAsPhysio(e.target.checked)}
+                className="h-4 w-4 accent-blue-600"
+              />
+              Soy fisioterapeuta (me vincularé a una clínica más tarde)
+            </label>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="mb-4 flex flex-col gap-1.5">
@@ -147,21 +199,39 @@ export function SignupForm({ clinicInviteToken }: Props) {
 
       {error && <p className="mb-4 text-sm text-red-600" role="alert">{error}</p>}
 
-      <p className="mb-4 text-xs leading-relaxed text-slate-500">
-        Al crear la cuenta aceptas la{" "}
-        <Link href="/privacidad?from=signup" className="font-semibold text-blue-600 hover:underline">
-          Política de privacidad
-        </Link>{" "}
-        y los{" "}
-        <Link href="/privacidad?from=signup#terminos" className="font-semibold text-blue-600 hover:underline">
-          Términos de uso
-        </Link>{" "}
-        de AIKinora.
-      </p>
+      <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left">
+        <input
+          type="checkbox"
+          checked={acceptedLegal}
+          onChange={(e) => setAcceptedLegal(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+          required
+        />
+        <span className="text-xs leading-relaxed text-slate-600">
+          He leído y acepto la{" "}
+          <Link
+            href="/privacidad?from=signup"
+            className="font-semibold text-blue-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Política de privacidad
+          </Link>{" "}
+          y los{" "}
+          <Link
+            href="/privacidad?from=signup#terminos"
+            className="font-semibold text-blue-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Términos de uso
+          </Link>
+          , incluido el tratamiento de los datos de mi consulta para orientarme con IA.
+        </span>
+      </label>
 
       <button
-        type="submit" disabled={loading}
-        className="btn-primary w-full"
+        type="submit"
+        disabled={loading || !acceptedLegal}
+        className="btn-primary w-full disabled:opacity-50"
       >
         {loading ? "Creando cuenta…" : joiningClinic ? "Unirme a la clínica" : "Crear cuenta"}
       </button>

@@ -978,7 +978,7 @@ export function localizeElbowLabel(id: string, fallback: string, locale: Consult
 }
 export function localizeElbowOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return ELBOW_OPTION_EN[option] ?? option;
+  return ELBOW_OPTION_EN[option as keyof typeof ELBOW_OPTION_EN] ?? option;
 }
 export function localizeElbowSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (ELBOW_SECTION_LABELS as any)[section] ?? section;

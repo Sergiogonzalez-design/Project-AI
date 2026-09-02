@@ -1655,7 +1655,7 @@ export function localizeKneeLabel(
 
 export function localizeKneeOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return KNEE_OPTION_EN[option] ?? option;
+  return KNEE_OPTION_EN[option as keyof typeof KNEE_OPTION_EN] ?? option;
 }
 
 export function localizeKneeSection(
