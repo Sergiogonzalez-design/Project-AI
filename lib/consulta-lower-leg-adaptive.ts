@@ -1565,7 +1565,7 @@ export function localizeLowerLegLabel(
 }
 export function localizeLowerLegOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return LOWER_LEG_OPTION_EN[option] ?? option;
+  return LOWER_LEG_OPTION_EN[option as keyof typeof LOWER_LEG_OPTION_EN] ?? option;
 }
 export function localizeLowerLegSection(
   section: string,

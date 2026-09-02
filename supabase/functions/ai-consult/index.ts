@@ -2,6 +2,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import OpenAI from "npm:openai@4";
 import {
+  buildClinicRecommendPrompt,
+  buildHospitalRecommendPrompt,
+  inferClinicNeedTags,
+  type ClinicRecommendRow,
+} from "./clinic-recommend.ts";
+import {
   AI_DATA_FIDELITY_RULES,
   AI_EVIDENCE_AND_SEVERITY_RULES,
   AI_FOLLOW_UP_EVIDENCE_RULES,
@@ -68,11 +74,21 @@ import {
   appendSourcesFooter,
   rewriteBannedLesionTerms,
   buildFunctionalQuestionsPromptBlock,
+  buildUrgentNoFunctionalTestsBlock,
+  isHighPriorityUrgentContext,
   buildPhysioEquipmentContext,
   formatRagContext,
   languageInstruction,
   type RagChunk,
 } from "./response-rules.ts";
+import {
+  buildReadaptationPromptBlock,
+  isReadaptationQuery,
+} from "./readaptation.ts";
+import {
+  buildPostConsultExerciseSystemPrompt,
+  buildPostConsultExerciseUserMessage,
+} from "./post-consult-exercise.ts";
 
 const openai = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 
@@ -128,7 +144,10 @@ type RequestBody = {
     | "reminders"
     | "physio_report"
     | "physio_chat"
-    | "multi_part_summary";
+    | "multi_part_summary"
+    | "post_consult_exercise";
+  /** offer = smart question at end; plan = generate exercises/self-care after patient says yes */
+  postConsultStep?: "offer" | "plan";
   message?: string;
   bodyArea?: string;
   onsetType?: string;
@@ -155,25 +174,50 @@ type ImageContentPart = {
 };
 type UserContent = string | Array<TextContentPart | ImageContentPart>;
 
-function isAllowedConsultImageUrl(url: string): boolean {
+function parseConsultPhotoStoragePath(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!trimmed.includes("://")) return trimmed.replace(/^\/+/, "");
   try {
-    const u = new URL(url);
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    if (!supabaseUrl) return false;
-    const base = new URL(supabaseUrl);
-    return (
-      u.origin === base.origin &&
-      u.pathname.includes("/storage/v1/object/public/consult-photos/")
+    const u = new URL(trimmed);
+    const base = new URL(Deno.env.get("SUPABASE_URL") ?? "http://local");
+    if (u.origin !== base.origin) return null;
+    const m = u.pathname.match(
+      /\/storage\/v1\/object\/(?:public|sign|authenticated)\/consult-photos\/(.+)$/
     );
+    return m ? decodeURIComponent(m[1]) : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-function sanitizeImageUrl(imageUrl?: string | null): string | null {
-  if (!imageUrl || typeof imageUrl !== "string") return null;
-  const trimmed = imageUrl.trim();
-  return isAllowedConsultImageUrl(trimmed) ? trimmed : null;
+async function resolveConsultImageUrl(
+  raw: string | null | undefined,
+  userId: string,
+  adminClient: ReturnType<typeof createClient> | null
+): Promise<string | null> {
+  if (!raw || typeof raw !== "string") return null;
+  if (/\.pdf(?:\?|#|$)/i.test(raw)) return null;
+  const path = parseConsultPhotoStoragePath(raw);
+  if (!path || !path.startsWith(`${userId}/`)) return null;
+  const trimmed = raw.trim();
+  if (trimmed.includes("/object/sign/") && trimmed.includes("token=")) {
+    return trimmed;
+  }
+  if (!adminClient) return null;
+  const { data, error } = await adminClient.storage
+    .from("consult-photos")
+    .createSignedUrl(path, 600);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+function buildUserContent(text: string, imageUrl?: string | null): UserContent {
+  if (!imageUrl) return text;
+  return [
+    { type: "text", text },
+    { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
+  ];
 }
 
 /** Split dense "1) … 2) …" paragraphs into Fisioterapia-style numbered lines with bold titles. */
@@ -195,15 +239,6 @@ function formatEducationalNumberedList(text: string): string {
     })
     .join("\n");
   return rewriteBannedLesionTerms(out.replace(/\n{3,}/g, "\n\n").trim());
-}
-
-function buildUserContent(text: string, imageUrl?: string | null): UserContent {
-  const safe = sanitizeImageUrl(imageUrl);
-  if (!safe) return text;
-  return [
-    { type: "text", text },
-    { type: "image_url", image_url: { url: safe, detail: "high" } },
-  ];
 }
 
 function withImageRules(prompt: string, hasImage: boolean): string {
@@ -253,7 +288,7 @@ STRICT RULES:
 - Do NOT invite free-form chatting or "ask me anything" in this tab.
 - Do NOT say the patient can talk "directly" with **${who}** (or any physiotherapist) inside Kinora — neither this tab nor Consulta is a live chat with the clinician.
 - NEVER tell the patient possible injuries, diagnoses, affected structures, or clinical hypotheses. That content is ONLY for the clinician report **${who}** will read — never in this chat.
-- After the questionnaire (if the case is not urgent): thank them, say **${who}** has received their answers, and ask them to complete the **functional tests** (Yes/No) so the report can be finished. Do not add other clinical sections.
+- After the questionnaire (if the case is not urgent): thank them, say **${who}** has received their answers, and ask them to complete the **functional tests** (Yes/No) so the report can be finished. Only home self-movements in everyday language. NEVER ask clinician special tests (Lachman, Neer, McMurray, Spurling, drawer, etc.). Do not add other clinical sections.
 - If they ask where to ask doubts / general questions / anything not needed for the report: tell them clearly to use the **Consulta** tab for free questions with the AI. This Fisioterapia chat is only to finish the case so the report for **${who}** can be prepared.
 - If they ask about the process/code/why they're here: explain briefly that this is for the pre-visit report for **${who}**, then steer them back to describing the complaint if the report is not done yet.
 - Keep answering clinical questions that help complete or clarify the report case. For unrelated chat, redirect to Consulta.`
@@ -269,7 +304,7 @@ REGLAS ESTRICTAS:
 - NO invites a chatear libremente ni digas "puedes preguntarme lo que quieras aquí".
 - NUNCA digas que puede hablar "directamente" con **${who}** (ni con ningún fisioterapeuta) dentro de Kinora: ni esta pestaña ni Consulta son un chat en vivo con el profesional.
 - NUNCA digas al paciente posibles lesiones, diagnósticos, estructuras afectadas ni hipótesis clínicas. Eso va SOLO en el informe que leerá **${who}**, nunca en este chat.
-- Tras el cuestionario (si el caso no es urgente): agradece, di que **${who}** ya ha recibido sus respuestas, y pide las **pruebas funcionales** (Sí/No) para completar el informe. No añadas otras secciones clínicas.
+- Tras el cuestionario (si el caso no es urgente): agradece, di que **${who}** ya ha recibido sus respuestas, y pide las **pruebas funcionales** (Sí/No) para completar el informe. Solo movimientos que el paciente puede hacer solo en casa (lenguaje cotidiano). NUNCA pidas maniobras de exploración del fisioterapeuta (Lachman, Neer, McMurray, Spurling, cajón, etc.). No añadas otras secciones clínicas.
 - Si pregunta dónde resolver dudas / preguntas generales / cosas que no hacen falta para el informe: dile con claridad que use la pestaña **Consulta** para hablar libremente con la IA. Este chat de Fisioterapia es SOLO para completar el caso y preparar el informe de **${who}**.
 - Si pregunta por el proceso/código/por qué está aquí: explica en breve que es para el informe previo a la cita de **${who}**, y vuelve a orientar a describir la molestia si el informe aún no está listo.
 - Sí puedes responder preguntas clínicas que ayuden a completar o aclarar el caso del informe. Para charla o dudas generales, redirige a Consulta.`;
@@ -288,24 +323,31 @@ function withConsultaGeneralRules(
       ? `GENERAL CONSULTA TAB (not the Fisioterapia code flow):
 - Do NOT say a clinical report was or will be sent to their physiotherapist or appears on any physio dashboard.
 - This tab is informational AI chat only; physio-linked reports exist ONLY in the separate Fisioterapia tab after they enter their physio's invite code.
-- The section **¿Necesitas contactar con nuestro fisioterapeuta?** is optional guidance to seek in-person care if needed — it does NOT mean Kinora sent anything to a linked physiotherapist.`
+- The section **¿Necesitas contactar con nuestro fisioterapeuta?** is optional guidance to seek in-person care if needed — it does NOT mean Kinora sent anything to a linked physiotherapist.
+- Always include **Clinics on AIKinora near you** using ONLY the injected registered-clinic list (never invent clinics) — EXCEPT when HIGH PRIORITY / hospital: then omit clinics and use **Hospitals / ER near you** from the injected hospital block.`
       : `PESTAÑA CONSULTA GENERAL (NO es el flujo Fisioterapia con código):
 - NO digas que se ha generado, se enviará o verá un informe clínico en el panel de ningún fisioterapeuta.
 - Aquí solo hay orientación informativa con la IA; el informe para el fisio vinculado existe SOLO en la pestaña Fisioterapia tras introducir el código.
-- La sección **¿Necesitas contactar con nuestro fisioterapeuta?** es orientación para valoración presencial si la necesitan — NO significa que Kinora haya enviado nada a un fisio vinculado.`;
+- La sección **¿Necesitas contactar con nuestro fisioterapeuta?** es orientación para valoración presencial si la necesitan — NO significa que Kinora haya enviado nada a un fisio vinculado.
+- Incluye siempre **Clínicas en AIKinora cerca de ti** usando SOLO la lista inyectada de clínicas registradas (nunca inventes clínicas) — EXCEPTO si PRIORIDAD ALTA / hospital: entonces omite clínicas y usa **Hospitales / Urgencias cerca de ti** del bloque inyectado.`;
   return `${prompt}\n\n${block}`;
 }
 
 function withPatientConsultContext(
   prompt: string,
   body: RequestBody,
-  language: "es" | "en"
+  language: "es" | "en",
+  clinicRecommendBlock = ""
 ): string {
+  const clinic =
+    clinicRecommendBlock
+      ? `\n\n${clinicRecommendBlock}`
+      : "";
   return `${withConsultaGeneralRules(
     withFisioterapiaFlow(prompt, body, language),
     body,
     language
-  )}\n\n${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
+  )}${clinic}\n\n${AI_PATIENT_RESPONSE_EMOJI_RULES}`;
 }
 
 function buildAthleteContext(profile: Record<string, unknown> | null): string {
@@ -328,6 +370,7 @@ function buildAthleteContext(profile: Record<string, unknown> | null): string {
       ? `Horas de entrenamiento por semana: ${profile.hours_per_week}`
       : "",
     profile.current_season ? `Temporada actual: ${profile.current_season}` : "",
+    profile.city ? `Ciudad: ${profile.city}` : "",
     Array.isArray(profile.performance_goals) && profile.performance_goals.length
       ? `Objetivos: ${profile.performance_goals.join(", ")}`
       : "",
@@ -337,6 +380,49 @@ function buildAthleteContext(profile: Record<string, unknown> | null): string {
     "Perfil del paciente (ÚSALO para riesgo, prevalencia, carga y diferenciales; NO lo uses como mecanismo/causa de la lesión salvo que el relato o el cuestionario lo confirmen):",
     ...lines,
   ].join("\n");
+}
+
+async function fetchClinicRecommendBlock(
+  supabase: ReturnType<typeof createClient>,
+  profile: Record<string, unknown> | null,
+  body: RequestBody,
+  language: "es" | "en"
+): Promise<string> {
+  const accountType = (profile as { account_type?: string } | null)?.account_type;
+  if (isClinicianAccount(accountType)) return "";
+  const city =
+    typeof profile?.city === "string" ? profile.city.trim() : "";
+  const urgent = isHighPriorityUrgentContext(
+    body.symptomContext,
+    body.message,
+    body.description,
+    body.bodyArea
+  );
+  // Hospital-first when PRIORIDAD ALTA — including Fisioterapia-linked consults.
+  if (urgent) {
+    return buildHospitalRecommendPrompt(city || null, language);
+  }
+  if (body.fisioterapiaFlow) return "";
+  const needs = inferClinicNeedTags([
+    body.message,
+    body.bodyArea,
+    body.description,
+    body.symptomContext,
+  ]);
+  const { data, error } = await supabase.rpc("clinic_recommend_for_patient", {
+    p_city: city,
+    p_need_tags: needs.equipment,
+    p_specialty_tags: needs.specialties,
+    p_limit: 5,
+  });
+  if (error) {
+    console.error("clinic_recommend_for_patient", error.message);
+    return buildClinicRecommendPrompt([], city, language);
+  }
+  const recs = ((data ?? []) as ClinicRecommendRow[]).filter(
+    (c) => c?.name && c?.slug
+  );
+  return buildClinicRecommendPrompt(recs, city, language);
 }
 
 async function embedAndMatch(
@@ -392,8 +478,22 @@ async function fetchRagContext(
     .join(" ");
   const functional = await embedAndMatch(supabase, functionalQuery, 4);
 
+  const readaptBoost = isReadaptationQuery(`${queryText}\n${bodyArea}`)
+    ? await embedAndMatchPhysioguide(
+        supabase,
+        [
+          bodyArea,
+          queryText,
+          "Physioguide Evidencia readaptación ejercicios rehabilitación fases carga progresiva RTS",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        6
+      )
+    : [];
+
   const byId = new Map<string, RagChunk>();
-  for (const c of [...physioguide, ...primary, ...functional]) {
+  for (const c of [...physioguide, ...readaptBoost, ...primary, ...functional]) {
     const key = `${c.source_name ?? ""}::${(c.content ?? "").slice(0, 80)}`;
     if (!byId.has(key)) byId.set(key, c);
   }
@@ -489,7 +589,10 @@ FORMATO OBLIGATORIO (como en Fisioterapia — incumplir esto es un error):
 - Por zona: el número que pida el usuario, o 3–6 si no especifica; lenguaje cotidiano (si citas nombre clínico, en negrita y explica en simple).
 - Cierra con 1 frase: no sustituye una valoración presencial.
 
-Para ejercicios / rutinas: mismo criterio — título de sección por zona si hay varias, un ítem por línea, títulos en **negrita**.
+Para ejercicios / rutinas / readaptación: mismo criterio — título de sección por zona si hay varias, un ítem por línea, títulos en **negrita**.
+- Cuando prescribas ejercicios del catálogo Kinora, OBLIGATORIO incluir [id=exercise_id] en cada línea numerada (la app muestra ficha expandible):
+  1. [id=knee_quad_set] Cuádriceps isométrico | Fase protección | 3×10 s, 2 veces/día, dolor ≤3/10
+- 3–6 ejercicios por zona; fases (protección → carga → funcional); regla de dolor ≤3/10; no es diagnóstico.
 
 Responde en español:
 - Empático, claro y práctico
@@ -572,7 +675,9 @@ PALABRA PROHIBIDA (CRÍTICO — error si aparece): NUNCA escribas «distensión�
 
 En el resumen (2-4 frases): zona, mecanismo, evolución, intensidad, limitación. Si hay banderas rojas o PRIORIDAD ALTA, destácalo al inicio.
 
-CRÍTICO — DIFERENCIACIÓN KINORA: si el caso NO es urgente, la respuesta está incompleta sin la sección **Pruebas funcionales**. Incluye 3–6 pruebas concretas SOLO de la zona lesionada/afectada (del banco/protocolo de ESA zona), cada una como pregunta SÍ/NO. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NO pidas texto libre, escalas 1–10 ni comparar lados. NO añadas pruebas de otras regiones aunque estén “conectadas” (p. ej. tobillo → no Windlass/SLR/rodilla). Escribe cada prueba como pregunta cotidiana de movimiento (p. ej. ¿duele al elevar el brazo por encima de la cabeza?). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, etc.).
+CRÍTICO — PRIORIDAD ALTA / HOSPITAL: si el contexto indica PRIORIDAD ALTA, banderas rojas o urgencias, OMITÉ por completo **Pruebas funcionales** y **Clínicas en AIKinora cerca de ti**. No pidas hop ni «aplica hielo» como prueba. Hielo/reposo solo en **Qué hacer mientras tanto**; hospital en **Qué debes hacer ahora**; incluye **Hospitales / Urgencias cerca de ti** (con ciudad del perfil nombra hospitales locales; sin ciudad → hospital más cercano + Maps / 112).
+
+CRÍTICO — DIFERENCIACIÓN KINORA (solo si NO es urgente): la respuesta está incompleta sin la sección **Pruebas funcionales**. Incluye 3–6 pruebas concretas SOLO de la zona lesionada/afectada (del banco/protocolo de ESA zona), cada una como pregunta SÍ/NO de movimiento. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NO mezcles recomendaciones (hielo, reposo, elevación) dentro de **Pruebas funcionales**. NO pidas texto libre, escalas 1–10 ni comparar lados. NO añadas pruebas de otras regiones aunque estén “conectadas” (p. ej. tobillo → no Windlass/SLR/rodilla). Escribe cada prueba como pregunta cotidiana de movimiento (p. ej. ¿duele al elevar el brazo por encima de la cabeza?). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, etc.).
 
 ${AI_EVIDENCE_AND_SEVERITY_RULES}
 
@@ -985,6 +1090,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const adminClient = serviceKey
+      ? createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+      : null;
+
     const body = (await req.json()) as RequestBody;
     const mode = body.mode ?? "consult";
     const language = body.language === "en" ? "en" : "es";
@@ -992,17 +1104,23 @@ Deno.serve(async (req) => {
     const { data: profile } = await supabase
       .from("profiles")
       .select(
-        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals, clinic_name, clinic_equipment, clinic_equipment_notes, account_type"
+        "display_name, age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals, city, clinic_name, clinic_equipment, clinic_equipment_notes, account_type"
       )
       .eq("id", user.id)
       .maybeSingle();
 
     const athleteContext = buildAthleteContext(profile);
     const physioEquipmentContext = buildPhysioEquipmentContext(profile);
+    const clinicRecommendBlock = await fetchClinicRecommendBlock(
+      supabase,
+      profile as Record<string, unknown> | null,
+      body,
+      language
+    );
 
     if (mode === "triage") {
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       if (!message && !imageUrl) {
         return new Response(JSON.stringify({ error: "message required" }), {
           status: 400,
@@ -1054,14 +1172,16 @@ Deno.serve(async (req) => {
 
     if (mode === "general_chat") {
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       const { context } = await fetchRagContext(supabase, message);
+      const readaptBlock = buildReadaptationPromptBlock(message, "", language);
       const userMessage = [
         `Consulta del usuario:\n${message || "(Foto de la lesión adjunta)"}`,
         imageUrl
           ? "El paciente adjuntó una foto: descríbela solo si aporta y responde en consecuencia."
           : "",
         athleteContext ? athleteContext : "",
+        readaptBlock,
         context
           ? `Información de referencia:\n${context}`
           : "(Responde con conocimientos generales de fisioterapia.)",
@@ -1080,7 +1200,8 @@ Deno.serve(async (req) => {
                 language
               ),
               body,
-              language
+              language,
+              clinicRecommendBlock
             ),
           },
           { role: "user", content: buildUserContent(userMessage, imageUrl) },
@@ -1172,7 +1293,12 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: withLanguage(MULTI_PART_SUMMARY_PROMPT, language),
+            content: withPatientConsultContext(
+              withLanguage(MULTI_PART_SUMMARY_PROMPT, language),
+              body,
+              language,
+              clinicRecommendBlock
+            ),
           },
           { role: "user", content: userMessage },
         ],
@@ -1190,9 +1316,76 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (mode === "post_consult_exercise") {
+      const step = body.postConsultStep === "plan" ? "plan" : "offer";
+      const caseSummary = body.message?.trim() ?? "";
+      const bodyArea = body.bodyArea ?? "";
+      const patientReply = body.description?.trim() ?? "";
+      if (!caseSummary) {
+        return new Response(JSON.stringify({ error: "message required" }), {
+          status: 400,
+          headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+
+      const ragQuery =
+        step === "plan"
+          ? `${bodyArea}\n${caseSummary}\nreadaptación ejercicios rehabilitación`
+          : `${bodyArea}\n${caseSummary}\npost consulta autocuidado`;
+      const { context, sources } = await fetchRagContext(
+        supabase,
+        ragQuery,
+        bodyArea,
+      );
+
+      const userMessage = [
+        buildPostConsultExerciseUserMessage(
+          step,
+          caseSummary,
+          bodyArea,
+          language,
+          step === "plan" ? patientReply : undefined,
+        ),
+        athleteContext ? athleteContext : "",
+        context ? `Información de referencia:\n${context}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: withPatientConsultContext(
+              withLanguage(
+                buildPostConsultExerciseSystemPrompt(step, language),
+                language,
+              ),
+              body,
+              language,
+              "",
+            ),
+          },
+          { role: "user", content: userMessage },
+        ],
+        temperature: step === "offer" ? 0.45 : 0.35,
+        max_tokens: step === "offer" ? 350 : 900,
+      });
+
+      const answer = appendSourcesFooter(
+        completion.choices[0].message.content ?? "",
+        sources,
+        language,
+      );
+      return new Response(JSON.stringify({ answer, sourcesUsed: sources.length }), {
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
     if (mode === "clinical_screen") {
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       const bodyArea = body.bodyArea ?? "Consulta general";
       const { context, sources } = await fetchRagContext(
         supabase,
@@ -1209,7 +1402,10 @@ Deno.serve(async (req) => {
         context
           ? `Información relevante de los documentos:\n${context}`
           : "(Responde con conocimientos generales de fisioterapia.)",
-        buildFunctionalQuestionsPromptBlock(bodyArea),
+        isHighPriorityUrgentContext(message, bodyArea)
+          ? buildUrgentNoFunctionalTestsBlock(language)
+          : buildFunctionalQuestionsPromptBlock(bodyArea),
+        buildReadaptationPromptBlock(message, bodyArea, language),
       ]
         .filter(Boolean)
         .join("\n\n");
@@ -1225,7 +1421,8 @@ Deno.serve(async (req) => {
                 language
               ),
               body,
-              language
+              language,
+              clinicRecommendBlock
             ),
           },
           { role: "user", content: buildUserContent(userMessage, imageUrl) },
@@ -1254,7 +1451,7 @@ Deno.serve(async (req) => {
       }
 
       const message = body.message?.trim() ?? "";
-      const imageUrl = sanitizeImageUrl(body.imageUrl);
+      const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
       if (!message && !imageUrl) {
         return new Response(JSON.stringify({ error: "message required" }), {
           status: 400,
@@ -1343,7 +1540,9 @@ Deno.serve(async (req) => {
         context
           ? `Información relevante de los documentos:\n${context}`
           : "(Responde con conocimientos generales de fisioterapia y medicina deportiva.)",
-        buildFunctionalQuestionsPromptBlock(bodyArea),
+        isHighPriorityUrgentContext(questionnaireText, symptomContext)
+          ? buildUrgentNoFunctionalTestsBlock(language)
+          : buildFunctionalQuestionsPromptBlock(bodyArea),
       ]
         .filter(Boolean)
         .join("\n\n");
@@ -1380,7 +1579,7 @@ Deno.serve(async (req) => {
       symptomContext,
       conversationHistory,
     } = body;
-    const imageUrl = sanitizeImageUrl(body.imageUrl);
+    const imageUrl = await resolveConsultImageUrl(body.imageUrl, user.id, adminClient);
 
     const isFollowUp = bodyArea === "seguimiento";
 
@@ -1423,7 +1622,8 @@ Deno.serve(async (req) => {
         language
       ),
       body,
-      language
+      language,
+      clinicRecommendBlock
     );
     const history: HistoryMessage[] = conversationHistory ?? [];
 
@@ -1441,6 +1641,7 @@ Deno.serve(async (req) => {
           imageUrl
             ? "Hay una foto adjunta en este mensaje: úsala para precisar la orientación."
             : "",
+          buildReadaptationPromptBlock(onsetType ?? "", bodyArea, language),
         ]
           .filter(Boolean)
           .join("\n\n")
@@ -1461,10 +1662,12 @@ Deno.serve(async (req) => {
             : language === "en"
               ? "(No specific document match found. Reply with general physiotherapy knowledge.)"
               : "(No se encontró información específica en documentos. Responde con tus conocimientos generales de fisioterapia.)",
-          buildFunctionalQuestionsPromptBlock(bodyArea) +
-            (language === "en"
-              ? "\n\nCRITICAL: Write every patient-facing functional test question in English (YES/NO). Do not paste Spanish bank wording into the reply."
-              : ""),
+          isHighPriorityUrgentContext(queryText, symptomContext)
+            ? buildUrgentNoFunctionalTestsBlock(language)
+            : buildFunctionalQuestionsPromptBlock(bodyArea) +
+              (language === "en"
+                ? "\n\nCRITICAL: Write every patient-facing functional test question in English (YES/NO). Do not paste Spanish bank wording into the reply."
+                : ""),
         ]
           .filter(Boolean)
           .join("\n\n");

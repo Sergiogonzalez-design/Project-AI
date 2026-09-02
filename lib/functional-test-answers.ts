@@ -1,3 +1,7 @@
+import {
+  filterPatientSafeFunctionalTests,
+} from "@/lib/patient-safe-functional-tests";
+
 export type FunctionalTestItem = {
   n: number;
   /** May include a trailing ⟦media-id⟧ marker for demo video lookup. */
@@ -64,10 +68,14 @@ export function splitFunctionalTests(content: string): {
 
   if (tests.length < 2) return null;
 
+  // Drop clinician special tests (Lachman, Neer, …) — patient Sí/No is home only.
+  const safe = filterPatientSafeFunctionalTests(tests);
+  if (safe.length < 2) return null;
+
   return {
     before: lines.slice(0, headingIndex).join("\n").trimEnd(),
     heading,
-    tests,
+    tests: safe,
     after: lines.slice(lastTestLine + 1).join("\n").trim(),
   };
 }

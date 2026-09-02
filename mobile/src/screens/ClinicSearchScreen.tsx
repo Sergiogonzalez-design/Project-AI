@@ -11,6 +11,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import type { RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { WEB_APP_URL } from "../lib/admin-api";
 import {
   clinicMailtoHref,
@@ -26,13 +29,18 @@ import {
   normalizeClinicAccent,
   parseClinicSpecialties,
 } from "../lib/clinic-brand";
+import { displayClinicHoursText } from "../lib/clinic-hours";
 import { clinicMapsQuery, googleMapsSearchUrl } from "../lib/clinic-maps";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
+import type { TabParamList } from "../navigation/AppTabs";
 
 type Tab = "explorar" | "guardadas" | "novedades";
 
 export function ClinicSearchScreen() {
+  const route = useRoute<RouteProp<TabParamList, "ClinicSearch">>();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<TabParamList, "ClinicSearch">>();
   const [tab, setTab] = useState<Tab>("explorar");
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
@@ -42,6 +50,13 @@ export function ClinicSearchScreen() {
   const [slug, setSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const next = route.params?.clinicSlug?.trim();
+      if (next) setSlug(next);
+    }, [route.params?.clinicSlug])
+  );
 
   const loadExplore = useCallback(async () => {
     setLoading(true);
@@ -81,7 +96,15 @@ export function ClinicSearchScreen() {
   }, [tab, slug, loadExplore, loadFavorites, loadFeed]);
 
   if (slug) {
-    return <ClinicProfileView slug={slug} onBack={() => setSlug(null)} />;
+    return (
+      <ClinicProfileView
+        slug={slug}
+        onBack={() => {
+          setSlug(null);
+          navigation.setParams({ clinicSlug: undefined });
+        }}
+      />
+    );
   }
 
   const list = tab === "guardadas" ? favorites : results;
@@ -296,6 +319,7 @@ function ClinicProfileView({
 
   const accent = normalizeClinicAccent(clinic.accent_color);
   const chips = parseClinicSpecialties(clinic.specialties);
+  const hoursDisplay = displayClinicHoursText(clinic.hours);
 
   return (
     <ScrollView contentContainerStyle={styles.profileWrap}>
@@ -383,10 +407,10 @@ function ClinicProfileView({
         ) : (
           <>
             {clinic.description ? <Text style={styles.body}>{clinic.description}</Text> : null}
-            {clinic.hours ? (
+            {hoursDisplay ? (
               <>
                 <Text style={styles.section}>Horario</Text>
-                <Text style={styles.body}>{clinic.hours}</Text>
+                <Text style={styles.body}>{hoursDisplay}</Text>
               </>
             ) : null}
             {clinic.address ? (

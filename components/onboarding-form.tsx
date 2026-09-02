@@ -63,6 +63,7 @@ export function OnboardingForm() {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
+  const [city, setCity] = useState("");
 
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
@@ -124,6 +125,7 @@ export function OnboardingForm() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
+        city: city.trim() || null,
         primary_sport: normalizeSportsInput(primarySport),
         sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
         competitive_level: competitiveLevel,
@@ -239,6 +241,21 @@ export function OnboardingForm() {
               value={dominantFoot}
               onChange={setDominantFoot}
             />
+          </div>
+
+          <div>
+            <label className={labelClass}>Ciudad (opcional)</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Ej: Madrid"
+              className={inputClass}
+            />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Si la indicas, priorizamos clínicas de AIKinora en tu ciudad. Si no,
+              te recomendamos centros que encajen con tu lesión.
+            </p>
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}

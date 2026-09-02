@@ -567,7 +567,7 @@ export function localizeHeadLabel(id: string, fallback: string, locale: ConsultL
 
 export function localizeHeadOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return HEAD_OPTION_EN[option] ?? option;
+  return HEAD_OPTION_EN[option as keyof typeof HEAD_OPTION_EN] ?? option;
 }
 
 export function localizeHeadSection(section: string, locale: ConsultLocale): string {

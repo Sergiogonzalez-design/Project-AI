@@ -215,13 +215,23 @@ import {
   wantsToContinueToNextQuestionnaire,
   type AdaptiveQuestionnairePart,
 } from "@/lib/consulta-triage";
+import {
+  affirmsExerciseOffer,
+  buildPostConsultCaseSummary,
+  declinesExerciseOffer,
+} from "@/lib/consulta-exercise-offer";
 import { ConsultaCompleteCard } from "@/components/consulta-complete-card";
 import { ConsultaNewConsultaPrompt } from "@/components/consulta-new-consulta-prompt";
 import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
+import { parseClinicCentroFromLine } from "@/lib/consult-clinic-links";
+import { parseReadaptExerciseFromLine } from "@/lib/consult-readaptation";
+import { ReadaptationExerciseCard } from "@/components/readaptation-exercise-card";
 import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
+  consultPhotoVisionUrl,
+  signConsultMessageAttachments,
   isConsultImageFile,
   isConsultPdfFile,
   isConsultPdfUrl,
@@ -246,6 +256,7 @@ import {
 } from "@/lib/functional-test-answers";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 
@@ -431,6 +442,38 @@ function renderAssistantContent(content: string, highlightPhrases: string[] = []
       /^- Source:/i.test(trimmed)
     ) {
       return null;
+    }
+
+    const clinicLink = parseClinicCentroFromLine(trimmed);
+    if (clinicLink) {
+      return (
+        <div key={li} className={li > 0 ? "mt-2" : undefined}>
+          <Link
+            href={`/centro/${clinicLink.slug}`}
+            className="flex w-full flex-col items-start gap-0.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-left transition-colors hover:border-blue-300 hover:bg-blue-100"
+          >
+            <span className="text-sm font-semibold text-blue-800">
+              {clinicLink.label}
+            </span>
+            {clinicLink.meta ? (
+              <span className="text-xs leading-snug text-blue-700/80">
+                {clinicLink.meta}
+              </span>
+            ) : (
+              <span className="text-xs text-blue-600/70">Ver ficha en Buscar</span>
+            )}
+          </Link>
+        </div>
+      );
+    }
+
+    const readaptLink = parseReadaptExerciseFromLine(trimmed);
+    if (readaptLink) {
+      return (
+        <div key={li} className={li > 0 ? "mt-2" : undefined}>
+          <ReadaptationExerciseCard link={readaptLink} />
+        </div>
+      );
     }
 
     const headingMatch = /^(#{1,6})\s*(.+)$/.exec(trimmed);
@@ -681,6 +724,8 @@ export function ChatInterface({
   const [relatedFollowupActive, setRelatedFollowupActive] = useState(false);
   /** True once we've asked "any other question related to this injury?" */
   const [postGuidanceAsked, setPostGuidanceAsked] = useState(false);
+  /** After related Qs: waiting for yes/no on exercise / self-care offer. */
+  const [exerciseOfferActive, setExerciseOfferActive] = useState(false);
   /** Soft Nueva consulta button when the patient drifts to another topic. */
   const [showUnrelatedCta, setShowUnrelatedCta] = useState(false);
   /** Original complaint while we ask where on the arm/leg it hurts. */
@@ -1135,6 +1180,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setCaseImageUrl(null);
@@ -1149,6 +1195,8 @@ export function ChatInterface({
         .order("created_at", { ascending: true });
 
       let msgs = (data as Message[]) ?? [];
+
+      msgs = await signConsultMessageAttachments(msgs);
 
       if (linkedPhysio) {
         const { data: report } = await supabase
@@ -1243,6 +1291,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setInput("");
@@ -1552,6 +1601,7 @@ export function ChatInterface({
     setShowUnrelatedCta(false);
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     const closing = consultaFinishedCloseMessage(language);
     try {
       const { data: aiMsg } = await supabase
@@ -1692,6 +1742,7 @@ export function ChatInterface({
     options?: { askNow?: boolean; offeredTests?: boolean }
   ) {
     setRelatedFollowupActive(true);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     if (options?.askNow || options?.offeredTests === false) {
       await appendAssistantMessage(
@@ -1700,6 +1751,62 @@ export function ChatInterface({
       );
       setPostGuidanceAsked(true);
     }
+  }
+
+  function postConsultCaseSummaryForAi(): string {
+    const evaluations = partEvaluationsRef.current.map((e) => ({
+      label: e.label,
+      summary: e.summary,
+    }));
+    if (evaluations.length > 0) {
+      return buildPostConsultCaseSummary(evaluations, []);
+    }
+    const assistantTexts = messages
+      .filter(
+        (m) =>
+          m.role === "assistant" &&
+          !isConsultaFinishedCloseMessage(m.content),
+      )
+      .slice(-5)
+      .map((m) => m.content);
+    return buildPostConsultCaseSummary([], assistantTexts);
+  }
+
+  async function sendPostConsultExerciseOffer(conversationId: string) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callAI(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "offer",
+        message: caseSummary,
+        bodyArea,
+      },
+      consultLanguage,
+    );
+    await appendAssistantMessage(conversationId, answer);
+    setRelatedFollowupActive(false);
+    setExerciseOfferActive(true);
+    setPostGuidanceAsked(false);
+  }
+
+  async function sendPostConsultExercisePlan(
+    conversationId: string,
+    patientReply: string,
+  ) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callAI(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "plan",
+        message: caseSummary,
+        bodyArea,
+        description: patientReply,
+      },
+      consultLanguage,
+    );
+    await appendAssistantMessage(conversationId, answer);
   }
 
   async function appendMultiPartFinalSummary(
@@ -1841,7 +1948,7 @@ export function ChatInterface({
     imageUrl?: string | null,
     language: ConsultLanguage = consultLanguage
   ) {
-    const visionUrl = consultVisionUrl(imageUrl);
+    const visionUrl = await consultPhotoVisionUrl(imageUrl);
     let answer = triage.answer?.trim() ?? "";
 
     if (!answer) {
@@ -1883,9 +1990,6 @@ export function ChatInterface({
         title,
         user_id: user.id,
         kind: linkedPhysio ? "fisioterapia" : "consulta",
-        physio_id: linkedPhysio?.physio_id ?? null,
-        physio_name: linkedPhysio?.physio_name ?? null,
-        clinic_name: linkedPhysio?.clinic_name ?? null,
       })
       .select("id, title, created_at, physio_id, physio_name, clinic_name")
       .single();
@@ -1975,15 +2079,23 @@ export function ChatInterface({
     setLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = consultLanguage;
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -1999,7 +2111,7 @@ export function ChatInterface({
               intent: "general",
               answer: triage.answer?.trim() || decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2013,7 +2125,7 @@ export function ChatInterface({
               intent: "general",
               answer: decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2031,7 +2143,7 @@ export function ChatInterface({
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2047,7 +2159,7 @@ export function ChatInterface({
             intent: "general",
             answer: vagueArmClarifyMessage(lang),
           },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2082,7 +2194,7 @@ export function ChatInterface({
         return;
       }
 
-      await respondToInitialMessage(text, triage, attachmentUrl, lang);
+      await respondToInitialMessage(text, triage, attachmentPath, lang);
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       alert(err instanceof Error ? err.message : "Error al procesar tu mensaje.");
@@ -2445,8 +2557,8 @@ export function ChatInterface({
           symptomContext:
             contextForAi +
             (redFlagsUrgent
-              ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas. Esta orientación es para el paciente. NO pidas pruebas funcionales ni hop. Prioriza HOSPITAL / URGENCIAS e imagen. NO digas que el informe ya se envió al fisio.`
-              : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`),
+              ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas / PRIORIDAD ALTA. Esta orientación es para el paciente. OMITÉ **Pruebas funcionales** y **Clínicas en AIKinora cerca de ti**. NO pidas hop ni «aplica hielo» como prueba. Hielo/reposo solo en **Qué hacer mientras tanto**. Prioriza HOSPITAL / URGENCIAS e imagen en **Qué debes hacer ahora**. Incluye **Hospitales / Urgencias cerca de ti**. NO digas que el informe ya se envió al fisio.`
+              : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** (movimientos Sí/No; NO mezclar hielo/reposo ahí). NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`),
           conversationHistory: [],
           ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
         });
@@ -2479,9 +2591,6 @@ export function ChatInterface({
               title,
               user_id: user.id,
               kind: "fisioterapia",
-              physio_id: linkedPhysio.physio_id ?? null,
-              physio_name: linkedPhysio.physio_name ?? null,
-              clinic_name: linkedPhysio.clinic_name ?? null,
             })
             .select("id, title, created_at, physio_id, physio_name, clinic_name")
             .single();
@@ -2702,9 +2811,6 @@ export function ChatInterface({
           title,
           user_id: user.id,
           kind: "consulta",
-          physio_id: null,
-          physio_name: null,
-          clinic_name: null,
         })
         .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
@@ -2799,12 +2905,20 @@ export function ChatInterface({
     setLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2817,7 +2931,7 @@ export function ChatInterface({
           conversation_id: activeId,
           role: "user",
           content: text,
-          image_url: attachmentUrl,
+          image_url: attachmentPath,
         });
         userSaved = true;
       }
@@ -2950,8 +3064,8 @@ export function ChatInterface({
               })),
             {
               role: "user" as const,
-              content: attachmentUrl
-                ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+              content: attachmentPath
+                ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
                 : text,
             },
           ].slice(-10);
@@ -3083,8 +3197,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3229,11 +3343,7 @@ export function ChatInterface({
           ? patientFacingPartLabel(nextZone, initialMessage, consultLanguage)
           : null;
         if (moreZonesPending && nextZone) {
-          ensureAwaitingNextZone(
-            completedPart && completedPart !== "generic"
-              ? completedPart
-              : questionnairePart
-          );
+          ensureAwaitingNextZone(completedPart ?? questionnairePart);
         }
 
         const conversationHistory = [
@@ -3252,8 +3362,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3301,6 +3411,30 @@ export function ChatInterface({
       }
 
       // After orientation / tests: related Qs stay here; unrelated → Nueva consulta CTA.
+      if (exerciseOfferActive && !linkedPhysio) {
+        await saveUserMessage();
+        setShowUnrelatedCta(false);
+        setLoading(true);
+        setLoadingModal(true);
+        try {
+          if (declinesExerciseOffer(text)) {
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          if (affirmsExerciseOffer(text)) {
+            await sendPostConsultExercisePlan(activeId, text);
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          await sendPostConsultExercisePlan(activeId, text);
+          await finishConsultaSession(activeId, consultLanguage);
+        } finally {
+          setLoading(false);
+          setLoadingModal(false);
+        }
+        return;
+      }
+
       if (relatedFollowupActive && !linkedPhysio) {
         await saveUserMessage();
         setShowUnrelatedCta(false);
@@ -3325,7 +3459,14 @@ export function ChatInterface({
           ) {
             return;
           }
-          await finishConsultaSession(activeId, consultLanguage);
+          setLoading(true);
+          setLoadingModal(true);
+          try {
+            await sendPostConsultExerciseOffer(activeId);
+          } finally {
+            setLoading(false);
+            setLoadingModal(false);
+          }
           return;
         }
 
@@ -3370,8 +3511,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3428,8 +3569,8 @@ export function ChatInterface({
           })),
         {
           role: "user" as const,
-          content: attachmentUrl
-            ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+          content: attachmentPath
+            ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
             : text,
         },
       ].slice(-10);
@@ -3493,6 +3634,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setInput("");
@@ -3570,6 +3712,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setInput("");

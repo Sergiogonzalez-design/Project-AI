@@ -702,7 +702,7 @@ export function localizeSciaticLabel(id: string, fallback: string, locale: Consu
 
 export function localizeSciaticOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return SCIATIC_OPTION_EN[option] ?? option;
+  return SCIATIC_OPTION_EN[option as keyof typeof SCIATIC_OPTION_EN] ?? option;
 }
 
 export function localizeSciaticSection(section: string, locale: ConsultLocale): string {

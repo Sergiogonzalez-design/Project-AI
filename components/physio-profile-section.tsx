@@ -26,15 +26,21 @@ export function PhysioProfileSection() {
       } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, clinic_name")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (data) {
-        setFullName(data.display_name ?? "");
-        setClinicName(data.clinic_name ?? "");
+      const [{ data }, { data: clinicRow }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("display_name, clinic_name")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase.rpc("clinic_get_own"),
+      ]);
+      setFullName(data?.display_name ?? "");
+      let name = data?.clinic_name ?? "";
+      if (clinicRow && typeof clinicRow === "object" && "name" in clinicRow) {
+        const org = String((clinicRow as { name?: string }).name ?? "");
+        if (org) name = org;
       }
+      setClinicName(name);
       setLoading(false);
     }
     void load();
@@ -53,7 +59,8 @@ export function PhysioProfileSection() {
         .from("profiles")
         .update({
           display_name: fullName.trim(),
-          clinic_name: clinicName.trim() || null,
+          // Keep clinic_name as loaded from org; do not clear it.
+          ...(clinicName.trim() ? { clinic_name: clinicName.trim() } : {}),
           onboarding_completed: true,
           updated_at: new Date().toISOString(),
         })
@@ -94,16 +101,15 @@ export function PhysioProfileSection() {
           />
         </div>
         <div>
-          <label className={labelClass}>Clínica o centro</label>
+          <label className={labelClass}>Clínica</label>
           <input
             type="text"
             value={clinicName}
-            onChange={(e) => setClinicName(e.target.value)}
-            placeholder="Ej: Clínica AIKinora"
-            className={inputClass}
+            readOnly
+            className={`${inputClass} bg-slate-50 text-slate-700`}
           />
           <p className="mt-1.5 text-xs text-slate-500">
-            Opcional — visible para tus pacientes en el enlace de invitación.
+            Asignada desde tu invitación. La ficha completa está en Clínica.
           </p>
         </div>
 

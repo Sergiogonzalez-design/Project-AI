@@ -26,6 +26,7 @@ type ProfileData = {
   weight_kg: number | null;
   dominant_hand: string | null;
   dominant_foot: string | null;
+  city: string | null;
   primary_sport: string | null;
   sport_position: string | null;
   competitive_level: string | null;
@@ -90,6 +91,7 @@ export function AthleteProfileSection() {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
+  const [city, setCity] = useState("");
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
   const [competitiveLevel, setCompetitiveLevel] = useState("");
@@ -105,6 +107,7 @@ export function AthleteProfileSection() {
     setWeightKg(data.weight_kg?.toString() ?? "");
     setDominantHand(data.dominant_hand ?? "");
     setDominantFoot(data.dominant_foot ?? "");
+    setCity(data.city ?? "");
     setPrimarySport(data.primary_sport ?? "");
     setSportPosition(data.sport_position ?? "");
     setCompetitiveLevel(data.competitive_level ?? "");
@@ -123,7 +126,7 @@ export function AthleteProfileSection() {
       const { data } = await supabase
         .from("profiles")
         .select(
-          "age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
+          "age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, city, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
         )
         .eq("id", user.id)
         .single();
@@ -176,6 +179,7 @@ export function AthleteProfileSection() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
+        city: city.trim() || null,
         primary_sport: normalizeSportsInput(primarySport),
         sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
         competitive_level: competitiveLevel,
@@ -266,6 +270,7 @@ export function AthleteProfileSection() {
               />
               <SummaryRow label="Mano dominante" value={profile?.dominant_hand} />
               <SummaryRow label="Pie dominante" value={profile?.dominant_foot} />
+              <SummaryRow label="Ciudad" value={profile?.city} />
             </div>
 
             <div className="space-y-3 pt-4">
@@ -340,6 +345,20 @@ export function AthleteProfileSection() {
             <div>
               <label className={labelClass}>Pie dominante</label>
               <ChipGroup options={DOMINANT_FOOT_OPTIONS} value={dominantFoot} onChange={setDominantFoot} />
+            </div>
+            <div>
+              <label className={labelClass}>Ciudad (opcional)</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Ej: Madrid"
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Si la indicas, priorizamos clínicas de tu ciudad. Si no, te
+                recomendamos centros que encajen con tu lesión.
+              </p>
             </div>
           </div>
 

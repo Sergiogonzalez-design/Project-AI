@@ -1,8 +1,12 @@
 import React from "react";
 import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
+import { parseClinicCentroFromLine } from "../lib/consult-clinic-links";
+import { parseReadaptExerciseFromLine } from "../lib/consult-readaptation";
+import { ReadaptationExerciseCard } from "./ReadaptationExerciseCard";
 import { stripVisibleMarkup } from "../lib/strip-visible-markup";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
+import { Colors } from "../lib/colors";
 
 function stripMarkdownStars(text: string) {
   return stripVisibleMarkup(text);
@@ -86,6 +90,8 @@ type Props = {
   boldStyle?: object;
   highlightPhrases?: string[];
   highlightStyle?: object;
+  /** Opens Buscar → clinic profile for `/centro/{slug}` lines. Hospitals have no slug. */
+  onClinicPress?: (slug: string) => void;
 };
 
 /** Renders consulta assistant text with functional-test illustrations when matched. */
@@ -95,6 +101,7 @@ export function ConsultaAssistantBody({
   boldStyle,
   highlightPhrases,
   highlightStyle,
+  onClinicPress,
 }: Props) {
   const shownTestIds = new Set<string>();
   const lines = text.split("\n");
@@ -110,6 +117,39 @@ export function ConsultaAssistantBody({
           /^- Source:/i.test(trimmed)
         ) {
           return null;
+        }
+
+        const clinicLink = parseClinicCentroFromLine(trimmed);
+        if (clinicLink) {
+          return (
+            <Pressable
+              key={li}
+              onPress={() => onClinicPress?.(clinicLink.slug)}
+              disabled={!onClinicPress}
+              style={({ pressed }) => [
+                styles.clinicBtn,
+                li > 0 ? styles.lineGap : undefined,
+                pressed && onClinicPress ? styles.clinicBtnPressed : null,
+                !onClinicPress ? styles.clinicBtnDisabled : null,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`${clinicLink.label}. Ver ficha de la clínica`}
+            >
+              <Text style={styles.clinicBtnTitle}>{clinicLink.label}</Text>
+              <Text style={styles.clinicBtnMeta}>
+                {clinicLink.meta || "Ver ficha en Buscar"}
+              </Text>
+            </Pressable>
+          );
+        }
+
+        const readaptLink = parseReadaptExerciseFromLine(trimmed);
+        if (readaptLink) {
+          return (
+            <View key={li} style={li > 0 ? styles.lineGap : undefined}>
+              <ReadaptationExerciseCard link={readaptLink} />
+            </View>
+          );
         }
 
         const headingMatch = /^(#{1,6})\s*(.+)$/.exec(trimmed);
@@ -193,4 +233,27 @@ const styles = StyleSheet.create({
   lineGap: { marginTop: 8 },
   lineGapLg: { marginTop: 12 },
   lineGapText: { marginTop: 8 },
+  clinicBtn: {
+    alignSelf: "stretch",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  clinicBtnPressed: { opacity: 0.88, backgroundColor: "#dbeafe" },
+  clinicBtnDisabled: { opacity: 0.95 },
+  clinicBtnTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+  clinicBtnMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#1d4ed8",
+    opacity: 0.85,
+  },
 });

@@ -37,11 +37,14 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteClinicName, setInviteClinicName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [legalSection, setLegalSection] = useState<"privacy" | "terms" | null>(
     null
   );
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [convertingGuest, setConvertingGuest] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
@@ -51,6 +54,26 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       setConvertingGuest(isGuestUser(data.user));
     });
   }, []);
+
+  useEffect(() => {
+    const key = inviteCode.trim();
+    if (accountType !== "physio" || !key) {
+      setInviteClinicName(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      void supabase.rpc("clinic_lookup_invite", { p_token: key }).then(({ data }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.clinic_name) {
+          setInviteClinicName(String(row.clinic_name));
+          if (row.email) setEmail(String(row.email));
+        } else {
+          setInviteClinicName(null);
+        }
+      });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [accountType, inviteCode]);
 
   async function handleSignup() {
     setError(null);
@@ -64,6 +87,18 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
     }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
+      return;
+    }
+    if (accountType === "physio" && inviteCode.trim() && !inviteClinicName) {
+      setError("Código de clínica no válido o caducado.");
+      return;
+    }
+    if (!acceptedLegal) {
+      setError(
+        locale === "en"
+          ? "You must accept the Privacy policy and Terms of use."
+          : "Debes aceptar la Política de privacidad y los Términos de uso."
+      );
       return;
     }
     setLoading(true);
@@ -84,6 +119,10 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
           email: emailNorm,
           password,
           accountType: converting ? "patient" : accountType,
+          clinicInvite:
+            !converting && accountType === "physio" && inviteCode.trim()
+              ? inviteCode.trim()
+              : undefined,
         }),
       });
       const payload = (await res.json()) as { error?: string };
@@ -102,8 +141,14 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       });
       if (signError) {
         setError(signError.message);
+        return;
       }
-      // Session change is handled by App.tsx auth listener → onboarding
+      // Safety net: claim clinic after session exists (covers Expo/API race).
+      if (!converting && accountType === "physio" && inviteCode.trim()) {
+        await supabase.rpc("clinic_claim_invite", {
+          p_token: inviteCode.trim(),
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -193,6 +238,29 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
               El plan de clínica será de pago más adelante. Ahora puedes configurar el espacio.
             </Text>
           ) : null}
+          {accountType === "physio" ? (
+            <>
+              <Text style={styles.clinicHint}>
+                Opcional: introduce el código de alta ahora, o más tarde en
+                Clínica / al iniciar sesión.
+              </Text>
+              <View style={{ height: 8 }} />
+              <AuthTextField
+                label="Código de clínica (opcional)"
+                placeholder="Ej. AB12CD"
+                value={inviteCode}
+                onChangeText={(v) => setInviteCode(v.toUpperCase())}
+                editable={!loading}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              {inviteClinicName ? (
+                <Text style={styles.inviteOk}>Clínica: {inviteClinicName}</Text>
+              ) : inviteCode.trim() ? (
+                <Text style={styles.clinicHint}>Comprobando código…</Text>
+              ) : null}
+            </>
+          ) : null}
           <View style={{ height: 12 }} />
             </>
           )}
@@ -235,53 +303,67 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Text style={styles.legalAccept}>
-            {locale === "en" ? (
-              <>
-                By creating an account you accept the{" "}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => setLegalSection("privacy")}
-                >
-                  Privacy policy
-                </Text>{" "}
-                and{" "}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => setLegalSection("terms")}
-                >
-                  Terms of use
-                </Text>
-                .
-              </>
-            ) : (
-              <>
-                Al crear la cuenta aceptas la{" "}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => setLegalSection("privacy")}
-                >
-                  Política de privacidad
-                </Text>{" "}
-                y los{" "}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => setLegalSection("terms")}
-                >
-                  Términos de uso
-                </Text>
-                .
-              </>
-            )}
-          </Text>
+          <View style={styles.acceptRow}>
+            <Pressable
+              onPress={() => setAcceptedLegal((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acceptedLegal }}
+              hitSlop={8}
+            >
+              <View style={[styles.checkbox, acceptedLegal && styles.checkboxOn]}>
+                {acceptedLegal ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+            </Pressable>
+            <Text style={styles.acceptText}>
+              {locale === "en" ? (
+                <>
+                  I have read and accept the{" "}
+                  <Text
+                    style={styles.legalLink}
+                    onPress={() => setLegalSection("privacy")}
+                  >
+                    Privacy policy
+                  </Text>{" "}
+                  and{" "}
+                  <Text
+                    style={styles.legalLink}
+                    onPress={() => setLegalSection("terms")}
+                  >
+                    Terms of use
+                  </Text>
+                  , including processing of my consult data for AI guidance.
+                </>
+              ) : (
+                <>
+                  He leído y acepto la{" "}
+                  <Text
+                    style={styles.legalLink}
+                    onPress={() => setLegalSection("privacy")}
+                  >
+                    Política de privacidad
+                  </Text>{" "}
+                  y los{" "}
+                  <Text
+                    style={styles.legalLink}
+                    onPress={() => setLegalSection("terms")}
+                  >
+                    Términos de uso
+                  </Text>
+                  , incluido el tratamiento de los datos de mi consulta para
+                  orientarme con IA.
+                </>
+              )}
+            </Text>
+          </View>
 
           <Pressable
             style={({ pressed }) => [
               styles.button,
-              pressed && styles.buttonPressed,
+              (!acceptedLegal || loading) && styles.buttonDisabled,
+              pressed && acceptedLegal && styles.buttonPressed,
             ]}
             onPress={handleSignup}
-            disabled={loading}
+            disabled={loading || !acceptedLegal}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -361,6 +443,43 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
   },
+  acceptRow: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+    backgroundColor: Colors.surface,
+  },
+  checkboxOn: {
+    backgroundColor: Colors.primary,
+  },
+  checkboxMark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 16,
+  },
+  acceptText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    color: Colors.textSecondary,
+  },
   legalLink: {
     color: Colors.primary,
     fontWeight: "700",
@@ -402,6 +521,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: Colors.textSecondary,
   },
+  inviteOk: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
   button: {
     marginTop: 24,
     backgroundColor: Colors.primary,
@@ -414,8 +539,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 5,
   },
-  buttonPressed: {
-    backgroundColor: Colors.primaryDark,
+  buttonDisabled: {
+    opacity: 0.45,
   },
   buttonText: {
     color: "#fff",

@@ -22,7 +22,9 @@ import {
 } from "@/lib/clinical-test-images";
 import {
   consultAttachmentCaption,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
+  consultPhotoVisionUrl,
+  signConsultMessageAttachments,
   isConsultImageFile,
   isConsultPdfFile,
   isConsultPdfUrl,
@@ -553,9 +555,10 @@ export function FisioChatInterface() {
       .select("id, role, content, created_at, image_url")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
+    const resolved = await signConsultMessageAttachments((msgs as Message[]) ?? []);
     setActiveId(id);
     setActiveTitle(conv.title);
-    setMessages((msgs as Message[]) ?? []);
+    setMessages(resolved);
     setPhysioIntro(false);
     setMobileSidebarOpen(false);
     clearAttachment();
@@ -602,13 +605,16 @@ export function FisioChatInterface() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada.");
 
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
 
-      if (attachmentUrl) {
+      if (displayUrl) {
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === optimisticId ? { ...m, image_url: attachmentUrl } : m
+            m.id === optimisticId ? { ...m, image_url: displayUrl } : m
           )
         );
       }
@@ -638,7 +644,7 @@ export function FisioChatInterface() {
         conversation_id: conversationId,
         role: "user" as const,
         content: text,
-        image_url: attachmentUrl ?? null,
+        image_url: attachmentPath ?? null,
       };
       const { data: savedUser } = await supabase
         .from("messages")

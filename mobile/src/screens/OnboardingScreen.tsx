@@ -75,6 +75,7 @@ export function OnboardingScreen({ onComplete }: Props) {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
+  const [city, setCity] = useState("");
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
   const [competitiveLevel, setCompetitiveLevel] = useState("");
@@ -150,6 +151,7 @@ export function OnboardingScreen({ onComplete }: Props) {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
+        city: city.trim() || null,
         primary_sport: normalizeSportsInput(primarySport),
         sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
         competitive_level: competitiveLevel,
@@ -236,6 +238,16 @@ export function OnboardingScreen({ onComplete }: Props) {
               <Chips options={DOMINANT_HAND_OPTIONS} value={dominantHand} onChange={setDominantHand} />
               <Text style={styles.label}>Pie dominante</Text>
               <Chips options={DOMINANT_FOOT_OPTIONS} value={dominantFoot} onChange={setDominantFoot} />
+              <Field
+                label="Ciudad (opcional)"
+                value={city}
+                onChangeText={setCity}
+                placeholder="Ej: Madrid"
+              />
+              <Text style={styles.hint}>
+                Si la indicas, priorizamos clínicas de tu ciudad. Si no, te
+                recomendamos centros que encajen con tu lesión.
+              </Text>
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <Pressable
                 style={styles.primaryBtn}

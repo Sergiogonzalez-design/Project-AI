@@ -6,6 +6,7 @@ import {
   normalizeClinicAccent,
   parseClinicSpecialties,
 } from "@/lib/clinic-brand";
+import { displayClinicHoursText } from "@/lib/clinic-hours";
 import {
   clinicMailtoHref,
   clinicTelHref,
@@ -37,6 +38,7 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
   const [canSave, setCanSave] = useState(false);
   const [saving, setSaving] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
+  const hoursDisplay = displayClinicHoursText(clinic.hours);
 
   const accent = normalizeClinicAccent(clinic.accent_color);
   const soft = clinicAccentSoft(accent);
@@ -295,13 +297,13 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                   ) : (
                     <p className="text-sm text-slate-500">Sin descripción todavía.</p>
                   )}
-                  {clinic.hours ? (
+                  {hoursDisplay ? (
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                         Horario
                       </p>
                       <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
-                        {clinic.hours}
+                        {hoursDisplay}
                       </p>
                     </div>
                   ) : null}
