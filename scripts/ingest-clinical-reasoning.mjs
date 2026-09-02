@@ -106,6 +106,10 @@ const MODULE_SOURCES = {
   "mtrp-muscle-atlas.md": "Physioguide — Miofascial — atlas muscular por región",
   "evidence-levels-A-D.md": "Physioguide — Evidencia — niveles A–D",
   "test-reliability-framework.md": "Physioguide — Evidencia — marco de fiabilidad de pruebas",
+  "readaptation-master.md": "Physioguide — Evidencia — readaptación marco maestro",
+  "readaptation-protocols-upper.md": "Physioguide — Evidencia — readaptación miembro superior",
+  "readaptation-protocols-lower.md": "Physioguide — Evidencia — readaptación miembro inferior",
+  "readaptation-protocols-spine-core.md": "Physioguide — Evidencia — readaptación raquis y core",
 };
 
 function loadEnvLocal() {
