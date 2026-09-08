@@ -1,6 +1,11 @@
 import {
   filterPatientSafeFunctionalTests,
 } from "./patient-safe-functional-tests";
+import {
+  isClinicRecommendLine,
+  isClinicRecommendPrompt,
+  isClinicSectionHeadingLine,
+} from "./consult-clinic-links";
 
 export type FunctionalTestItem = {
   n: number;
@@ -52,22 +57,37 @@ export function splitFunctionalTests(content: string): {
   for (let i = headingIndex + 1; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (!trimmed) continue;
+    if (isClinicSectionHeadingLine(trimmed)) {
+      break;
+    }
     const headingMatch = NEXT_HEADING.exec(trimmed);
     if (headingMatch && !SECTION_HEADING.test(headingMatch[1].trim())) {
       break;
     }
+    if (isClinicRecommendLine(trimmed)) {
+      break;
+    }
     const numbered = NUMBERED.exec(trimmed);
     if (numbered) {
+      const n = Number(numbered[1]);
+      const prompt = stripStars(numbered[2]);
+      if (isClinicRecommendPrompt(prompt)) {
+        break;
+      }
+      if (tests.length > 0 && n <= tests[tests.length - 1]!.n) {
+        break;
+      }
       lastTestLine = i;
       tests.push({
-        n: Number(numbered[1]),
-        prompt: stripStars(numbered[2]),
+        n,
+        prompt,
       });
     }
   }
 
-  // Always consume the numbered block so clinician names never leak as markdown.
-  const safe = filterPatientSafeFunctionalTests(tests);
+  const safe = filterPatientSafeFunctionalTests(
+    tests.filter((t) => !isClinicRecommendPrompt(t.prompt))
+  );
   return {
     before: lines.slice(0, headingIndex).join("\n").trimEnd(),
     heading,

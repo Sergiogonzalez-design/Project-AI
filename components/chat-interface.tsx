@@ -224,7 +224,12 @@ import {
 import { ConsultaCompleteCard } from "@/components/consulta-complete-card";
 import { ConsultaNewConsultaPrompt } from "@/components/consulta-new-consulta-prompt";
 import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
-import { parseClinicCentroFromLine } from "@/lib/consult-clinic-links";
+import {
+  clinicRecommendIntro,
+  isClinicSectionHeadingLine,
+  parseClinicRecommendLine,
+  type ConsultLocale,
+} from "@/lib/consult-clinic-links";
 import { parseReadaptExerciseFromLine } from "@/lib/consult-readaptation";
 import { ReadaptationExerciseCard } from "@/components/readaptation-exercise-card";
 import {
@@ -432,8 +437,13 @@ function renderInlineText(text: string, phrases: string[], keyPrefix: string) {
   return withPhysioHighlights(inner, phrases, keyPrefix);
 }
 
-function renderAssistantContent(content: string, highlightPhrases: string[] = []) {
+function renderAssistantContent(
+  content: string,
+  highlightPhrases: string[] = [],
+  language: ConsultLocale = "es"
+) {
   const shownTestIds = new Set<string>();
+  let clinicIntroShown = false;
 
   return content.split("\n").map((line, li) => {
     const trimmed = line.trim();
@@ -446,24 +456,35 @@ function renderAssistantContent(content: string, highlightPhrases: string[] = []
       return null;
     }
 
-    const clinicLink = parseClinicCentroFromLine(trimmed);
+    if (isClinicSectionHeadingLine(trimmed)) {
+      clinicIntroShown = false;
+      return null;
+    }
+
+    const clinicLink = parseClinicRecommendLine(trimmed);
     if (clinicLink) {
+      const showIntro = !clinicIntroShown;
+      if (showIntro) clinicIntroShown = true;
       return (
         <div key={li} className={li > 0 ? "mt-2" : undefined}>
+          {showIntro ? (
+            <p className="mb-2 text-sm font-semibold text-slate-800">
+              {clinicRecommendIntro(language)}
+            </p>
+          ) : null}
           <Link
             href={`/centro/${clinicLink.slug}`}
-            className="flex w-full flex-col items-start gap-0.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-left transition-colors hover:border-blue-300 hover:bg-blue-100"
+            className="inline-flex w-full max-w-md flex-col items-start gap-0.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-left transition-colors hover:border-blue-300 hover:bg-blue-100"
           >
             <span className="text-sm font-semibold text-blue-800">
               {clinicLink.label}
             </span>
-            {clinicLink.meta ? (
-              <span className="text-xs leading-snug text-blue-700/80">
-                {clinicLink.meta}
-              </span>
-            ) : (
-              <span className="text-xs text-blue-600/70">Ver ficha en Buscar</span>
-            )}
+            <span className="text-xs leading-snug text-blue-700/80">
+              {clinicLink.meta ||
+                (language === "en"
+                  ? "View profile and contact"
+                  : "Ver ficha y contactar")}
+            </span>
           </Link>
         </div>
       );
@@ -479,7 +500,9 @@ function renderAssistantContent(content: string, highlightPhrases: string[] = []
     }
 
     const headingMatch = /^(#{1,6})\s*(.+)$/.exec(trimmed);
-    const headingText = headingMatch?.[2] ?? null;
+    const headingText = headingMatch?.[2]
+      ? stripVisibleMarkup(headingMatch[2])
+      : null;
     const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
     const numberedText =
       headingText && /^\d+[.)]\s+\S/.test(headingText)
@@ -4284,7 +4307,11 @@ export function ChatInterface({
                                   if (!parsed) {
                                     return (
                                       <div className="whitespace-pre-wrap break-words">
-                                        {renderAssistantContent(body, physioHighlightPhrases)}
+                                        {renderAssistantContent(
+                                          body,
+                                          physioHighlightPhrases,
+                                          consultLanguage
+                                        )}
                                       </div>
                                     );
                                   }
@@ -4293,7 +4320,8 @@ export function ChatInterface({
                                       <div className="whitespace-pre-wrap break-words">
                                         {renderAssistantContent(
                                           reconstructFunctionalTestsSection(parsed),
-                                          physioHighlightPhrases
+                                          physioHighlightPhrases,
+                                          consultLanguage
                                         )}
                                       </div>
                                     );
@@ -4301,7 +4329,11 @@ export function ChatInterface({
                                   return (
                                     <div className="whitespace-pre-wrap break-words">
                                       {parsed.before
-                                        ? renderAssistantContent(parsed.before, physioHighlightPhrases)
+                                        ? renderAssistantContent(
+                                            parsed.before,
+                                            physioHighlightPhrases,
+                                            consultLanguage
+                                          )
                                         : null}
                                       <p className={parsed.before ? "mt-3" : undefined}>
                                         <strong className="font-bold text-blue-700">
@@ -4317,7 +4349,11 @@ export function ChatInterface({
                                         }
                                       />
                                       {parsed.after
-                                        ? renderAssistantContent(parsed.after, physioHighlightPhrases)
+                                        ? renderAssistantContent(
+                                            parsed.after,
+                                            physioHighlightPhrases,
+                                            consultLanguage
+                                          )
                                         : null}
                                     </div>
                                   );

@@ -4499,6 +4499,7 @@ export function AIInquiriesScreen({
                                   highlightPhrases={physioHighlightPhrases}
                                   highlightStyle={styles.bubblePhysioHighlight}
                                   onClinicPress={openClinicProfile}
+                                  language={locale}
                                 />
                               );
                             }
@@ -4511,6 +4512,7 @@ export function AIInquiriesScreen({
                                   highlightPhrases={physioHighlightPhrases}
                                   highlightStyle={styles.bubblePhysioHighlight}
                                   onClinicPress={openClinicProfile}
+                                  language={locale}
                                 />
                               );
                             }
@@ -4524,6 +4526,7 @@ export function AIInquiriesScreen({
                                     highlightPhrases={physioHighlightPhrases}
                                     highlightStyle={styles.bubblePhysioHighlight}
                                     onClinicPress={openClinicProfile}
+                                    language={locale}
                                   />
                                 ) : null}
                                 <ConsultaAssistantBody
@@ -4549,6 +4552,7 @@ export function AIInquiriesScreen({
                                     highlightPhrases={physioHighlightPhrases}
                                     highlightStyle={styles.bubblePhysioHighlight}
                                     onClinicPress={openClinicProfile}
+                                    language={locale}
                                   />
                                 ) : null}
                               </View>
