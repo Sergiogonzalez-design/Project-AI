@@ -243,49 +243,70 @@ export function isInlineFuenteLine(line: string): boolean {
 }
 
 /**
+ * Patient AI output is usually plain lines (markdown is forbidden in the
+ * patient chat). Match the whole heading line only — not in-body mentions.
+ */
+const ORIENTATION_HEADING_REMAP: Array<[string, string]> = [
+  ["qué debes hacer ahora", "Qué debe hacer el paciente"],
+  ["what you should do now", "What the patient should do now"],
+  ["qué hacer mientras tanto", "Qué puede hacer el paciente mientras tanto"],
+  ["what to do in the meantime", "What the patient can do in the meantime"],
+  [
+    "pruebas funcionales (optional)",
+    "Pruebas funcionales (pedidas al paciente)",
+  ],
+  [
+    "pruebas funcionales (opcional)",
+    "Pruebas funcionales (pedidas al paciente)",
+  ],
+  [
+    "pruebas funcionales (opcionales)",
+    "Pruebas funcionales (pedidas al paciente)",
+  ],
+  ["pruebas funcionales", "Pruebas funcionales (pedidas al paciente)"],
+  [
+    "functional tests (optional)",
+    "Functional tests (asked of the patient)",
+  ],
+  ["functional tests", "Functional tests (asked of the patient)"],
+  ["contactar con un fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contactar un fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contactar con fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contactar fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contact a physiotherapist", "Physio contact (suggested to the patient)"],
+  ["contact a physio", "Physio contact (suggested to the patient)"],
+];
+
+function normalizeOrientationHeadingKey(line: string): string {
+  return line
+    .trim()
+    .replace(/^#{1,6}\s+/, "")
+    .replace(/^\*\*(.+?)\*\*$/u, "$1")
+    .replace(/^[*-]\s+/, "")
+    .replace(/^¿\s*/, "")
+    .replace(/[:.¿?]\s*$/u, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
  * Remap patient-facing section titles so the physio reads about the patient
  * (third person), not as if the AI is talking to the clinician.
+ * Handles markdown `**…**`, `#` headings, and bare lines from patient AI output.
  */
 export function remapOrientationHeadingsForPhysio(content: string): string {
+  if (!content) return content;
   return content
-    .replace(
-      /\*\*\s*Qué debes hacer ahora[:.]?\s*\*\*/gi,
-      "**Qué debe hacer el paciente**"
-    )
-    .replace(
-      /^#{1,6}\s*Qué debes hacer ahora[:.]?\s*$/gim,
-      "**Qué debe hacer el paciente**"
-    )
-    .replace(
-      /\*\*\s*What you should do now[:.]?\s*\*\*/gi,
-      "**What the patient should do now**"
-    )
-    .replace(
-      /^#{1,6}\s*What you should do now[:.]?\s*$/gim,
-      "**What the patient should do now**"
-    )
-    .replace(
-      /\*\*\s*Qué hacer mientras tanto[:.]?\s*\*\*/gi,
-      "**Qué puede hacer el paciente mientras tanto**"
-    )
-    .replace(
-      /^#{1,6}\s*Qué hacer mientras tanto[:.]?\s*$/gim,
-      "**Qué puede hacer el paciente mientras tanto**"
-    )
-    .replace(
-      /\*\*\s*What to do in the meantime[:.]?\s*\*\*/gi,
-      "**What the patient can do in the meantime**"
-    )
-    .replace(
-      /^#{1,6}\s*What to do in the meantime[:.]?\s*$/gim,
-      "**What the patient can do in the meantime**"
-    )
-    .replace(
-      /\*\*\s*¿Contactar (?:con )?(?:un )?fisio\??\s*\*\*/gi,
-      "**Contacto con fisioterapeuta (sugerido al paciente)**"
-    )
-    .replace(
-      /\*\*\s*Contact (?:a )?physio\??\s*\*\*/gi,
-      "**Physio contact (suggested to the patient)**"
-    );
+    .split("\n")
+    .map((line) => {
+      const key = normalizeOrientationHeadingKey(line);
+      if (!key) return line;
+      const match = ORIENTATION_HEADING_REMAP.find(([from]) => from === key);
+      if (!match) return line;
+      const replacement = match[1];
+      const hash = line.match(/^(#{1,6})\s+/);
+      if (hash) return `${hash[1]} ${replacement}`;
+      return `**${replacement}**`;
+    })
+    .join("\n");
 }
