@@ -1,8 +1,9 @@
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -636,9 +637,9 @@ function fmtList(items: string[]): string {
 export function formatFingerAdaptive(answers: FingerAdaptiveAnswers, introText?: string): string {
   const { urgent, triggered } = detectFingerRedFlags(answers);
   const header = "Cuestionario adaptativo — Dedos";
-  const redFlagLine = urgent
-    ? `Banderas rojas: **SÍ** (${triggered.join(", ")})`
-    : "Banderas rojas: No detectadas";
+  const redFlagLine = formatRedFlagScreenBlock(urgent, triggered)
+    .filter(Boolean)
+    .join("\n");
 
   const mechanismBlock = [
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
@@ -892,7 +893,7 @@ export function localizeFingerLabel(id: string, fallback: string, locale: Consul
 }
 export function localizeFingerOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return FINGER_OPTION_EN[option] ?? option;
+  return FINGER_OPTION_EN[option as keyof typeof FINGER_OPTION_EN] ?? option;
 }
 export function localizeFingerSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (FINGER_SECTION_LABELS as any)[section] ?? section;

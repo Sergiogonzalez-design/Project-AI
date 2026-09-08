@@ -1,8 +1,9 @@
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -638,11 +639,7 @@ export function formatElbowAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad movimiento: ${answers.rf_no_movimiento || "—"}`,
     `Inflamación severa post-trauma: ${answers.rf_inflamacion_severa || "—"}`,
@@ -978,7 +975,7 @@ export function localizeElbowLabel(id: string, fallback: string, locale: Consult
 }
 export function localizeElbowOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return ELBOW_OPTION_EN[option] ?? option;
+  return ELBOW_OPTION_EN[option as keyof typeof ELBOW_OPTION_EN] ?? option;
 }
 export function localizeElbowSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (ELBOW_SECTION_LABELS as any)[section] ?? section;

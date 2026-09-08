@@ -1,4 +1,5 @@
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
@@ -638,11 +639,7 @@ export function formatElbowAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad movimiento: ${answers.rf_no_movimiento || "—"}`,
     `Inflamación severa post-trauma: ${answers.rf_inflamacion_severa || "—"}`,

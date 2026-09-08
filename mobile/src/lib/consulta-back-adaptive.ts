@@ -7,6 +7,7 @@ import {
  * (urgency → core → mechanism branches → neuro / sciatica pattern → history).
  */
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -802,7 +803,18 @@ export function detectBackRedFlags(answers: BackAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof BackAdaptiveAnswers)[] = [
+    "rf_debilidad_bilateral_pie_caido",
+    "rf_anestesia_silla",
+    "rf_esfinteres",
+    "rf_fiebre_perdida_peso",
+    "rf_trauma_grave",
+    "rf_dolor_toracico_respiracion",
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: BackQuestionDef, answers: BackAdaptiveAnswers): boolean {
@@ -855,11 +867,7 @@ export function formatBackAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Debilidad bilateral / pie caído: ${answers.rf_debilidad_bilateral_pie_caido || "—"}`,
     `Anestesia silla de montar: ${answers.rf_anestesia_silla || "—"}`,
     `Alteración vejiga/intestino: ${answers.rf_esfinteres || "—"}`,
@@ -962,7 +970,7 @@ export function formatBackAdaptive(
     "- Coxis (final de la columna) + caída sentado → coccigodinia / contusión coccígea vs fractura de coxis (trauma).",
     "- Bloqueo / no enderezarse + espasmo + sin irradiación → lumbago agudo / espasmo paravertebral.",
     "- Dolor eléctrico/descarga + neuro + tos/estornudo empeora → compresión radicular discal vs estenosis.",
-    "- BANDERAS ROJAS esfínteres + anestesia silla + debilidad bilateral → SOSPECHA CAUDA EQUINA (urgencia absoluta).",
+    "- Alarma dura (esfínteres + anestesia silla + debilidad bilateral) → SOSPECHA CAUDA EQUINA (urgencia absoluta).",
     "- Dolor nocturno + fiebre + pérdida peso, o antecedente de cáncer → infección (espondilodiscitis) / tumor o metástasis (priorizar valoración médica, no solo mecánica).",
     "- Trauma + imposibilidad moverse + dolor nocturno severo → fractura vertebral / compresión (urgencia).",
     "- Riesgo de fragilidad ósea (osteoporosis/corticoides/posmenopausia) + dolor con esfuerzo mínimo (agacharse, estornudar) → sospecha de fractura vertebral por compresión osteoporótica."

@@ -7,6 +7,8 @@
  *    who also assesses hip/ankle mobility (often contributing factors)
  */
 
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
+
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -482,11 +484,10 @@ export function formatPlantarFasciaAdaptive(answers: PlantarFasciaAdaptiveAnswer
 
   const lines: string[] = [
     "=== CUESTIONARIO ADAPTATIVO — FASCITIS PLANTAR / NERVIO DE BAXTER ===",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")} → DERIVAR A URGENCIAS / ESPECIALISTA`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered, {
+      urgentHeaderSuffix: "pie / tobillo",
+      urgentDetail: "→ DERIVAR A URGENCIAS / ESPECIALISTA",
+    }),
     `Sospecha fractura: ${answers.rf_fractura_sospecha || "—"}`,
     `Signos infección: ${answers.rf_infeccion || "—"}`,
     `Pérdida sensibilidad / cambio color: ${answers.rf_perdida_sensibilidad || "—"}`,
@@ -695,7 +696,7 @@ export function localizePlantarFasciaLabel(id: string, fallback: string, locale:
 
 export function localizePlantarFasciaOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return PLANTAR_FASCIA_OPTION_EN[option] ?? option;
+  return PLANTAR_FASCIA_OPTION_EN[option as keyof typeof PLANTAR_FASCIA_OPTION_EN] ?? option;
 }
 
 export function localizePlantarFasciaSection(section: string, locale: ConsultLocale): string {

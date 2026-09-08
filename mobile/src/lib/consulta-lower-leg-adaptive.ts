@@ -1,14 +1,15 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
-import type { AnkleFootFocus } from "./detect-body-part";
+} from "@/lib/consulta-timing";
+import type { AnkleFootFocus } from "@/lib/detect-body-part";
 /**
  * Adaptive questionnaire for lower leg / shin / calf / Achilles / ankle / foot
  * (ankle_foot region) — adapts labels and location options to region_focus
  * (foot vs ankle vs lower_leg) from the patient's initial complaint.
  */
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -1239,11 +1240,7 @@ export function formatLowerLegAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad para apoyar/caminar: ${answers.rf_no_apoyo || "—"}`,
     `Hinchazón súbita pantorrilla: ${answers.rf_hinchazon_subita || "—"}`,
@@ -1565,7 +1562,7 @@ export function localizeLowerLegLabel(
 }
 export function localizeLowerLegOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return LOWER_LEG_OPTION_EN[option] ?? option;
+  return LOWER_LEG_OPTION_EN[option as keyof typeof LOWER_LEG_OPTION_EN] ?? option;
 }
 export function localizeLowerLegSection(
   section: string,

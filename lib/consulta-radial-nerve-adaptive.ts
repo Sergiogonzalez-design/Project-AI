@@ -6,6 +6,8 @@
  * 2. Specialized physiotherapy center (ultrasound-guided interventionism)
  */
 
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
+
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -434,7 +436,14 @@ export function detectRadialNerveRedFlags(answers: RadialNerveAdaptiveAnswers): 
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof RadialNerveAdaptiveAnswers)[] = [
+    "rf_muneca_caida",
+    "rf_perdida_sensibilidad_completa",
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 export function detectRadialNerveSeverity(answers: RadialNerveAdaptiveAnswers): "high" | "moderate" | "mild" {
@@ -511,11 +520,7 @@ export function formatRadialNerveAdaptive(answers: RadialNerveAdaptiveAnswers): 
 
   const lines: string[] = [
     "=== CUESTIONARIO ADAPTATIVO — NERVIO RADIAL ===",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ SIGNOS DE ALARMA: ${triggered.join("; ")} → DERIVAR A ESPECIALISTA (valorar manejo urgente si hay wrist drop agudo)`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Muñeca caída: ${answers.rf_muneca_caida || "—"}`,
     `Debilidad progresiva: ${answers.rf_debilidad_progresiva || "—"}`,
     `Pérdida sensitiva completa: ${answers.rf_perdida_sensibilidad_completa || "—"}`,

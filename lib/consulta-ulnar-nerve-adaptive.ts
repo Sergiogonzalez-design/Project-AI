@@ -6,6 +6,8 @@
  * 2. Specialized physiotherapy center (invasive therapies)
  */
 
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
+
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -447,7 +449,8 @@ export function detectUlnarNerveRedFlags(answers: UlnarNerveAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  // Soft/history flags (progressive weakness, interosseous atrophy, claw) — not ER.
+  return { urgent: false, triggered };
 }
 
 export function detectUlnarNerveSeverity(answers: UlnarNerveAdaptiveAnswers): "high" | "moderate" | "mild" {
@@ -522,11 +525,7 @@ export function formatUlnarNerveAdaptive(answers: UlnarNerveAdaptiveAnswers): st
 
   const lines: string[] = [
     "=== CUESTIONARIO ADAPTATIVO — NERVIO CUBITAL ===",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ SIGNOS DE ALARMA: ${triggered.join("; ")} → DERIVAR A ESPECIALISTA (valorar cirugía si hay atrofia o deformidad en garra)`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Debilidad progresiva: ${answers.rf_debilidad_progresiva || "—"}`,
     `Atrofia interóseos: ${answers.rf_atrofia_interoseos || "—"}`,
     `Garra 4.º y 5.º dedo: ${answers.rf_garra_dedos || "—"}`,

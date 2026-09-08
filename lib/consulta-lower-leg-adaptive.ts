@@ -9,6 +9,7 @@ import type { AnkleFootFocus } from "@/lib/detect-body-part";
  * (foot vs ankle vs lower_leg) from the patient's initial complaint.
  */
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -1239,11 +1240,7 @@ export function formatLowerLegAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad para apoyar/caminar: ${answers.rf_no_apoyo || "—"}`,
     `Hinchazón súbita pantorrilla: ${answers.rf_hinchazon_subita || "—"}`,

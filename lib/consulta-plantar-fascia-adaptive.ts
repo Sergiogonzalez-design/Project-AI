@@ -7,6 +7,8 @@
  *    who also assesses hip/ankle mobility (often contributing factors)
  */
 
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
+
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -482,11 +484,10 @@ export function formatPlantarFasciaAdaptive(answers: PlantarFasciaAdaptiveAnswer
 
   const lines: string[] = [
     "=== CUESTIONARIO ADAPTATIVO — FASCITIS PLANTAR / NERVIO DE BAXTER ===",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")} → DERIVAR A URGENCIAS / ESPECIALISTA`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered, {
+      urgentHeaderSuffix: "pie / tobillo",
+      urgentDetail: "→ DERIVAR A URGENCIAS / ESPECIALISTA",
+    }),
     `Sospecha fractura: ${answers.rf_fractura_sospecha || "—"}`,
     `Signos infección: ${answers.rf_infeccion || "—"}`,
     `Pérdida sensibilidad / cambio color: ${answers.rf_perdida_sensibilidad || "—"}`,

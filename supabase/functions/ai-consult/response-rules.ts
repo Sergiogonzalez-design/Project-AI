@@ -1703,7 +1703,8 @@ PASO 1 — ORIENTACIÓN INICIAL (DIFFERENTIAL COMPLETO):
 
 PASO 2 — ¿ES URGENTE / HOSPITAL? (SOLO PRIORIDAD ALTA REAL — no inventes urgencia):
 - Hospital / urgencias SOLO si el contexto dice explícitamente «PRIORIDAD ALTA», «URGENCIA DETECTADA» o «BANDERAS ROJAS DETECTADAS», O hay lesión grave ya evidente (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, no apoyo post-trauma, etc.).
-- PROHIBIDO mandar a hospital/urgencias por: dolor leve-moderado (p. ej. 3–5/10 o ≤6/10 sin otros alarmas), sobrecarga / esfuerzo / lumbalgia o cervicalgia mecánica, molestia de espalda/cuello sin banderas, o solo porque el cuestionario tiene un apartado titulado «BANDERAS ROJAS» con «Ninguna bandera roja marcada».
+- PROHIBIDO mandar a hospital/urgencias por: dolor leve-moderado (p. ej. 3–5/10 o ≤6/10 sin otros alarmas), sobrecarga / esfuerzo / lumbalgia o cervicalgia mecánica, molestia de espalda/cuello sin alarmas duras, o solo porque el cuestionario tiene un apartado titulado «CRIBADO DE ALARMAS» o «BANDERAS ROJAS» con ninguna alarma dura marcada.
+- Antecedentes de cribado (p. ej. cáncer previo, riesgo de fractura por fragilidad, dolor nocturno aislado) pueden aparecer como contexto clínico. NO justifican PRIORIDAD ALTA ni «ve a urgencias» por sí solos. «CRIBADO DE ALARMAS (ninguna marcada como Sí)» y «contexto clínico, no urgencia hospitalaria» NO son urgencia hospitalaria.
 - Si NO hay PRIORIDAD ALTA real:
   → NO uses el flujo de hospital.
   → En **Qué debes hacer ahora** prioriza fisioterapia / clínicas AIKinora / hacer las pruebas funcionales / autocuidado según el caso — NUNCA hospital por defecto.
@@ -2344,8 +2345,8 @@ const GENERIC_FUNCTIONAL = [
 ];
 
 /** True when client/context already flagged hospital-level urgency.
- * Do NOT match bare «BANDERAS ROJAS» section titles in questionnaires
- * (those appear even when the answer is «Ninguna bandera roja…»).
+ * Do NOT match bare «BANDERAS ROJAS» or «CRIBADO DE ALARMAS» section titles
+ * in questionnaires (those appear even when no hard-urgent flag is marked).
  * Do NOT match informal «high priority» / «urgencia absoluta» wording in
  * differential notes — only explicit DETECTADA / PRIORIDAD ALTA flags.
  */

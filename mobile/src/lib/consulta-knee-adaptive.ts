@@ -1,12 +1,13 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 /**
  * Adaptive questionnaire for knee pain — same structure as shoulder / neck / lower leg
  * (urgency → core → mechanism branches → neuro / swelling / instability → history).
  */
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -1161,7 +1162,19 @@ export function detectKneeRedFlags(answers: KneeAdaptiveAnswers): {
   if (answers.rf_extension_activa === "No") {
     triggered.push(labels.rf_extension_activa);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof KneeAdaptiveAnswers)[] = [
+    "rf_deformidad",
+    "rf_no_apoyo",
+    "rf_fiebre",
+    "rf_vascular",
+    "rf_perdida_sensibilidad",
+  ];
+  return {
+    triggered,
+    urgent:
+      HARD_FLAG_IDS.some((id) => answers[id] === "Sí") ||
+      answers.rf_extension_activa === "No",
+  };
 }
 
 function isAnswered(q: KneeQuestionDef, answers: KneeAdaptiveAnswers): boolean {
@@ -1214,11 +1227,7 @@ export function formatKneeAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     answers.acortar_por_urgencia
       ? "CUESTIONARIO ACORTADO POR URGENCIA — prioriza HOSPITAL / URGENCIAS; no pidas tests funcionales."
       : "",
@@ -1655,7 +1664,7 @@ export function localizeKneeLabel(
 
 export function localizeKneeOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return KNEE_OPTION_EN[option] ?? option;
+  return KNEE_OPTION_EN[option as keyof typeof KNEE_OPTION_EN] ?? option;
 }
 
 export function localizeKneeSection(

@@ -8,6 +8,7 @@ import {
   missingQuestionIssue,
   type AdaptiveValidationIssue,
 } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export type GenericConsultaAnswers = {
   zona: string;
@@ -112,7 +113,7 @@ export function formatGenericConsulta(a: GenericConsultaAnswers, bodyMapText: st
     bodyMapText,
     "",
     a.zona.trim() ? `Zona: ${a.zona.trim()}` : "",
-    redFlags.length ? `⚠️ BANDERAS ROJAS: ${redFlags.join(", ")}` : "Sin banderas rojas marcadas",
+    ...formatRedFlagScreenBlock(redFlags.length > 0, redFlags as string[]),
     `Evolución: ${a.evolucion}`,
     `Inicio: ${a.inicio}`,
     `Mecanismo: ${a.mecanismo.join(", ")}${a.mecanismo.includes("Otro") ? ` (${a.mecanismo_otro})` : ""}`,

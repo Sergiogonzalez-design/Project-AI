@@ -3,6 +3,7 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "@/lib/consulta-timing";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 export const YES_NO = ["No", "Sí"] as const;
 
 export const WRIST_ONSET_OPTIONS = [
@@ -483,9 +484,9 @@ function fmtList(items: string[]): string {
 export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: string): string {
   const { urgent, triggered } = detectWristRedFlags(answers);
   const header = "Cuestionario adaptativo — Muñeca/mano";
-  const redFlagLine = urgent
-    ? `Banderas rojas: **SÍ** (${triggered.join(", ")})`
-    : "Banderas rojas: No detectadas";
+  const redFlagLine = formatRedFlagScreenBlock(urgent, triggered)
+    .filter(Boolean)
+    .join("\n");
 
   const mechanismBlock = [
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",

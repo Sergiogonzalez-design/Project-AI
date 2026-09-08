@@ -1,8 +1,9 @@
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 export const YES_NO = ["No", "Sí"] as const;
 
 export const WRIST_ONSET_OPTIONS = [
@@ -483,9 +484,9 @@ function fmtList(items: string[]): string {
 export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: string): string {
   const { urgent, triggered } = detectWristRedFlags(answers);
   const header = "Cuestionario adaptativo — Muñeca/mano";
-  const redFlagLine = urgent
-    ? `Banderas rojas: **SÍ** (${triggered.join(", ")})`
-    : "Banderas rojas: No detectadas";
+  const redFlagLine = formatRedFlagScreenBlock(urgent, triggered)
+    .filter(Boolean)
+    .join("\n");
 
   const mechanismBlock = [
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
@@ -826,7 +827,7 @@ export function localizeWristLabel(id: string, fallback: string, locale: Consult
 }
 export function localizeWristOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return WRIST_OPTION_EN[option] ?? option;
+  return WRIST_OPTION_EN[option as keyof typeof WRIST_OPTION_EN] ?? option;
 }
 export function localizeWristSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (WRIST_SECTION_LABELS as any)[section] ?? section;

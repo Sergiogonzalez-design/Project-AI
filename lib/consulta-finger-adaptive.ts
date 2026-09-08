@@ -3,6 +3,7 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "@/lib/consulta-timing";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -636,9 +637,9 @@ function fmtList(items: string[]): string {
 export function formatFingerAdaptive(answers: FingerAdaptiveAnswers, introText?: string): string {
   const { urgent, triggered } = detectFingerRedFlags(answers);
   const header = "Cuestionario adaptativo — Dedos";
-  const redFlagLine = urgent
-    ? `Banderas rojas: **SÍ** (${triggered.join(", ")})`
-    : "Banderas rojas: No detectadas";
+  const redFlagLine = formatRedFlagScreenBlock(urgent, triggered)
+    .filter(Boolean)
+    .join("\n");
 
   const mechanismBlock = [
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",

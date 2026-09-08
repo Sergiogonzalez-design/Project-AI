@@ -1,12 +1,13 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "./consulta-timing";
+} from "@/lib/consulta-timing";
 /**
  * Adaptive questionnaire for hip / groin pain — same structure as knee / shoulder / lower leg
  * (urgency → core → mechanism branches → neuro / impingement / trochanter → history).
  */
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -1025,7 +1026,18 @@ export function detectHipRedFlags(answers: HipAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof HipAdaptiveAnswers)[] = [
+    "rf_no_apoyo",
+    "rf_deformidad",
+    "rf_fiebre",
+    "rf_vascular",
+    "rf_perdida_sensibilidad",
+    "rf_cola_caballo",
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: HipQuestionDef, answers: HipAdaptiveAnswers): boolean {
@@ -1084,11 +1096,7 @@ export function formatHipAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     answers.acortar_por_urgencia
       ? "CUESTIONARIO ACORTADO POR URGENCIA — prioriza HOSPITAL / URGENCIAS; no pidas tests funcionales ni hop."
       : "",
@@ -1489,7 +1497,7 @@ export function localizeHipLabel(
 
 export function localizeHipOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return HIP_OPTION_EN[option] ?? option;
+  return HIP_OPTION_EN[option as keyof typeof HIP_OPTION_EN] ?? option;
 }
 
 export function localizeHipSection(

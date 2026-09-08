@@ -1,4 +1,5 @@
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
@@ -661,7 +662,7 @@ export function detectRedFlags(answers: ShoulderAdaptiveAnswers): {
   triggered: string[];
 } {
   const labels: Record<string, string> = {
-    rf_deformidad: "Se ve torcido, deformado o muy distinto tras un golpe o ca�da",
+    rf_deformidad: "Se ve torcido, deformado o muy distinto tras un golpe o caída",
     rf_no_movimiento: "No puedes mover el brazo en absoluto",
     rf_perdida_fuerza: "Pérdida súbita de fuerza",
     rf_perdida_sensibilidad: "Pérdida de sensibilidad",
@@ -674,7 +675,19 @@ export function detectRedFlags(answers: ShoulderAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof ShoulderAdaptiveAnswers)[] = [
+    "rf_deformidad",
+    "rf_no_movimiento",
+    "rf_perdida_fuerza",
+    "rf_perdida_sensibilidad",
+    "rf_fiebre",
+    "rf_respiracion_torax",
+    "rf_luxacion_actual",
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: ShoulderQuestionDef, answers: ShoulderAdaptiveAnswers): boolean {
@@ -721,11 +734,7 @@ export function formatShoulderAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad movimiento: ${answers.rf_no_movimiento || "—"}`,
     `Pérdida fuerza súbita: ${answers.rf_perdida_fuerza || "—"}`,
