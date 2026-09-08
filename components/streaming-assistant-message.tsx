@@ -7,10 +7,12 @@ import {
 } from "@/lib/reveal-text-lines";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+type RevealCompleteMeta = { interrupted: boolean };
+
 type Props = {
   content: string;
   animate: boolean;
-  onRevealComplete?: () => void;
+  onRevealComplete?: (meta?: RevealCompleteMeta) => void;
   onRevealTick?: () => void;
   children: (visibleText: string, isRevealing: boolean) => React.ReactNode;
 };
@@ -45,10 +47,10 @@ export function StreamingAssistantMessage({
     let timer: number | null = null;
     let completed = false;
 
-    const finish = () => {
+    const finish = (interrupted = false) => {
       if (completed) return;
       completed = true;
-      onRevealCompleteRef.current?.();
+      onRevealCompleteRef.current?.({ interrupted });
     };
 
     const clear = () => {
@@ -106,7 +108,7 @@ export function StreamingAssistantMessage({
       clear();
       // Interrupted mid-reveal (e.g. conversation reload): still notify so parent can clear id.
       if (wasAnimatingRef.current && !completed) {
-        finish();
+        finish(true);
       }
     };
   }, [animate, content, chunks.length]);

@@ -635,6 +635,8 @@ export function AIInquiriesScreen({
   const [loadingModal, setLoadingModal] = useState(false);
   const loadingModalStartedAtRef = useRef<number | null>(null);
   const [revealingMessageId, setRevealingMessageId] = useState<string | null>(null);
+  const revealingMessageIdRef = useRef<string | null>(null);
+  const submittingRef = useRef(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const pinRevealToStartRef = useRef(false);
 
@@ -690,6 +692,8 @@ export function AIInquiriesScreen({
     cancel: cancelSpeech,
     toggle: toggleSpeak,
   } = useSpeechSynthesis({ language: consultLanguage });
+  const speakingIdRef = useRef<string | null>(null);
+  speakingIdRef.current = speakingId;
 
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -699,6 +703,8 @@ export function AIInquiriesScreen({
   }, []);
 
   const resumeConversationListening = useCallback(() => {
+    if (speakingIdRef.current) return;
+    if (revealingMessageIdRef.current) return;
     conversationBusyRef.current = false;
     hearingTextRef.current = "";
     clearSilenceTimer();
@@ -708,6 +714,8 @@ export function AIInquiriesScreen({
       if (
         conversationModeRef.current &&
         !conversationBusyRef.current &&
+        !speakingIdRef.current &&
+        !revealingMessageIdRef.current &&
         phaseRef.current !== "questionnaire"
       ) {
         startMicRef.current();
@@ -849,6 +857,7 @@ export function AIInquiriesScreen({
 
   const beginAssistantReveal = useCallback((id: string, content: string) => {
     pinRevealToStartRef.current = isLongAssistantReply(content);
+    revealingMessageIdRef.current = id;
     setRevealingMessageId(id);
   }, []);
 
@@ -962,6 +971,7 @@ export function AIInquiriesScreen({
     setOpeningConversation(true);
     setHistoryOpen(false);
     setPhysioIntro(false);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setEvaluatedParts([]);
     setPendingParts([]);
@@ -1053,6 +1063,7 @@ export function AIInquiriesScreen({
         : t.consulta.newConsulta
     );
     setMessages([]);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(false);
@@ -1117,6 +1128,7 @@ export function AIInquiriesScreen({
   function resetForNewFisioCodeLink() {
     setActiveId(null);
     setMessages([]);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(true);
@@ -1250,6 +1262,7 @@ export function AIInquiriesScreen({
     setActiveId(null);
     setActiveTitle(t.consulta.newConsulta);
     setMessages([]);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(true);
@@ -2029,11 +2042,12 @@ export function AIInquiriesScreen({
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
       (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading) {
+    if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading || submittingRef.current || revealingMessageIdRef.current) {
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `user-${Date.now()}`;
+    submittingRef.current = true;
     setChatInput("");
     setChatLoading(true);
     setFormError(null);
@@ -2161,12 +2175,14 @@ export function AIInquiriesScreen({
         err instanceof Error ? err.message : "No se pudo procesar tu mensaje. Inténtalo de nuevo."
       );
     } finally {
+      submittingRef.current = false;
       setChatLoading(false);
     }
   }
 
   async function handleQuestionnaireSubmit() {
     setFormError(null);
+    if (chatLoading || submittingRef.current || revealingMessageIdRef.current) return;
 
     // Prefer refs so "Enviar ahora (urgencia)" can setState + submit with the same answers.
     const kneeAnswers = kneeAnswersRef.current;
@@ -2394,6 +2410,7 @@ export function AIInquiriesScreen({
 
     setChatLoading(true);
     setLoadingModal(true);
+    submittingRef.current = true;
 
     const symptomContext = buildSymptomContext();
     const detectedZones = detectBodyPartsFromText(initialMessage);
@@ -2504,8 +2521,7 @@ export function AIInquiriesScreen({
               : "No"
           : questionnairePart === "back"
             ? backAnswers.mecanismo.includes("Caída") ||
-              backAnswers.mecanismo.includes("Golpe directo") ||
-              backAnswers.mecanismo.includes("Levantamiento / esfuerzo")
+              backAnswers.mecanismo.includes("Golpe directo")
               ? `Sí: ${backAnswers.mecanismo.join(", ")}`
               : "No"
           : questionnairePart === "hip"
@@ -2881,6 +2897,7 @@ export function AIInquiriesScreen({
         err instanceof Error ? err.message : "No se pudo obtener la respuesta. Inténtalo de nuevo."
       );
     } finally {
+      submittingRef.current = false;
       setChatLoading(false);
       setLoadingModal(false);
     }
@@ -2891,11 +2908,12 @@ export function AIInquiriesScreen({
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
       (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedUri) || phase !== "followup" || chatLoading || !activeId) {
+    if ((!text && !attachedUri) || phase !== "followup" || chatLoading || submittingRef.current || revealingMessageIdRef.current || !activeId) {
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `u-${Date.now()}`;
+    submittingRef.current = true;
     setChatInput("");
     setChatLoading(true);
 
@@ -3593,6 +3611,7 @@ export function AIInquiriesScreen({
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       setFormError("No se pudo procesar tu mensaje. Inténtalo de nuevo.");
     } finally {
+      submittingRef.current = false;
       setChatLoading(false);
     }
   }
@@ -3641,6 +3660,7 @@ export function AIInquiriesScreen({
     phase !== "complete" &&
     (phase === "intro" || phase === "followup") &&
     (!linkedPhysio || Boolean(activeId) || conversations.length === 0 || fisioNewConsultDraft);
+  const chatBusy = chatLoading || Boolean(revealingMessageId);
   const awaitingFunctionalTests =
     phase === "followup" ? latestUnansweredFunctionalTests(messages) : null;
   const showFisioPickExisting =
@@ -4428,12 +4448,15 @@ export function AIInquiriesScreen({
                   <StreamingAssistantMessage
                     content={msg.content}
                     animate={shouldAnimateAssistantMessage(msg, revealingMessageId)}
-                      onRevealComplete={() => {
-                        if (revealingMessageId === msg.id) {
+                      onRevealComplete={(meta) => {
+                        const stillCurrent = revealingMessageIdRef.current === msg.id;
+                        if (stillCurrent) {
+                          revealingMessageIdRef.current = null;
                           setRevealingMessageId(null);
                         }
                         pinRevealToStartRef.current = false;
                         updateScrollDownVisibility();
+                        if (meta?.interrupted || !stillCurrent) return;
                         if (
                           msg.id === WELCOME_ID ||
                           autoSpokenIdsRef.current.has(msg.id)
@@ -4514,7 +4537,7 @@ export function AIInquiriesScreen({
                                 <FunctionalTestYesNo
                                   tests={parsed.tests}
                                   language={locale}
-                                  disabled={chatLoading}
+                                  disabled={chatBusy}
                                   onSubmit={(text) =>
                                     sendVoiceTurnRef.current(text)
                                   }
@@ -4833,11 +4856,11 @@ export function AIInquiriesScreen({
               <Pressable
                 style={({ pressed }) => [
                   styles.micIconBtn,
-                  chatLoading && styles.sendBtnDisabled,
+                  chatBusy && styles.sendBtnDisabled,
                   pressed && styles.attachBtnPressed,
                 ]}
                 onPress={pickConsultAttachment}
-                disabled={chatLoading}
+                disabled={chatBusy}
                 accessibilityLabel={t.consulta.attachFile}
               >
                 <Ionicons name="add" size={24} color={Colors.textSecondary} />
@@ -4863,18 +4886,18 @@ export function AIInquiriesScreen({
               onChangeText={setChatInput}
               multiline
               maxLength={2000}
-              editable={!chatLoading && !conversationMode}
+              editable={!chatBusy && !conversationMode}
             />
             {sttSupported ? (
               <Pressable
                 style={({ pressed }) => [
                   styles.micIconBtn,
                   conversationMode && styles.micIconBtnActive,
-                  chatLoading && !conversationMode && styles.sendBtnDisabled,
+                  chatBusy && !conversationMode && styles.sendBtnDisabled,
                   pressed && styles.attachBtnPressed,
                 ]}
                 onPress={toggleConversationMode}
-                disabled={chatLoading && !conversationMode}
+                disabled={chatBusy && !conversationMode}
                 accessibilityLabel={
                   conversationMode ? "Salir de conversación" : "Conversación por voz"
                 }
@@ -4891,11 +4914,11 @@ export function AIInquiriesScreen({
                 <Pressable
                   style={({ pressed }) => [
                     styles.micIconBtn,
-                    chatLoading && styles.sendBtnDisabled,
+                    chatBusy && styles.sendBtnDisabled,
                     pressed && styles.attachBtnPressed,
                   ]}
                   onPress={() => void takeConsultPhoto()}
-                  disabled={chatLoading}
+                  disabled={chatBusy}
                   accessibilityLabel={t.consulta.takePhoto}
                 >
                   <Ionicons name="camera-outline" size={22} color={Colors.textSecondary} />
@@ -4903,18 +4926,19 @@ export function AIInquiriesScreen({
                 <Pressable
                   style={({ pressed }) => [
                     styles.sendBtn,
-                    (chatLoading || (!chatInput.trim() && !attachedUri)) &&
+                    (chatBusy || (!chatInput.trim() && !attachedUri)) &&
                       styles.sendBtnDisabled,
                     pressed && styles.sendBtnPressed,
                   ]}
                   onPress={() => {
+                    if (chatBusy) return;
                     if (!chatInput.trim() && !attachedUri) return;
                     stopMic();
                     cancelSpeech();
                     if (phase === "intro") handleIntroSubmit();
                     else handleFollowupSubmit();
                   }}
-                  disabled={chatLoading || (!chatInput.trim() && !attachedUri)}
+                  disabled={chatBusy || (!chatInput.trim() && !attachedUri)}
                   accessibilityLabel="Enviar"
                 >
                   <Ionicons name="arrow-up" size={20} color={Colors.white} />

@@ -8,10 +8,12 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo, View } from "react-native";
 
+type RevealCompleteMeta = { interrupted: boolean };
+
 type Props = {
   content: string;
   animate: boolean;
-  onRevealComplete?: () => void;
+  onRevealComplete?: (meta?: RevealCompleteMeta) => void;
   onRevealTick?: () => void;
   children: (visibleText: string, isRevealing: boolean) => React.ReactNode;
 };
@@ -50,10 +52,10 @@ export function StreamingAssistantMessage({
     let timer: ReturnType<typeof setTimeout> | null = null;
     let completed = false;
 
-    const finish = () => {
+    const finish = (interrupted = false) => {
       if (completed) return;
       completed = true;
-      onRevealCompleteRef.current?.();
+      onRevealCompleteRef.current?.({ interrupted });
     };
 
     const clear = () => {
@@ -109,7 +111,7 @@ export function StreamingAssistantMessage({
       cancelled = true;
       clear();
       if (wasAnimatingRef.current && !completed) {
-        finish();
+        finish(true);
       }
     };
   }, [animate, content, chunks, reduceMotion]);
