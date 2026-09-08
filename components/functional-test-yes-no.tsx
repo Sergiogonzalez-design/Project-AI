@@ -50,6 +50,10 @@ export function FunctionalTestYesNo({
   const [showHint, setShowHint] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
   const wasDisabledRef = useRef(Boolean(disabled));
+  const onStaggerTickRef = useRef(onStaggerTick);
+  const onStaggerCompleteRef = useRef(onStaggerComplete);
+  onStaggerTickRef.current = onStaggerTick;
+  onStaggerCompleteRef.current = onStaggerComplete;
   const shown = new Set<string>();
   const allRevealed = revealedCount >= tests.length;
   const complete = tests.every((t) => answers[t.n]);
@@ -81,7 +85,7 @@ export function FunctionalTestYesNo({
     if (prefersReducedMotion()) {
       setShowHint(true);
       setRevealedCount(tests.length);
-      onStaggerComplete?.();
+      onStaggerCompleteRef.current?.();
       return;
     }
 
@@ -103,8 +107,8 @@ export function FunctionalTestYesNo({
           if (cancelled) return;
           const count = index + 1;
           setRevealedCount(count);
-          onStaggerTick?.();
-          if (count >= tests.length) onStaggerComplete?.();
+          onStaggerTickRef.current?.();
+          if (count >= tests.length) onStaggerCompleteRef.current?.();
         }, functionalTestStaggerDelayMs(index))
       );
     });
@@ -113,10 +117,11 @@ export function FunctionalTestYesNo({
       cancelled = true;
       timers.forEach((t) => window.clearTimeout(t));
     };
-  }, [ready, testKey, tests.length, onStaggerComplete, onStaggerTick]);
+    // Callbacks are read via refs so parent scroll handlers cannot reset stagger.
+  }, [ready, testKey, tests.length]);
 
   function choose(n: number, value: FunctionalTestAnswer) {
-    if (disabled || sent || !allRevealed) return;
+    if (disabled || sent) return;
     setAnswers((prev) => ({ ...prev, [n]: value }));
   }
 
@@ -177,7 +182,7 @@ export function FunctionalTestYesNo({
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
-                  disabled={disabled || sent || !allRevealed}
+                  disabled={disabled || sent}
                   onClick={() => choose(test.n, "si")}
                   className={chipClass(answers[test.n] === "si")}
                 >
@@ -185,7 +190,7 @@ export function FunctionalTestYesNo({
                 </button>
                 <button
                   type="button"
-                  disabled={disabled || sent || !allRevealed}
+                  disabled={disabled || sent}
                   onClick={() => choose(test.n, "no")}
                   className={chipClass(answers[test.n] === "no")}
                 >

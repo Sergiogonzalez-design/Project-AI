@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from "react-native";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { FadeInView } from "./ui/FadeInView";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
@@ -44,6 +44,11 @@ export function FunctionalTestYesNo({
   const [sent, setSent] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const onStaggerTickRef = useRef(onStaggerTick);
+  const onStaggerCompleteRef = useRef(onStaggerComplete);
+  onStaggerTickRef.current = onStaggerTick;
+  onStaggerCompleteRef.current = onStaggerComplete;
   const shown = new Set<string>();
   const allRevealed = revealedCount >= tests.length;
   const complete = tests.every((t) => answers[t.n]);
@@ -58,9 +63,26 @@ export function FunctionalTestYesNo({
   const testKey = tests.map((t) => `${t.n}:${t.prompt}`).join("|");
 
   useEffect(() => {
+    let mounted = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReduceMotion(Boolean(enabled));
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!ready || tests.length === 0) {
       setShowHint(false);
       setRevealedCount(0);
+      return;
+    }
+
+    if (reduceMotion) {
+      setShowHint(true);
+      setRevealedCount(tests.length);
+      onStaggerCompleteRef.current?.();
       return;
     }
 
@@ -82,8 +104,8 @@ export function FunctionalTestYesNo({
           if (cancelled) return;
           const count = index + 1;
           setRevealedCount(count);
-          onStaggerTick?.();
-          if (count >= tests.length) onStaggerComplete?.();
+          onStaggerTickRef.current?.();
+          if (count >= tests.length) onStaggerCompleteRef.current?.();
         }, functionalTestStaggerDelayMs(index))
       );
     });
@@ -92,10 +114,11 @@ export function FunctionalTestYesNo({
       cancelled = true;
       timers.forEach(clearTimeout);
     };
-  }, [ready, testKey, tests.length, onStaggerComplete, onStaggerTick]);
+    // Callbacks are read via refs so parent scroll handlers cannot reset stagger.
+  }, [ready, testKey, tests.length, reduceMotion]);
 
   function choose(n: number, value: FunctionalTestAnswer) {
-    if (disabled || sent || !allRevealed) return;
+    if (disabled || sent) return;
     setAnswers((prev) => ({ ...prev, [n]: value }));
   }
 
@@ -143,14 +166,14 @@ export function FunctionalTestYesNo({
             {showMedia ? <ClinicalTestMediaBlock test={showMedia} /> : null}
             <View style={styles.row}>
               <Pressable
-                disabled={disabled || sent || !allRevealed}
+                disabled={disabled || sent}
                 onPress={() => choose(test.n, "si")}
                 style={chipStyle(answers[test.n] === "si")}
               >
                 <Text style={chipTextStyle(answers[test.n] === "si")}>{yes}</Text>
               </Pressable>
               <Pressable
-                disabled={disabled || sent || !allRevealed}
+                disabled={disabled || sent}
                 onPress={() => choose(test.n, "no")}
                 style={chipStyle(answers[test.n] === "no")}
               >
