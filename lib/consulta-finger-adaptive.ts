@@ -568,7 +568,12 @@ export function detectFingerRedFlags(answers: FingerAdaptiveAnswers): {
   if (answers.deformidad_visible === "Sí") {
     triggered.push("deformidad visible del dedo");
   }
-  return { urgent: triggered.length > 0, triggered };
+  // All current finger flags are hard emergencies.
+  const HARD_FLAG_IDS: (keyof FingerAdaptiveAnswers)[] = pairs.map(([k]) => k);
+  const hard =
+    HARD_FLAG_IDS.some((id) => answers[id] === "Sí") ||
+    answers.deformidad_visible === "Sí";
+  return { triggered, urgent: hard };
 }
 
 export function getVisibleFingerQuestions(answers: FingerAdaptiveAnswers): FingerQuestionDef[] {

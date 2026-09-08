@@ -3,11 +3,11 @@ import {
   MECHANISM_OPTIONS,
   ONSET_FORM_OPTIONS,
   YES_NO,
-} from "./consulta-shoulder-adaptive";
+} from "@/lib/consulta-shoulder-adaptive";
 import {
   missingQuestionIssue,
   type AdaptiveValidationIssue,
-} from "./consulta-validation";
+} from "@/lib/consulta-validation";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export type GenericConsultaAnswers = {
@@ -100,12 +100,30 @@ export function validateGenericConsulta(
   return null;
 }
 
+export function detectGenericRedFlags(a: GenericConsultaAnswers): {
+  urgent: boolean;
+  triggered: string[];
+} {
+  const triggered: string[] = [];
+  if (a.rf_deformidad === "Sí") {
+    triggered.push("Se ve torcido, deformado o muy distinto");
+  }
+  if (a.rf_perdida_sensibilidad === "Sí") {
+    triggered.push("Pérdida de sensibilidad");
+  }
+  if (a.rf_fiebre === "Sí") {
+    triggered.push("Fiebre");
+  }
+  // Fever / deformity / sensory loss are hard for the short generic screen.
+  const HARD_FLAG_IDS = ["rf_deformidad", "rf_perdida_sensibilidad", "rf_fiebre"] as const;
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => a[id] === "Sí"),
+  };
+}
+
 export function formatGenericConsulta(a: GenericConsultaAnswers, bodyMapText: string): string {
-  const redFlags = [
-    a.rf_deformidad === "Sí" ? "Se ve torcido, deformado o muy distinto" : null,
-    a.rf_fiebre === "Sí" ? "Fiebre" : null,
-    a.rf_perdida_sensibilidad === "Sí" ? "Pérdida de sensibilidad" : null,
-  ].filter(Boolean);
+  const { urgent, triggered } = detectGenericRedFlags(a);
 
   return [
     "=== CUESTIONARIO GENERAL ===",
@@ -113,7 +131,7 @@ export function formatGenericConsulta(a: GenericConsultaAnswers, bodyMapText: st
     bodyMapText,
     "",
     a.zona.trim() ? `Zona: ${a.zona.trim()}` : "",
-    ...formatRedFlagScreenBlock(redFlags.length > 0, redFlags as string[]),
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Evolución: ${a.evolucion}`,
     `Inicio: ${a.inicio}`,
     `Mecanismo: ${a.mecanismo.join(", ")}${a.mecanismo.includes("Otro") ? ` (${a.mecanismo_otro})` : ""}`,

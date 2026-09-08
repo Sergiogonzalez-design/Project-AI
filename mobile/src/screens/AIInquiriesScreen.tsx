@@ -60,6 +60,7 @@ import { TypingIndicator } from "../components/TypingIndicator";
 import { bodyPartLabel, type BodyPartId } from "../lib/body-parts";
 import {
   defaultGenericConsultaAnswers,
+  detectGenericRedFlags,
   formatGenericConsulta,
   validateGenericConsulta,
   type GenericConsultaAnswers,
@@ -2554,9 +2555,7 @@ export function AIInquiriesScreen({
             ? detectBackRedFlags(backAnswers).urgent
           : questionnairePart === "hip"
             ? detectHipRedFlags(hipAnswers).urgent
-          : genericAnswers.rf_deformidad === "Sí" ||
-            genericAnswers.rf_fiebre === "Sí" ||
-            genericAnswers.rf_perdida_sensibilidad === "Sí";
+          : detectGenericRedFlags(genericAnswers).urgent;
     const contextForAi =
       (redFlagsUrgent
         ? consultLanguage === "en"

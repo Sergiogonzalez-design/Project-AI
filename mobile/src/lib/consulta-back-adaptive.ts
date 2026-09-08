@@ -807,7 +807,7 @@ export function detectBackRedFlags(answers: BackAdaptiveAnswers): {
     "rf_debilidad_bilateral_pie_caido",
     "rf_anestesia_silla",
     "rf_esfinteres",
-    "rf_fiebre_perdida_peso",
+    // rf_fiebre_perdida_peso is soft: combined fever OR weight loss — cribado, not auto-ER
     "rf_trauma_grave",
     "rf_dolor_toracico_respiracion",
   ];

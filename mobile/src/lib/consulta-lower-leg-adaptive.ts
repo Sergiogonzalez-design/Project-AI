@@ -1026,7 +1026,12 @@ export function detectLowerLegRedFlags(answers: LowerLegAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  // All current lower-leg flags are hard (fracture/DVT/compartment/neurovascular).
+  const HARD_FLAG_IDS: (keyof LowerLegAdaptiveAnswers)[] = [...RED_FLAG_IDS];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: LowerLegQuestionDef, answers: LowerLegAdaptiveAnswers): boolean {

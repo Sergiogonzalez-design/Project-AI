@@ -434,7 +434,17 @@ export function detectSciaticRedFlags(answers: SciaticAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof SciaticAdaptiveAnswers)[] = [
+    "rf_perdida_esfinteres",
+    "rf_anestesia_silla_montar",
+    "rf_debilidad_progresiva",
+    "rf_pie_caido_subito",
+    // rf_fiebre_perdida_peso is soft combined systemic screening — cribado, not auto-ER
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 export function detectSciaticSeverity(answers: SciaticAdaptiveAnswers): "high" | "moderate" | "mild" {

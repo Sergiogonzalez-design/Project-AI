@@ -418,7 +418,12 @@ export function detectPlantarFasciaRedFlags(answers: PlantarFasciaAdaptiveAnswer
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  // All current plantar flags are hard (fracture/infection/neurovascular).
+  const HARD_FLAG_IDS: (keyof PlantarFasciaAdaptiveAnswers)[] = [...RED_FLAG_IDS];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 export function detectPlantarFasciaPattern(answers: PlantarFasciaAdaptiveAnswers): {

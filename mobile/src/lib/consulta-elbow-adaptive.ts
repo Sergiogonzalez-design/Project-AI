@@ -588,7 +588,12 @@ export function detectElbowRedFlags(answers: ElbowAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  // All current elbow flags are hard emergencies (deformity, open wound, vascular, etc.).
+  const HARD_FLAG_IDS: (keyof ElbowAdaptiveAnswers)[] = [...RED_FLAG_IDS];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: ElbowQuestionDef, answers: ElbowAdaptiveAnswers): boolean {
