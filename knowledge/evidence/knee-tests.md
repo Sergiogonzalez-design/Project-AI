@@ -19,15 +19,15 @@
 
 **Familiar pain:** En agudo, el cluster de historia (pop, hemartros, no continuar) pesa más que un Lachman doloroso sin laxitud.
 
-**Clinical meaning:** Mejor test físico aislado de LCA en revisiones; **apoya** el cluster, no sustituye RMN ni confirma «rotura completa» en agudo con guarda.
+**Clinical meaning:** Mejor test físico aislado de LCA en metaanálisis Benjaminse 2006 (Sn pooled **85%** IC95% 83–87; Sp **94%** 92–95; LR+ **10.2**; LR− **0.2** — cifras **de esa meta**, no inventadas). **Apoya** el cluster; no sustituye RMN ni confirma «rotura completa» en agudo con guarda. Ver `cited-diagnostic-accuracy.md`.
 
-**Limitations:** Guarda muscular en fase aguda ↓ fiabilidad. Cajón a 90° suele ser peor en agudo.
+**Limitations:** Guarda muscular en fase aguda ↓ fiabilidad. Cajón a 90° suele ser peor en agudo. Heterogeneidad entre estudios; LR− 0.2 ≠ exclusión perfecta.
 
 **Differential:** LCA, hiperlaxitud constitucional, LCP mal interpretado (sag posterior).
 
-**AI rule:** «Lachman con más juego y tope blando → compatible con LCA. No “rotura completa confirmada”. En agudo doloroso, di que puede ser poco fiable.»
+**AI rule:** «Lachman con más juego y tope blando → compatible con LCA (Benjaminse 2006: Sn~85%/Sp~94% pooled). No “rotura completa confirmada”. En agudo doloroso, di que puede ser poco fiable. Lachman − no excluye del todo.»
 
-**Citation:** Benjaminse A et al. Clinical diagnosis of an anterior cruciate ligament rupture: a meta-analysis. *J Orthop Sports Phys Ther.* 2006. van Eck CF et al. *Knee Surg Sports Traumatol Arthrosc.* 2013. JOSPT CPG knee ligament sprain (Logerstedt et al.).
+**Citation:** Benjaminse A et al. Clinical diagnosis of an anterior cruciate ligament rupture: a meta-analysis. *J Orthop Sports Phys Ther.* 2006. van Eck CF et al. *Knee Surg Sports Traumatol Arthrosc.* 2013. JOSPT CPG knee ligament sprain (Logerstedt et al.). `cited-diagnostic-accuracy.md`.
 
 ---
 
@@ -210,3 +210,107 @@
 **AI rule:** «Golpe en espinilla con rodilla doblada → piensa LCP. No lo llames LCA.»
 
 **Citation:** JOSPT CPG knee ligament sprain; revisiones clínicas LCP (mecanismo dashboard clásico).
+
+---
+
+## TEST: NOBLE COMPRESSION (ITB)
+
+**Purpose:** Provocar dolor familiar del síndrome de banda iliotibial sobre el epicóndilo femoral lateral.
+
+**Position:** Supino o decúbito lateral.
+
+**Procedure:** Rodilla ~30° flexión; comprimir el ITB/cóndilo lateral femoral mientras se flexo-extiende ~0–60°. Registrar si el dolor es el **familiar** de carrera/escaleras.
+
+**Positive:** Reproduce dolor lateral familiar sobre el cóndilo (no solo molestia por presión).
+
+**Pain location:** Epicóndilo lateral / ITB. Línea articular pura → menisco. LCL post-trauma → otro cluster.
+
+**Familiar pain:** Obligatorio. Presión nueva ≠ ITB.
+
+**Clinical meaning:** Completa el cluster ITB con historia de carrera/escaleras. NO confirma «bursitis» ni grado.
+
+**Limitations:** Evidencia de precisión **cualitativa / clínica** (apoyo, no regla de oro). Positivo en muchas rodillas laterales dolorosas. No inventar Sn/Sp.
+
+**Differential:** LCL, menisco lateral, OA lateral, bíceps femoral, referido cadera (GTPS).
+
+**AI rule:** «Noble familiar + patrón carrera/escaleras sin trauma → compatible con ITB. No “LCL” por carrera sola.»
+
+**Citation:** Literatura clínica ITBS en corredores (revisiones BJSM running injuries). Noble/Ober: apoyo clínico, no métrica canónica única.
+
+---
+
+## TEST: OBER (ITB / TFL)
+
+**Purpose:** Cribado de tensión/irritación lateral (TFL–ITB) en contexto de dolor lateral de rodilla o cadera.
+
+**Position:** Decúbito lateral, cadera inferior flexionada para estabilidad.
+
+**Procedure:** Abducir y extender suavemente la cadera superior; soltar permitiendo aducción. Observar si la pierna desciende y si hay **dolor lateral familiar** en rodilla/cóndilo.
+
+**Positive:** Limitación de aducción y/o dolor ITB/cóndilo familiar al bajar.
+
+**Pain location:** Lateral rodilla / ITB o lateral cadera. No es test de LCL.
+
+**Familiar pain:** Sí, para dolor. La «tirantez» sola es inespecífica.
+
+**Clinical meaning:** Apoyo al cluster ITB / TFL. NO confirma ITBS ni rotura.
+
+**Limitations:** Precisión **cualitativa**. Mucha variación técnica (Ober clásico vs modificado). No inventar Sn/Sp.
+
+**Differential:** ITBS, GTPS, LCL (si trauma), lumbar.
+
+**AI rule:** «Ober con dolor lateral familiar → apoyo ITB/TFL. Tirantez sola no diagnostica.»
+
+**Citation:** Uso clínico en ITBS / TFL (revisiones running/ITB). Evidencia mixta como test diagnóstico aislado — cluster con historia + Noble.
+
+---
+
+## TEST: PATELLAR APPREHENSION (inestabilidad rotuliana)
+
+**Purpose:** Provocar aprensión o subluxación lateral de rótula (inestabilidad patelar).
+
+**Position:** Supino, rodilla ~20–30° flexión (o extensión según tolerancia).
+
+**Procedure:** Empuje suave de la rótula hacia lateral. Positivo si el paciente muestra **aprensión** (quiere detener) o sensación de «se va» familiar. Variante moving apprehension: mismo empuje durante flexo-extensión.
+
+**Positive:** Aprensión / deseo de detener ± reproducción de la sensación de luxación.
+
+**Pain location:** Anterior / bordes rotulianos. Dolor sin aprensión es inespecífico (PFPS).
+
+**Familiar pain:** La sensación de «se sale» pesa más que dolor difuso.
+
+**Clinical meaning:** ↑ inestabilidad rotuliana. NO confirma luxación recurrente ni lesión MPFL grado.
+
+**Limitations:** Evidencia cualitativa/clínica. Dolor PFPS sin aprensión ≠ inestabilidad. No confundir con giving-way de LCA.
+
+**Differential:** PFPS, luxación/subluxación rotuliana, MPFL, LCA (si pop/hemartros sin «rótula se sale»).
+
+**AI rule:** «Aprensión rotuliana familiar → compatible con inestabilidad rotuliana. No digas LCA si el paciente describe que se sale la rótula.»
+
+**Citation:** Literatura clínica de inestabilidad patelar / exploración (revisiones MSK; JOSPT contexto rodilla). Precisión no cuantificar sin fuente — cluster con historia de luxación/desplazamiento.
+
+---
+
+## TEST: DIAL TEST (PLC / rotación externa tibial)
+
+**Purpose:** Cribado de asimetría de rotación externa tibial (complejo posterolateral / LCP).
+
+**Position:** Prono, rodillas ~30° y ~90° flexión.
+
+**Procedure:** Rotar externamente ambos pies/tibias; comparar ángulo. Asimetría aumentada a **30°** sugiere PLC; a **30° y 90°** sugiere PLC + LCP. Registrar dolor posterolateral familiar.
+
+**Positive:** Rotación externa asimétrica aumentada vs contralateral (± dolor posterolateral familiar).
+
+**Pain location:** Posterolateral. No es test de menisco aislado.
+
+**Familiar pain:** Mecanismo varo/hiperextensión pesa mucho; el dial apoya.
+
+**Clinical meaning:** ↑ PLC (y LCP si asimetría en 90° también). NO confirma grado ni sustituye RMN/especialista.
+
+**Limitations:** Evidencia **cualitativa** de exploración PLC (LaPrade / Cooper). Técnica y umbral de asimetría variables. No inventar Sn/Sp. Evitar en agudo con hinchazón intensa o inestabilidad multiplanar severa (urgencia).
+
+**Differential:** PLC, LCP, LCL, hiperlaxitud constitucional bilateral.
+
+**AI rule:** «Dial asimétrico + mecanismo varo/hiperextensión → aumenta sospecha de PLC. Deriva si inestabilidad rotatoria severa. No “PLC confirmado” por un ángulo.»
+
+**Citation:** LaPrade RF et al. / Cooper literatura de exploración del complejo posterolateral. JOSPT CPG knee ligament (contexto multi-ligamento). Cualitativo — cluster, no cifra.

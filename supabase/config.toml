@@ -1,0 +1,8 @@
+# Edge function JWT verification (deploy applies to linked project).
+# guest-physio stays public (no JWT required).
+
+[functions.ai-consult]
+verify_jwt = true
+
+[functions.guest-physio]
+verify_jwt = false

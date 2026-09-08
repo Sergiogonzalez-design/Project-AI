@@ -3,6 +3,7 @@ import {
   shouldShowSleepDependentQuestion,
 } from "./consulta-timing";
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 /**
  * Adaptive questionnaire for head / headache — separate from neck so multi-part
@@ -355,7 +356,17 @@ export function detectHeadRedFlags(answers: HeadAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof HeadAdaptiveAnswers)[] = [
+    "rf_peor_dolor",
+    "rf_neuro",
+    "rf_trauma",
+    "rf_fiebre_rigidez",
+    "rf_vomitos_progresivos",
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: HeadQuestionDef, answers: HeadAdaptiveAnswers): boolean {
@@ -407,11 +418,7 @@ export function formatHeadAdaptive(answers: HeadAdaptiveAnswers, bodyMapText: st
         ? ` (${answers.mecanismo_otro})`
         : ""
     }`,
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Peor dolor / súbito distinto: ${answers.rf_peor_dolor || "—"}`,
     `Síntomas neurológicos: ${answers.rf_neuro || "—"}`,
     `Trauma craneal: ${answers.rf_trauma || "—"}`,
@@ -567,7 +574,7 @@ export function localizeHeadLabel(id: string, fallback: string, locale: ConsultL
 
 export function localizeHeadOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return HEAD_OPTION_EN[option] ?? option;
+  return HEAD_OPTION_EN[option as keyof typeof HEAD_OPTION_EN] ?? option;
 }
 
 export function localizeHeadSection(section: string, locale: ConsultLocale): string {

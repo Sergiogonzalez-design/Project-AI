@@ -5,6 +5,8 @@
  * 2. Specialized physiotherapy center (invasive therapies)
  */
 
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
+
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -426,7 +428,13 @@ export function detectMedianNerveRedFlags(answers: MedianNerveAdaptiveAnswers): 
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof MedianNerveAdaptiveAnswers)[] = [
+    "rf_perdida_sensibilidad_completa",
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 export function detectMedianNerveSeverity(answers: MedianNerveAdaptiveAnswers): "high" | "moderate" | "mild" {
@@ -506,11 +514,7 @@ export function formatMedianNerveAdaptive(answers: MedianNerveAdaptiveAnswers): 
 
   const lines: string[] = [
     "=== CUESTIONARIO ADAPTATIVO — NERVIO MEDIANO ===",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ SIGNOS DE ALARMA: ${triggered.join("; ")} → DERIVAR A ESPECIALISTA (valorar cirugía si hay atrofia tenar o pérdida sensitiva completa)`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Debilidad progresiva: ${answers.rf_debilidad_progresiva || "—"}`,
     `Atrofia tenar: ${answers.rf_atrofia_tenar || "—"}`,
     `Pérdida sensitiva completa: ${answers.rf_perdida_sensibilidad_completa || "—"}`,
@@ -731,7 +735,7 @@ export function localizeMedianNerveLabel(id: string, fallback: string, locale: C
 
 export function localizeMedianNerveOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return MEDIAN_NERVE_OPTION_EN[option] ?? option;
+  return MEDIAN_NERVE_OPTION_EN[option as keyof typeof MEDIAN_NERVE_OPTION_EN] ?? option;
 }
 
 export function localizeMedianNerveSection(section: string, locale: ConsultLocale): string {

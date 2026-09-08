@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -38,6 +39,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    if (!serviceKey) {
+      return NextResponse.json(
+        { error: "Service role not configured for knowledge ingest." },
+        { status: 503 }
+      );
+    }
+    const adminDb = createSupabaseAdmin(getSupabaseUrl(), serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
     const openai = getOpenAI();
     const body = await request.json() as { chunks: string[]; sourceName: string };
     const { chunks, sourceName } = body;
@@ -58,7 +70,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { error } = await supabase.from("document_chunks").insert(rows);
+    const { error } = await adminDb.from("document_chunks").insert(rows);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

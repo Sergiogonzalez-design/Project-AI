@@ -100,9 +100,11 @@ Diferencial: LCA (mecanismo distinto), contusión, fractura.
 
 Sospechar si varo, hiperextensión, inestabilidad rotatoria externa, o lesión LCL + LCP.
 
-Cluster: mecanismo varo/hiperextensión + inestabilidad + dolor posterolateral.
+Cluster: mecanismo varo/hiperextensión + inestabilidad + dolor posterolateral ± **dial test** asimétrico (30° → PLC ↑; 30°+90° → PLC+LCP ↑).
 
-Derivar evaluación especializada si inestabilidad rotatoria severa.
+**Dial (cualitativo):** no inventar Sn/Sp; asimetría + mecanismo → sospecha ↑. No confirma grado. Catalog: `dial-test`.
+
+Derivar evaluación especializada si inestabilidad rotatoria severa / multiplanar.
 
 ---
 
@@ -144,8 +146,8 @@ Si inestabilidad en varios planos → no simplificar a «solo LCA».
 |---------|-------------|
 | LCA | Torsión/corte ± no-contacto + pop + no continuar + hinchazón horas + giving-way + Lachman/pivot (si seguro) |
 | LCP | Golpe tibia anterior + rodilla flexionada + inestabilidad posterior |
-| PLC | Varo/hiperextensión + inestabilidad rotatoria + dolor posterolateral |
-| Rotuliana | Episodio de luxación/desplazamiento de rótula |
+| PLC | Varo/hiperextensión + inestabilidad rotatoria + dolor posterolateral ± dial asimétrico |
+| Rotuliana | Episodio de luxación/desplazamiento de rótula + aprensión rotuliana familiar |
 
 No inventar Sn/Sp. En fase aguda dolorosa, tests de laxitud pueden ser poco fiables.
 

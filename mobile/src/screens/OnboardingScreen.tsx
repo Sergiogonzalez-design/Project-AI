@@ -75,6 +75,7 @@ export function OnboardingScreen({ onComplete }: Props) {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
+  const [city, setCity] = useState("");
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
   const [competitiveLevel, setCompetitiveLevel] = useState("");
@@ -120,13 +121,21 @@ export function OnboardingScreen({ onComplete }: Props) {
   }
 
   function validateStep2() {
-    if (!primarySport.trim()) return "Indica tu deporte principal.";
-    if (!competitiveLevel) return "Selecciona tu nivel competitivo.";
-    if (!sessionsPerWeek) return "Indica sesiones por semana.";
-    if (!hoursPerWeek) return "Indica horas por semana.";
-    if (!currentSeason) return "Selecciona la temporada.";
-    if (performanceGoals.length === 0) return "Selecciona al menos un objetivo.";
     return null;
+  }
+
+  function sportProfilePayload() {
+    const sport = primarySport.trim();
+    return {
+      primary_sport: sport ? normalizeSportsInput(sport) : null,
+      sport_position:
+        sport && sportHasPosition(sport) ? sportPosition.trim() || null : null,
+      competitive_level: competitiveLevel || null,
+      sessions_per_week: sessionsPerWeek.trim() ? Number(sessionsPerWeek) : null,
+      hours_per_week: hoursPerWeek.trim() ? Number(hoursPerWeek) : null,
+      current_season: currentSeason || null,
+      performance_goals: performanceGoals.length > 0 ? performanceGoals : null,
+    };
   }
 
   async function handleFinish() {
@@ -150,13 +159,8 @@ export function OnboardingScreen({ onComplete }: Props) {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        primary_sport: normalizeSportsInput(primarySport),
-        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
-        competitive_level: competitiveLevel,
-        sessions_per_week: Number(sessionsPerWeek),
-        hours_per_week: Number(hoursPerWeek),
-        current_season: currentSeason,
-        performance_goals: performanceGoals,
+        city: city.trim() || null,
+        ...sportProfilePayload(),
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       };
@@ -236,6 +240,16 @@ export function OnboardingScreen({ onComplete }: Props) {
               <Chips options={DOMINANT_HAND_OPTIONS} value={dominantHand} onChange={setDominantHand} />
               <Text style={styles.label}>Pie dominante</Text>
               <Chips options={DOMINANT_FOOT_OPTIONS} value={dominantFoot} onChange={setDominantFoot} />
+              <Field
+                label="Ciudad (opcional)"
+                value={city}
+                onChangeText={setCity}
+                placeholder="Ej: Madrid"
+              />
+              <Text style={styles.hint}>
+                Si la indicas, priorizamos clínicas de tu ciudad. Si no, te
+                recomendamos centros que encajen con tu lesión.
+              </Text>
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <Pressable
                 style={styles.primaryBtn}
@@ -254,8 +268,11 @@ export function OnboardingScreen({ onComplete }: Props) {
             </>
           ) : (
             <>
+              <Text style={styles.hint}>
+                Todo este bloque es opcional. Puedes finalizar sin rellenarlo.
+              </Text>
               <Field
-                label="¿Qué deporte practicas?"
+                label="¿Qué deporte practicas? (opcional)"
                 value={primarySport}
                 onChangeText={(next) => {
                   setPrimarySport(next);
@@ -271,7 +288,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                   onChangeText={setSportPosition}
                 />
               )}
-              <Text style={styles.label}>Nivel competitivo</Text>
+              <Text style={styles.label}>Nivel competitivo (opcional)</Text>
               <Chips
                 options={COMPETITIVE_LEVELS}
                 value={competitiveLevel}
@@ -280,7 +297,7 @@ export function OnboardingScreen({ onComplete }: Props) {
               <View style={styles.row}>
                 <View style={styles.half}>
                   <Field
-                    label="Sesiones/sem"
+                    label="Sesiones/sem (opcional)"
                     value={sessionsPerWeek}
                     onChangeText={setSessionsPerWeek}
                     keyboardType="numeric"
@@ -288,16 +305,16 @@ export function OnboardingScreen({ onComplete }: Props) {
                 </View>
                 <View style={styles.half}>
                   <Field
-                    label="Horas/sem"
+                    label="Horas/sem (opcional)"
                     value={hoursPerWeek}
                     onChangeText={setHoursPerWeek}
                     keyboardType="numeric"
                   />
                 </View>
               </View>
-              <Text style={styles.label}>Temporada actual</Text>
+              <Text style={styles.label}>Temporada actual (opcional)</Text>
               <Chips options={CURRENT_SEASONS} value={currentSeason} onChange={setCurrentSeason} />
-              <Text style={styles.label}>Objetivos de rendimiento</Text>
+              <Text style={styles.label}>Objetivos de rendimiento (opcional)</Text>
               <Chips
                 options={PERFORMANCE_GOALS}
                 multi

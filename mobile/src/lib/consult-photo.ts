@@ -1,5 +1,4 @@
 import { supabase } from "./supabase";
-import { SUPABASE_PROJECT_URL } from "./supabase-config";
 
 export const CONSULT_PHOTOS_BUCKET = "consult-photos";
 export const MAX_CONSULT_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -19,10 +18,54 @@ export function isConsultPdfUrl(url: string | null | undefined): boolean {
   return /\.pdf(?:\?|#|$)/i.test(url);
 }
 
-/** Vision models only accept images — skip PDFs/files. */
-export function consultVisionUrl(url: string | null | undefined): string | null {
-  if (!url || isConsultPdfUrl(url)) return null;
-  return url;
+export function parseConsultPhotoStoragePath(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!trimmed.includes("://")) return trimmed.replace(/^\/+/, "");
+  try {
+    const u = new URL(trimmed);
+    const m = u.pathname.match(
+      /\/storage\/v1\/object\/(?:public|sign|authenticated)\/consult-photos\/(.+)$/
+    );
+    return m ? decodeURIComponent(m[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function consultPhotoAccessUrl(
+  stored: string | null | undefined
+): Promise<string | null> {
+  if (!stored) return null;
+  if (stored.includes("/object/sign/") && stored.includes("token=")) {
+    return stored;
+  }
+  const path = parseConsultPhotoStoragePath(stored);
+  if (!path) return null;
+  const { data, error } = await supabase.storage
+    .from(CONSULT_PHOTOS_BUCKET)
+    .createSignedUrl(path, 3600);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+export async function signConsultMessageAttachments<
+  T extends { image_url?: string | null },
+>(messages: T[]): Promise<T[]> {
+  return Promise.all(
+    messages.map(async (m) => {
+      if (!m.image_url) return m;
+      const signed = await consultPhotoAccessUrl(m.image_url);
+      return signed ? { ...m, image_url: signed } : m;
+    })
+  );
+}
+
+export async function consultPhotoVisionUrl(
+  stored: string | null | undefined
+): Promise<string | null> {
+  if (!stored || isConsultPdfUrl(stored)) return null;
+  return consultPhotoAccessUrl(stored);
 }
 
 export function consultAttachmentCaption(
@@ -61,7 +104,7 @@ function consultAttachmentMeta(mimeType: string): {
   return { ext: "jpg", contentType: "image/jpeg" };
 }
 
-/** Upload a local image or PDF URI for consult chat. */
+/** Returns storage path `{userId}/…`. */
 export async function uploadConsultPhotoFromUri(
   uri: string,
   mimeType = "image/jpeg"
@@ -85,15 +128,9 @@ export async function uploadConsultPhotoFromUri(
     });
   if (error) throw new Error(error.message);
 
-  return `${SUPABASE_PROJECT_URL}/storage/v1/object/public/${CONSULT_PHOTOS_BUCKET}/${path}`;
+  return path;
 }
 
 export function isConsultPhotoUrl(url: string | null | undefined): boolean {
-  if (!url) return false;
-  try {
-    const u = new URL(url);
-    return u.pathname.includes(`/storage/v1/object/public/${CONSULT_PHOTOS_BUCKET}/`);
-  } catch {
-    return false;
-  }
+  return parseConsultPhotoStoragePath(url ?? "") != null;
 }

@@ -24,7 +24,9 @@ MARCO DOHA — PATRONES DE COMPATIBILIDAD (clusters, no inventar Sn/Sp):
 
 HIP-RELATED GROIN (profundo + mecánico intraarticular):
 Deep groin + sentarse/coche + flexión/rotación + FADIR reproduce dolor profundo familiar + FABER inguinal → ↑ cadera (FAI/labrum/OA/displasia/snapping interno/fractura estrés).
+Secundarios (cluster, no aislados): log roll, Stinchfield, hip scour — dolor inguinal profundo familiar ↑ cadera; NUNCA confirman labrum/FAI/OA grado. Evitar scour si sospecha ósea.
 FABER: registrar INGLE vs POSTERIOR vs LATERAL. Posterior → SI/lumbar; lateral → GTPS (otros módulos).
+Thomas: dolor ANTERIOR familiar / extensión limitada → ↑ iliopsoas/flexor; no bursitis automática. Si dolor profundo al sentarse → priorizar hip-related.
 
 ROM: IR limitada + dolor profundo inguinal → ↑ cadera. Activo limitado + pasivo normal → muscular/tendinoso.
 

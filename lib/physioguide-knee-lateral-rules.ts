@@ -23,6 +23,7 @@ dolor línea articular lateral + torsión/pivot + (bloqueo/chasquido/hinchazón 
 
 CLUSTER ITB (banda iliotibial):
 dolor lateral ITB/cóndilo + carrera/ciclismo/escaleras/cuestas + patrón reproducible a misma distancia o bajada + SIN bloqueo/torsión clara → síndrome ITB ↑.
+Noble compression y/o Ober familiar apoyan el cluster; aislados NO confirman ITBS. Carrera sin trauma ≠ LCL.
 
 DIFERENCIAL OBLIGATORIO:
 - esguince LCL (I–III según inestabilidad)

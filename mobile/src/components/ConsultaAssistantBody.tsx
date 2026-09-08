@@ -1,12 +1,32 @@
 import React from "react";
 import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
+import {
+  clinicRecommendIntro,
+  isClinicSectionHeadingLine,
+  parseClinicRecommendLine,
+  type ConsultLocale,
+} from "../lib/consult-clinic-links";
+import { parseReadaptExerciseFromLine } from "../lib/consult-readaptation";
+import { ReadaptationExerciseCard } from "./ReadaptationExerciseCard";
 import { stripVisibleMarkup } from "../lib/strip-visible-markup";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
+import { Colors } from "../lib/colors";
 
 function stripMarkdownStars(text: string) {
   return stripVisibleMarkup(text);
 }
+
+function isPhysioHighlightPhrase(text: string, phrases?: string[]): boolean {
+  const inner = stripMarkdownStars(text).trim();
+  if (!inner || !phrases?.length) return false;
+  return phrases.some((p) => p.toLowerCase() === inner.toLowerCase());
+}
+
+const physioNameBoldStyle = {
+  fontWeight: "700" as const,
+  color: Colors.text,
+};
 
 function splitHighlightParts(text: string, phrases?: string[]) {
   if (!text || !phrases?.length) return [{ text, highlight: false }];
@@ -36,11 +56,21 @@ function renderHighlighted(
   return parts.map((part, i) => (
     <Text
       key={`${keyPrefix}-${i}`}
-      style={part.highlight ? highlightStyle ?? style : undefined}
+      style={part.highlight ? physioNameBoldStyle : undefined}
     >
       {part.text}
     </Text>
   ));
+}
+
+function resolveBoldStyle(
+  text: string,
+  boldStyle: object | undefined,
+  highlightPhrases?: string[]
+) {
+  return isPhysioHighlightPhrase(text, highlightPhrases)
+    ? physioNameBoldStyle
+    : boldStyle;
 }
 
 function renderInlineBold(
@@ -66,9 +96,10 @@ function renderInlineBold(
     const plain = stripVisibleMarkup(isBold ? part.slice(2, -2) : part);
     if (!plain) return null;
     if (isBold) {
+      const resolvedBold = resolveBoldStyle(plain, boldStyle, highlightPhrases);
       return (
-        <Text key={`b${i}`} style={boldStyle}>
-          {renderHighlighted(plain, boldStyle, highlightPhrases, highlightStyle, `b${i}`)}
+        <Text key={`b${i}`} style={resolvedBold}>
+          {renderHighlighted(plain, resolvedBold, highlightPhrases, highlightStyle, `b${i}`)}
         </Text>
       );
     }
@@ -86,6 +117,9 @@ type Props = {
   boldStyle?: object;
   highlightPhrases?: string[];
   highlightStyle?: object;
+  /** Opens Buscar → clinic profile for `/centro/{slug}` lines. Hospitals have no slug. */
+  onClinicPress?: (slug: string) => void;
+  language?: ConsultLocale;
 };
 
 /** Renders consulta assistant text with functional-test illustrations when matched. */
@@ -95,9 +129,12 @@ export function ConsultaAssistantBody({
   boldStyle,
   highlightPhrases,
   highlightStyle,
+  onClinicPress,
+  language = "es",
 }: Props) {
   const shownTestIds = new Set<string>();
   const lines = text.split("\n");
+  let clinicIntroShown = false;
 
   return (
     <>
@@ -112,8 +149,59 @@ export function ConsultaAssistantBody({
           return null;
         }
 
+        if (isClinicSectionHeadingLine(trimmed)) {
+          clinicIntroShown = false;
+          return null;
+        }
+
+        const clinicLink = parseClinicRecommendLine(trimmed);
+        if (clinicLink) {
+          const showIntro = !clinicIntroShown;
+          if (showIntro) clinicIntroShown = true;
+          return (
+            <View key={li} style={li > 0 ? styles.lineGap : undefined}>
+              {showIntro ? (
+                <Text style={[style, styles.clinicIntro]}>
+                  {clinicRecommendIntro(language)}
+                </Text>
+              ) : null}
+              <Pressable
+                onPress={() => onClinicPress?.(clinicLink.slug)}
+                disabled={!onClinicPress}
+                style={({ pressed }) => [
+                  styles.clinicBtn,
+                  showIntro ? styles.clinicBtnAfterIntro : undefined,
+                  pressed && onClinicPress ? styles.clinicBtnPressed : null,
+                  !onClinicPress ? styles.clinicBtnDisabled : null,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`${clinicLink.label}. Ver ficha de la clínica`}
+              >
+                <Text style={styles.clinicBtnTitle}>{clinicLink.label}</Text>
+                <Text style={styles.clinicBtnMeta}>
+                  {clinicLink.meta ||
+                    (language === "en"
+                      ? "View profile and contact"
+                      : "Ver ficha y contactar")}
+                </Text>
+              </Pressable>
+            </View>
+          );
+        }
+
+        const readaptLink = parseReadaptExerciseFromLine(trimmed);
+        if (readaptLink) {
+          return (
+            <View key={li} style={li > 0 ? styles.lineGap : undefined}>
+              <ReadaptationExerciseCard link={readaptLink} />
+            </View>
+          );
+        }
+
         const headingMatch = /^(#{1,6})\s*(.+)$/.exec(trimmed);
-        const headingText = headingMatch?.[2] ?? null;
+        const headingText = headingMatch?.[2]
+          ? stripMarkdownStars(headingMatch[2])
+          : null;
         const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
         const numberedText =
           headingText && /^\d+[.)]\s+\S/.test(headingText)
@@ -193,4 +281,32 @@ const styles = StyleSheet.create({
   lineGap: { marginTop: 8 },
   lineGapLg: { marginTop: 12 },
   lineGapText: { marginTop: 8 },
+  clinicIntro: {
+    marginBottom: 8,
+    fontWeight: "600",
+  },
+  clinicBtnAfterIntro: { marginTop: 0 },
+  clinicBtn: {
+    alignSelf: "stretch",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  clinicBtnPressed: { opacity: 0.88, backgroundColor: "#dbeafe" },
+  clinicBtnDisabled: { opacity: 0.95 },
+  clinicBtnTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.primary,
+  },
+  clinicBtnMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#1d4ed8",
+    opacity: 0.85,
+  },
 });

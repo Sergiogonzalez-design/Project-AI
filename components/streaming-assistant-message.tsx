@@ -1,19 +1,26 @@
 "use client";
 
 import {
-  REVEAL_LINE_INTERVAL_MS,
-  splitRevealLines,
-  visibleTextFromLines,
+  buildRevealChunks,
+  revealDelayMs,
+  visibleTextFromChunks,
 } from "@/lib/reveal-text-lines";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+type RevealCompleteMeta = { interrupted: boolean };
 
 type Props = {
   content: string;
   animate: boolean;
-  onRevealComplete?: () => void;
+  onRevealComplete?: (meta?: RevealCompleteMeta) => void;
   onRevealTick?: () => void;
   children: (visibleText: string, isRevealing: boolean) => React.ReactNode;
 };
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 export function StreamingAssistantMessage({
   content,
@@ -22,10 +29,13 @@ export function StreamingAssistantMessage({
   onRevealTick,
   children,
 }: Props) {
-  const lines = useMemo(() => splitRevealLines(content), [content]);
-  const [visibleCount, setVisibleCount] = useState(animate ? 0 : lines.length);
+  const chunks = useMemo(() => buildRevealChunks(content), [content]);
+  const [visibleCount, setVisibleCount] = useState(
+    animate && !prefersReducedMotion() ? 0 : chunks.length
+  );
   const onRevealCompleteRef = useRef(onRevealComplete);
   const onRevealTickRef = useRef(onRevealTick);
+  const wasAnimatingRef = useRef(false);
 
   useEffect(() => {
     onRevealCompleteRef.current = onRevealComplete;
@@ -33,46 +43,82 @@ export function StreamingAssistantMessage({
   });
 
   useEffect(() => {
+    let cancelled = false;
+    let timer: number | null = null;
+    let completed = false;
+
+    const finish = (interrupted = false) => {
+      if (completed) return;
+      completed = true;
+      onRevealCompleteRef.current?.({ interrupted });
+    };
+
+    const clear = () => {
+      if (timer != null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    // Historical / non-active bubbles: show full text without firing complete.
     if (!animate) {
-      setVisibleCount(lines.length);
-      // Still notify so conversation TTS / scroll hooks can run for non-animated replies.
-      onRevealCompleteRef.current?.();
-      return;
+      wasAnimatingRef.current = false;
+      setVisibleCount(chunks.length);
+      return clear;
+    }
+
+    wasAnimatingRef.current = true;
+
+    if (prefersReducedMotion() || chunks.length === 0) {
+      setVisibleCount(chunks.length);
+      finish();
+      return clear;
     }
 
     setVisibleCount(0);
     let count = 0;
-    let timer: number | null = null;
-    let completed = false;
 
-    const finish = () => {
-      if (completed) return;
-      completed = true;
-      onRevealCompleteRef.current?.();
+    const scheduleNext = () => {
+      if (cancelled) return;
+      if (count >= chunks.length) {
+        finish();
+        return;
+      }
+
+      const delay = revealDelayMs(content, chunks, count);
+      timer = window.setTimeout(() => {
+        if (cancelled) return;
+        count += 1;
+        setVisibleCount(count);
+        onRevealTickRef.current?.();
+        scheduleNext();
+      }, delay);
     };
 
-    const tick = () => {
-      count += 1;
-      setVisibleCount(count);
+    timer = window.setTimeout(() => {
+      if (cancelled) return;
+      count = 1;
+      setVisibleCount(1);
       onRevealTickRef.current?.();
+      scheduleNext();
+    }, 40);
 
-      if (count >= lines.length) {
-        if (timer != null) window.clearInterval(timer);
-        finish();
+    return () => {
+      cancelled = true;
+      clear();
+      // Interrupted mid-reveal (e.g. conversation reload): still notify so parent can clear id.
+      if (wasAnimatingRef.current && !completed) {
+        finish(true);
       }
     };
+  }, [animate, content, chunks.length]);
 
-    tick();
-    if (count < lines.length) {
-      timer = window.setInterval(tick, REVEAL_LINE_INTERVAL_MS);
-    }
-    return () => {
-      if (timer != null) window.clearInterval(timer);
-    };
-  }, [animate, content, lines.length]);
+  const visibleText = visibleTextFromChunks(content, chunks, visibleCount);
+  const isRevealing = animate && visibleCount < chunks.length;
 
-  const visibleText = visibleTextFromLines(lines, visibleCount);
-  const isRevealing = animate && visibleCount < lines.length;
-
-  return <>{children(visibleText, isRevealing)}</>;
+  return (
+    <div className={isRevealing ? "assistant-message-revealing" : undefined}>
+      {children(visibleText, isRevealing)}
+    </div>
+  );
 }

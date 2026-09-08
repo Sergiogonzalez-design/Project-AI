@@ -52,12 +52,13 @@ export function AppBurgerMenu({
       ? [
           { route: "ClinicConsult", label: t.headers.consulta },
           { route: "ClinicHome", label: t.headers.clinica },
-          { route: "ClinicTeam", label: "Equipo" },
+          { route: "ClinicSearch", label: t.headers.buscar },
         ]
       : isPhysio
       ? [
           { route: "Patients", label: t.headers.clinica },
           { route: "PhysioConsult", label: t.headers.consulta },
+          { route: "ClinicSearch", label: t.headers.buscar },
         ]
       : [
           { route: "AIInquiries", label: t.headers.consulta },
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     backgroundColor: "rgba(15, 23, 42, 0.4)",
   },
-  backdrop: { ...StyleSheet.absoluteFillObject },
+  backdrop: { ...StyleSheet.absoluteFill },
   drawer: {
     height: "100%",
     backgroundColor: "#FAFAFA",

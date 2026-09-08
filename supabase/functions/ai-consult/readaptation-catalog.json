@@ -1,0 +1,560 @@
+[
+  {
+    "id": "shoulder_ccft",
+    "nameEs": "Flexión cervical profunda (CCFT)",
+    "nameEn": "Craniocervical flexion (CCFT)",
+    "region": "shoulder",
+    "phase": "protection",
+    "dosageEs": "3 series × 10 repeticiones de 10 s, 2–3 veces/día. Dolor ≤ 3/10 durante y después.",
+    "dosageEn": "3 sets × 10 reps of 10 s hold, 2–3×/day. Pain ≤ 3/10 during and after."
+  },
+  {
+    "id": "shoulder_scapular_setting",
+    "nameEs": "Set escapular (retracción suave)",
+    "nameEn": "Scapular setting (gentle retraction)",
+    "region": "shoulder",
+    "phase": "protection",
+    "dosageEs": "3 × 10 mantenimientos de 5–10 s, 1–2 veces/día. Sin dolor irradiado.",
+    "dosageEn": "3 × 10 holds of 5–10 s, 1–2×/day. No radiating pain."
+  },
+  {
+    "id": "shoulder_sidelying_er",
+    "nameEs": "Rotación externa en decúbito lateral",
+    "nameEn": "Sidelying external rotation",
+    "region": "shoulder",
+    "phase": "loading",
+    "dosageEs": "3 × 12–15, carga ligera (RPE 4–5/10). Dolor ≤ 3/10.",
+    "dosageEn": "3 × 12–15, light load (RPE 4–5/10). Pain ≤ 3/10."
+  },
+  {
+    "id": "shoulder_serratus_punch",
+    "nameEs": "Serrato punch (protracción escapular)",
+    "nameEn": "Serratus punch (scapular protraction)",
+    "region": "shoulder",
+    "phase": "loading",
+    "dosageEs": "3 × 12–15, RPE 5/10. 1–2 veces/día.",
+    "dosageEn": "3 × 12–15, RPE 5/10. 1–2×/day."
+  },
+  {
+    "id": "shoulder_band_er",
+    "nameEs": "Rotación externa con banda",
+    "nameEn": "Band external rotation",
+    "region": "shoulder",
+    "phase": "loading",
+    "dosageEs": "3 × 15, banda ligera-media. Dolor ≤ 3/10.",
+    "dosageEn": "3 × 15, light-medium band. Pain ≤ 3/10."
+  },
+  {
+    "id": "shoulder_pendulum",
+    "nameEs": "Péndulo (Codman)",
+    "nameEn": "Pendulum exercise (Codman)",
+    "region": "shoulder",
+    "phase": "protection",
+    "dosageEs": "2–3 minutos, 2–3 veces/día. Sin dolor agudo.",
+    "dosageEn": "2–3 minutes, 2–3×/day. No sharp pain."
+  },
+  {
+    "id": "shoulder_cross_body_stretch",
+    "nameEs": "Estiramiento horizontal adductor (con cautela)",
+    "nameEn": "Cross-body stretch (use caution)",
+    "region": "shoulder",
+    "phase": "protection",
+    "dosageEs": "2–3 × 20–30 s. Evitar si empeora síntomas > 24 h.",
+    "dosageEn": "2–3 × 20–30 s. Avoid if symptoms worsen > 24 h."
+  },
+  {
+    "id": "shoulder_wall_slide",
+    "nameEs": "Deslizamiento en pared (wall slide)",
+    "nameEn": "Wall slide",
+    "region": "shoulder",
+    "phase": "loading",
+    "dosageEs": "3 × 8–10 repeticiones lentas. Dolor ≤ 3/10.",
+    "dosageEn": "3 × 8–10 slow reps. Pain ≤ 3/10."
+  },
+  {
+    "id": "shoulder_ytw_light",
+    "nameEs": "Y-T-W ligero (prone o inclinado)",
+    "nameEn": "Light Y-T-W raises",
+    "region": "shoulder",
+    "phase": "loading",
+    "dosageEs": "2–3 × 8–10 por letra, carga mínima. RPE 4–5/10.",
+    "dosageEn": "2–3 × 8–10 per letter, minimal load. RPE 4–5/10."
+  },
+  {
+    "id": "shoulder_isometric_er",
+    "nameEs": "Rotación externa isométrica",
+    "nameEn": "Isometric external rotation",
+    "region": "shoulder",
+    "phase": "protection",
+    "dosageEs": "3 × 10 de 5–10 s, intensidad submáxima (RPE 5–6/10).",
+    "dosageEn": "3 × 10 of 5–10 s, submaximal effort (RPE 5–6/10)."
+  },
+  {
+    "id": "elbow_wrist_ext_eccentric",
+    "nameEs": "Excéntrico de extensores de muñeca (estilo Tyler Twist)",
+    "nameEn": "Wrist extensor eccentric (Tyler Twist style)",
+    "region": "elbow",
+    "phase": "loading",
+    "dosageEs": "3 × 15 excéntricos, 1–2 veces/día. Dolor tolerable ≤ 4/10 durante ejercicio.",
+    "dosageEn": "3 × 15 eccentrics, 1–2×/day. Tolerable pain ≤ 4/10 during exercise."
+  },
+  {
+    "id": "elbow_isometric_wrist_ext",
+    "nameEs": "Isométrico de extensión de muñeca",
+    "nameEn": "Isometric wrist extension",
+    "region": "elbow",
+    "phase": "protection",
+    "dosageEs": "4–5 × 30–45 s, RPE 6–7/10. 2 veces/día.",
+    "dosageEn": "4–5 × 30–45 s, RPE 6–7/10. 2×/day."
+  },
+  {
+    "id": "elbow_forearm_stretch",
+    "nameEs": "Estiramiento de extensores de antebrazo",
+    "nameEn": "Forearm extensor stretch",
+    "region": "elbow",
+    "phase": "protection",
+    "dosageEs": "3 × 30 s, 2–3 veces/día. Estiramiento suave.",
+    "dosageEn": "3 × 30 s, 2–3×/day. Gentle stretch."
+  },
+  {
+    "id": "elbow_grip_gradation",
+    "nameEs": "Gradación de agarre",
+    "nameEn": "Graduated grip training",
+    "region": "elbow",
+    "phase": "functional",
+    "dosageEs": "3 × 10–15 repeticiones, 1–2 veces/día. Sin dolor > 4/10.",
+    "dosageEn": "3 × 10–15 reps, 1–2×/day. Pain not > 4/10."
+  },
+  {
+    "id": "wrist_hand_tendon_glides_median",
+    "nameEs": "Deslizamiento tendinoso (tendon glides) mediano",
+    "nameEn": "Median tendon glides",
+    "region": "wrist_hand",
+    "phase": "protection",
+    "dosageEs": "10 repeticiones de la secuencia, 3–4 veces/día.",
+    "dosageEn": "10 sequence reps, 3–4×/day."
+  },
+  {
+    "id": "wrist_hand_median_nerve_glider",
+    "nameEs": "Deslizamiento nervioso mediano (suave)",
+    "nameEn": "Gentle median nerve glider",
+    "region": "wrist_hand",
+    "phase": "protection",
+    "dosageEs": "10 repeticiones lentas, 2–3 veces/día. Hormigueo debe ceder al parar.",
+    "dosageEn": "10 slow reps, 2–3×/day. Tingling should ease when stopped."
+  },
+  {
+    "id": "wrist_hand_flexor_stretch",
+    "nameEs": "Estiramiento de flexores de muñeca",
+    "nameEn": "Wrist flexor stretch",
+    "region": "wrist_hand",
+    "phase": "protection",
+    "dosageEs": "3 × 30 s, 2 veces/día.",
+    "dosageEn": "3 × 30 s, 2×/day."
+  },
+  {
+    "id": "cervical_ccft",
+    "nameEs": "Entrenamiento CCFT cervical",
+    "nameEn": "Cervical CCFT training",
+    "region": "cervical",
+    "phase": "protection",
+    "dosageEs": "3 × 10 holds de 10 s, 2 veces/día.",
+    "dosageEn": "3 × 10 holds of 10 s, 2×/day."
+  },
+  {
+    "id": "cervical_chin_tuck",
+    "nameEs": "Retracción cervical (chin tuck)",
+    "nameEn": "Chin tuck",
+    "region": "cervical",
+    "phase": "protection",
+    "dosageEs": "3 × 10 holds de 5 s, varias veces al día en posturas sedentarias.",
+    "dosageEn": "3 × 10 holds of 5 s, several times daily during sedentary postures."
+  },
+  {
+    "id": "cervical_thoracic_extension_break",
+    "nameEs": "Pausa de extensión torácica",
+    "nameEn": "Thoracic extension break",
+    "region": "cervical",
+    "phase": "protection",
+    "dosageEs": "8–10 repeticiones cada 1–2 h si trabajo sedentario.",
+    "dosageEn": "8–10 reps every 1–2 h if sedentary work."
+  },
+  {
+    "id": "cervical_upper_trap_stretch",
+    "nameEs": "Estiramiento de trapecio superior",
+    "nameEn": "Upper trapezius stretch",
+    "region": "cervical",
+    "phase": "protection",
+    "dosageEs": "3 × 30 s por lado, 1–2 veces/día.",
+    "dosageEn": "3 × 30 s per side, 1–2×/day."
+  },
+  {
+    "id": "cervical_deep_neck_extensor_endurance",
+    "nameEs": "Resistencia de extensores cervicales profundos",
+    "nameEn": "Deep neck extensor endurance",
+    "region": "cervical",
+    "phase": "loading",
+    "dosageEs": "3 × 10 holds de 10 s. Progresar según tolerancia.",
+    "dosageEn": "3 × 10 holds of 10 s. Progress per tolerance."
+  },
+  {
+    "id": "lumbar_mcgill_curl_up",
+    "nameEs": "Curl-up de McGill",
+    "nameEn": "McGill curl-up",
+    "region": "lumbar",
+    "phase": "loading",
+    "dosageEs": "3 × 10 holds de 8–10 s. Alternar rodilla flexionada.",
+    "dosageEn": "3 × 10 holds of 8–10 s. Alternate bent knee."
+  },
+  {
+    "id": "lumbar_bird_dog",
+    "nameEs": "Bird dog (cuadrupedia contralateral)",
+    "nameEn": "Bird dog",
+    "region": "lumbar",
+    "phase": "loading",
+    "dosageEs": "3 × 8–10 por lado, holds de 5–8 s.",
+    "dosageEn": "3 × 8–10 per side, 5–8 s holds."
+  },
+  {
+    "id": "lumbar_side_plank_regressed",
+    "nameEs": "Plancha lateral regresada",
+    "nameEn": "Regressed side plank",
+    "region": "lumbar",
+    "phase": "loading",
+    "dosageEs": "3 × 20–30 s por lado, 1–2 veces/día.",
+    "dosageEn": "3 × 20–30 s per side, 1–2×/day."
+  },
+  {
+    "id": "lumbar_bridge",
+    "nameEs": "Puente de glúteos (bridge)",
+    "nameEn": "Glute bridge",
+    "region": "lumbar",
+    "phase": "loading",
+    "dosageEs": "3 × 12–15, RPE 5–6/10.",
+    "dosageEn": "3 × 12–15, RPE 5–6/10."
+  },
+  {
+    "id": "lumbar_hip_hinge_dowel",
+    "nameEs": "Bisagra de cadera con palo",
+    "nameEn": "Hip hinge with dowel",
+    "region": "lumbar",
+    "phase": "functional",
+    "dosageEs": "3 × 10 repeticiones lentas, aprender patrón antes de carga.",
+    "dosageEn": "3 × 10 slow reps, learn pattern before load."
+  },
+  {
+    "id": "lumbar_cat_camel",
+    "nameEs": "Gato-camello (cat-camel)",
+    "nameEn": "Cat-camel",
+    "region": "lumbar",
+    "phase": "protection",
+    "dosageEs": "2 × 10 repeticiones lentas, 1–2 veces/día.",
+    "dosageEn": "2 × 10 slow reps, 1–2×/day."
+  },
+  {
+    "id": "lumbar_prone_press_up",
+    "nameEs": "Press-up en prono (estilo McKenzie)",
+    "nameEn": "Prone press-up (McKenzie style)",
+    "region": "lumbar",
+    "phase": "protection",
+    "dosageEs": "10 repeticiones, cada 2–3 h si indicado clínicamente.",
+    "dosageEn": "10 reps every 2–3 h if clinically indicated."
+  },
+  {
+    "id": "lumbar_sciatic_slider",
+    "nameEs": "Deslizamiento ciático (slider)",
+    "nameEn": "Sciatic nerve slider",
+    "region": "lumbar",
+    "phase": "protection",
+    "dosageEs": "10–15 repeticiones, 2 veces/día. Sin aumento de dolor > 1 h.",
+    "dosageEn": "10–15 reps, 2×/day. No pain increase > 1 h."
+  },
+  {
+    "id": "lumbar_clamshell",
+    "nameEs": "Clamshell (almeja)",
+    "nameEn": "Clamshell",
+    "region": "lumbar",
+    "phase": "loading",
+    "dosageEs": "3 × 15 por lado, banda ligera opcional.",
+    "dosageEn": "3 × 15 per side, optional light band."
+  },
+  {
+    "id": "lumbar_dead_bug",
+    "nameEs": "Dead bug",
+    "nameEn": "Dead bug",
+    "region": "lumbar",
+    "phase": "loading",
+    "dosageEs": "3 × 8–10 por lado, movimiento lento.",
+    "dosageEn": "3 × 8–10 per side, slow movement."
+  },
+  {
+    "id": "lumbar_pallof_press",
+    "nameEs": "Pallof press anti-rotación",
+    "nameEn": "Pallof press",
+    "region": "lumbar",
+    "phase": "functional",
+    "dosageEs": "3 × 10–12 por lado, RPE 6/10.",
+    "dosageEn": "3 × 10–12 per side, RPE 6/10."
+  },
+  {
+    "id": "lumbar_graded_walking",
+    "nameEs": "Caminata graduada",
+    "nameEn": "Graded walking",
+    "region": "lumbar",
+    "phase": "functional",
+    "dosageEs": "Empezar 10–15 min, progresar 10–20% semanal si tolerado.",
+    "dosageEn": "Start 10–15 min, progress 10–20% weekly if tolerated."
+  },
+  {
+    "id": "hip_glute_bridge",
+    "nameEs": "Puente de glúteos",
+    "nameEn": "Glute bridge",
+    "region": "hip",
+    "phase": "loading",
+    "dosageEs": "3 × 12–15, pausa 2 s arriba.",
+    "dosageEn": "3 × 12–15, 2 s pause at top."
+  },
+  {
+    "id": "hip_sidelying_abduction",
+    "nameEs": "Abducción cadera en decúbito lateral",
+    "nameEn": "Sidelying hip abduction",
+    "region": "hip",
+    "phase": "loading",
+    "dosageEs": "3 × 15 por lado, RPE 5–6/10.",
+    "dosageEn": "3 × 15 per side, RPE 5–6/10."
+  },
+  {
+    "id": "hip_hitch",
+    "nameEs": "Hip hitch (elevación pélvica lateral)",
+    "nameEn": "Hip hitch",
+    "region": "hip",
+    "phase": "functional",
+    "dosageEs": "3 × 10–12 por lado, controlado.",
+    "dosageEn": "3 × 10–12 per side, controlled."
+  },
+  {
+    "id": "hip_short_foot",
+    "nameEs": "Short foot (pie corto)",
+    "nameEn": "Short foot exercise",
+    "region": "hip",
+    "phase": "loading",
+    "dosageEs": "3 × 10 holds, integrar en apoyo monopodal.",
+    "dosageEn": "3 × 10 holds, integrate in single-leg stance."
+  },
+  {
+    "id": "hip_copenhagen_short_lever",
+    "nameEs": "Copenhagen aducción (palanca corta)",
+    "nameEn": "Copenhagen adduction (short lever)",
+    "region": "hip",
+    "phase": "loading",
+    "dosageEs": "3 × 8–10 holds de 5 s, progresar gradualmente.",
+    "dosageEn": "3 × 8–10 holds of 5 s, progress gradually."
+  },
+  {
+    "id": "hip_flexor_stretch",
+    "nameEs": "Estiramiento de flexores de cadera",
+    "nameEn": "Hip flexor stretch",
+    "region": "hip",
+    "phase": "protection",
+    "dosageEs": "3 × 30 s por lado.",
+    "dosageEn": "3 × 30 s per side."
+  },
+  {
+    "id": "hip_faber_stretch",
+    "nameEs": "Estiramiento FABER suave",
+    "nameEn": "Gentle FABER stretch",
+    "region": "hip",
+    "phase": "protection",
+    "dosageEs": "3 × 30 s por lado, sin dolor > 4/10.",
+    "dosageEn": "3 × 30 s per side, pain not > 4/10."
+  },
+  {
+    "id": "hip_single_leg_stance",
+    "nameEs": "Apoyo monopodal",
+    "nameEn": "Single-leg stance",
+    "region": "hip",
+    "phase": "functional",
+    "dosageEs": "3 × 20–30 s por pierna, progresar a ojos cerrados si seguro.",
+    "dosageEn": "3 × 20–30 s per leg, progress to eyes closed if safe."
+  },
+  {
+    "id": "knee_quad_set_tke",
+    "nameEs": "Contracción cuádriceps / TKE",
+    "nameEn": "Quad set / terminal knee extension",
+    "region": "knee",
+    "phase": "protection",
+    "dosageEs": "3 × 10–15 holds, varias veces al día post-agudo.",
+    "dosageEn": "3 × 10–15 holds, several times daily post-acute."
+  },
+  {
+    "id": "knee_spanish_squat_isometric",
+    "nameEs": "Sentadilla española isométrica",
+    "nameEn": "Spanish squat isometric",
+    "region": "knee",
+    "phase": "loading",
+    "dosageEs": "4–5 × 30–45 s, RPE 6–7/10.",
+    "dosageEn": "4–5 × 30–45 s, RPE 6–7/10."
+  },
+  {
+    "id": "knee_heel_raise_straight_bent",
+    "nameEs": "Elevación de talones recta y flexionada",
+    "nameEn": "Straight- and bent-knee heel raises",
+    "region": "knee",
+    "phase": "loading",
+    "dosageEs": "3 × 12–15 cada variante, progresión bilateral a unilateral.",
+    "dosageEn": "3 × 12–15 each variant, bilateral to unilateral progression."
+  },
+  {
+    "id": "knee_terminal_extension",
+    "nameEs": "Extensión terminal de rodilla",
+    "nameEn": "Terminal knee extension",
+    "region": "knee",
+    "phase": "loading",
+    "dosageEs": "3 × 12–15, banda ligera-media.",
+    "dosageEn": "3 × 12–15, light-medium band."
+  },
+  {
+    "id": "knee_sit_to_stand",
+    "nameEs": "Sentarse-levantarse",
+    "nameEn": "Sit-to-stand",
+    "region": "knee",
+    "phase": "functional",
+    "dosageEs": "3 × 10, altura silla según tolerancia.",
+    "dosageEn": "3 × 10, chair height per tolerance."
+  },
+  {
+    "id": "knee_step_down",
+    "nameEs": "Step-down controlado",
+    "nameEn": "Controlled step-down",
+    "region": "knee",
+    "phase": "functional",
+    "dosageEs": "3 × 8–10 por pierna.",
+    "dosageEn": "3 × 8–10 per leg."
+  },
+  {
+    "id": "knee_nordic_assisted",
+    "nameEs": "Nórdico asistido",
+    "nameEn": "Assisted Nordic hamstring curl",
+    "region": "knee",
+    "phase": "loading",
+    "dosageEs": "3 × 5–8 repeticiones asistidas, 2 veces/semana.",
+    "dosageEn": "3 × 5–8 assisted reps, 2×/week."
+  },
+  {
+    "id": "knee_single_leg_balance",
+    "nameEs": "Equilibrio monopodal rodilla",
+    "nameEn": "Single-leg balance (knee)",
+    "region": "knee",
+    "phase": "functional",
+    "dosageEs": "3 × 30 s, progresar superficie inestable.",
+    "dosageEn": "3 × 30 s, progress unstable surface."
+  },
+  {
+    "id": "knee_patellar_isometric_wall_sit",
+    "nameEs": "Wall sit superficial (isométrico rotuliano)",
+    "nameEn": "Shallow wall sit (patellar isometric)",
+    "region": "knee",
+    "phase": "loading",
+    "dosageEs": "4 × 30–45 s, RPE 6/10.",
+    "dosageEn": "4 × 30–45 s, RPE 6/10."
+  },
+  {
+    "id": "ankle_alphabet",
+    "nameEs": "Alfabeto de tobillo",
+    "nameEn": "Ankle alphabet",
+    "region": "ankle",
+    "phase": "protection",
+    "dosageEs": "1–2 series alfabeto completo, 3–4 veces/día post-esguince.",
+    "dosageEn": "1–2 full alphabet sets, 3–4×/day post-sprain."
+  },
+  {
+    "id": "ankle_band_eversion",
+    "nameEs": "Eversión con banda",
+    "nameEn": "Band eversion",
+    "region": "ankle",
+    "phase": "loading",
+    "dosageEs": "3 × 15, banda ligera progresiva.",
+    "dosageEn": "3 × 15, progressive light band."
+  },
+  {
+    "id": "ankle_calf_raise",
+    "nameEs": "Elevación de talones",
+    "nameEn": "Calf raise",
+    "region": "ankle",
+    "phase": "loading",
+    "dosageEs": "3 × 12–15 bilateral, progresar unilateral.",
+    "dosageEn": "3 × 12–15 bilateral, progress to unilateral."
+  },
+  {
+    "id": "foot_short_foot",
+    "nameEs": "Short foot (pie corto)",
+    "nameEn": "Short foot",
+    "region": "foot",
+    "phase": "loading",
+    "dosageEs": "3 × 10 holds, 2 veces/día.",
+    "dosageEn": "3 × 10 holds, 2×/day."
+  },
+  {
+    "id": "foot_windlass_stretch",
+    "nameEs": "Estiramiento windlass suave",
+    "nameEn": "Gentle windlass stretch",
+    "region": "foot",
+    "phase": "protection",
+    "dosageEs": "3 × 30 s, 2 veces/día. Sin dolor agudo.",
+    "dosageEn": "3 × 30 s, 2×/day. No sharp pain."
+  },
+  {
+    "id": "foot_marble_pickups",
+    "nameEs": "Recogida de canicas",
+    "nameEn": "Marble pickups",
+    "region": "foot",
+    "phase": "functional",
+    "dosageEs": "2 × 10–15 recogidas por pie.",
+    "dosageEn": "2 × 10–15 pickups per foot."
+  },
+  {
+    "id": "ankle_balance_foam",
+    "nameEs": "Equilibrio en foam (opcional)",
+    "nameEn": "Balance on foam (optional)",
+    "region": "ankle",
+    "phase": "functional",
+    "dosageEs": "3 × 30 s monopodal cuando bilateral dominado.",
+    "dosageEn": "3 × 30 s single leg when bilateral mastered."
+  },
+  {
+    "id": "ankle_hop_prep_bilateral",
+    "nameEs": "Preparación de saltos bilaterales",
+    "nameEn": "Bilateral hop preparation",
+    "region": "ankle",
+    "phase": "return_to_sport",
+    "dosageEs": "3 × 10 saltos bajos, solo si caminar y calf raises sin dolor.",
+    "dosageEn": "3 × 10 low hops, only if walking and calf raises pain-free."
+  },
+  {
+    "id": "core_diaphragmatic_breathing",
+    "nameEs": "Respiración diafragmática",
+    "nameEn": "Diaphragmatic breathing",
+    "region": "core",
+    "phase": "protection",
+    "dosageEs": "5–10 minutos, 1–2 veces/día o antes de ejercicio.",
+    "dosageEn": "5–10 minutes, 1–2×/day or before exercise."
+  },
+  {
+    "id": "general_farmer_carry",
+    "nameEs": "Farmer carry ligero",
+    "nameEn": "Light farmer carry",
+    "region": "general",
+    "phase": "functional",
+    "dosageEs": "3 × 20–30 m, peso moderado (RPE 5–6/10).",
+    "dosageEn": "3 × 20–30 m, moderate weight (RPE 5–6/10)."
+  },
+  {
+    "id": "general_y_balance_reach",
+    "nameEs": "Práctica de alcance Y-balance",
+    "nameEn": "Y-balance reach practice",
+    "region": "general",
+    "phase": "functional",
+    "dosageEs": "3 × 3 alcances por dirección y pierna, comparar simetría.",
+    "dosageEn": "3 × 3 reaches per direction and leg, compare symmetry."
+  }
+]

@@ -1,4 +1,5 @@
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
@@ -587,7 +588,12 @@ export function detectElbowRedFlags(answers: ElbowAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  // All current elbow flags are hard emergencies (deformity, open wound, vascular, etc.).
+  const HARD_FLAG_IDS: (keyof ElbowAdaptiveAnswers)[] = [...RED_FLAG_IDS];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: ElbowQuestionDef, answers: ElbowAdaptiveAnswers): boolean {
@@ -638,11 +644,7 @@ export function formatElbowAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad movimiento: ${answers.rf_no_movimiento || "—"}`,
     `Inflamación severa post-trauma: ${answers.rf_inflamacion_severa || "—"}`,
@@ -978,7 +980,7 @@ export function localizeElbowLabel(id: string, fallback: string, locale: Consult
 }
 export function localizeElbowOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return ELBOW_OPTION_EN[option] ?? option;
+  return ELBOW_OPTION_EN[option as keyof typeof ELBOW_OPTION_EN] ?? option;
 }
 export function localizeElbowSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (ELBOW_SECTION_LABELS as any)[section] ?? section;

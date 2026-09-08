@@ -63,6 +63,7 @@ export function OnboardingForm() {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
+  const [city, setCity] = useState("");
 
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
@@ -90,16 +91,21 @@ export function OnboardingForm() {
   }
 
   function validateStep2() {
-    if (!primarySport.trim()) return "Indica tu deporte principal.";
-    if (!competitiveLevel) return "Selecciona tu nivel competitivo.";
-    if (!sessionsPerWeek || Number(sessionsPerWeek) < 0)
-      return "Indica cuántas sesiones entrenas por semana.";
-    if (!hoursPerWeek || Number(hoursPerWeek) < 0)
-      return "Indica cuántas horas entrenas por semana.";
-    if (!currentSeason) return "Selecciona en qué fase de temporada estás.";
-    if (performanceGoals.length === 0)
-      return "Selecciona al menos un objetivo de rendimiento.";
     return null;
+  }
+
+  function sportProfilePayload() {
+    const sport = primarySport.trim();
+    return {
+      primary_sport: sport ? normalizeSportsInput(sport) : null,
+      sport_position:
+        sport && sportHasPosition(sport) ? sportPosition.trim() || null : null,
+      competitive_level: competitiveLevel || null,
+      sessions_per_week: sessionsPerWeek.trim() ? Number(sessionsPerWeek) : null,
+      hours_per_week: hoursPerWeek.trim() ? Number(hoursPerWeek) : null,
+      current_season: currentSeason || null,
+      performance_goals: performanceGoals.length > 0 ? performanceGoals : null,
+    };
   }
 
   async function handleSubmit() {
@@ -124,13 +130,8 @@ export function OnboardingForm() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        primary_sport: normalizeSportsInput(primarySport),
-        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
-        competitive_level: competitiveLevel,
-        sessions_per_week: Number(sessionsPerWeek),
-        hours_per_week: Number(hoursPerWeek),
-        current_season: currentSeason,
-        performance_goals: performanceGoals,
+        city: city.trim() || null,
+        ...sportProfilePayload(),
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       });
@@ -241,6 +242,21 @@ export function OnboardingForm() {
             />
           </div>
 
+          <div>
+            <label className={labelClass}>Ciudad (opcional)</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Ej: Madrid"
+              className={inputClass}
+            />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Si la indicas, priorizamos clínicas de AIKinora en tu ciudad. Si no,
+              te recomendamos centros que encajen con tu lesión.
+            </p>
+          </div>
+
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
@@ -261,8 +277,11 @@ export function OnboardingForm() {
         </div>
       ) : (
         <div className="space-y-5">
+          <p className="text-xs leading-relaxed text-slate-500">
+            Todo este bloque es opcional. Puedes finalizar sin rellenarlo.
+          </p>
           <div>
-            <label className={labelClass}>¿Qué deporte practicas?</label>
+            <label className={labelClass}>¿Qué deporte practicas? (opcional)</label>
             <input
               type="text"
               value={primarySport}
@@ -293,7 +312,7 @@ export function OnboardingForm() {
           )}
 
           <div>
-            <label className={labelClass}>Nivel competitivo</label>
+            <label className={labelClass}>Nivel competitivo (opcional)</label>
             <ChipGroup
               options={COMPETITIVE_LEVELS}
               value={competitiveLevel}
@@ -303,7 +322,7 @@ export function OnboardingForm() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Sesiones / semana</label>
+              <label className={labelClass}>Sesiones / semana (opcional)</label>
               <input
                 type="number"
                 min={0}
@@ -315,7 +334,7 @@ export function OnboardingForm() {
               />
             </div>
             <div>
-              <label className={labelClass}>Horas / semana</label>
+              <label className={labelClass}>Horas / semana (opcional)</label>
               <input
                 type="number"
                 min={0}
@@ -330,7 +349,7 @@ export function OnboardingForm() {
           </div>
 
           <div>
-            <label className={labelClass}>Temporada actual</label>
+            <label className={labelClass}>Temporada actual (opcional)</label>
             <ChipGroup
               options={CURRENT_SEASONS}
               value={currentSeason}
@@ -339,7 +358,7 @@ export function OnboardingForm() {
           </div>
 
           <div>
-            <label className={labelClass}>Objetivos de rendimiento</label>
+            <label className={labelClass}>Objetivos de rendimiento (opcional)</label>
             <p className="mb-2 text-xs text-slate-500">Puedes seleccionar varios</p>
             <div className="flex flex-wrap gap-2">
               {PERFORMANCE_GOALS.map((goal) => (

@@ -110,6 +110,12 @@ LATERAL PAIN (ITB REGION)
 
 Diferencial: LCL distal, menisco lateral, OA lateral, referido cadera (GTPS).
 
+**Tests de apoyo (cualitativos — no inventar Sn/Sp):**
+- **Noble compression:** dolor lateral familiar sobre cóndilo al comprimir ITB ~30° flexión → ITB ↑. Catalog: `noble-compression`.
+- **Ober:** limitación aducción / dolor ITB familiar → apoyo TFL–ITB. Catalog: `ober-test`. Tirantez sola ≠ ITBS.
+
+**NUNCA:** Noble o Ober aislado = ITBS confirmado. Carrera sin trauma ≠ LCL.
+
 ---
 
 ## 9. BICEPS FEMORIS / LATERAL PLICA / OA LATERAL

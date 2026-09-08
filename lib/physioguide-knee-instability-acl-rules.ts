@@ -24,10 +24,12 @@ CLUSTER LCP:
 golpe en espinilla con rodilla flexionada (salpicadero / caída de rodillas) + inestabilidad posterior / bajada escaleras → LCP ↑.
 
 CLUSTER PLC:
-varo / hiperextensión + inestabilidad rotatoria + dolor posterolateral → complejo posterolateral ↑.
+varo / hiperextensión + inestabilidad rotatoria + dolor posterolateral ± dial test asimétrico (30° → PLC ↑; 30°+90° → PLC+LCP ↑) → complejo posterolateral ↑.
+Dial cualitativo: no inventar Sn/Sp; no confirma grado. Inestabilidad multiplanar severa → urgencia/especialista.
 
 CLUSTER ROTULIANA (no LCA):
-episodio de rótula que se desplaza/sale de sitio (± recolocación) → inestabilidad rotuliana, no LCA.
+episodio de rótula que se desplaza/sale de sitio (± recolocación) + aprensión rotuliana familiar → inestabilidad rotuliana, no LCA.
+Aprensión sin historia de luxación pesa menos; dolor PFPS sin aprensión ≠ inestabilidad.
 
 DIFERENCIAL OBLIGATORIO:
 - lesión LCA (parcial/completa — no afirmar grado sin datos)

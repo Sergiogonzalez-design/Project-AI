@@ -64,7 +64,9 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
         email: trimmedEmail,
         password,
       });
-      if (signError) setError(translateAuthError(signError.message, t));
+      if (signError) {
+        setError(translateAuthError(signError.message, t));
+      }
     } finally {
       setLoading(false);
     }
@@ -173,6 +175,8 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
             ref={passwordRef}
             onSubmitEditing={handleLogin}
           />
+
+          <View style={{ height: 12 }} />
 
           <Pressable
             onPress={onForgot}
@@ -327,6 +331,14 @@ const styles = StyleSheet.create({
   forgotText: { fontSize: 13, fontWeight: "700", color: Colors.primary },
   switchRow: { marginTop: 24, alignItems: "center" },
   switchText: { fontSize: 14, color: Colors.textSecondary },
+  physioInviteHint: {
+    marginTop: 10,
+    textAlign: "center",
+    fontSize: 12,
+    lineHeight: 17,
+    color: Colors.textSecondary,
+    paddingHorizontal: 12,
+  },
   switchLink: { color: Colors.primary, fontWeight: "700" },
   dividerRow: {
     marginTop: 22,

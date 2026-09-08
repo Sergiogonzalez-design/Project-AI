@@ -15,8 +15,9 @@ export function stripVisibleMarkup(text: string): string {
       .replace(/___([^_]+)___/g, "$1")
       .replace(/__([^_]+)__/g, "$1")
       .replace(/(^|[^_])_([^_\n]+)_(?!_)/g, "$1$2")
-      // Any leftover markers the model still emits
-      .replace(/[*#]+/g, "")
+      // Leftover # / * the model still emits after markdown unwrap
+      .replace(/#/g, "")
+      .replace(/\*/g, "")
       // Functional-test video id tags: "…prompt ⟦heel-raise⟧"
       .replace(/\s*⟦[a-z0-9-]+⟧/gi, "")
       .replace(/[ \t]+\n/g, "\n")

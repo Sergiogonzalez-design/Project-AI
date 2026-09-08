@@ -7,6 +7,7 @@ import {
  * (urgency → core → mechanism branches → neuro → history).
  */
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -689,7 +690,19 @@ export function detectNeckRedFlags(answers: NeckAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof NeckAdaptiveAnswers)[] = [
+    "rf_trauma_grave",
+    "rf_debilidad_brazos_piernas",
+    "rf_perdida_sensibilidad",
+    "rf_fiebre",
+    "rf_mareo_vision",
+    "rf_esfinteres",
+    "rf_cefalea_subita",
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: NeckQuestionDef, answers: NeckAdaptiveAnswers): boolean {
@@ -740,11 +753,7 @@ export function formatNeckAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Traumatismo fuerte: ${answers.rf_trauma_grave || "—"}`,
     `Debilidad brazos/piernas: ${answers.rf_debilidad_brazos_piernas || "—"}`,
     `Pérdida sensibilidad: ${answers.rf_perdida_sensibilidad || "—"}`,
@@ -844,7 +853,7 @@ export function formatNeckAdaptive(
     "- Fiebre + rigidez cervical extrema + malestar general intenso → sospecha de MENINGISMO/meningitis — urgencia médica inmediata.",
     "- Traumatismo fuerte + dolor intenso + limitación severa o inestabilidad → sospecha de FRACTURA CERVICAL — inmovilizar y derivar a urgencias, no manipular.",
     "- Pérdida de peso inexplicada o antecedente de cáncer + dolor nocturno o progresivo sin mecánica clara → descartar causa neoplásica/metastásica.",
-    "- BANDERAS ROJAS de esfínteres + debilidad en piernas + torpeza al caminar → sospecha de compromiso medular — urgencia absoluta."
+    "- Alarma dura de esfínteres + debilidad en piernas + torpeza al caminar → sospecha de compromiso medular — urgencia absoluta."
   );
 
   return lines.filter(Boolean).join("\n");
@@ -1037,7 +1046,7 @@ export function localizeNeckLabel(id: string, fallback: string, locale: ConsultL
 }
 export function localizeNeckOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return NECK_OPTION_EN[option] ?? option;
+  return NECK_OPTION_EN[option as keyof typeof NECK_OPTION_EN] ?? option;
 }
 export function localizeNeckSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (NECK_SECTION_LABELS as any)[section] ?? section;

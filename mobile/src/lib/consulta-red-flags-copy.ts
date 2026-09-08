@@ -26,3 +26,45 @@ export function skipQuestionnaireForUrgencyLabel(
     ? "Send now — urgent care"
     : "Enviar ahora (urgencia)";
 }
+
+/**
+ * Questionnaire dump block for the AI. Hard-urgent dumps may use
+ * «URGENCIA DETECTADA». Non-urgent dumps must not use the tokens
+ * «BANDERAS ROJAS», «BANDERAS ROJAS DETECTADAS», or «URGENCIA DETECTADA»
+ * (those trigger hospital routing).
+ */
+export function formatRedFlagScreenBlock(
+  urgent: boolean,
+  triggered: string[],
+  opts?: { urgentHeaderSuffix?: string; urgentDetail?: string }
+): string[] {
+  if (urgent) {
+    const header = opts?.urgentHeaderSuffix
+      ? `— ALARMAS / URGENCIA (${opts.urgentHeaderSuffix}) —`
+      : "— ALARMAS / URGENCIA —";
+    const detail = opts?.urgentDetail ? ` ${opts.urgentDetail}` : "";
+    return [
+      "",
+      header,
+      `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}${detail}`,
+    ];
+  }
+  if (triggered.length > 0) {
+    return [
+      "",
+      "— CRIBADO DE ALARMAS (contexto clínico, no urgencia hospitalaria) —",
+      triggered.join("; "),
+    ];
+  }
+  return ["", "— CRIBADO DE ALARMAS (ninguna marcada como Sí) —"];
+}
+
+/** True when any hard-emergency flag is marked Sí (soft history flags ignored). */
+export function isHardUrgentFromAnswers(
+  answers: Record<string, unknown>,
+  hardIds: readonly string[],
+  extraUrgent = false
+): boolean {
+  if (extraUrgent) return true;
+  return hardIds.some((id) => answers[id] === "Sí");
+}

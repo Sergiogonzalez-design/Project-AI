@@ -31,6 +31,7 @@ import { AI_WRIST_DEQUERVAIN_RULES } from "./physioguide-wrist-dequervain-rules"
 import { AI_WRIST_TRAUMA_SCAPHOID_RULES } from "./physioguide-wrist-trauma-scaphoid-rules";
 import { AI_ELBOW_DISTAL_BICEPS_RULES } from "./physioguide-elbow-distal-biceps-rules";
 import { AI_ELBOW_DISTAL_TRICEPS_RULES } from "./physioguide-elbow-distal-triceps-rules";
+import { AI_ELBOW_OSTEOARTHRITIS_RULES } from "./physioguide-elbow-osteoarthritis-rules";
 import { AI_ELBOW_PLRI_RULES } from "./physioguide-elbow-plri-rules";
 import { AI_ELBOW_RADIAL_TUNNEL_RULES } from "./physioguide-elbow-radial-tunnel-rules";
 import { AI_ELBOW_UCL_MEDIAL_RULES } from "./physioguide-elbow-ucl-medial-rules";
@@ -42,14 +43,23 @@ import { AI_WRIST_CARPAL_INSTABILITY_RULES } from "./physioguide-wrist-carpal-in
 import { AI_CERVICAL_NECK_PAIN_RULES } from "./physioguide-cervical-neck-pain-rules";
 import { AI_CERVICAL_TRAUMA_REDFLAGS_RULES } from "./physioguide-cervical-trauma-redflags-rules";
 import { AI_LUMBAR_BACK_PAIN_RULES } from "./physioguide-lumbar-back-pain-rules";
+import { AI_LUMBAR_SI_PELVIS_RULES } from "./physioguide-lumbar-si-pelvis-rules";
 import { AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES } from "./physioguide-lumbar-redflags-inflammatory-rules";
 import { AI_SPINE_MASTER_INTEGRATION_RULES } from "./physioguide-spine-master-rules";
+import { AI_THORACIC_MASTER_INTEGRATION_RULES } from "./physioguide-thoracic-master-rules";
+import { AI_THORACIC_REDFLAGS_VISCERAL_RULES } from "./physioguide-thoracic-redflags-rules";
+import { AI_THORACIC_SPINE_PAIN_RULES } from "./physioguide-thoracic-spine-pain-rules";
 import { AI_GLOBAL_CROSS_REGION_RULES } from "./physioguide-global-cross-region-rules";
 import { AI_FINGER_DIGITAL_PAIN_RULES } from "./physioguide-finger-digital-pain-rules";
 import { AI_HEAD_HEADACHE_MASTER_RULES } from "./physioguide-head-headache-master-rules";
 import { AI_HYPOTHESIS_EXPLORATION_RULES } from "./physioguide-hypothesis-mode-rules";
 import { AI_MTRP_FRAMEWORK_RULES } from "./physioguide-mtrp-framework-rules";
 import { AI_SHOULDER_LATERAL_REFERRED_RULES } from "./physioguide-shoulder-lateral-referred-rules";
+import { AI_CERVICAL_REFERRED_RULES } from "./physioguide-cervical-referred-rules";
+import {
+  AI_HIP_REFERRED_RULES,
+  AI_LUMBAR_REFERRED_RULES,
+} from "./physioguide-lumbar-hip-referred-rules";
 import {
   AI_CLARITY_NO_OVERDIAGNOSIS_RULES,
   AI_DIFFERENTIAL_MATRICES_RULES,
@@ -59,6 +69,13 @@ import {
   AI_PERSISTENCE_REEVALUATION_RULES,
   AI_REFERRED_PAIN_LIBRARY_RULES,
 } from "./physioguide-clinical-reasoning-library-rules";
+import { AI_READAPTATION_RULES } from "./physioguide-readaptation-rules";
+import {
+  AI_POST_SURGERY_ACL_RULES,
+  AI_POST_SURGERY_ANKLE_RULES,
+  AI_POST_SURGERY_ROTATOR_CUFF_RULES,
+  AI_POST_SURGERY_SCREENS_MASTER_RULES,
+} from "./physioguide-post-surgery-screens-rules";
 
 export const AI_DATA_FIDELITY_RULES = `FIDELIDAD A LOS DATOS (CRÍTICO — incumplir esto es un error grave):
 - El mecanismo u origen de la lesión DEBE coincidir EXACTAMENTE con lo que el usuario indicó en la descripción inicial y en el cuestionario (campos Inicio, Mecanismo, Actividad, detalle de actividad).
@@ -68,6 +85,7 @@ export const AI_DATA_FIDELITY_RULES = `FIDELIDAD A LOS DATOS (CRÍTICO — incum
 - No inventes deportes, actividades ni mecanismos que el usuario no mencionó.
 - No ignores el perfil: si hay datos antropométricos o de carga, menciónalos cuando cambien la orientación (sin inventar cifras que no estén en el perfil).
 - LOCALIZACIÓN (igual de crítico): en el resumen y en todo el informe usa SOLO las zonas que el paciente nombró o marcó (p. ej. glúteo, isquiotibial, ingle/aductor). NO digas "cadera y rodilla", "articulación de la cadera" u otras articulaciones si el paciente no las mencionó ni las marcó.
+- INTERPRETAR EL RELATO (CRÍTICO — no solo palabras sueltas): lee la frase completa. Si el paciente dice que **entrena / rehabilita / fortalece** una zona (p. ej. rodilla) pero **ahora le duele otra** (p. ej. espalda), el cuestionario y el informe van SOLO por la zona que **duele ahora**, salvo que también describa dolor/síntoma activo en la otra. Ej.: «llevo semanas entrenando para rehabilitar la rodilla y me duele la espalda» → consulta de **espalda**, no rodilla. No abras cuestionario multi-zona por contexto de rehabilitación.
 - El nombre de la categoría del cuestionario (p. ej. "cadera") es solo organización interna: NO lo trates como si el paciente hubiera dicho esa articulación.
 - TESTS FUNCIONALES: prioriza las estructuras/zonas reportadas. Si dijo glúteo + isquiotibial + ingle → tests de glúteo/isquiotibiales/aductores. NO inventes tests de rodilla u otras articulaciones no relacionadas.
 - EXCEPCIÓN — dolor referido / causa a distancia: SÍ puedes (y debes) hacer 1–3 preguntas/tests de cribado de una zona proximal o relacionada cuando el cuadro lo sugiera (p. ej. codo ↔ cuello/cervical; hombro ↔ cuello; rodilla ↔ cadera/lumbar; pie ↔ lumbar; muñeca/mano ↔ cuello). Explícalo en lenguaje sencillo.
@@ -108,13 +126,28 @@ PASO 1 — ORIENTACIÓN INICIAL (DIFFERENTIAL COMPLETO):
 - En **Posibles lesiones** incluye al menos las hipótesis locales Y, si encaja, 1 hipótesis de origen proximal/referido con confianza (alta/media/baja).
 - Genera / usa las preguntas y tests según la zona + cribado de origen referido cuando proceda (OBLIGATORIO en hombro/codo/brazo con hormigueo, irradiación o tests locales negativos).
 
-PASO 2 — ¿ES URGENTE / HOSPITAL?
-- Si es lesión grave obvia o hay banderas rojas (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, etc.):
-  → Recomienda HOSPITAL / URGENCIAS YA.
-  → NO pidas batería de tests funcionales ni el ciclo de reposo 24–36 h.
+PASO 2 — ¿ES URGENTE / HOSPITAL? (SOLO PRIORIDAD ALTA REAL — no inventes urgencia):
+- Hospital / urgencias SOLO si el contexto dice explícitamente «PRIORIDAD ALTA», «URGENCIA DETECTADA» o «BANDERAS ROJAS DETECTADAS», O hay lesión grave ya evidente (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, no apoyo post-trauma, etc.).
+- PROHIBIDO mandar a hospital/urgencias por: dolor leve-moderado (p. ej. 3–5/10 o ≤6/10 sin otros alarmas), sobrecarga / esfuerzo / lumbalgia o cervicalgia mecánica, molestia de espalda/cuello sin alarmas duras, o solo porque el cuestionario tiene un apartado titulado «CRIBADO DE ALARMAS» o «BANDERAS ROJAS» con ninguna alarma dura marcada.
+- Antecedentes de cribado (p. ej. cáncer previo, riesgo de fractura por fragilidad, dolor nocturno aislado) pueden aparecer como contexto clínico. NO justifican PRIORIDAD ALTA ni «ve a urgencias» por sí solos. Preguntas combinadas de cribado (p. ej. «fiebre o pérdida de peso») marcadas Sí tampoco justifican ER por sí solas — pide clarificación o seguimiento cuidadoso, no hospital automático. «CRIBADO DE ALARMAS (ninguna marcada como Sí)» y «contexto clínico, no urgencia hospitalaria» NO son urgencia hospitalaria.
+- Si NO hay PRIORIDAD ALTA real:
+  → NO uses el flujo de hospital.
+  → En **Qué debes hacer ahora** prioriza fisioterapia / clínicas AIKinora / hacer las pruebas funcionales / autocuidado según el caso — NUNCA hospital por defecto.
+- Si SÍ hay PRIORIDAD ALTA real:
+  → Recomienda HOSPITAL / URGENCIAS YA en **Qué debes hacer ahora**.
+  → PROHIBIDO crear la sección **Pruebas funcionales** (ni título, ni lista, ni «haz estas pruebas», ni hop/salto).
+  → PROHIBIDO el ciclo de reposo 24–36 h + retest como paso principal (la prioridad es urgencias).
   → Añade **Pruebas de imagen recomendadas** (RX, RMN, eco…) justo antes de **Qué debes hacer ahora**.
+  → Hielo / reposo / elevación / no cargar van SOLO en **Qué hacer mientras tanto** (recomendaciones seguras mientras acude a urgencias), NUNCA como “prueba funcional”.
+  → NO recomiendes clínicas de AIKinora: usa **Hospitales / Urgencias cerca de ti** (con ciudad del perfil → hospitales locales; sin ciudad → hospital más cercano + Maps / 112).
+
+DESTINO CORRECTO (CRÍTICO — error frecuente a evitar):
+- Sobrecarga / esfuerzo / dolor mecánico de espalda, cuello, hombro, etc. sin banderas rojas → fisioterapeuta / clínicas AIKinora (no urgencias).
+- Intensidad 4/10 sin déficit neurológico ni trauma grave → NO es urgencia hospitalaria.
+- Reserva hospital para cauda, trauma grave, déficit neurológico serio, dolor insoportable, infección sistémica, o PRIORIDAD ALTA explícita en el contexto.
 
 PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIACIÓN KINORA):
+- Solo si PASO 2 NO aplica. Si hay PRIORIDAD ALTA / hospital, salta este paso por completo.
 - En la PRIMERA respuesta estructurada (tras el cuestionario), SIEMPRE incluye la sección **Pruebas funcionales**. Sin ella la respuesta está incompleta.
 - NO te limites a hipotetizar: necesitas que el paciente las haga y te diga el resultado. Explica en 1 frase por qué (para entender mejor qué estructura está implicada).
 - Incluye una sección clara titulada exactamente: **Pruebas funcionales** (justo antes de **Qué debes hacer ahora**).
@@ -125,9 +158,11 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
   · Si necesitas localizar, haz UNA pregunta binaria concreta (BIEN: “¿te duele la rodilla al bajar un escalón?”, “¿el dolor baja por la pierna?”).
   · Una sola frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una.»
   · En **Qué debes hacer ahora** no pidas que escriba detalles de las pruebas.
+  · NUNCA pongas en **Pruebas funcionales** recomendaciones (hielo, reposo, elevación, medicación, ir al hospital, “aplica frío”, vendaje). Eso NO es una prueba.
 - LENGUAJE DE LAS PRUEBAS (CRÍTICO — el paciente NO es un fisioterapeuta):
   · NUNCA uses nombres de tests clínicos (“Test de Neer”, “Hawkins-Kennedy”, “Empty can / Jobe”, “Spurling”, “Lachman”, “McMurray”, “Thompson”, “Ottawa”, “Windlass”, “Phalen”, etc.).
   · NUNCA empieces con “Test de…”. Describe SOLO la acción cotidiana y qué debe notar.
+  · PROHIBIDO pedir al paciente maniobras que hace el fisioterapeuta en consulta (Lachman, cajón, McMurray, Neer pasivo, Hawkins, Spurling con compresión, Thompson, estrés en valgo/varo, ULTT, etc.). Esas son para el profesional en la cita; aquí SOLO movimientos que el paciente puede hacer solo en casa.
   · BIEN: “¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?” / “¿Duele al tocar la punta de los pies con la rodilla estirada?”
   · MAL: “1. Test de Neer: …” / “Empty can test: …” / “¿Cuánto duele del 1 al 10?” / “Dime dónde duele y compáralo con el otro lado.”
   · Si el banco/RAG trae un nombre técnico o una escala, TRADÚCELO a una pregunta SÍ/NO cotidiana.
@@ -200,8 +235,16 @@ Posibles lesiones (orientativas)
 Qué hacer mientras tanto
 Pruebas funcionales
 Qué debes hacer ahora
+Clínicas en AIKinora cerca de ti
 ¿Necesitas contactar con nuestro fisioterapeuta?
 Fuentes consultadas
+
+SECCIONES — NO MEZCLAR (CRÍTICO — error frecuente):
+- **Qué hacer mientras tanto** = recomendaciones de autocuidado (hielo, elevación, reposo relativo, evitar cargar, inmovilizar…). NO son pruebas. NO uses formato ¿…? ni botones Sí/No aquí. NUNCA digas «haz esta prueba: aplica hielo».
+- **Pruebas funcionales** = SOLO movimientos/provocaciones que el paciente hace YA y responde Sí/No (¿duele al…?, ¿puedes…?). NUNCA hielo, reposo, elevación, medicación, hospital ni consejos de tratamiento.
+- **Qué debes hacer ahora** = el siguiente paso concreto y priorizado (fisio, pruebas, imagen, o urgencias SOLO si PRIORIDAD ALTA real). Si PRIORIDAD ALTA → HOSPITAL / URGENCIAS YA aquí. Si NO → NO digas hospital «por precaución» en casos leves/mecánicos.
+- Si el caso ES urgente / PRIORIDAD ALTA: omite **Pruebas funcionales** y omite **Clínicas en AIKinora cerca de ti**. Orden: Resumen → Estructuras → Posibles lesiones → Qué hacer mientras tanto (solo medidas seguras de camino a urgencias) → Pruebas de imagen recomendadas → Qué debes hacer ahora (hospital) → **Hospitales / Urgencias cerca de ti** → Contactar fisio (opcional) → Fuentes.
+- Con ciudad en el perfil: nombra 2–3 hospitales/urgencias conocidos de esa ciudad. Sin ciudad: hospital más cercano + Maps («urgencias cerca de mí») / 112 — no inventes hospitales de una ciudad desconocida.
 
 ORDEN POR PROBABILIDAD (OBLIGATORIO):
 - En **Estructuras que podrían estar afectadas**: lista con guiones, de MAYOR a MENOR probabilidad según el caso (la más probable primero).
@@ -210,12 +253,12 @@ ORDEN POR PROBABILIDAD (OBLIGATORIO):
 
 IMPORTANTE SOBRE **Pruebas funcionales**:
 - Obligatoria en la primera valoración si el caso NO es urgente/hospital.
-- Si el caso ES urgente: omite **Pruebas funcionales** (ve a hospital/imagen).
-- Cada prueba es SÍ/NO. El paciente pulsa botones; no pidas texto libre, escalas 1–10 ni comparar lados.
+- Si el caso ES urgente / PRIORIDAD ALTA / banderas rojas: omite **Pruebas funcionales** por completo (ve a hospital/imagen). No sustituyas la sección con hielo ni otras recomendaciones.
+- Cada prueba es SÍ/NO de movimiento. El paciente pulsa botones; no pidas texto libre, escalas 1–10 ni comparar lados.
 - SOLO la zona lesionada/afectada de ESTE caso (p. ej. tobillo/pie → solo tobillo/pie; NO rodilla, cadera, lumbar, Windlass o SLR “por conexión”; y NUNCA tests de muñeca/mano/cuello como Tinel de muñeca o Spurling).
 - NO incluyas pruebas de regiones adyacentes o cinéticas “por si acaso”, aunque puedan referir dolor. Hipótesis a distancia se explican en texto; las pruebas del paciente son solo locales.
 - En seguimientos: no repitas toda la batería si el paciente ya respondió; interpreta y solo añade pruebas nuevas si hace falta aclarar.
-- Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas.
+- Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas ni consejos de tratamiento.
 
 FUENTES / EVIDENCIA (OBLIGATORIO):
 - Cada conclusión clínica importante debe ir seguida de: Fuente: <nombre exacto del documento de "Información relevante">
@@ -263,6 +306,12 @@ ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
 ${AI_SHOULDER_LATERAL_REFERRED_RULES}
 
+${AI_CERVICAL_REFERRED_RULES}
+
+${AI_LUMBAR_REFERRED_RULES}
+
+${AI_HIP_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
@@ -303,6 +352,8 @@ ${AI_ELBOW_RADIAL_TUNNEL_RULES}
 
 ${AI_ELBOW_UCL_MEDIAL_RULES}
 
+${AI_ELBOW_OSTEOARTHRITIS_RULES}
+
 ${AI_ELBOW_WRIST_GUYON_RULES}
 
 ${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
@@ -319,9 +370,17 @@ ${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
 
 ${AI_CERVICAL_NECK_PAIN_RULES}
 
+${AI_THORACIC_MASTER_INTEGRATION_RULES}
+
+${AI_THORACIC_REDFLAGS_VISCERAL_RULES}
+
+${AI_THORACIC_SPINE_PAIN_RULES}
+
 ${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
 
 ${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_LUMBAR_SI_PELVIS_RULES}
 
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
@@ -332,6 +391,14 @@ ${AI_HYPOTHESIS_EXPLORATION_RULES}
 ${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
 
 ${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_POST_SURGERY_SCREENS_MASTER_RULES}
+
+${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
+
+${AI_POST_SURGERY_ANKLE_RULES}
 
 ${AI_NO_IMAGING_DECISION_RULES}
 
@@ -344,6 +411,8 @@ ${AI_NEGATIVE_TEST_LIBRARY_RULES}
 ${AI_DIFFERENTIAL_MATRICES_RULES}
 
 ${AI_EVIDENCE_LEVELS_RULES}
+
+${AI_READAPTATION_RULES}
 
 ${AI_EVIDENCE_DB_RULES}`;
 
@@ -375,6 +444,7 @@ export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PR
 - Si sospecha de labrum en hombro o cadera → RMN; informa que la artroresonancia (con contraste) es más específica/precisa
 - Si ya tuvo ecografía “normal” y días después el dolor sigue igual (gemelo, cuádriceps, isquiotibiales) → otra eco en otro centro o RMN
 - Si el cuadro parece más grave → urgencias / imagen urgente
+- Si pide ejercicios / readaptación / rutina en casa y NO hay PRIORIDAD ALTA → aplica las reglas de READAPTACIÓN (fases, dolor ≤3/10, formato [id=…] del catálogo Kinora)
 - Cuando nombres la lesión o cuadro orientativo (conclusión), escríbelo en negrita: **síndrome del pronador**, **epicondilitis lateral**, etc. Solo el nombre, no la frase entera.
 - Destaca también en negrita adónde ir o qué prueba: **fisioterapeuta**, **médico**, **urgencias**, **hospital**, **ecografía**, **resonancia**, etc.
 - Cita fuentes bajo conclusiones nuevas: línea "Fuente: …"

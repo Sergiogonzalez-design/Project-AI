@@ -1,7 +1,7 @@
 # PHYSIOGUIDE AI — LUMBAR BACK PAIN (MECHANICAL + SCIATICA)
 
 **Status:** ACTIVE (Fase 3 — raquis lumbar; cauda/inflamatorio en módulo separado)  
-**Evidence:** SLR, crossed SLR, Kemp/quadrant; clusters ciática + lumbalgia mecánica; JOSPT Low Back Pain CPG; `spine-tests.md`, `clusters-spine.md`  
+**Evidence:** SLR, crossed SLR, Kemp/quadrant; clusters ciática + lumbalgia mecánica; SI Laslett (`lumbar-si-pelvis.md`); centralización (tema McKenzie/JOSPT); JOSPT Low Back Pain CPG; `spine-tests.md`, `clusters-spine.md`  
 **Principles:** Ver `knowledge/PHYSIOGUIDE_MASTER_CLINICAL_DOCUMENT.md`
 
 ---

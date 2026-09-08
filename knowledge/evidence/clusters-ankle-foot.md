@@ -16,21 +16,41 @@ NUNCA: cajón aislado = grado III. NUNCA inventar Sn/Sp. Primero Ottawa.
 
 ## CLUSTER: ESGUINCE LATERAL (ATFL ± CFL)
 
-**Componentes:** inversión + dolor/hinchazón lateral + palpación ATFL ± cajón (mejor diferido 4–5 días).
+**Componentes:** inversión + dolor/hinchazón lateral + palpación ATFL ± cajón (mejor diferido 4–5 días) ± talar tilt (CFL).
 
 **Cita:** van Dijk (examen diferido); JOSPT Ankle Ligament Sprain CPG.
 
-**AI:** Compatible con esguince lateral. No inventes grado I–III por un cajón en agudo.
+**AI:** Compatible con esguince lateral. No inventes grado I–III por un cajón/talar tilt en agudo.
 
 ---
 
 ## CLUSTER: SINDESMOSIS (esguince alto)
 
-**Componentes:** rotación externa / dorsiflexión forzada + dolor tibiofibular anterior alto + squeeze/hop (apoyo, no regla de oro).
+**Componentes:** rotación externa / dorsiflexión forzada + dolor tibiofibular anterior alto + squeeze tibiofibular y/o Kleiger (RE) familiar (± hop si seguro).
 
-**Cita:** JOSPT ankle CPG. Squeeze aislado insuficiente.
+**Cita:** JOSPT ankle CPG. Squeeze o Kleiger aislados insuficientes — cluster.
 
-**AI:** No lo trates como un ATFL simple.
+**AI:** No lo trates como un ATFL simple. Squeeze de sindesmosis ≠ Thompson (Aquiles).
+
+---
+
+## CLUSTER: NEUROMA / ANTEPIÉ (Mulder)
+
+**Componentes:** dolor antepié interdigital + zapatos estrechos / carga + Mulder familiar (± click).
+
+**Cita:** Literatura clínica Morton. Precisión cualitativa/mixta.
+
+**AI:** Compatible con neuroma/irritación interdigital. No confirma por click solo.
+
+---
+
+## CLUSTER: TÚNEL TARSIANO
+
+**Componentes:** ardor/hormigueo plantar o medial + empeora noche/carga ± Tinel tarsal familiar.
+
+**Cita:** Literatura clínica tarsal tunnel. Cualitativo.
+
+**AI:** Compatible con irritación del túnel tarsiano. Diferenciar de fascitis (sin parestesias) y de S1.
 
 ---
 

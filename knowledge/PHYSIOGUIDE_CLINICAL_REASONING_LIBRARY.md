@@ -123,7 +123,7 @@ DATOS → HIPÓTESIS → PRUEBAS → CALIDAD DIAGNÓSTICA
 | MTrP | framework + atlas por región (tradicional=D; no Travell verbatim) |
 | Prueba negativa | hombro, raquis, cadera, rodilla, tobillo, codo/muñeca |
 | Matrices diferenciales | cervical → cabeza/torácica/pelvis/mano |
-| Relations JSON | shoulder, cervical, thoracic, lumbar, hip, knee, ankle-foot, elbow-wrist, head |
+| Relations JSON | **ALL ACTIVE v2:** shoulder-lateral, cervical, lumbar, hip, knee, ankle-foot, thoracic, head, elbow-wrist |
 | Fuentes ancla | `evidence/referred-pain-sources.md` (CPG, RS, provocación articular, Tough/Lucas) |
 | Modos | claridad, duda, persistencia, sin imagen |
 

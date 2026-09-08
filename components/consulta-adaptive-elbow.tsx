@@ -7,6 +7,7 @@ import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
+import { QuestionnaireQuestionList } from "@/components/ui/questionnaire-question-list";
 import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote } from "@/lib/consulta-red-flags-copy";
 
 import { useEffect } from "react";
@@ -246,11 +247,15 @@ export function ConsultaAdaptiveElbow({
         {localizeElbowSection(currentSection, locale)}
       </h2>
 
-      {sectionQuestions.map((q) => (
-        <div key={q.id} data-question-id={q.id}>
-          <QuestionField q={q} answers={answers} onPatch={patch} locale={locale} />
-        </div>
-      ))}
+      {currentSection ? (
+        <QuestionnaireQuestionList sectionKey={String(currentSection)}>
+          {sectionQuestions.map((q) => (
+            <div key={q.id} data-question-id={q.id}>
+              <QuestionField q={q} answers={answers} onPatch={patch} locale={locale} />
+            </div>
+          ))}
+        </QuestionnaireQuestionList>
+      ) : null}
 
       {sectionError && <p className="mb-4 text-sm text-red-600">{sectionError}</p>}
 

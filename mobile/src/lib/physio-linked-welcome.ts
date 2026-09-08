@@ -20,6 +20,9 @@ import {
   resolveFunctionalTestMedia,
   withFunctionalMediaMarker,
 } from "./functional-test-media";
+import {
+  filterPatientSafeFunctionalTests,
+} from "./patient-safe-functional-tests";
 
 export function physioDisplayName(
   physioName: string | null | undefined,
@@ -159,14 +162,17 @@ Estamos preparando el informe clínico para **${name}**.
 
 Para completarlo, responde a las siguientes preguntas y haz estas pruebas (en casa, con cuidado). Pulsa **Sí** o **No** en cada una.`;
 
-  const fromAi = splitFunctionalTests(opts.aiText)?.tests ?? [];
+  // Patient Sí/No for the report: home self-movements only.
+  // Never surface clinician special tests (Lachman, Neer, Spurling…) — those
+  // are for the physiotherapist in clinic / physio chat catalog.
+  const fromAiSafe = filterPatientSafeFunctionalTests(
+    splitFunctionalTests(opts.aiText)?.tests ?? []
+  );
   const fallback = fallbackFunctionalTests(opts.bodyArea ?? "", language);
   const tests =
-    fromAi.length >= 2 && testsLookLikeLanguage(fromAi, language)
-      ? fromAi
-      : fallback.length >= 2
-        ? fallback
-        : fromAi;
+    fromAiSafe.length >= 2 && testsLookLikeLanguage(fromAiSafe, language)
+      ? fromAiSafe
+      : fallback;
   if (tests.length < 2) return ack;
 
   const heading =

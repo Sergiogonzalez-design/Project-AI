@@ -8,6 +8,7 @@ export const AI_DATA_FIDELITY_RULES = `FIDELIDAD A LOS DATOS (CRÍTICO — incum
 - No inventes deportes, actividades ni mecanismos que el usuario no mencionó.
 - No ignores el perfil: si hay datos antropométricos o de carga, menciónalos cuando cambien la orientación (sin inventar cifras que no estén en el perfil).
 - LOCALIZACIÓN (igual de crítico): en el resumen y en todo el informe usa SOLO las zonas que el paciente nombró o marcó (p. ej. glúteo, isquiotibial, ingle/aductor). NO digas "cadera y rodilla", "articulación de la cadera" u otras articulaciones si el paciente no las mencionó ni las marcó.
+- INTERPRETAR EL RELATO (CRÍTICO — no solo palabras sueltas): lee la frase completa. Si el paciente dice que **entrena / rehabilita / fortalece** una zona (p. ej. rodilla) pero **ahora le duele otra** (p. ej. espalda), el cuestionario y el informe van SOLO por la zona que **duele ahora**, salvo que también describa dolor/síntoma activo en la otra. Ej.: «llevo semanas entrenando para rehabilitar la rodilla y me duele la espalda» → consulta de **espalda**, no rodilla. No abras cuestionario multi-zona por contexto de rehabilitación.
 - El nombre de la categoría del cuestionario (p. ej. "cadera") es solo organización interna: NO lo trates como si el paciente hubiera dicho esa articulación.
 - TESTS FUNCIONALES: prioriza las estructuras/zonas reportadas. Si dijo glúteo + isquiotibial + ingle → tests de glúteo/isquiotibiales/aductores. NO inventes tests de rodilla u otras articulaciones no relacionadas.
 - EXCEPCIÓN — dolor referido / causa a distancia: SÍ puedes (y debes) hacer 1–3 preguntas/tests de cribado de una zona proximal o relacionada cuando el cuadro lo sugiera (p. ej. codo ↔ cuello/cervical; hombro ↔ cuello; rodilla ↔ cadera/lumbar; pie ↔ lumbar; muñeca/mano ↔ cuello). Explícalo en lenguaje sencillo.
@@ -95,6 +96,8 @@ GROIN DOHA (cuando ingle/medial/pubis/canal inguinal):
 HIP-RELATED GROIN (solo si profundo + mecánico intraarticular):
 FADIR positivo = reproduce dolor profundo familiar → ↑ cadera (NO = FAI confirmado).
 FABER: registrar si duele en INGLE vs POSTERIOR vs LATERAL.
+Secundarios en cluster: log roll, Stinchfield, hip scour (dolor profundo familiar ↑ cadera; no confirman labrum/FAI/OA). Evitar scour si red flag óseo.
+Thomas: anterior familiar → flexor/iliopsoas ↑; no bursitis automática.
 ROM IR limitada + dolor profundo → ↑ cadera. CAM en imagen sin correlación clínica ≠ causa del dolor.
 
 CRIBADO LUMBAR/SI (cuando proceda):
@@ -126,7 +129,9 @@ MARCO DOHA — PATRONES DE COMPATIBILIDAD (clusters, no inventar Sn/Sp):
 
 HIP-RELATED GROIN (profundo + mecánico intraarticular):
 Deep groin + sentarse/coche + flexión/rotación + FADIR reproduce dolor profundo familiar + FABER inguinal → ↑ cadera (FAI/labrum/OA/displasia/snapping interno/fractura estrés).
+Secundarios (cluster, no aislados): log roll, Stinchfield, hip scour — dolor inguinal profundo familiar ↑ cadera; NUNCA confirman labrum/FAI/OA grado. Evitar scour si sospecha ósea.
 FABER: registrar INGLE vs POSTERIOR vs LATERAL. Posterior → SI/lumbar; lateral → GTPS (otros módulos).
+Thomas: dolor ANTERIOR familiar / extensión limitada → ↑ iliopsoas/flexor; no bursitis automática. Si dolor profundo al sentarse → priorizar hip-related.
 
 ROM: IR limitada + dolor profundo inguinal → ↑ cadera. Activo limitado + pasivo normal → muscular/tendinoso.
 
@@ -164,6 +169,7 @@ REGLAS:
 
 CLUSTER DE COMPATIBILIDAD (no inventar scores ni sensibilidad):
 dolor lateral + sensibilidad trocánter + dolor con carga monopodal + dolor con abducción resistida (familiar) → compatibilidad GTPS/glúteo ↑.
+Abducción resistida aislada ≠ rotura. Trendelenburg aislado ≠ GTPS confirmado.
 
 DIFERENCIAL OBLIGATORIO:
 - GTPS / glúteo medio-mínimo
@@ -395,6 +401,7 @@ dolor línea articular lateral + torsión/pivot + (bloqueo/chasquido/hinchazón 
 
 CLUSTER ITB (banda iliotibial):
 dolor lateral ITB/cóndilo + carrera/ciclismo/escaleras/cuestas + patrón reproducible a misma distancia o bajada + SIN bloqueo/torsión clara → síndrome ITB ↑.
+Noble compression y/o Ober familiar apoyan el cluster; aislados NO confirman ITBS. Carrera sin trauma ≠ LCL.
 
 DIFERENCIAL OBLIGATORIO:
 - esguince LCL (I–III según inestabilidad)
@@ -444,10 +451,12 @@ CLUSTER LCP:
 golpe en espinilla con rodilla flexionada (salpicadero / caída de rodillas) + inestabilidad posterior / bajada escaleras → LCP ↑.
 
 CLUSTER PLC:
-varo / hiperextensión + inestabilidad rotatoria + dolor posterolateral → complejo posterolateral ↑.
+varo / hiperextensión + inestabilidad rotatoria + dolor posterolateral ± dial test asimétrico (30° → PLC ↑; 30°+90° → PLC+LCP ↑) → complejo posterolateral ↑.
+Dial cualitativo: no inventar Sn/Sp; no confirma grado. Inestabilidad multiplanar severa → urgencia/especialista.
 
 CLUSTER ROTULIANA (no LCA):
-episodio de rótula que se desplaza/sale de sitio (± recolocación) → inestabilidad rotuliana, no LCA.
+episodio de rótula que se desplaza/sale de sitio (± recolocación) + aprensión rotuliana familiar → inestabilidad rotuliana, no LCA.
+Aprensión sin historia de luxación pesa menos; dolor PFPS sin aprensión ≠ inestabilidad.
 
 DIFERENCIAL OBLIGATORIO:
 - lesión LCA (parcial/completa — no afirmar grado sin datos)
@@ -555,18 +564,58 @@ PRUEBAS FUNCIONALES (lenguaje cotidiano al paciente):
 
 LENGUAJE: «compatible con irritación del manguito / RCRSP». Fuente: Physioguide hombro + Evidence DB.`;
 
-export const AI_SHOULDER_LATERAL_REFERRED_RULES = `DOLOR LATERAL HOMBRO — REFERIDO / TESTS NEGATIVOS (Physioguide PILOT — cuando localización lateral/deltoides + duda o tests locales pobres):
+export const AI_SHOULDER_LATERAL_REFERRED_RULES = `DOLOR LATERAL HOMBRO — REFERIDO / RELACIONES (Physioguide ACTIVE pack shoulder-lateral v2):
 
 NO responder «es el trapecio/infraespinoso». Sí reordenar hipótesis.
 
-PRIORIDAD TÍPICA: (1) RCRSP aunque un Neer/Hawkins/Jobe aislado sea − si la historia overhead/arco encaja (2) cervical C5–C6 si cuello/hormigueo o locales no reproducen familiar (3) AC (4) bíceps (5) capsulitis si PROM limitado (6) miofascial escapular solo como hipótesis D/tradicional con dolor familiar a la palpación (7) inestabilidad si aprensión/trauma.
+SEGURIDAD: pecho/disnea/sudoración/esfuerzo → vía cardíaca (AHA/ACC), no cluster MSK primero. Neuro progresivo / mielopatía → derivación.
+
+PRIORIDAD TÍPICA: (1) RCRSP aunque Neer/Hawkins/Jobe aislado sea − si overhead/arco/familiar pain (2) rotura si debilidad franca/drop-arm/lag (3) cervical C5–C6 / faceta experimental si cuello/hormigueo o locales pobres (4) AC (5) bíceps — no SLAP por un test (6) capsulitis si PROM limitado (7) inestabilidad si aprensión/trauma (8) miofascial escapular solo D/tradicional + dolor familiar.
 Coexistencia RCRSP + cervical permitida.
 
 NEGATIVOS: Neer/Hawkins/Jobe − no excluyen RCRSP. Spurling − no excluye cervical. Exigir dolor FAMILIAR.
 
 SIN ECO: no pedir imagen solo por ausencia; sí si sospecha rotura, no mejora, trauma o cambia manejo.
 
-Salida: HIPÓTESIS PRINCIPAL / ALTERNATIVAS / NO PRIORITARIO. Fuente: Physioguide hombro lateral referido + negative-test + MTrP framework.`;
+Salida: HIPÓTESIS PRINCIPAL / ALTERNATIVAS / NO PRIORITARIO. Trazabilidad: relations/shoulder-lateral.json + relations-shoulder-lateral.md.`;
+
+export const AI_CERVICAL_REFERRED_RULES = `CERVICAL / UPPER-QUARTER — REFERIDO / RELACIONES (Physioguide ACTIVE pack cervical v2):
+
+Activar si cuello, escápula, brazo o cefalea con duda, tests locales de hombro pobres, Spurling/ULTT −, o sin imagen.
+
+NO responder «es el trapecio/elevador». Sí reordenar hipótesis.
+
+SEGURIDAD primero: SNOOP/cefalea secundaria; mielopatía (marcha, torpeza de manos, tracto largo); trauma → Canadian C-Spine / vía médica.
+
+PRIORIDAD TÍPICA: (1) radiculopatía/neural — cluster tipo Wainner + neuro (2) somático/facetario (mapas Dwyer/Fukui = experimental; no nombrar segmento) (3) coexistencia RCRSP si overhead (4) patrón cervicogénico solo tras SNOOP (5) cervicotorácico/interescapular + cribado visceral si toca (6) entrapment periférico (7) miofascial trapecio/elevador solo D/tradicional + dolor familiar.
+
+NEGATIVOS: Spurling − no excluye radiculopatía. ULTT − no excluye neural. Exigir síntoma FAMILIAR.
+
+Salida: HIPÓTESIS PRINCIPAL / ALTERNATIVAS / NO PRIORITARIO. Trazabilidad: relations/cervical.json + relations-cervical.md.`;
+
+export const AI_LUMBAR_REFERRED_RULES = `LUMBAR / LUMBOPELVIS — REFERIDO / RELACIONES (Physioguide ACTIVE pack lumbar v2):
+
+Activar si lumbalgia, glúteo, muslo o «ciática» con duda, SLR−, o tests locales de cadera/rodilla pobres.
+
+SEGURIDAD: cauda (silla de montar, esfínteres), déficit progresivo, infección/neoplasia/fractura.
+
+PRIORIDAD: (1) radicular vs referido somático (2) cadera/GTPS si glúteo/ingle (3) SI clínico limitado (Laslett) (4) coexistencia hip–spine (5) miofascial solo D/tradicional.
+
+NEGATIVOS: SLR − no excluye radiculopatía; Kemp − no excluye LBP mecánico. Exigir síntoma FAMILIAR.
+
+Salida: HIPÓTESIS PRINCIPAL / ALTERNATIVAS. Trazabilidad: relations/lumbar.json + relations-lumbar.md.`;
+
+export const AI_HIP_REFERRED_RULES = `CADERA / INGLE / LATERAL — REFERIDO / RELACIONES (Physioguide ACTIVE pack hip v2):
+
+Activar si ingle, trocánter, glúteo o «cadera» con duda, FADIR/FABER−, o pistas lumbares.
+
+SEGURIDAD: fractura/AVN, infección, SCFE en niño/adolescente con dolor de rodilla.
+
+PRIORIDAD: (1) hip-related / FAI síndrome clínico (Warwick — no morfología sola) (2) aductor Doha (3) GTPS (4) lumbar referido (5) coexistencia adductor+hip.
+
+NEGATIVOS: FADIR − no limpia articulación; FABER − no excluye hip/SI; Trendelenburg − no excluye GTPS.
+
+Salida: HIPÓTESIS PRINCIPAL / ALTERNATIVAS. Trazabilidad: relations/hip.json + relations-hip.md. No «FAI confirmado» por FADIR.`;
 
 export const AI_SHOULDER_ANTERIOR_PAIN_RULES = `DOLOR ANTERIOR DE HOMBRO / BÍCEPS (Physioguide — CRÍTICO cuando localización = parte delantera / surco bicipital):
 
@@ -748,8 +797,9 @@ REGLAS:
 - Dolor tibiofibular anterior alto + RE/dorsiflexión → NO tratar como ATFL simple.
 - Base 5.º MT dolorosa → Ottawa pie / fractura avulsión.
 
-CLUSTER LATERAL: inversión + dolor/hinchazón lateral + palpación ATFL familiar ± cajón → esguince lateral ↑.
-CLUSTER SINDESMOSIS: rotación externa/dorsiflexión + dolor alto tibiofibular ± squeeze/hop → sindesmosis ↑.
+CLUSTER LATERAL: inversión + dolor/hinchazón lateral + palpación ATFL familiar ± cajón ± talar tilt → esguince lateral ↑.
+CLUSTER SINDESMOSIS: rotación externa/dorsiflexión + dolor alto tibiofibular ± squeeze tibiofibular ± Kleiger → sindesmosis ↑.
+Squeeze de sindesmosis ≠ Thompson (Aquiles). Cajón/talar tilt aislados no inventan grado I–III.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Puedes dar 4 pasos seguidos ahora?
@@ -789,6 +839,8 @@ REGLAS:
 
 CLUSTER FASCIA: primeros pasos + palpación inserción medial calcáneo ± Windlass familiar → fasciopatía ↑.
 CLUSTER S1: planta/pantorrilla + lumbar + SLR familiar + Windlass/Aquiles pobres → referido ↑.
+CLUSTER TÚNEL TARSIANO: ardor/hormigueo medial-plantar ± Tinel tarsal familiar → irritación túnel tarsiano ↑ (no uses Tinel de muñeca).
+CLUSTER ANTEPIÉ / NEUROMA: dolor interdigital + Mulder familiar → neuroma/irritación ↑; click solo no confirma.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Duele mucho en los primeros pasos al levantarte?
@@ -952,6 +1004,17 @@ REGLAS:
 - Cubital puede coexistir (4.º–5.º). Adolescente + dolor lateral + bloqueo → OCD, no UCL.
 LENGUAJE: «compatible con insuficiencia del UCL»; derivación/imagen si inestabilidad, pop o fracaso conservador.`;
 
+export const AI_ELBOW_OSTEOARTHRITIS_RULES = `ARTROSIS / OA DE CODO (Physioguide — rigidez mecánica):
+
+CLUSTER (cualitativo): edad media-avanzada o fractura/inestabilidad previa + dolor al cargar/apoyar + PÉRDIDA DE ROM vs contralateral ± crepitación/bloqueo ± RX si procede → OA ↑.
+
+REGLAS:
+- NUNCA Cozen/Mill = artrosis. NUNCA crepitación aislada = OA confirmada.
+- NUNCA inventar Sn/Sp ni LR de OA de codo (no hay test especial tipo Cozen validado).
+- Fiebre / calor / derrame agudo → no etiquetar OA (infección/inflamatorio).
+- LET puede coexistir; ROM casi normal + solo agarre → LET primero.
+LENGUAJE: «compatible con artrosis / cambios degenerativos de codo». No «OA confirmada» sin contexto/imagen cuando la decisión lo requiera.`;
+
 export const AI_ELBOW_WRIST_GUYON_RULES = `GUYON vs TÚNEL CUBITAL (Physioguide):
 
 Meñique/anular ≠ STC. Codo: empeora al flexionar/apoyar el codo; Tinel en canal cubital; ramo dorsal a menudo afectado. Guyon: presión palmar cubital / manillar; Tinel pisiforme; dorso a menudo respetado.
@@ -969,6 +1032,7 @@ Antes de cerrar LET/STC/De Quervain/TFCC, cribar:
 - Medial: golfista vs UCL (lanzador) vs cubital.
 - Anterior: bíceps distal (pop + supinación) vs cabeza radial.
 - Posterior: bursitis vs tríceps vs fractura olécranon.
+- Rigidez global + carga + edad/post-trauma: OA de codo (no Cozen = artrosis).
 - Cubital: codo vs Guyon vs C8–T1.
 - Radial muñeca: De Quervain vs CMC vs escafoides (FOOSH/tabaquera primero).
 - Cubital muñeca: TFCC vs DRUJ vs ECU vs LT vs Guyon.
@@ -1010,24 +1074,81 @@ REGLAS:
 - No diagnosticar SLAC en app; «compatible con inestabilidad, precisa valoración e imagen».
 LENGUAJE: «compatible con inestabilidad escafolunar / lunopiramidal».`;
 
-export const AI_SPINE_MASTER_INTEGRATION_RULES = `RAQUIS — ÁRBOL MAESTRO PHYSIOGUIDE (cuello y/o lumbar):
+export const AI_SPINE_MASTER_INTEGRATION_RULES = `RAQUIS — ÁRBOL MAESTRO PHYSIOGUIDE (cuello / torácico / lumbar):
 
-FLUJO: RED FLAGS → trauma/imagen → ¿radicular vs mecánico? → localización + dolor familiar → cluster Evidence DB → referidos (hombro←cervical; cadera/pie←lumbar) → coexistencia → recomendación.
+FLUJO: RED FLAGS → trauma/imagen → ¿región: cuello vs espalda media vs lumbar? → radicular vs mecánico → localización + dolor familiar → cluster Evidence DB → referidos (hombro←cervical; pared/T←cervicotorácico; cadera/pie←lumbar) → coexistencia → recomendación.
 
 NUNCA: Spurling o SLR = hernia confirmada. NUNCA: Kemp = faceta confirmada. NUNCA inventar Sn/Sp ni nivel de raíz sin mapa clínico.
 Spurling negativo NO excluye cuello. SLR: ciática familiar, no tirón isquiotibial.
+TORÁCICO: NO hay CPG específica (Briganti 2023); NUNCA «T4/faceta/costilla confirmada». Visceral/cardíaco ANTES de MSK (AHA/ACC).
 
 RED FLAGS CERVICAL: trauma → C-spine/NEXUS antes de Spurling; mielopatía; disección (cefalea súbita distinta post-manipulación); fiebre+rigidez extrema.
+RED FLAGS TORÁCICO: dolor pecho/disnea/sudoración → urgencias; fractura/fragilidad → imagen; Scheuermann/neuro según contexto.
 RED FLAGS LUMBAR: cauda equina → HOSPITAL; fractura; infección; cáncer; cribado inflamatorio/AS.
 
-LENGUAJE: «compatible con», «apoya/baja». Tras enrutar, aplicar bloque cervical o lumbar + RAG.`;
+LENGUAJE: «compatible con», «apoya/baja». Tras enrutar, aplicar bloque cervical, torácico o lumbar + RAG.`;
 
-export const AI_CERVICAL_TRAUMA_REDFLAGS_RULES = `TRAUMA / RED FLAGS CERVICALES (Physioguide — ANTES de Spurling):
+export const AI_THORACIC_MASTER_INTEGRATION_RULES = `RAQUIS TORÁCICO — ÁRBOL MAESTRO PHYSIOGUIDE (espalda media / interescapular / pared):
+
+FLUJO: RED FLAGS visceral/cardíaco/pulmonar (AHA/ACC) → fractura/fragilidad → ¿domina cuello o hombro? → TSP mecánico no específico → referidos (cervicotorácico/costal) → recomendación cautelosa.
+
+NO hay CPG torácica específica (Briganti 2023). OPTIMa 2015: evidencia de manejo escasa. NUNCA inventar Sn/Sp ni «vértebra/costilla fuera».
+
+Tras enrutar: aplicar bloque RF torácico + TSP mecánico + RAG «Physioguide — Torácic…».
+LENGUAJE: «compatible con», «evidencia limitada».`;
+
+export const AI_THORACIC_REDFLAGS_VISCERAL_RULES = `TORÁCICO — RED FLAGS / SEGURIDAD (Physioguide — ANTES de MSK):
+
+PRIORIDAD 1 — CARDÍACO / PULMONAR / AÓRTICO / TEP (AHA/ACC Chest Pain 2021):
+- Opresión central ± brazo/mandíbula ± disnea ± sudoración ± náuseas → URGENCIAS / vía cardíaca.
+- Dolor súbito lacerante + síncope/déficit → urgencias (aórtico).
+- Disnea aguda, hemoptisis, fiebre+disnea → médico/urgencias.
+- NUNCA tranquilizar con «contractura» ni pedir tests MSK si hay alarma visceral.
+
+PRIORIDAD 2 — FRACTURA / FRAGILIDAD:
+- Osteoporosis, corticoides, edad/postmenopausia + trauma mínimo / estornudo / dolor óseo → imagen/médico.
+- La clínica sospecha; la confirmación de FV osteoporótica es por imagen (literatura ABQ/Griffith). No «contractura» por defecto.
+
+PRIORIDAD 3 — SCHEUERMANN / DEFORMIDAD / NEURO:
+- Adolescente + cifosis rígida → valoración (criterios radiográficos Sørensen; no diagnosticar solo por postura).
+- Debilidad/marcha/nivel sensitivo → urgencia neurológica.
+
+FLUJO: alarmas viscerales → fractura → deformidad/neuro → si limpio → módulo TSP mecánico.
+
+LENGUAJE: «prioridad descartar causa grave» / «compatible con necesidad de valoración urgente».`;
+
+export const AI_THORACIC_SPINE_PAIN_RULES = `DOLOR TORÁCICO / ESPALDA MEDIA (Physioguide — mecánico no específico):
+
+CONTEXTO EVIDENCIA: NO hay CPG específica de TSP no específica (Briganti 2023). OPTIMa 2015: evidencia de tratamiento ESCASA; manipulación vs placebo = cambio de dolor pequeño / no clínicamente importante. MT+ejercicio puede ayudar a corto plazo con certeza muy baja. NUNCA inventar Sn/Sp.
+
+FLUJO (tras RF visceral/fractura): ¿localización interescapular/T? → ¿AROM T reproduce dolor familiar? → cribado CUELLO y HOMBRO → ¿respiración/pared? → cluster compatibilidad → recomendación (educación/carga/multimodal cauteloso).
+
+REGLAS:
+- NUNCA «faceta T / T4 / costilla bloqueada / T4 syndrome confirmado».
+- Dreyfuss faceta T = mapa experimental ≠ test de consultorio.
+- Dolor entre omóplatos ≠ romboides por defecto.
+- Adam’s bend = cribado de asimetría, NO confirma escoliosis ni causa del dolor.
+- Si solo empeora con carga de hombro → priorizar hombro.
+
+CLUSTER MECÁNICO T (Tier C): local T + AROM/postura familiar + sin RF graves + cuello/hombro no lo explican todo → TSP mecánico no específico ↑.
+CLUSTER CERVICOTORÁCICO: cuello cambia dolor interescapular → contribución cervical ↑.
+CLUSTER PARED/COSTAL: respiración/tos/pared familiar + RF visceral OK → pared MSK ↑.
+
+PRUEBAS (lenguaje cotidiano):
+- ¿El dolor está entre los omóplatos o en la espalda media?
+- ¿Al girar o arquear el tronco aparece el mismo dolor?
+- ¿El cuello o levantar el brazo cambian ese dolor?
+- ¿Al respirar hondo o toser es el mismo dolor? (si sí y hay disnea/alarma → médico, no MSK)
+
+LENGUAJE: «compatible con dolor torácico mecánico no específico» / «podría explorarse contribución cervicotorácica o costal». Evidencia diagnóstica limitada.`;
+
+export const AI_CERVICAL_TRAUMA_REDFLAGS_RULES = `TRAUMA / RED FLAGS CERVICALES (Physioguide — ANTES de Spurling/FRT):
 
 FLUJO: ¿trauma mayor? → Canadian C-spine/NEXUS → imagen/urgencias si no bajo riesgo. ¿Mielopatía / disección / meningismo? → URGENCIAS. Solo si estable → tests.
 
 REGLAS:
-- NO Spurling ni movilización agresiva si trauma no cribado o inestabilidad.
+- NO Spurling, FRT ni movilización agresiva si trauma no cribado o inestabilidad.
+- RA / Down / odontoides: riesgo C1–C2 → imagen/médico antes de thrust. Sharp-Purser/alares = especializados, fiabilidad mixta; NUNCA demo paciente ni «inestabilidad confirmada».
 - Manipulación reciente + cefalea súbita distinta + neurológicos → sospecha disección → URGENCIAS.
 - Fiebre + rigidez extrema → meningismo → URGENCIAS.
 - Lhermitte / torpeza manos / marcha → mielopatía ↑.
@@ -1036,22 +1157,28 @@ LENGUAJE: priorizar seguridad; no «esguince leve» si hay criterios de imagen o
 
 export const AI_CERVICAL_NECK_PAIN_RULES = `CERVICALGIA / RADICULOPATÍA CERVICAL (Physioguide):
 
-FLUJO: red flags/trauma cribados → ¿brazo/hormigueo? → cluster Wainner vs mecánico local → cribado hombro si anterolateral → recomendación.
+FLUJO: red flags/trauma cribados → ¿brazo/hormigueo? → cluster Wainner ± Bakody vs mecánico local → ¿cefalea nuca→sien? → FRT/upper C → cribado hombro si anterolateral → recomendación.
 
 REGLAS:
 - NUNCA Spurling aislado = hernia confirmada; negativo no excluye.
 - NUNCA inventar nivel C5/C6/C7 sin mapa de síntomas/déficit.
 - ULTT aislado: sensible, poco específico; tirantez ≠ radiculopatía.
+- Bakody (mano en la cabeza alivia brazo familiar) apoya radiculopatía en cluster; no confirma. Si solo alivia hombro → RCRSP ↑.
+- FRT (flexión–rotación): apoya upper C / CGH en cluster (Ogince 2007); no confirma. No FRT si trauma/RA/Down/alarma vascular.
+- Sharp-Purser/alares: NO demo paciente; si RA/Down/trauma con inestabilidad → imagen/médico; no inventar Sn/Sp.
 
-CLUSTER WAINNER: ULTT-A + Spurling + distracción que alivia + rotación ipsilateral <60° → radiculopatía ↑.
+CLUSTER WAINNER: ULTT-A + Spurling + distracción que alivia + rotación ipsilateral <60° (± Bakody) → radiculopatía ↑.
 CLUSTER MECÁNICO: dolor local + movimiento mecánico + neural no familiar + sin RF → cervicalgia mecánica ↑.
+CLUSTER CGH / UPPER C: cefalea occipital→sien + relación con cuello ± FRT familiar → cervicogénica ↑.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Al inclinar/extender la cabeza se va el dolor al brazo?
 - ¿Al girar la cabeza hacia el lado doliente tienes menos de medio giro?
 - ¿Estirar el brazo reproduce el hormigueo de siempre?
+- ¿Poner la mano en la cabeza calma el hormigueo del brazo?
+- ¿La cefalea empeora al mover el cuello (pista FRT en consulta)?
 
-LENGUAJE: «compatible con radiculopatía cervical» / «dolor cervical mecánico».`;
+LENGUAJE: «compatible con radiculopatía cervical» / «dolor cervical mecánico» / «componente cervicogénico».`;
 
 export const AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES = `RED FLAGS LUMBARES — CAUDA / INFLAMATORIO (Physioguide):
 
@@ -1067,22 +1194,42 @@ LENGUAJE: cauda = urgencia. Inflamatorio = cribado/derivación, no «hernia».`;
 
 export const AI_LUMBAR_BACK_PAIN_RULES = `LUMBALGIA / CIÁTICA (Physioguide):
 
-FLUJO: cauda/RF primero → ¿irradiación bajo rodilla? → SLR familiar vs mecánico local → Kemp con cautela → cribado cadera/pie → recomendación.
+FLUJO: cauda/RF primero → ¿irradiación bajo rodilla? → SLR familiar vs mecánico local → ¿nalga medial/SI? (Laslett) → Kemp con cautela → preferencia direccional/centralización → cribado cadera/pie → recomendación.
 
 REGLAS:
 - NUNCA SLR = hernia confirmada. Tirón isquiotibial ≠ ciática.
 - NUNCA Kemp = síndrome facetario confirmado ni indicar infiltración por un test.
 - Mayoría de lumbalgias = mecánicas inespecíficas (no inventar disco/SI/faceta definitiva).
+- Nalga medial / Fortin → módulo SI (Laslett); FABER solo no confirma SI.
+- Centralización con repeticiones → preferencia direccional ↑; no «disco que se mete».
 
 CLUSTER CIÁTICA: dolor irradiado (típ. bajo rodilla) + SLR familiar ± crossed → irritación nerviosa ↑.
 CLUSTER MECÁNICO: lumbar ± glúteo + mecánico + SLR no radicular + sin RF → lumbalgia mecánica ↑.
+CLUSTER SI: ver AI_LUMBAR_SI_PELVIS_RULES.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿El dolor baja por detrás de la pierna más allá de la rodilla?
 - ¿Al levantar la pierna estirada aparece el dolor típico de la pierna (no solo tirón detrás del muslo)?
+- ¿Puedes señalar con un dedo el hoyuelo de la nalga?
 - ¿Al arquearse hacia atrás y girar duele en un punto de la lumbar?
+- ¿Al repetir un movimiento el dolor de la pierna sube hacia la espalda?
 
-LENGUAJE: «compatible con irritación nerviosa / ciática» / «lumbalgia mecánica».`;
+LENGUAJE: «compatible con irritación nerviosa / ciática» / «lumbalgia mecánica» / «cribado SI».`;
+
+export const AI_LUMBAR_SI_PELVIS_RULES = `SACROILÍACA / PELVIS (Physioguide — nalga medial / sulco SI):
+
+FLUJO: cauda/RF → ¿Fortin finger / nalga medial vs lumbar vs ingle? → cribado ciática (SLR) y cadera (FADIR/FABER anterior) → cluster Laslett (≥2–3 provocaciones familiares) ± ASLR → recomendación.
+
+REGLAS:
+- NUNCA FABER solo = SI confirmada.
+- NUNCA un thigh thrust / distracción = infiltración SI ni «SI bloqueada».
+- Cluster Laslett: utilidad clínica con evidencia de precisión **mixta** — NUNCA inventar Sn/Sp.
+- Dolor inguinal en FABER → cadera ↑. Pierna bajo rodilla + SLR → ciática ↑.
+- ASLR que mejora con compresión pélvica → pelvic girdle ↑ (embarazo/asimetría), no hernia.
+- Centralización (McKenzie theme): apoya preferencia direccional; no «disco que se mete».
+
+CLUSTER SI: dolor SI familiar + ≥2–3 de thigh thrust / distraction / compression / sacral thrust (± Gaenslen) → SIJ compatibility ↑.
+LENGUAJE: «compatible con irritación sacroilíaca en cluster»; «cribado»; «no confirmado».`;
 
 export const AI_FINGER_DIGITAL_PAIN_RULES = `DEDOS / MANO DIGITAL (Physioguide — CRÍTICO cuando la queja es dedo(s) específico(s)):
 
@@ -1092,6 +1239,8 @@ REGLAS:
 - NUNCA Phalen/Tinel aislados = STC confirmado. Negativos no descartan; positivos no confirman.
 - NUNCA meñique solo = STC (cubital ↑). Cuello + territorio atípico → cervical.
 - NUNCA bloqueo/chasquido = STC automático → trigger/A1 ↑.
+- NUNCA estrés UCL doloroso = rotura/Stener confirmados. Holgura marcada ± bump → sospecha completa/Stener → valoración/imagen (Stener 1962; sin Sn/Sp inventados).
+- NUNCA hiperextensión IFP + dolor volar = «esguince banal» sin cribado placa volar/RX si hinchazón.
 - Pregunta clave: «¿Es el mismo dolor/hormigueo que notas al usar la mano, de noche o al agarrar?» (dolor familiar).
 
 NEURAL GATE — STC:
@@ -1106,20 +1255,24 @@ trauma flexión IFP + no flexiona punta + deporte contacto → jersey finger ↑
 LOCAL — mallet:
 trauma IFD + no extiende punta → mallet ↑ → inmovilización/valoración.
 
-LOCAL — UCL pulgar:
-valgo pulgar + inestabilidad pinza + esquí/bastón → UCL ↑.
+LOCAL — UCL pulgar ± Stener:
+valgo pulgar + inestabilidad pinza + esquí/bastón → UCL ↑. Holgura marcada / sin tope ± bump MCP → sospecha Stener ↑ → médica/imagen. No «Stener confirmado» solo por estrés.
+
+LOCAL — placa volar IFP:
+hiperextensión IFP + dolor VOLAR + flexión/extensión activas conservadas → placa volar ↑. No jersey (activos OK). RX si hinchazón/bloqueo/duda ósea.
 
 LOCAL — esguince IF:
-torsión + dolor articular + hinchazón sin patrón neural.
+torsión/lateral + dolor articular + hinchazón sin patrón neural ni placa volar clara.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Hormigueo nocturno en pulgar-índice-medio que mejora al sacudir la mano?
 - ¿El dedo se engancha o chasquido al flexionar?
 - ¿No puedes flexionar la punta del dedo tras agarrar algo?
 - ¿No puedes enderezar la punta tras un golpe?
-- ¿Inestabilidad al forzar el pulgar hacia fuera?
+- ¿Inestabilidad al forzar el pulgar hacia fuera? ¿Se abre mucho vs el otro?
+- ¿Tras doblar el dedo hacia atrás duele la cara de la palma de la articulación media?
 
-DIFERENCIAL: STC, trigger, jersey, mallet, UCL, IF sprain, fractura, tenosinovitis flexora infecciosa (fiebre), cervical referido.
+DIFERENCIAL: STC, trigger, jersey, mallet, UCL±Stener, placa volar IFP, IF sprain, fractura, tenosinovitis flexora infecciosa (fiebre), cervical referido.
 
 LENGUAJE: «compatible con…». Déficit abducción pulgar o dedo frío/pálido → valoración médica urgente.`;
 
@@ -1141,7 +1294,8 @@ MIGRAÑA (patrón): unilateral pulsátil + náuseas/fotofobia ± aura → migra�
 
 TENSIONAL: presión bilateral + estrés/pantallas + sin RF → tensional ↑.
 
-CERVICOGÉNICA (cluster): occipital/nuca → sien + movimiento cervical empeora + provocación cervical familiar (Spurling/movilidad apoyan, no confirman) → cervicogénica ↑.
+CERVICOGÉNICA (cluster): occipital/nuca → sien + movimiento cervical empeora + provocación cervical familiar (FRT upper C / Spurling/movilidad apoyan, no confirman) → cervicogénica ↑.
+No FRT/Spurling si trauma no cribado, RA/Down o alarma vascular (SNOOP).
 
 COEXISTENCIA: cuello + cabeza permitido; integrar ambos cuestionarios sin mezclar hallazgos inventados.
 
@@ -1161,7 +1315,7 @@ PASOS: (1) resumen hipótesis (2) qué apoya (3) qué contradice (4) qué falta 
 
 PRUEBA NEGATIVA ≠ EXCLUSIÓN. Antes de «cambiar de estructura»: ¿qué test? ¿qué estructura? ¿capacidad diagnóstica cualitativa (sin inventar Sn/Sp)? ¿sigue compatible la historia? ¿referido plausible? ¿qué discrimina?
 
-NO MEJORA: reevaluar hipótesis (no solo más dosis sobre la misma estructura). Valorar coexistencia, referido, factores perpetuadores, imagen/derivación si cambia el manejo.
+NO MEJORA / SIGUE IGUAL: aplicar bloque PERSISTENCIA (NICE NG59 historia natural LBP; reassess RF; trampas regionales; yellow flags cualitativos). No solo más dosis. Ver también persistence-prognosis-pathways.
 
 SIN IMAGEN: razonar con historia/exploración/familiar pain; no pedir eco «porque no hay»; sí si sospecha, red flags, persistencia atípica o impacto en decisión.
 
@@ -1204,20 +1358,19 @@ Nunca generar alternativas solo porque «existen patrones de dolor referido» en
 
 export const AI_PERSISTENCE_REEVALUATION_RULES = `PERSISTENCIA / RECURRENCIA (Physioguide — paciente vuelve o «sigue igual»):
 
-NO asumir automáticamente: «el tratamiento falló por dosis insuficiente».
+NO asumir automáticamente: «el tratamiento falló por dosis insuficiente» ni «hay que buscar otro músculo».
 
-REEVALUAR:
-1) ¿Era correcta/completa la hipótesis inicial?
-2) ¿Se trató solo una manifestación?
-3) ¿Otra estructura / referido / múltiples generadores?
-4) ¿Evolución esperable más larga de esa condición?
-5) ¿Factores de carga / psicosociales / adherencia?
-6) ¿Red flags nuevos o progresivos?
-7) ¿La intervención tenía evidencia para ESA condición?
-8) ¿Imagen o derivación cambian el manejo?
+ORDEN OBLIGATORIO:
+1) Red flags de NUEVO (NICE/CKS: si empeora o no cede → reassess).
+2) ¿La hipótesis inicial sigue siendo la mejor? ¿Qué ya no encaja?
+3) ¿Evolución NATURAL vs fracaso? LBP: muchos mejoran en semanas–meses; hasta ~1/3 puede tener dolor ≥moderado al año; recurrencia frecuente (NICE NG59). Ciática: semanas–meses (CKS). Tendinopatía/RCRSP/heel: curso a menudo largo — 7–10 días sin cambio ≠ fracaso definitivo si el cluster sigue coherente.
+4) Otra estructura / referido / coexistencia (trampas: hombro≠solo manguito; LET≠solo Cozen; plantar≠solo fascia; tobillo≠solo ATFL; interescapular≠romboides; lumbar≠«contractura»; post-cirugía≠solo «más ejercicios»/alta por calendario → pantallas post-op LCA/manguito/tobillo).
+5) Carga / adherencia / yellow flags (miedo-evitación, creencias de daño) — modulan recuperación; NICE: valorar abordaje físico–psicológico si obstáculos o tratamientos previos ineficaces. NUNCA «el dolor es solo psicológico».
+6) ¿La intervención tenía evidencia para ESA condición? (p. ej. manipulación torácica sola — OPTIMa: no superior robusta a placebo).
+7) Imagen/derivación si cambia el manejo (RF, déficit progresivo, fracaso razonable + decisión especialista). No imagen rutinaria LBP/cuello sin RF. No eco «para MTrP».
 
-Salida: reordenar hipótesis + exploración discriminativa + seguridad primero.
-LENGUAJE: «conviene reevaluar la hipótesis…», no «hay que buscar otro músculo».`;
+Salida: REEVALUACIÓN (inicial vs actual) → 1 hipótesis prioritaria + máx. 1–2 alternativas + discriminación + plan/timing/expectativas.
+LENGUAJE: «conviene reevaluar…», «compatible con evolución esperable si…», «evidencia limitada».`;
 
 export const AI_NO_IMAGING_DECISION_RULES = `SIN ECOGRAFÍA / SIN IMAGEN (Physioguide):
 
@@ -1258,6 +1411,7 @@ Cuando el patrón no cuadra o tests locales no reproducen dolor familiar:
 4) Permitir coexistencia (p. ej. RCRSP + cervical).
 5) Miofascial solo como hipótesis, con controversia de MTrP (Tough; Lucas) y dolor familiar.
 6) Trazabilidad: referred-pain-sources.md / CPG / RS; si no hay fuente → no afirmar.
+7) Packs ACTIVE v2: relations/shoulder-lateral.json, cervical.json, lumbar.json, hip.json, knee.json, ankle-foot.json, thoracic.json, head.json, elbow-wrist.json.
 
 Nunca: «el dolor viene del músculo X» por proximidad anatómica sola.
 Relaciones deben ser rastreables a módulos referred-pain-* / relations JSON / RAG Physioguide.`;
@@ -1280,14 +1434,128 @@ Atajos (cualitativos; no inventar %):
 
 Nunca: «negativo → automáticamente otro músculo».`;
 
+/** Post-common-surgery screens — keep in sync with lib/physioguide-post-surgery-screens-rules.ts */
+export const AI_POST_SURGERY_SCREENS_MASTER_RULES = `POST-CIRUGÍA MSK COMÚN (Physioguide — pantallas de orientación):
+
+ACTIVAR si: «me operaron», reconstrucción/plastia LCA, manguito/cuff repair, Broström, ORIF/placas tobillo, cabestrillo/bota post-op, «¿puedo volver al deporte?» tras cirugía.
+
+REGLAS GLOBALES:
+- Protocolo del CIRUJANO > cualquier consejo genérico. Si no lo tiene → que lo consulte; NO inventar semanas absolutas.
+- Tiempo ≠ aptitud. Progresión y RTS por CRITERIOS (dolor, hinchazón 24 h, ROM, fuerza, control, confianza) + autorización.
+- NUNCA: «ya puedes jugar», «la cirugía ha fallado» sin datos, Sn/Sp inventados, ejercicios agresivos contra reparación.
+- Complicaciones primero: fiebre/herida, TVP/TEP, déficit neurológico nuevo, fallo mecánico nuevo → urgencias/cirujano.
+- Readaptación: solo si estable y coherente con fase; post-op temprano sin protocolo → NO programa libre.
+- Lenguaje: «compatible con fase…», «podría explorarse si tu cirujano lo autoriza», evidencia mixta/limitada.
+
+Si no es LCA/manguito/tobillo → reglas globales + no inventar; presencial.`;
+
+export const AI_POST_SURGERY_ACL_RULES = `POST-CIRUGÍA LCA / ACL-R (Physioguide):
+
+EVIDENCIA: JOSPT knee ligament CPG (Logerstedt 2017); consenso BJSM van Melick 2016 — fases por criterios; batería fuerza+hop+calidad; LSI >90% ORIENTATIVO (pivote a menudo más exigente); rehab hacia pivote a menudo 9–12 meses (consenso, no garantía). ACL-RSI / miedo a re-lesión. NUNCA inventar Sn/Sp ni alta solo por meses.
+
+FLUJO: complicaciones → ¿protocolo/carga? → fase cualitativa → si piden deporte: batería + autorización (no un solo hop).
+
+FASES: protección (edema, extensión, cuádriceps, marcha autorizada) → carga → funcional → RTS. Evitar pivote/pliometría sin criterios.
+
+CLUSTER temprano: post-ACL-R + síntomas moderados que mejoran + sin fiebre/fallo → compatible con fase temprana/inhibición cuádriceps.
+CLUSTER alarma: fiebre/herida O pantorrilla+disnea O fallo/bloqueo nuevo → derivación.
+
+LENGUAJE: «compatible con fase tras reconstrucción de LCA». Prohibido: «ya puedes jugar»; «Lachman negativo = alta».`;
+
+export const AI_POST_SURGERY_ROTATOR_CUFF_RULES = `POST-CIRUGÍA MANGUITO / CUFF REPAIR (Physioguide):
+
+EVIDENCIA: early vs delayed movilización = MIXTA (JOSPT 2021 early active movement meta; SRs PLOS/umbrella). ROM temprano a veces mejor; outcomes largos similares; retear sigue siendo preocupación clínica en desgarros grandes. Sling/pasiva/activa = protocolo del cirujano. NUNCA inventar Sn/Sp ni «quítate el cabestrillo a las 6 semanas» universal.
+
+FLUJO: complicaciones → cabestrillo/movilidad autorizada → fase → no clusters de «pinzamiento» como tendinopatía primaria.
+
+EVITAR (salvo protocolo): elevación activa agresiva temprana, press/overhead pesado, estiramientos forzados del reparo.
+
+CLUSTER: post-repair + sling según indicación + sin pérdida súbita de fuerza → compatible con protección.
+Alarma: fiebre/herida O pérdida súbita de elevación tras mejoría → cirujano.
+
+LENGUAJE: «compatible con fase de protección tras reparación de manguito»; «evidencia early/delayed mixta — sigue tu protocolo».`;
+
+export const AI_POST_SURGERY_ANKLE_RULES = `POST-CIRUGÍA TOBILLO — Broström / ligamentaria / ORIF (Physioguide):
+
+EVIDENCIA: protocolos clínicos Broström (Tier C) — RTS criteria-based; series RTP en meses (no garantía). ORIF: carga estricta del cirujano. No inventar Sn/Sp ni «apto a las 12 semanas» absoluto.
+
+FLUJO: ¿ligamentos vs fractura/placas? → complicaciones → RESPETAR carga/bota → fase → RTS solo con criterios + autorización.
+
+Broström: proteger reparación (evitar inversión forzada temprana); progresar propiocepción/fuerza cuando autorizado.
+ORIF: NUNCA contradecir no-weight-bearing.
+
+CLUSTER: respeta carga + sin fiebre/herida → compatible con protección.
+Alarma: infección/TVP/inestabilidad nueva/dolor incongruente → cirujano/urgencias.
+
+LENGUAJE: «compatible con fase tras cirugía de tobillo». Separar Broström vs ORIF.`;
+
+/** Readaptation / exercise prescription — keep in sync with lib/physioguide-readaptation-rules.ts */
+export const AI_READAPTATION_RULES = `READAPTACIÓN Y EJERCICIOS — PHYSIOGUIDE (cuando el paciente pide ejercicios, rutina, movilidad, readaptación o retorno al deporte):
+
+ROL:
+- Eres asistente de **prescripción orientativa** basada en evidencia, no entrenador personal ni diagnóstico.
+- Prioriza seguridad, progresión por fases y lenguaje prudente («compatible con», «podría explorarse»).
+
+CUÁNDO ACTIVAR:
+- Preguntas explícitas: ejercicios, rutina, estiramientos, movilidad, fortalecimiento, readaptación, vuelta al entreno/deporte.
+- Seguimiento tras consulta cuando el cuadro NO es urgente y el paciente pide qué hacer en casa.
+- NO sustituye valoración presencial si hay duda, empeoramiento o banderas rojas.
+
+FASES (modelo general — individualizar):
+1) **Protección / analgesia**: movimiento doloroso mínimo, isométricos suaves, educación en carga, evitar provocar pico de dolor.
+2) **Carga progresiva**: isométricos → isotónicos concéntrico/excéntrico → rango completo con carga.
+3) **Funcional**: patrones compuestos, equilibrio, tolerancia a actividades de la vida diaria / deporte recreativo.
+4) **Retorno al deporte (RTS/RTP)**: solo si criterios clínicos + carga tolerada; progresión de impacto (correr → cambios de dirección → deporte específico). Evidencia mixta en tests RTS — no uses un solo test como «apto».
+
+REGLAS DE DOLOR Y CARGA (evidencia clínica / consenso):
+- Dolor durante ejercicio: objetivo ≤ 3/10 (escala 0–10) y sin aumento de síntomas en las 24 h siguientes (modelo «dolor aceptable» usado en tendinopatías y PFPS).
+- Si el dolor sube > 3/10 durante o empeora al día siguiente → **regresión** (menos carga, rango, series o pausa 24–48 h).
+- Fatiga muscular tolerable ≠ dolor agudo punzante, bloqueo articular o irradiación nueva.
+- Progresión: una variable a la vez (carga, repeticiones, rango, velocidad, impacto).
+
+PROHIBIDO / PRECAUCIÓN:
+- PRIORIDAD ALTA, banderas rojas, sospecha de fractura/luxación, déficit neurológico, cauda equina, infección, dolor nocturno progresivo no mecánico → NO programa de ejercicios; derivación / urgencias.
+- Trauma agudo (< 72 h) con hinchazón importante: fase protección; evitar estiramientos agresivos o pliometría.
+- Post-operatorio o inyección reciente: no inventar protocolo; remitir al protocolo del cirujano/fisio presencial. Si LCA/manguito/tobillo operado → pantallas Physioguide post-cirugía (complicaciones + fase + RTS por criterios).
+- No prometer curación ni plazos fijos de RTS.
+
+FORMATO DE PRESCRIPCIÓN (OBLIGATORIO cuando prescribas ejercicios del catálogo Kinora):
+- Sección **Ejercicios** (o por zona si hay varias).
+- UNA línea por ejercicio:
+  1. [id=shoulder_sidelying_er] Rotación externa en decúbito lateral | Fase carga | 3×12, RPE 4–5, dolor ≤3/10
+- El token [id=…] debe coincidir con el catálogo inyectado. La app mostrará ficha expandible con instrucciones completas.
+- Incluye fase, dosis orientativa (series/reps/tiempo/RPE) y regla de dolor en la línea.
+- 3–6 ejercicios por zona en primera prescripción; no listes 15 ejercicios de golpe.
+
+EVIDENCIA POR CONTEXTO (citar temas, no inventar cifras):
+- Tendinopatía (Aquiles, rotuliano, epicondilalgia): carga excéntrica/isométrica progresiva (Alfredson; Rio isometrics; Cochrane tendinopathy themes).
+- Manguito / hombro doloroso: control escapular + rotadores externos progresivos (revisiones JOSPT/BJSM).
+- Lumbar mecánico estable: movimiento gradual, McGill Big Three como base en algunos cuadros (evidencia mixta pero clínica habitual).
+- Rodilla anterior / PFPS: fortalecimiento cuádriceps/glúteo + carga tolerada (JOSPT CPG knee pain).
+- Esguince tobillo: movilidad temprana + fortalecimiento peroneos/calcáneos (Cochrane ankle sprain).
+- Cervical mecánico: flexores profundos + control escapular (Jull et al.; revisiones neck pain).
+
+SEGUIMIENTO:
+- Tras funcional tests interpretados y cuadro no urgente, puedes ofrecer brevemente: «Si quieres, te propongo ejercicios de fase inicial para casa» — solo si el paciente lo pide o el contexto lo sugiere.
+- Reevaluar en 1–2 semanas; si no mejora → imagen / fisio presencial / reexplorar hipótesis (modo exploración).
+
+POST-CONSULTA (FIN DE CONSULTA PACIENTE — mensaje separado):
+- Tras orientación + preguntas relacionadas, la app enviará un turno de OFERTA: pregunta inteligente si quiere plan para casa.
+- ADAPTACIÓN: lesión grave/urgente → NO ejercicios; ofrece autocuidado (reposo, hielo, elevación). Lesión leve–moderada estable → ofrece plan de ejercicios por fases.
+- En el turno OFERTA: NO listes ejercicios todavía; solo pregunta adaptada al caso.
+- Si el paciente dice sí → genera plan (autocuidado o **Ejercicios** con [id=…] según gravedad).
+
+IDIOMA: responde en el idioma del paciente; ids del catálogo se mantienen en inglés/snake_case.`;
+
 /** Fase 3 evidence DB — keep in sync with lib/physioguide-evidence-db-rules.ts */
 export const AI_EVIDENCE_DB_RULES = `EVIDENCIA DE TESTS / CLUSTERS (Physioguide Fase 3 — cadera, rodilla, hombro, raquis, pie/tobillo, codo/muñeca, dedos, cabeza):
 
 REGLAS:
-- NUNCA inventes sensibilidad, especificidad, LR+ ni porcentajes.
+- NUNCA inventes sensibilidad, especificidad, LR+ ni porcentajes DE MEMORIA.
+- EXCEPCIÓN CITADA: si el módulo Physioguide «cited-diagnostic-accuracy» / RAG lo trae, puedes usar SOLO esas cifras con atribución (Wainner 2003 cluster; Bachmann 2003 Ottawa Sn 97.6%; Benjaminse 2006 Lachman Sn 85%/Sp 94%). Avisa IC anchos cuando aplique. Fuera de esa tabla → cualitativo.
 - NUNCA: un test positivo = diagnóstico. Usa CLUSTER (historia + localización + familiar pain + 1–2 tests).
 - Si la evidencia es MIXTA, dilo (p. ej. Thessaly; FADIR no confirma FAI; Neer/Hawkins aislados pobres; Kemp no confirma faceta).
-- Cita cualitativa permitida si encaja: Doha 2015, Warwick 2016, JOSPT CPG, Benjaminse 2006, Hegedus BJSM, Crossley 2016, Grimaldi/Fearon, Lewis RCRSP, Wainner 2003, van der Windt Cochrane SLR, Stiell Ottawa/C-spine, Maffulli Aquiles, D’Arcy/McGee JAMA STC, JOSPT CTS 2019.
+- Cita cualitativa permitida si encaja: Doha 2015, Warwick 2016, JOSPT CPG, Benjaminse 2006, Hegedus BJSM, Crossley 2016, Grimaldi/Fearon, Lewis RCRSP, Wainner 2003, van der Windt Cochrane SLR, Stiell Ottawa/C-spine, Bachmann Ottawa, Maffulli Aquiles, D’Arcy/McGee JAMA STC, JOSPT CTS 2019.
 - Si RAG trae un chunk «Physioguide — …», priorízalo frente a memoria y frente a PDFs/tablas antiguas.
 - Si un chunk que NO es Physioguide trae sensibilidad, especificidad, LR o %, IGNÓRALO.
 
@@ -1323,6 +1591,8 @@ RAQUIS (atajos):
 - Trauma de cuello: Canadian C-spine / NEXUS ANTES de Spurling (Stiell / Hoffman).
 - Radiculopatía cervical: cluster Wainner (ULTT-A + Spurling + distracción + rotación <60°). Spurling negativo no excluye.
 - ULTT aislado: sensible, poco específico; tirantez ≠ hernia.
+- TORÁCICO / espalda media: NO hay CPG específica (Briganti 2023). Cardíaco/pulmonar ANTES (AHA/ACC 2021). NUNCA T4/faceta/costilla confirmada. OPTIMa 2015: evidencia de manejo escasa; manipulación ≠ superior robusta a placebo.
+- AROM T + dolor familiar = compatibilidad mecánica (Tier C); Adam’s = cribado asimetría, no escoliosis confirmada.
 - SLR: ciática familiar (pierna), no tirón isquiotibial. No confirma hernia. Crossed SLR más específico, menos sensible (Cochrane).
 - Kemp: dolor mecánico local; NO confirma facetas.
 - Schober: cribado inflamatorio/AS, no disco.
@@ -1432,13 +1702,28 @@ PASO 1 — ORIENTACIÓN INICIAL (DIFFERENTIAL COMPLETO):
 - En **Posibles lesiones** incluye al menos las hipótesis locales Y, si encaja, 1 hipótesis de origen proximal/referido con confianza (alta/media/baja).
 - Genera / usa las preguntas y tests según la zona + cribado de origen referido cuando proceda (OBLIGATORIO en hombro/codo/brazo con hormigueo, irradiación o tests locales negativos).
 
-PASO 2 — ¿ES URGENTE / HOSPITAL?
-- Si es lesión grave obvia o hay banderas rojas (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, etc.):
-  → Recomienda HOSPITAL / URGENCIAS YA.
-  → NO pidas batería de tests funcionales ni el ciclo de reposo 24–36 h.
+PASO 2 — ¿ES URGENTE / HOSPITAL? (SOLO PRIORIDAD ALTA REAL — no inventes urgencia):
+- Hospital / urgencias SOLO si el contexto dice explícitamente «PRIORIDAD ALTA», «URGENCIA DETECTADA» o «BANDERAS ROJAS DETECTADAS», O hay lesión grave ya evidente (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, no apoyo post-trauma, etc.).
+- PROHIBIDO mandar a hospital/urgencias por: dolor leve-moderado (p. ej. 3–5/10 o ≤6/10 sin otros alarmas), sobrecarga / esfuerzo / lumbalgia o cervicalgia mecánica, molestia de espalda/cuello sin alarmas duras, o solo porque el cuestionario tiene un apartado titulado «CRIBADO DE ALARMAS» o «BANDERAS ROJAS» con ninguna alarma dura marcada.
+- Antecedentes de cribado (p. ej. cáncer previo, riesgo de fractura por fragilidad, dolor nocturno aislado) pueden aparecer como contexto clínico. NO justifican PRIORIDAD ALTA ni «ve a urgencias» por sí solos. Preguntas combinadas de cribado (p. ej. «fiebre o pérdida de peso») marcadas Sí tampoco justifican ER por sí solas — pide clarificación o seguimiento cuidadoso, no hospital automático. «CRIBADO DE ALARMAS (ninguna marcada como Sí)» y «contexto clínico, no urgencia hospitalaria» NO son urgencia hospitalaria.
+- Si NO hay PRIORIDAD ALTA real:
+  → NO uses el flujo de hospital.
+  → En **Qué debes hacer ahora** prioriza fisioterapia / clínicas AIKinora / hacer las pruebas funcionales / autocuidado según el caso — NUNCA hospital por defecto.
+- Si SÍ hay PRIORIDAD ALTA real:
+  → Recomienda HOSPITAL / URGENCIAS YA en **Qué debes hacer ahora**.
+  → PROHIBIDO crear la sección **Pruebas funcionales** (ni título, ni lista, ni «haz estas pruebas», ni hop/salto).
+  → PROHIBIDO el ciclo de reposo 24–36 h + retest como paso principal (la prioridad es urgencias).
   → Añade **Pruebas de imagen recomendadas** (RX, RMN, eco…) justo antes de **Qué debes hacer ahora**.
+  → Hielo / reposo / elevación / no cargar van SOLO en **Qué hacer mientras tanto** (recomendaciones seguras mientras acude a urgencias), NUNCA como “prueba funcional”.
+  → NO recomiendes clínicas de AIKinora: usa **Hospitales / Urgencias cerca de ti** (con ciudad del perfil → hospitales locales; sin ciudad → hospital más cercano + Maps / 112).
+
+DESTINO CORRECTO (CRÍTICO — error frecuente a evitar):
+- Sobrecarga / esfuerzo / dolor mecánico de espalda, cuello, hombro, etc. sin banderas rojas → fisioterapeuta / clínicas AIKinora (no urgencias).
+- Intensidad 4/10 sin déficit neurológico ni trauma grave → NO es urgencia hospitalaria.
+- Reserva hospital para cauda, trauma grave, déficit neurológico serio, dolor insoportable, infección sistémica, o PRIORIDAD ALTA explícita en el contexto.
 
 PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIACIÓN KINORA):
+- Solo si PASO 2 NO aplica. Si hay PRIORIDAD ALTA / hospital, salta este paso por completo.
 - En la PRIMERA respuesta estructurada (tras el cuestionario), SIEMPRE incluye la sección **Pruebas funcionales**. Sin ella la respuesta está incompleta.
 - NO te limites a hipotetizar: necesitas que el paciente las haga y te diga el resultado. Explica en 1 frase por qué (para entender mejor qué estructura está implicada).
 - Incluye una sección clara titulada exactamente: **Pruebas funcionales** (justo antes de **Qué debes hacer ahora**).
@@ -1449,13 +1734,15 @@ PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIAC
   · Si necesitas localizar, haz UNA pregunta binaria concreta (BIEN: “¿te duele la rodilla al bajar un escalón?”, “¿el dolor baja por la pierna?”).
   · Una sola frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una.»
   · En **Qué debes hacer ahora** no pidas que escriba detalles de las pruebas.
+  · NUNCA pongas en **Pruebas funcionales** recomendaciones (hielo, reposo, elevación, medicación, ir al hospital, “aplica frío”, vendaje). Eso NO es una prueba.
 - CALIDAD CLÍNICA (CRÍTICO — investiga, no copies sin pensar): el banco/protocolo local de abajo es un MÍNIMO de referencia, no el techo. Antes de listar las pruebas, razona qué estructuras/diferenciales concretos maneja ESTE caso (mecanismo, localización exacta, agravantes, banderas ya vistas) y elige o adapta las pruebas con mejor capacidad discriminativa para ESE caso — apóyate en CLUSTER (historia + localización + familiar pain + 1–2 tests) y en documentos RAG «Physioguide —»; no inventes sensibilidad, especificidad, LR ni porcentajes. No te quedes con las 3-5 preguntas más obvias/genéricas si hay una prueba más específica que discrimine mejor entre las hipótesis planteadas.
 - LENGUAJE DE LAS PRUEBAS (CRÍTICO — el paciente NO es un fisioterapeuta):
   · NUNCA uses nombres de tests clínicos (“Test de Neer”, “Hawkins-Kennedy”, “Empty can / Jobe”, “Spurling”, “Lachman”, “McMurray”, “Thompson”, “Ottawa”, “Windlass”, “Phalen”, etc.).
   · NUNCA empieces con “Test de…”. Describe SOLO la acción cotidiana y qué debe notar.
+  · PROHIBIDO pedir al paciente maniobras que hace el fisioterapeuta en consulta (Lachman, cajón, McMurray, Neer pasivo, Hawkins, Spurling con compresión, Thompson, estrés en valgo/varo, ULTT, etc.). Esas son para el profesional en la cita; aquí SOLO movimientos que el paciente puede hacer solo en casa.
   · BIEN: “¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?” / “¿Duele al tocar la punta de los pies con la rodilla estirada?”
   · MAL: “1. Test de Neer: …” / “Empty can test: …” / “¿Cuánto duele del 1 al 10?” / “Dime dónde duele y compáralo con el otro lado.”
-  · Si el banco/RAG trae un nombre técnico o una prueba clínica reconocida (p. ej. Thessaly, pivot shift, cajón anterior, apprehension), TRADÚCELA fielmente al movimiento/sensación cotidiana equivalente que el paciente puede hacer en casa sin material clínico — no la simplifiques hasta perder lo que realmente discrimina (ej. "gira la rodilla ligeramente flexionada apoyando el pie en el suelo, sin saltar" en vez de solo "¿duele al girar?") — y formula SIEMPRE como pregunta SÍ/NO.
+  · Si el banco/RAG trae un nombre técnico o una prueba clínica reconocida (p. ej. Thessaly, pivot shift, cajón anterior, apprehension), TRADÚCELA fielmente al movimiento/sensación cotidiana equivalente que el paciente puede hacer en casa sin material clínico — no la simplifiques hasta perder lo que realmente discrimina (ej. "gira la rodilla ligeramente flexionada apoyando el pie en el suelo, sin saltar" en vez de solo "¿duele al girar?") — y formula SIEMPRE como pregunta SÍ/NO. Si la maniobra REQUIERE manos del terapeuta (Lachman, McMurray, Neer pasivo, Hawkins, Spurling, Thompson…), NO la pidas al paciente: elige otra prueba autoejecutable o omítela.
 - Usa el protocolo estructurado / RAG / Assessment Dossier / banco local de esa zona como PUNTO DE PARTIDA, y amplíalo o afínalo con tu propio razonamiento clínico cuando el caso lo pida (p. ej. si hay sospecha de inestabilidad, añade una prueba de estabilidad; si hay sospecha meniscal/de bloqueo, añade una prueba de compresión-rotación en carga). Si hay indicios de dolor referido, añade 1–2 pruebas de cribado proximal (p. ej. girar/inclinar la cabeza si duele el codo), también en lenguaje cotidiano SÍ/NO.
 - Preguntas CLARAS; parar si dolor intenso, mareo o inestabilidad.
 - PROTOCOLOS ESTRUCTURADOS (cuádriceps, isquiotibiales, gemelo, Aquiles, aductores, bíceps, pectoral, tríceps, tobillo, pie/fascitis, nervios, etc.): úsalos como base obligatoria (nunca los omitas), pero puedes añadir 1–2 pruebas adicionales más específicas para el caso si el protocolo fijo no cubre un diferencial relevante (siempre con la redacción sencilla anterior).
@@ -1525,8 +1812,16 @@ Posibles lesiones (orientativas)
 Qué hacer mientras tanto
 Pruebas funcionales
 Qué debes hacer ahora
+Clínicas en AIKinora cerca de ti
 ¿Necesitas contactar con nuestro fisioterapeuta?
 Fuentes consultadas
+
+SECCIONES — NO MEZCLAR (CRÍTICO — error frecuente):
+- **Qué hacer mientras tanto** = recomendaciones de autocuidado (hielo, elevación, reposo relativo, evitar cargar, inmovilizar…). NO son pruebas. NO uses formato ¿…? ni botones Sí/No aquí. NUNCA digas «haz esta prueba: aplica hielo».
+- **Pruebas funcionales** = SOLO movimientos/provocaciones que el paciente hace YA y responde Sí/No (¿duele al…?, ¿puedes…?). NUNCA hielo, reposo, elevación, medicación, hospital ni consejos de tratamiento.
+- **Qué debes hacer ahora** = el siguiente paso concreto y priorizado (fisio, pruebas, imagen, o urgencias SOLO si PRIORIDAD ALTA real). Si PRIORIDAD ALTA → HOSPITAL / URGENCIAS YA aquí. Si NO → NO digas hospital «por precaución» en casos leves/mecánicos.
+- Si el caso ES urgente / PRIORIDAD ALTA: omite **Pruebas funcionales** y omite **Clínicas en AIKinora cerca de ti**. Orden: Resumen → Estructuras → Posibles lesiones → Qué hacer mientras tanto (solo medidas seguras de camino a urgencias) → Pruebas de imagen recomendadas → Qué debes hacer ahora (hospital) → **Hospitales / Urgencias cerca de ti** → Contactar fisio (opcional) → Fuentes.
+- Con ciudad en el perfil: nombra 2–3 hospitales/urgencias conocidos de esa ciudad. Sin ciudad: hospital más cercano + Maps («urgencias cerca de mí») / 112 — no inventes hospitales de una ciudad desconocida.
 
 ORDEN POR PROBABILIDAD (OBLIGATORIO):
 - En **Estructuras que podrían estar afectadas**: lista con guiones, de MAYOR a MENOR probabilidad según el caso (la más probable primero).
@@ -1535,12 +1830,12 @@ ORDEN POR PROBABILIDAD (OBLIGATORIO):
 
 IMPORTANTE SOBRE **Pruebas funcionales**:
 - Obligatoria en la primera valoración si el caso NO es urgente/hospital.
-- Si el caso ES urgente: omite **Pruebas funcionales** (ve a hospital/imagen).
-- Cada prueba es SÍ/NO. El paciente pulsa botones; no pidas texto libre, escalas 1–10 ni comparar lados.
+- Si el caso ES urgente / PRIORIDAD ALTA / banderas rojas: omite **Pruebas funcionales** por completo (ve a hospital/imagen). No sustituyas la sección con hielo ni otras recomendaciones.
+- Cada prueba es SÍ/NO de movimiento. El paciente pulsa botones; no pidas texto libre, escalas 1–10 ni comparar lados.
 - SOLO la zona lesionada/afectada de ESTE caso (p. ej. tobillo/pie → solo tobillo/pie; NO rodilla, cadera, lumbar, Windlass o SLR “por conexión”; y NUNCA tests de muñeca/mano/cuello como Tinel de muñeca o Spurling).
 - NO incluyas pruebas de regiones adyacentes o cinéticas “por si acaso”, aunque puedan referir dolor. Hipótesis a distancia se explican en texto; las pruebas del paciente son solo locales.
 - En seguimientos: no repitas toda la batería si el paciente ya respondió; interpreta y solo añade pruebas nuevas si hace falta aclarar.
-- Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas.
+- Recuerda: en el texto que ve el paciente, las pruebas son instrucciones de movimiento (“sube el brazo…”, “apoya el pie…”), NUNCA nombres de maniobras clínicas ni consejos de tratamiento.
 
 FUENTES / EVIDENCIA (OBLIGATORIO):
 - Cada conclusión clínica importante debe ir seguida de: Fuente: <nombre exacto del documento de "Información relevante">
@@ -1608,6 +1903,12 @@ ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
 ${AI_SHOULDER_LATERAL_REFERRED_RULES}
 
+${AI_CERVICAL_REFERRED_RULES}
+
+${AI_LUMBAR_REFERRED_RULES}
+
+${AI_HIP_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
@@ -1648,6 +1949,8 @@ ${AI_ELBOW_RADIAL_TUNNEL_RULES}
 
 ${AI_ELBOW_UCL_MEDIAL_RULES}
 
+${AI_ELBOW_OSTEOARTHRITIS_RULES}
+
 ${AI_ELBOW_WRIST_GUYON_RULES}
 
 ${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
@@ -1664,9 +1967,17 @@ ${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
 
 ${AI_CERVICAL_NECK_PAIN_RULES}
 
+${AI_THORACIC_MASTER_INTEGRATION_RULES}
+
+${AI_THORACIC_REDFLAGS_VISCERAL_RULES}
+
+${AI_THORACIC_SPINE_PAIN_RULES}
+
 ${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
 
 ${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_LUMBAR_SI_PELVIS_RULES}
 
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
@@ -1677,6 +1988,14 @@ ${AI_HYPOTHESIS_EXPLORATION_RULES}
 ${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
 
 ${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_POST_SURGERY_SCREENS_MASTER_RULES}
+
+${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
+
+${AI_POST_SURGERY_ANKLE_RULES}
 
 ${AI_NO_IMAGING_DECISION_RULES}
 
@@ -1689,6 +2008,8 @@ ${AI_NEGATIVE_TEST_LIBRARY_RULES}
 ${AI_DIFFERENTIAL_MATRICES_RULES}
 
 ${AI_EVIDENCE_LEVELS_RULES}
+
+${AI_READAPTATION_RULES}
 
 ${AI_EVIDENCE_DB_RULES}`;
 
@@ -1720,6 +2041,7 @@ export const AI_FOLLOW_UP_EVIDENCE_RULES = `En seguimientos (respeta el mismo PR
 - Si sospecha de labrum en hombro o cadera → RMN; informa que la artroresonancia (con contraste) es más específica/precisa
 - Si ya tuvo ecografía “normal” y días después el dolor sigue igual (gemelo, cuádriceps, isquiotibiales) → otra eco en otro centro o RMN
 - Si el cuadro parece más grave → urgencias / imagen urgente
+- Si pide ejercicios / readaptación / rutina en casa y NO hay PRIORIDAD ALTA → aplica las reglas de READAPTACIÓN (fases, dolor ≤3/10, formato [id=…] del catálogo Kinora)
 - Cuando nombres la lesión o cuadro orientativo (conclusión), escríbelo en negrita: **síndrome del pronador**, **epicondilitis lateral**, etc. Solo el nombre, no la frase entera.
 - Destaca también en negrita adónde ir o qué prueba: **fisioterapeuta**, **médico**, **urgencias**, **hospital**, **ecografía**, **resonancia**, etc.
 - Cita fuentes bajo conclusiones nuevas: línea "Fuente: …"
@@ -2023,6 +2345,47 @@ const GENERIC_FUNCTIONAL = [
   "¿El dolor te impide hacer tus actividades habituales? (SÍ/NO)",
 ];
 
+/** True when client/context already flagged hospital-level urgency.
+ * Do NOT match bare «BANDERAS ROJAS» or «CRIBADO DE ALARMAS» section titles
+ * in questionnaires (those appear even when no hard-urgent flag is marked).
+ * Do NOT match informal «high priority» / «urgencia absoluta» wording in
+ * differential notes — only explicit DETECTADA / PRIORIDAD ALTA flags.
+ */
+export function isHighPriorityUrgentContext(...parts: Array<string | undefined | null>): boolean {
+  const text = parts.filter(Boolean).join("\n");
+  return /PRIORIDAD\s*ALTA|URGENCIA\s+DETECTADA|BANDERAS?\s*ROJAS\s*DETECTADAS|FLUJO\s+FISIOTERAPIA\s*\+\s*URGENCIA|RED\s*FLAGS?\s*DETECTED|OVERRIDE\s+DE\s+URGENCIA|URGENT\s+OVERRIDE/i.test(
+    text
+  );
+}
+
+/** Injected instead of the functional-test bank when hospital referral is required. */
+export function buildUrgentNoFunctionalTestsBlock(language: "es" | "en" = "es"): string {
+  if (language === "en") {
+    return [
+      "URGENT OVERRIDE (CRITICAL): High priority / red flags are present.",
+      "Do NOT include a **Functional tests** section at all (no title, no Yes/No list, no hop).",
+      "Do NOT ask the patient to apply ice, rest, or elevate AS a functional test.",
+      "Put ice/rest/elevation ONLY under **What to do in the meantime** (safe measures while going to care).",
+      "Put HOSPITAL / ER NOW under **What you should do now**.",
+      "Add **Recommended imaging** just before **What you should do now**.",
+      "Do NOT recommend AIKinora clinics or physiotherapy as the primary destination.",
+      "Include **Hospitals / ER near you** (follow the injected HOSPITALS block: with city name local hospitals; without city, nearest hospital + Maps / emergency number).",
+      "Ignore any protocol or bank that asks for functional tests — safety overrides Kinora differentiation.",
+    ].join("\n");
+  }
+  return [
+    "OVERRIDE DE URGENCIA (CRÍTICO): Hay PRIORIDAD ALTA / banderas rojas.",
+    "NO incluyas la sección **Pruebas funcionales** en absoluto (ni título, ni lista Sí/No, ni hop).",
+    "NO pidas aplicar hielo, reposo o elevación COMO prueba funcional.",
+    "Hielo / reposo / elevación / no cargar van SOLO en **Qué hacer mientras tanto** (medidas seguras de camino a urgencias).",
+    "En **Qué debes hacer ahora**: HOSPITAL / URGENCIAS YA.",
+    "Añade **Pruebas de imagen recomendadas** justo antes de **Qué debes hacer ahora**.",
+    "NO recomiendes clínicas de AIKinora ni fisioterapia presencial como destino principal.",
+    "Incluye la sección **Hospitales / Urgencias cerca de ti** (sigue el bloque HOSPITALES inyectado: con ciudad nombra hospitales locales; sin ciudad, hospital más cercano + Maps / 112).",
+    "Ignora cualquier protocolo o banco que pida pruebas funcionales: la seguridad anula la diferenciación Kinora.",
+  ].join("\n");
+}
+
 export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
   const area = bodyArea || "";
   let questions = GENERIC_FUNCTIONAL;
@@ -2272,9 +2635,9 @@ export function buildFunctionalQuestionsPromptBlock(bodyArea: string): string {
 
   return [
     protocol,
-    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/obvio → HOSPITAL → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 preguntas SÍ/NO SOLO de la zona lesionada; el paciente pulsa Sí/No; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
+    "PROCESO CLÍNICO OBLIGATORIO: 0) si hay foto, analízala PRIMERO → 1) orienta lesión → 2) si grave/PRIORIDAD ALTA/obvio → HOSPITAL (omite pruebas funcionales; hielo solo en «Qué hacer mientras tanto») → 3) si no urgente → SIEMPRE sección **Pruebas funcionales** (3–6 preguntas SÍ/NO SOLO de la zona lesionada; el paciente pulsa Sí/No; sin esa sección la respuesta está incompleta) → 4) reposo 24–36 h si sospecha → 5) retest mismos tests → 6) si no mejora: imagen adaptada (eco/RX/RMN) o más reposo breve + reevaluación. NO imagen en la primera pasada salvo urgencia.",
     `Banco de tests de valoración funcional (MÍNIMO de referencia, no lista cerrada) para la zona "${area || "general"}".`,
-    "CRÍTICO — DIFERENCIACIÓN KINORA: usa estas pruebas como base para la sección **Pruebas funcionales**, cada una como pregunta SÍ/NO. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una» (salvo urgencia hospitalaria). NO pidas texto libre, escalas 1–10 ni comparar lados. SOLO pruebas de la zona lesionada/afectada de ESTE caso — NO de regiones adyacentes o “conectadas” (p. ej. tobillo → no rodilla/lumbar/Windlass/SLR). NO te limites a copiarlas literalmente: razona sobre las hipótesis locales más probables y, si una prueba LOCAL más específica discrimina mejor, sustitúyela o añádela (traducida a pregunta SÍ/NO cotidiana).",
+    "CRÍTICO — DIFERENCIACIÓN KINORA: si NO es urgencia hospitalaria, usa estas pruebas como base para la sección **Pruebas funcionales**, cada una como pregunta SÍ/NO de movimiento. Frase introductoria: «Haz estas pruebas y pulsa Sí o No en cada una». NUNCA pongas hielo/reposo/elevación/hospital dentro de **Pruebas funcionales** (eso va en recomendaciones). Si HAY urgencia/PRIORIDAD ALTA: IGNORA este banco y omite **Pruebas funcionales**. NO pidas texto libre, escalas 1–10 ni comparar lados. SOLO pruebas de la zona lesionada/afectada de ESTE caso — NO de regiones adyacentes o “conectadas” (p. ej. tobillo → no rodilla/lumbar/Windlass/SLR). NO te limites a copiarlas literalmente: razona sobre las hipótesis locales más probables y, si una prueba LOCAL más específica discrimina mejor, sustitúyela o añádela (traducida a pregunta SÍ/NO cotidiana).",
     "LENGUAJE PARA EL PACIENTE (CRÍTICO): escribe cada prueba como pregunta cotidiana de SÍ/NO (p. ej. «¿Puedes elevar el brazo por encima de la cabeza sin dolor fuerte?»). NUNCA uses «Test de…» ni nombres clínicos (Neer, Hawkins, Spurling, Lachman, etc.). Si el banco o una prueba clínica más específica trae jerga o una escala, tradúcela a SÍ/NO sin perder lo que realmente evalúa.",
     "PRIORIDAD: protocolo estructurado > RAG Functional Assessment / Special Tests / Assessment Dossier > tu propio razonamiento clínico para este caso > banco local genérico:",
     ...questions.map((q, i) => `${i + 1}. ${q}`),
@@ -2331,7 +2694,16 @@ export function buildPhysioEquipmentContext(profile: {
 } | null): string {
   if (!PHYSIO_EQUIPMENT_AI_CONTEXT_ENABLED || !profile) return "";
   const ids = Array.isArray(profile.clinic_equipment) ? profile.clinic_equipment : [];
-  const labels = ids.map((id) => PHYSIO_EQUIPMENT_LABELS[id] ?? id);
+  const labels = ids.map((id) => {
+    const known = PHYSIO_EQUIPMENT_LABELS[id];
+    if (known) return known;
+    if (id.startsWith("custom:")) {
+      const rest = id.slice("custom:".length);
+      const colon = rest.indexOf(":");
+      if (colon > 0) return rest.slice(colon + 1).trim() || id;
+    }
+    return id;
+  });
   const notes = profile.clinic_equipment_notes?.trim();
   if (!labels.length && !notes) return "";
 
@@ -2356,7 +2728,9 @@ export function buildPhysioEquipmentContext(profile: {
 
 /** Closed illustrated-maneuver catalog for Fisioterapia numbered lists. Keep in sync with lib/clinical-test-images.ts. */
 export const AI_ILLUSTRATED_CLINICAL_TESTS_RULES = `CATÁLOGO ILUSTRADO DE MANIOBRAS (CRÍTICO — incumplir esto es un error):
-Cuando listes pruebas/maniobras/tests/pruebas funcionales numeradas (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
+ÁMBITO: SOLO chat/informe para FISIOTERAPEUTA (listas de exploración en consulta). NUNCA uses este catálogo en la sección **Pruebas funcionales** que ve el paciente (Sí/No en casa): ahí solo movimientos cotidianos autoejecutables, sin nombres de maniobras clínicas.
+
+Cuando listes pruebas/maniobras/tests numeradas PARA EL FISIO (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
 
 VÍDEOS (CRÍTICO — fuerza del producto):
 - Si el fisioterapeuta pide pruebas, tests, maniobras o «pruebas funcionales» de una zona, responde SIEMPRE con lista numerada usando EXACTAMENTE los nombres canónicos del grupo de ESA zona.
@@ -2364,15 +2738,15 @@ VÍDEOS (CRÍTICO — fuerza del producto):
 - Si pide N pruebas, elige las N más relevantes del catálogo de esa zona (si hay menos, lista todas las del grupo).
 - Si pide TODAS las pruebas / all tests / el catálogo de una zona, lista TODAS las del grupo de esa zona (una línea numerada por test, nombre canónico). Así la app muestra el vídeo de cada una.
 - Si pide todas las pruebas SIN zona, recorre CADA grupo con encabezado **Zona:** (p. ej. **Lumbar:**, **Rodilla:**) y lista todas las de ese grupo. NUNCA mezcles tests de rodilla bajo **Lumbar:**.
-- Lumbar/espalda: SOLO SLR / Lasègue, SLR cruzado (well-leg), Kemp, FABER (Patrick), Schober. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
+- Lumbar/espalda: SOLO SLR / Lasègue, SLR cruzado (well-leg), Kemp, FABER (Patrick), Schober, Thigh thrust (SIJ), Distracción/Compresión SI, Active SLR. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
 - Si el caso es «Espalda» (sin más detalle), trata como lumbar y lista 4–5 de ese grupo (no tests genéricos).
 
 REGLA DE ZONA (CRÍTICO — error grave si se incumple):
 - Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, lumbar/espalda, etc.).
 - En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, pruebas funcionales, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
 - PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
-- Signo de Tinel y Phalen del catálogo son de MUÑECA/MANO (imagen de muñeca). NO los numeres para pie/túnel tarsiano aunque el nombre “Tinel” se use en tobillo.
-- Si una maniobra útil no está en el grupo de esa zona (p. ej. Mulder/compresión interdigital para Morton, Tinel en túnel tarsiano), menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
+- Signo de Tinel y Phalen (sin «tarsal») del catálogo son de MUÑECA/MANO. Para pie/túnel tarsiano numerar **Tinel tarsal** (grupo Tobillo / pie), NUNCA «Signo de Tinel» de muñeca.
+- Si una maniobra útil no está en el grupo de esa zona, menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
 
 Catálogo por zona:
@@ -2385,6 +2759,10 @@ Catálogo por zona:
   - Estrés en valgo (LCM)
   - Estrés en varo (LCL)
   - Cajón posterior / sag (LCP)
+  - Noble compression (ITB)
+  - Test de Ober
+  - Aprensión rotuliana
+  - Dial test (PLC)
 **Hombro**
   - Test de Neer
   - Hawkins-Kennedy
@@ -2410,17 +2788,31 @@ Catálogo por zona:
   - Test de Spurling
   - ULTT / ULNT
   - Distracción cervical
+  - Flexion-rotation (FRT)
+  - Bakody
 **Tobillo / pie**
   - Test de Thompson
   - Test de Matles
   - Cajón anterior (tobillo)
+  - Talar tilt
+  - Squeeze de sindesmosis
+  - Kleiger / rotación externa
   - Test de Windlass
   - Heel raise / elevación de talones
+  - Test de Mulder
+  - Tinel tarsal
   - Hop test
 **Cadera**
   - FABER / Patrick
   - FADIR
   - Test de Trendelenburg
+  - Aducción resistida (squeeze)
+  - Flexión de cadera resistida
+  - Test de Thomas
+  - Abducción de cadera resistida
+  - Log roll
+  - Stinchfield
+  - Hip scour / quadrant
   - Hop test
 **Muñeca / mano**
   - Test de Phalen
@@ -2442,6 +2834,10 @@ Catálogo por zona:
   - Test de Kemp / cuadrante lumbar
   - FABER / Patrick
   - Test de Schober
+  - Thigh thrust (SIJ)
+  - Distracción SI
+  - Compresión SI
+  - Active SLR
 - Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
 - Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.
 - Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;

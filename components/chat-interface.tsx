@@ -65,6 +65,7 @@ import { useSpeechToText } from "@/hooks/use-speech-to-text";
 import { bodyPartLabel, type BodyPartId } from "@/lib/body-parts";
 import {
   defaultGenericConsultaAnswers,
+  detectGenericRedFlags,
   formatGenericConsulta,
   validateGenericConsulta,
   type GenericConsultaAnswers,
@@ -215,13 +216,28 @@ import {
   wantsToContinueToNextQuestionnaire,
   type AdaptiveQuestionnairePart,
 } from "@/lib/consulta-triage";
+import {
+  affirmsExerciseOffer,
+  buildPostConsultCaseSummary,
+  declinesExerciseOffer,
+} from "@/lib/consulta-exercise-offer";
 import { ConsultaCompleteCard } from "@/components/consulta-complete-card";
 import { ConsultaNewConsultaPrompt } from "@/components/consulta-new-consulta-prompt";
 import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import {
+  clinicRecommendIntro,
+  isClinicSectionHeadingLine,
+  parseClinicRecommendLine,
+  type ConsultLocale,
+} from "@/lib/consult-clinic-links";
+import { parseReadaptExerciseFromLine } from "@/lib/consult-readaptation";
+import { ReadaptationExerciseCard } from "@/components/readaptation-exercise-card";
+import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
+  consultPhotoVisionUrl,
+  signConsultMessageAttachments,
   isConsultImageFile,
   isConsultPdfFile,
   isConsultPdfUrl,
@@ -239,13 +255,16 @@ import {
 import { useUiLocale } from "@/lib/ui-locale";
 import { stripVisibleMarkup } from "@/lib/strip-visible-markup";
 import { AssistantMessageWithSources } from "@/components/assistant-message-with-sources";
-import { FunctionalTestYesNo } from "@/components/functional-test-yes-no";
+import { FunctionalTestChatBlock } from "@/components/functional-test-chat-block";
 import {
   latestUnansweredFunctionalTests,
+  orientationOffersFunctionalTests,
+  reconstructFunctionalTestsSection,
   splitFunctionalTests,
 } from "@/lib/functional-test-answers";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 
@@ -376,8 +395,20 @@ function collectPhysioHighlightPhrases(
   return [...set].sort((a, b) => b.length - a.length);
 }
 
+function isPhysioHighlightPhrase(text: string, phrases: string[]): boolean {
+  const inner = stripVisibleMarkup(text).trim();
+  if (!inner || phrases.length === 0) return false;
+  return phrases.some((p) => p.toLowerCase() === inner.toLowerCase());
+}
+
+function assistantStrongClass(text: string, phrases: string[]): string {
+  return isPhysioHighlightPhrase(text, phrases)
+    ? "font-semibold text-slate-900"
+    : "font-bold text-blue-700";
+}
+
 function PhysioHighlight({ children }: { children: string }) {
-  return <strong className="font-bold text-inherit">{children}</strong>;
+  return <strong className="font-semibold text-slate-900">{children}</strong>;
 }
 
 function withPhysioHighlights(
@@ -419,8 +450,13 @@ function renderInlineText(text: string, phrases: string[], keyPrefix: string) {
   return withPhysioHighlights(inner, phrases, keyPrefix);
 }
 
-function renderAssistantContent(content: string, highlightPhrases: string[] = []) {
+function renderAssistantContent(
+  content: string,
+  highlightPhrases: string[] = [],
+  language: ConsultLocale = "es"
+) {
   const shownTestIds = new Set<string>();
+  let clinicIntroShown = false;
 
   return content.split("\n").map((line, li) => {
     const trimmed = line.trim();
@@ -433,8 +469,53 @@ function renderAssistantContent(content: string, highlightPhrases: string[] = []
       return null;
     }
 
+    if (isClinicSectionHeadingLine(trimmed)) {
+      clinicIntroShown = false;
+      return null;
+    }
+
+    const clinicLink = parseClinicRecommendLine(trimmed);
+    if (clinicLink) {
+      const showIntro = !clinicIntroShown;
+      if (showIntro) clinicIntroShown = true;
+      return (
+        <div key={li} className={li > 0 ? "mt-2" : undefined}>
+          {showIntro ? (
+            <p className="mb-2 text-sm font-semibold text-slate-800">
+              {clinicRecommendIntro(language)}
+            </p>
+          ) : null}
+          <Link
+            href={`/centro/${clinicLink.slug}`}
+            className="inline-flex w-full max-w-md flex-col items-start gap-0.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-left transition-colors hover:border-blue-300 hover:bg-blue-100"
+          >
+            <span className="text-sm font-semibold text-blue-800">
+              {clinicLink.label}
+            </span>
+            <span className="text-xs leading-snug text-blue-700/80">
+              {clinicLink.meta ||
+                (language === "en"
+                  ? "View profile and contact"
+                  : "Ver ficha y contactar")}
+            </span>
+          </Link>
+        </div>
+      );
+    }
+
+    const readaptLink = parseReadaptExerciseFromLine(trimmed);
+    if (readaptLink) {
+      return (
+        <div key={li} className={li > 0 ? "mt-2" : undefined}>
+          <ReadaptationExerciseCard link={readaptLink} />
+        </div>
+      );
+    }
+
     const headingMatch = /^(#{1,6})\s*(.+)$/.exec(trimmed);
-    const headingText = headingMatch?.[2] ?? null;
+    const headingText = headingMatch?.[2]
+      ? stripVisibleMarkup(headingMatch[2])
+      : null;
     const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
     const numberedText =
       headingText && /^\d+[.)]\s+\S/.test(headingText)
@@ -496,7 +577,9 @@ function renderAssistantContent(content: string, highlightPhrases: string[] = []
       return (
         <div key={li} className={li > 0 ? "mt-3" : undefined}>
           <p>
-            <strong className="font-bold text-blue-700">
+            <strong
+              className={assistantStrongClass(wholeBoldMatch[1], highlightPhrases)}
+            >
               {renderInlineText(
                 wholeBoldMatch[1],
                 highlightPhrases,
@@ -513,7 +596,7 @@ function renderAssistantContent(content: string, highlightPhrases: string[] = []
       return (
         <div key={li} className={li > 0 ? "mt-3" : undefined}>
           <p>
-            <strong className="font-bold text-blue-700">
+            <strong className={assistantStrongClass(headingText, highlightPhrases)}>
               {renderInlineText(headingText, highlightPhrases, `${li}-h`)}
             </strong>
           </p>
@@ -525,11 +608,14 @@ function renderAssistantContent(content: string, highlightPhrases: string[] = []
     const rendered = line.split(/(\*\*[^*]+\*\*)/).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         const inner = stripVisibleMarkup(part.slice(2, -2));
-        if (highlightPhrases.some((p) => p.toLowerCase() === inner.toLowerCase())) {
+        if (isPhysioHighlightPhrase(inner, highlightPhrases)) {
           return <PhysioHighlight key={i}>{inner}</PhysioHighlight>;
         }
         return (
-          <strong key={i} className="font-bold text-blue-700">
+          <strong
+            key={i}
+            className={assistantStrongClass(inner, highlightPhrases)}
+          >
             {withPhysioHighlights(inner, highlightPhrases, `${li}-${i}`)}
           </strong>
         );
@@ -553,7 +639,6 @@ function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string 
   return (
     msg.role === "assistant" &&
     msg.id !== WELCOME_ID &&
-    !msg.id.startsWith("q-intro") &&
     msg.id === revealingMessageId
   );
 }
@@ -681,6 +766,8 @@ export function ChatInterface({
   const [relatedFollowupActive, setRelatedFollowupActive] = useState(false);
   /** True once we've asked "any other question related to this injury?" */
   const [postGuidanceAsked, setPostGuidanceAsked] = useState(false);
+  /** After related Qs: waiting for yes/no on exercise / self-care offer. */
+  const [exerciseOfferActive, setExerciseOfferActive] = useState(false);
   /** Soft Nueva consulta button when the patient drifts to another topic. */
   const [showUnrelatedCta, setShowUnrelatedCta] = useState(false);
   /** Original complaint while we ask where on the arm/leg it hurts. */
@@ -696,6 +783,9 @@ export function ChatInterface({
   const [loading, setLoading] = useState(false);
   const [loadingModal, setLoadingModal] = useState(false);
   const [revealingMessageId, setRevealingMessageId] = useState<string | null>(null);
+  const revealingMessageIdRef = useRef<string | null>(null);
+  const revealQueueRef = useRef<Array<{ id: string; content: string }>>([]);
+  const submittingRef = useRef(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
   /** When true, keep the viewport pinned to the start of the revealing AI message. */
   const pinRevealToStartRef = useRef(false);
@@ -790,6 +880,8 @@ export function ChatInterface({
   } = useSpeechSynthesis({ language: consultLanguage });
   const speakRef = useRef(speak);
   speakRef.current = speak;
+  const speakingIdRef = useRef<string | null>(null);
+  speakingIdRef.current = speakingId;
 
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -799,6 +891,8 @@ export function ChatInterface({
   }, []);
 
   const resumeConversationListening = useCallback(() => {
+    if (speakingIdRef.current) return;
+    if (revealingMessageIdRef.current) return;
     conversationBusyRef.current = false;
     hearingTextRef.current = "";
     clearSilenceTimer();
@@ -808,6 +902,8 @@ export function ChatInterface({
       if (
         conversationModeRef.current &&
         !conversationBusyRef.current &&
+        !speakingIdRef.current &&
+        !revealingMessageIdRef.current &&
         phaseRef.current !== "questionnaire"
       ) {
         startMicRef.current();
@@ -908,7 +1004,8 @@ export function ChatInterface({
       (phase === "followup" || phase === "intro") &&
       conversationBusyRef.current &&
       !loading &&
-      !revealingMessageId
+      !revealingMessageId &&
+      !speakingId
     ) {
       // Orientation may still be arriving; the reveal/speak path resumes.
       // Fallback if nothing is coming:
@@ -917,17 +1014,19 @@ export function ChatInterface({
           conversationModeRef.current &&
           conversationBusyRef.current &&
           !loading &&
-          !revealingMessageId
+          !revealingMessageIdRef.current &&
+          !speakingIdRef.current
         ) {
           resumeConversationListening();
         }
-      }, 4000);
+      }, 8000);
       return () => window.clearTimeout(t);
     }
   }, [
     phase,
     loading,
     revealingMessageId,
+    speakingId,
     stopMic,
     clearSilenceTimer,
     resumeConversationListening,
@@ -1020,9 +1119,43 @@ export function ChatInterface({
   }, []);
 
   const beginAssistantReveal = useCallback((id: string, content: string) => {
+    if (revealingMessageIdRef.current && revealingMessageIdRef.current !== id) {
+      revealQueueRef.current.push({ id, content });
+      return;
+    }
     pinRevealToStartRef.current = isLongAssistantReply(content);
+    revealingMessageIdRef.current = id;
     setRevealingMessageId(id);
   }, []);
+
+  const finishAssistantReveal = useCallback(
+    (msgId: string) => {
+      if (revealingMessageIdRef.current !== msgId) return;
+      const next = revealQueueRef.current.shift();
+      if (next) {
+        pinRevealToStartRef.current = isLongAssistantReply(next.content);
+        revealingMessageIdRef.current = next.id;
+        setRevealingMessageId(next.id);
+      } else {
+        revealingMessageIdRef.current = null;
+        setRevealingMessageId(null);
+        pinRevealToStartRef.current = false;
+      }
+      updateScrollDownVisibility();
+    },
+    [updateScrollDownVisibility]
+  );
+
+  const followRevealScroll = useCallback(() => {
+    updateScrollDownVisibility();
+    if (pinRevealToStartRef.current) return;
+    const el = messagesRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distance < 140) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+    }
+  }, [updateScrollDownVisibility]);
 
   const scrollQuestionnaireToTop = useCallback(() => {
     requestAnimationFrame(() => {
@@ -1124,6 +1257,8 @@ export function ChatInterface({
     setOpeningConversation(true);
     setMobileSidebarOpen(false);
     setPhysioIntro(false);
+    revealQueueRef.current = [];
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setEvaluatedParts([]);
     setPendingParts([]);
@@ -1135,6 +1270,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setCaseImageUrl(null);
@@ -1149,6 +1285,8 @@ export function ChatInterface({
         .order("created_at", { ascending: true });
 
       let msgs = (data as Message[]) ?? [];
+
+      msgs = await signConsultMessageAttachments(msgs);
 
       if (linkedPhysio) {
         const { data: report } = await supabase
@@ -1228,6 +1366,8 @@ export function ChatInterface({
         : "Nueva consulta"
     );
     setMessages([]);
+    revealQueueRef.current = [];
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(false);
@@ -1243,6 +1383,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setInput("");
@@ -1512,6 +1653,7 @@ export function ChatInterface({
     } else if (part === "elbow") {
       setElbowAnswers(withElbowHintsFromText(contextText));
     }
+    const introId = `q-intro-${Date.now()}`;
     let intro = questionnaireIntroMessage(part, language, contextText);
     if (remainingCount > 0) {
       intro +=
@@ -1519,15 +1661,18 @@ export function ChatInterface({
           ? `\n\nYou mentioned more than one area — we'll go one by one. After this, ${remainingCount} more questionnaire${remainingCount === 1 ? "" : "s"} remain.`
           : `\n\nHas mencionado más de una zona: iremos **una a una**. Después de esta, quedan ${remainingCount} cuestionario${remainingCount === 1 ? "" : "s"} más.`;
     }
+    beginAssistantReveal(introId, intro);
     setMessages((prev) => [
       ...prev,
       {
-        id: `q-intro-${Date.now()}`,
+        id: introId,
         role: "assistant",
         content: intro,
       },
     ]);
     setPhase("questionnaire");
+    window.setTimeout(() => scrollQuestionnaireToTop(), 80);
+    window.setTimeout(() => scrollQuestionnaireToTop(), 320);
   }
 
   function startQuestionnaireQueue(
@@ -1552,6 +1697,7 @@ export function ChatInterface({
     setShowUnrelatedCta(false);
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     const closing = consultaFinishedCloseMessage(language);
     try {
       const { data: aiMsg } = await supabase
@@ -1692,6 +1838,7 @@ export function ChatInterface({
     options?: { askNow?: boolean; offeredTests?: boolean }
   ) {
     setRelatedFollowupActive(true);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     if (options?.askNow || options?.offeredTests === false) {
       await appendAssistantMessage(
@@ -1700,6 +1847,62 @@ export function ChatInterface({
       );
       setPostGuidanceAsked(true);
     }
+  }
+
+  function postConsultCaseSummaryForAi(): string {
+    const evaluations = partEvaluationsRef.current.map((e) => ({
+      label: e.label,
+      summary: e.summary,
+    }));
+    if (evaluations.length > 0) {
+      return buildPostConsultCaseSummary(evaluations, []);
+    }
+    const assistantTexts = messages
+      .filter(
+        (m) =>
+          m.role === "assistant" &&
+          !isConsultaFinishedCloseMessage(m.content),
+      )
+      .slice(-5)
+      .map((m) => m.content);
+    return buildPostConsultCaseSummary([], assistantTexts);
+  }
+
+  async function sendPostConsultExerciseOffer(conversationId: string) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callAI(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "offer",
+        message: caseSummary,
+        bodyArea,
+      },
+      consultLanguage,
+    );
+    await appendAssistantMessage(conversationId, answer);
+    setRelatedFollowupActive(false);
+    setExerciseOfferActive(true);
+    setPostGuidanceAsked(false);
+  }
+
+  async function sendPostConsultExercisePlan(
+    conversationId: string,
+    patientReply: string,
+  ) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callAI(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "plan",
+        message: caseSummary,
+        bodyArea,
+        description: patientReply,
+      },
+      consultLanguage,
+    );
+    await appendAssistantMessage(conversationId, answer);
   }
 
   async function appendMultiPartFinalSummary(
@@ -1798,13 +2001,9 @@ export function ChatInterface({
       setAwaitingNextPart(null);
       if (linkedPhysio) return;
       // Keep chat open for functional tests / related questions — do NOT finish here.
-      const offeredTests =
-        Boolean(completedSummary) &&
-        /\*\*Preguntas de valoración funcional\*\*|Functional assessment questions|\*\*Preguntas de valoraci[oó]n funcional\*\*/i.test(
-          completedSummary ?? ""
-        );
-      // Multi-zone resumen waits until the patient reports functional-test
-      // results for this last injury. If no tests were offered, send it now.
+      const offeredTests = orientationOffersFunctionalTests(completedSummary ?? "");
+      // Multi-zone resumen waits until the patient submits functional-test
+      // Sí/No answers. If no tests were offered, send it now.
       if (!offeredTests && evaluations.length >= 2) {
         await appendMultiPartFinalSummary(conversationId, evaluations, language);
       }
@@ -1831,6 +2030,7 @@ export function ChatInterface({
       .select("id, role, content, created_at")
       .single();
     if (aiMsg) {
+      beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
     }
   }
@@ -1841,7 +2041,7 @@ export function ChatInterface({
     imageUrl?: string | null,
     language: ConsultLanguage = consultLanguage
   ) {
-    const visionUrl = consultVisionUrl(imageUrl);
+    const visionUrl = await consultPhotoVisionUrl(imageUrl);
     let answer = triage.answer?.trim() ?? "";
 
     if (!answer) {
@@ -1883,9 +2083,6 @@ export function ChatInterface({
         title,
         user_id: user.id,
         kind: linkedPhysio ? "fisioterapia" : "consulta",
-        physio_id: linkedPhysio?.physio_id ?? null,
-        physio_name: linkedPhysio?.physio_name ?? null,
-        clinic_name: linkedPhysio?.clinic_name ?? null,
       })
       .select("id, title, created_at, physio_id, physio_name, clinic_name")
       .single();
@@ -1966,24 +2163,40 @@ export function ChatInterface({
       (pendingVoiceTextRef.current ?? input).trim() ||
       (attachedFile ? consultAttachmentCaption(attachedFile) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedFile) || loading || phase !== "intro" || physioIntro) {
+    if (
+      (!text && !attachedFile) ||
+      loading ||
+      submittingRef.current ||
+      revealingMessageIdRef.current ||
+      phase !== "intro" ||
+      physioIntro
+    ) {
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `user-${Date.now()}`;
+    submittingRef.current = true;
     setInput("");
     setLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = consultLanguage;
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -1999,7 +2212,7 @@ export function ChatInterface({
               intent: "general",
               answer: triage.answer?.trim() || decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2013,7 +2226,7 @@ export function ChatInterface({
               intent: "general",
               answer: decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2031,7 +2244,7 @@ export function ChatInterface({
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2047,7 +2260,7 @@ export function ChatInterface({
             intent: "general",
             answer: vagueArmClarifyMessage(lang),
           },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2082,18 +2295,19 @@ export function ChatInterface({
         return;
       }
 
-      await respondToInitialMessage(text, triage, attachmentUrl, lang);
+      await respondToInitialMessage(text, triage, attachmentPath, lang);
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       alert(err instanceof Error ? err.message : "Error al procesar tu mensaje.");
       if (conversationModeRef.current) resumeConversationListening();
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   }
 
   async function handleQuestionnaireSubmit() {
-    if (loading) return;
+    if (loading || submittingRef.current || revealingMessageIdRef.current) return;
 
     // Prefer refs so "Enviar ahora (urgencia)" can setState + submit with the same answers.
     const kneeAnswers = kneeAnswersRef.current;
@@ -2276,6 +2490,7 @@ export function ChatInterface({
       }
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setLoadingModal(true);
 
@@ -2388,8 +2603,7 @@ export function ChatInterface({
               : "No"
           : questionnairePart === "back"
             ? backAnswers.mecanismo.includes("Caída") ||
-              backAnswers.mecanismo.includes("Golpe directo") ||
-              backAnswers.mecanismo.includes("Levantamiento / esfuerzo")
+              backAnswers.mecanismo.includes("Golpe directo")
               ? `Sí: ${backAnswers.mecanismo.join(", ")}`
               : "No"
           : questionnairePart === "hip"
@@ -2422,9 +2636,7 @@ export function ChatInterface({
             ? detectBackRedFlags(backAnswers).urgent
           : questionnairePart === "hip"
             ? detectHipRedFlags(hipAnswers).urgent
-          : genericAnswers.rf_deformidad === "Sí" ||
-            genericAnswers.rf_fiebre === "Sí" ||
-            genericAnswers.rf_perdida_sensibilidad === "Sí";
+          : detectGenericRedFlags(genericAnswers).urgent;
     const contextForAi =
       (redFlagsUrgent
         ? `⚠️ PRIORIDAD ALTA — BANDERAS ROJAS DETECTADAS\n\n${symptomContext}`
@@ -2445,8 +2657,8 @@ export function ChatInterface({
           symptomContext:
             contextForAi +
             (redFlagsUrgent
-              ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas. Esta orientación es para el paciente. NO pidas pruebas funcionales ni hop. Prioriza HOSPITAL / URGENCIAS e imagen. NO digas que el informe ya se envió al fisio.`
-              : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`),
+              ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas / PRIORIDAD ALTA. Esta orientación es para el paciente. OMITÉ **Pruebas funcionales** y **Clínicas en AIKinora cerca de ti**. NO pidas hop ni «aplica hielo» como prueba. Hielo/reposo solo en **Qué hacer mientras tanto**. Prioriza HOSPITAL / URGENCIAS e imagen en **Qué debes hacer ahora**. Incluye **Hospitales / Urgencias cerca de ti**. NO digas que el informe ya se envió al fisio.`
+              : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** (movimientos Sí/No; NO mezclar hielo/reposo ahí). NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`),
           conversationHistory: [],
           ...(caseImageUrl ? { imageUrl: caseImageUrl } : {}),
         });
@@ -2479,9 +2691,6 @@ export function ChatInterface({
               title,
               user_id: user.id,
               kind: "fisioterapia",
-              physio_id: linkedPhysio.physio_id ?? null,
-              physio_name: linkedPhysio.physio_name ?? null,
-              clinic_name: linkedPhysio.clinic_name ?? null,
             })
             .select("id, title, created_at, physio_id, physio_name, clinic_name")
             .single();
@@ -2563,8 +2772,7 @@ export function ChatInterface({
         };
 
         const awaitingTests =
-          !redFlagsUrgent &&
-          (splitFunctionalTests(combined)?.tests.length ?? 0) >= 2;
+          !redFlagsUrgent && orientationOffersFunctionalTests(combined);
 
         // Only send (and show “report sent”) when there are no outstanding Sí/No tests.
         if (awaitingTests) {
@@ -2577,7 +2785,6 @@ export function ChatInterface({
             pendingPhysioReportRef.current
           );
           if (sent) {
-            setPhysioReportSentBanner(true);
             setLinkedPhysioLabel(
               physioLabel ||
                 [linkedPhysio.physio_name, linkedPhysio.clinic_name]
@@ -2628,6 +2835,7 @@ export function ChatInterface({
             beginAssistantReveal((thanksMsg as Message).id, (thanksMsg as Message).content);
             setMessages((prev) => [...prev, thanksMsg as Message]);
           }
+          setPhysioReportSentBanner(true);
           setPhase("complete");
         } else {
           setPhase("followup");
@@ -2702,9 +2910,6 @@ export function ChatInterface({
           title,
           user_id: user.id,
           kind: "consulta",
-          physio_id: null,
-          physio_name: null,
-          clinic_name: null,
         })
         .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
@@ -2765,6 +2970,13 @@ export function ChatInterface({
       setActiveId(conv.id);
       setActiveTitle(title);
       setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
+      if (!aiMsg) {
+        throw new Error(
+          consultLanguage === "en"
+            ? "Could not save the assistant reply. Please try again."
+            : "No se pudo guardar la respuesta. Inténtalo de nuevo."
+        );
+      }
       beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
       markPartEvaluated(questionnairePart);
@@ -2780,6 +2992,7 @@ export function ChatInterface({
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al analizar tu caso.");
     } finally {
+      submittingRef.current = false;
       setLoading(false);
       setLoadingModal(false);
     }
@@ -2790,21 +3003,37 @@ export function ChatInterface({
       (pendingVoiceTextRef.current ?? input).trim() ||
       (attachedFile ? consultAttachmentCaption(attachedFile) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedFile) || loading || phase !== "followup" || !activeId) {
+    if (
+      (!text && !attachedFile) ||
+      loading ||
+      submittingRef.current ||
+      revealingMessageIdRef.current ||
+      phase !== "followup" ||
+      !activeId
+    ) {
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `user-${Date.now()}`;
+    submittingRef.current = true;
     setInput("");
     setLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2817,7 +3046,7 @@ export function ChatInterface({
           conversation_id: activeId,
           role: "user",
           content: text,
-          image_url: attachmentUrl,
+          image_url: attachmentPath,
         });
         userSaved = true;
       }
@@ -2950,8 +3179,8 @@ export function ChatInterface({
               })),
             {
               role: "user" as const,
-              content: attachmentUrl
-                ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+              content: attachmentPath
+                ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
                 : text,
             },
           ].slice(-10);
@@ -3083,8 +3312,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3126,23 +3355,17 @@ export function ChatInterface({
           ));
 
       // Retry report send only when not waiting on Sí/No functional tests.
+      const outstandingFunctionalTests = latestUnansweredFunctionalTests(messages);
       if (
         linkedPhysio &&
         pendingPhysio &&
         !physioReportSentBanner &&
         !pendingPhysio.awaitFunctionalTests &&
-        !answeringPendingPhysioTests
+        !answeringPendingPhysioTests &&
+        !outstandingFunctionalTests
       ) {
-        const { sent, physioLabel } = await maybeGenerateAndSendPhysioReport(pendingPhysio);
+        const { sent } = await maybeGenerateAndSendPhysioReport(pendingPhysio);
         if (sent) {
-          setPhysioReportSentBanner(true);
-          setLinkedPhysioLabel(
-            physioLabel ||
-              [linkedPhysio.physio_name, linkedPhysio.clinic_name]
-                .filter(Boolean)
-                .join(" · ") ||
-              null
-          );
           pendingPhysioReportRef.current = null;
         }
       }
@@ -3169,7 +3392,6 @@ export function ChatInterface({
         });
 
         if (sent) {
-          setPhysioReportSentBanner(true);
           setLinkedPhysioLabel(
             physioLabel ||
               [linkedPhysio.physio_name, linkedPhysio.clinic_name]
@@ -3196,6 +3418,7 @@ export function ChatInterface({
           beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
           setMessages((prev) => [...prev, aiMsg as Message]);
         }
+        if (sent) setPhysioReportSentBanner(true);
         setPhase("complete");
         return;
       }
@@ -3229,11 +3452,7 @@ export function ChatInterface({
           ? patientFacingPartLabel(nextZone, initialMessage, consultLanguage)
           : null;
         if (moreZonesPending && nextZone) {
-          ensureAwaitingNextZone(
-            completedPart && completedPart !== "generic"
-              ? completedPart
-              : questionnairePart
-          );
+          ensureAwaitingNextZone(completedPart ?? questionnairePart);
         }
 
         const conversationHistory = [
@@ -3252,8 +3471,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3287,7 +3506,7 @@ export function ChatInterface({
         beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
 
-        if (!moreZonesPending) {
+        if (!moreZonesPending && partEvaluationsRef.current.length >= 2) {
           await appendMultiPartFinalSummary(
             activeId,
             partEvaluationsRef.current,
@@ -3301,6 +3520,30 @@ export function ChatInterface({
       }
 
       // After orientation / tests: related Qs stay here; unrelated → Nueva consulta CTA.
+      if (exerciseOfferActive && !linkedPhysio) {
+        await saveUserMessage();
+        setShowUnrelatedCta(false);
+        setLoading(true);
+        setLoadingModal(true);
+        try {
+          if (declinesExerciseOffer(text)) {
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          if (affirmsExerciseOffer(text)) {
+            await sendPostConsultExercisePlan(activeId, text);
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          await sendPostConsultExercisePlan(activeId, text);
+          await finishConsultaSession(activeId, consultLanguage);
+        } finally {
+          setLoading(false);
+          setLoadingModal(false);
+        }
+        return;
+      }
+
       if (relatedFollowupActive && !linkedPhysio) {
         await saveUserMessage();
         setShowUnrelatedCta(false);
@@ -3325,7 +3568,14 @@ export function ChatInterface({
           ) {
             return;
           }
-          await finishConsultaSession(activeId, consultLanguage);
+          setLoading(true);
+          setLoadingModal(true);
+          try {
+            await sendPostConsultExerciseOffer(activeId);
+          } finally {
+            setLoading(false);
+            setLoadingModal(false);
+          }
           return;
         }
 
@@ -3370,8 +3620,8 @@ export function ChatInterface({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
               : text,
           },
         ].slice(-10);
@@ -3428,8 +3678,8 @@ export function ChatInterface({
           })),
         {
           role: "user" as const,
-          content: attachmentUrl
-            ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl)}`
+          content: attachmentPath
+            ? `${text}\n${consultAttachmentHistoryNote(attachmentPath)}`
             : text,
         },
       ].slice(-10);
@@ -3450,12 +3700,21 @@ export function ChatInterface({
         .select("id, role, content")
         .single();
 
+      if (!aiMsg) {
+        throw new Error(
+          consultLanguage === "en"
+            ? "Could not save the assistant reply. Please try again."
+            : "No se pudo guardar la respuesta. Inténtalo de nuevo."
+        );
+      }
+
       beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       if (conversationModeRef.current) resumeConversationListening();
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   }
@@ -3463,6 +3722,8 @@ export function ChatInterface({
   function resetForNewFisioCodeLink() {
     setActiveId(null);
     setMessages([]);
+    revealQueueRef.current = [];
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(true);
@@ -3493,6 +3754,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setInput("");
@@ -3540,6 +3802,8 @@ export function ChatInterface({
     setActiveId(null);
     setActiveTitle("Nueva consulta");
     setMessages([]);
+    revealQueueRef.current = [];
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(true);
@@ -3570,6 +3834,7 @@ export function ChatInterface({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setInput("");
@@ -3794,20 +4059,28 @@ export function ChatInterface({
 
   useEffect(() => {
     if (!conversationMode || !conversationBusyRef.current) return;
-    if (loading || revealingMessageId) return;
+    if (loading || revealingMessageId || speakingId) return;
     const t = window.setTimeout(() => {
       if (
         conversationModeRef.current &&
         conversationBusyRef.current &&
         !loading &&
-        !revealingMessageId
+        !revealingMessageIdRef.current &&
+        !speakingIdRef.current
       ) {
         resumeConversationListening();
       }
-    }, 2800);
+    }, 8000);
     return () => window.clearTimeout(t);
-  }, [conversationMode, loading, revealingMessageId, resumeConversationListening]);
+  }, [
+    conversationMode,
+    loading,
+    revealingMessageId,
+    speakingId,
+    resumeConversationListening,
+  ]);
 
+  const chatBusy = loading || Boolean(revealingMessageId);
   return (
     <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-[var(--background)]">
       {mobileSidebarOpen && (
@@ -3871,7 +4144,7 @@ export function ChatInterface({
           <p className="flex-1 truncate text-[15px] font-semibold tracking-tight text-slate-900">{activeTitle}</p>
         </div>
 
-        {linkedPhysio && phase === "complete" ? null : linkedPhysio && physioReportSentBanner ? (
+        {linkedPhysio && phase === "complete" && physioReportSentBanner ? (
           <div className="shrink-0 border-b border-emerald-200 bg-emerald-50 px-4 py-3">
             <div className="mx-auto flex max-w-3xl items-start justify-between gap-3">
               <div>
@@ -4024,53 +4297,66 @@ export function ChatInterface({
                         <StreamingAssistantMessage
                           content={msg.content}
                           animate={shouldAnimateAssistantMessage(msg, revealingMessageId)}
-                          onRevealComplete={() => {
-                            if (revealingMessageId === msg.id) {
-                              setRevealingMessageId(null);
-                            }
-                            pinRevealToStartRef.current = false;
-                            updateScrollDownVisibility();
-                          }}
-                          onRevealTick={updateScrollDownVisibility}
+                          onRevealComplete={() => finishAssistantReveal(msg.id)}
+                          onRevealTick={followRevealScroll}
                         >
                           {(visibleText, isRevealing) => (
                             <>
                               <AssistantMessageWithSources
                                 content={visibleText}
                                 renderBody={(body) => {
-                                  const parsed = splitFunctionalTests(body);
-                                  const showButtons =
+                                  const pendingFunctionalForm =
+                                    awaitingFunctionalTests?.messageId === msg.id;
+                                  const parseSource = pendingFunctionalForm
+                                    ? msg.content
+                                    : body;
+                                  const parsed = splitFunctionalTests(parseSource);
+                                  const isActiveForm =
                                     Boolean(parsed) &&
-                                    awaitingFunctionalTests?.messageId === msg.id &&
-                                    !isRevealing;
-                                  if (!parsed || !showButtons) {
+                                    (parsed?.tests.length ?? 0) >= 2 &&
+                                    pendingFunctionalForm;
+
+                                  if (!parsed) {
                                     return (
                                       <div className="whitespace-pre-wrap break-words">
-                                        {renderAssistantContent(body, physioHighlightPhrases)}
+                                        {renderAssistantContent(
+                                          body,
+                                          physioHighlightPhrases,
+                                          consultLanguage
+                                        )}
                                       </div>
                                     );
                                   }
-                                  return (
-                                    <div className="whitespace-pre-wrap break-words">
-                                      {parsed.before
-                                        ? renderAssistantContent(parsed.before, physioHighlightPhrases)
-                                        : null}
-                                      <p className={parsed.before ? "mt-3" : undefined}>
-                                        <strong className="font-bold text-blue-700">
-                                          {parsed.heading}
-                                        </strong>
-                                      </p>
-                                      <FunctionalTestYesNo
-                                        tests={parsed.tests}
+
+                                  if (isActiveForm) {
+                                    return (
+                                      <FunctionalTestChatBlock
+                                        parsed={parsed}
                                         language={consultLanguage}
-                                        disabled={loading}
+                                        disabled={loading || Boolean(revealingMessageId)}
+                                        isRevealing={isRevealing}
                                         onSubmit={(text) =>
                                           sendVoiceTurnRef.current(text)
                                         }
+                                        onScrollTick={followRevealScroll}
+                                        renderMarkdown={(text) =>
+                                          renderAssistantContent(
+                                            text,
+                                            physioHighlightPhrases,
+                                            consultLanguage
+                                          )
+                                        }
                                       />
-                                      {parsed.after
-                                        ? renderAssistantContent(parsed.after, physioHighlightPhrases)
-                                        : null}
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="whitespace-pre-wrap break-words">
+                                      {renderAssistantContent(
+                                        reconstructFunctionalTestsSection(parsed),
+                                        physioHighlightPhrases,
+                                        consultLanguage
+                                      )}
                                     </div>
                                   );
                                 }}
@@ -4093,7 +4379,22 @@ export function ChatInterface({
                         <VoiceSpeakButton
                           supported={ttsSupported}
                           speaking={speakingId === msg.id}
-                          onToggle={() => toggleSpeak(msg.content, msg.id)}
+                          disabled={revealingMessageId === msg.id}
+                          onToggle={() => {
+                            if (revealingMessageId === msg.id) return;
+                            if (conversationModeRef.current) {
+                              stopMicRef.current();
+                              conversationBusyRef.current = true;
+                              speak(msg.content, msg.id, {
+                                onEnd: () => {
+                                  if (phaseRef.current === "questionnaire") return;
+                                  resumeConversationListening();
+                                },
+                              });
+                              return;
+                            }
+                            toggleSpeak(msg.content, msg.id);
+                          }}
                         />
                       ) : null}
                       {time ? (
@@ -4149,7 +4450,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4171,7 +4472,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4193,7 +4494,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4215,7 +4516,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4237,7 +4538,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4259,7 +4560,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4281,7 +4582,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4308,7 +4609,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4330,7 +4631,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4357,7 +4658,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={loading}
+                        disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4373,7 +4674,7 @@ export function ChatInterface({
                     <button
                       type="button"
                       onClick={handleQuestionnaireSubmit}
-                      disabled={loading}
+                      disabled={chatBusy}
                       className="btn-primary w-full"
                     >
                         {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
@@ -4453,7 +4754,7 @@ export function ChatInterface({
                 <button
                   type="button"
                   onClick={clearAttachment}
-                  disabled={loading}
+                  disabled={chatBusy}
                   className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800"
                 >
                   Quitar
@@ -4469,7 +4770,7 @@ export function ChatInterface({
                 <button
                   type="button"
                   onClick={() => photoInputRef.current?.click()}
-                  disabled={loading}
+                  disabled={chatBusy}
                   title="Adjuntar foto, PDF o archivo"
                   aria-label="Adjuntar foto, PDF o archivo"
                   className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
@@ -4491,7 +4792,7 @@ export function ChatInterface({
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    if (conversationMode) return;
+                    if (conversationMode || chatBusy) return;
                     stopMic();
                     onSend();
                   }
@@ -4500,11 +4801,13 @@ export function ChatInterface({
                   conversationMode
                     ? listening
                       ? "Te escucho…"
-                      : "Conversación activa…"
+                      : speakingId || revealingMessageId || loading
+                        ? "La IA está respondiendo…"
+                        : "Conversación activa…"
                     : inputPlaceholder
                 }
                 rows={1}
-                disabled={loading || conversationMode}
+                disabled={chatBusy || conversationMode}
                 className="chat-composer__input min-w-0 flex-1 basis-0"
               />
               <input
@@ -4526,14 +4829,14 @@ export function ChatInterface({
                 <VoiceConversationButton
                   supported={sttSupported}
                   active={conversationMode}
-                  disabled={loading && !conversationMode}
+                  disabled={chatBusy && !conversationMode}
                   onToggle={toggleConversationMode}
                 />
                 {!conversationMode ? (
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    disabled={loading}
+                    disabled={chatBusy}
                     title="Hacer foto"
                     aria-label="Hacer foto"
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
@@ -4548,11 +4851,12 @@ export function ChatInterface({
                   <button
                     type="button"
                     onClick={() => {
+                      if (chatBusy) return;
                       stopMic();
                       cancelSpeech();
                       onSend();
                     }}
-                    disabled={loading}
+                    disabled={chatBusy}
                     className="btn-send"
                     aria-label="Enviar"
                   >
@@ -4568,7 +4872,9 @@ export function ChatInterface({
                 {sttError ??
                   (listening
                     ? "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
-                    : "La IA está respondiendo…")}
+                    : speakingId || revealingMessageId || loading
+                      ? "La IA está respondiendo…"
+                      : "Conversación activa. Pulsa el micrófono para pausar.")}
               </p>
             )}
             <p className="mt-2 w-full text-center text-xs text-slate-400">

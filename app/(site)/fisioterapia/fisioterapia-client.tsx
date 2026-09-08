@@ -2,6 +2,7 @@
 
 import { ChatInterface } from "@/components/chat-interface";
 import { GuestNameGate } from "@/components/guest-name-gate";
+import { NavBackButton } from "@/components/nav-back-button";
 import { PhysioCodeGate } from "@/components/physio-code-gate";
 import { createClient } from "@/lib/supabase/client";
 import { guestNameStorageKey, isGuestUser } from "@/lib/guest-account";
@@ -100,7 +101,10 @@ export function FisioterapiaClient() {
     }
 
     return (
-      <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+      <div className="relative flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+        <div className="absolute left-4 top-3 z-10 sm:left-6">
+          <NavBackButton fallbackHref="/consulta" />
+        </div>
         <PhysioCodeGate
           onLinked={(physio) => {
             linkedPhysioCache = physio;

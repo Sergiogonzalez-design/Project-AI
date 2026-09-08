@@ -165,6 +165,40 @@
 
 No es un test único con nombre propio. Registrar: dolor articular IF post-torsión, hinchazón, ROM activo conservado (flexión/extensión IFP/IFD), **sin** déficit FDP/mallet dominante, estrés lateral IF si procede.
 
-**AI rule:** Esguince IF = dolor local + trauma + función activa parcialmente conservada. Si falla flexión activa IFP o extensión activa IFD → jersey/mallet, no esguince simple.
+**AI rule:** Esguince IF = dolor local + trauma + función activa parcialmente conservada. Si falla flexión activa IFP o extensión activa IFD → jersey/mallet, no esguince simple. Si hiperextensión + dolor **volar** IFP → placa volar primero.
 
 **Citation:** Práctica clínica estándar esguince IF; diferencial por tests activos FDP/IFD (ver arriba).
+
+---
+
+## CLUSTER / EXPLORACIÓN: PLACA VOLAR IFP
+
+**Purpose:** Orientar lesión de placa volar de la IFP tras hiperextensión (no test nominado con Sn/Sp publicados robustos).
+
+**Position / Procedure:** Historia de hiperextensión. Palpar cara **volar** IFP. Comprobar flexión y extensión **activas** (deben estar presentes; si falla flexión activa IFP → jersey, no placa volar aislada). Valorar aprensión a la hiperextensión. Comparar contralateral.
+
+**Positive (cluster):** dolor volar familiar + mecanismo de hiperextensión + activos conservados ± hematoma volar.
+
+**Clinical meaning:** Compatible con lesión de placa volar IFP. Puede asociar avulsión ósea → **RX** si hinchazón marcada, bloqueo o duda.
+
+**Limitations:** Sin métricas Sn/Sp inventables. Coexiste con esguince colateral. No sustituye imagen ante duda ósea.
+
+**Differential:** Jersey (FDP), mallet (IFD), colateral IF, contusión.
+
+**AI rule:** «Tras forzar el dedo hacia atrás, duele la cara de la palma de la articulación media y aún puedes flexionar y extender → compatible con placa volar. No lo llames esguince banal sin pensar en RX si hay mucha hinchazón. No inventes sensibilidad de un “test de placa volar”.»
+
+**Citation:** Revisiones de PIP volar plate injury (Hand Clinics / cirugía de mano). Mecanismo + localización volar + función activa; imagen según sospecha ósea.
+
+---
+
+## NOTA: STENER (UCL pulgar) — CRIBADO CLÍNICO
+
+**Purpose:** Alertar de posible **lesión completa de UCL** con interposición de la aponeurosis del adductor (Stener), que dificulta cicatrización espontánea.
+
+**Findings (cualitativos):** holgura marcada en estrés valgo MCP vs contralateral ± ausencia de tope firme ± masa/bump cubital en MCP. **No** inventar Sn/Sp del bump.
+
+**Clinical meaning:** Sospecha de UCL completa ± Stener → **valoración médica / eco-RMN**. Estrés doloroso sin holgura ≠ Stener.
+
+**AI rule:** «Tras forzar el pulgar hacia fuera, si “se abre” mucho respecto al otro lado o hay un bulto en el lado cubital de la base → compatible con lesión UCL grave / posible Stener. No digas Stener confirmado sin imagen. No trates como esguince leve.»
+
+**Citation:** Stener B. Displacement of the ruptured ulnar collateral ligament of the metacarpo-phalangeal joint of the thumb. *J Bone Joint Surg Br.* 1962. Ritting et al. *J Hand Surg Am* 2010; revisiones skier’s thumb — clínica + imagen; no cifras inventadas.

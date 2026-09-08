@@ -20,7 +20,8 @@ MIGRAÑA (patrón): unilateral pulsátil + náuseas/fotofobia ± aura → migra�
 
 TENSIONAL: presión bilateral + estrés/pantallas + sin RF → tensional ↑.
 
-CERVICOGÉNICA (cluster): occipital/nuca → sien + movimiento cervical empeora + provocación cervical familiar (Spurling/movilidad apoyan, no confirman) → cervicogénica ↑.
+CERVICOGÉNICA (cluster): occipital/nuca → sien + movimiento cervical empeora + provocación cervical familiar (FRT upper C / Spurling/movilidad apoyan, no confirman) → cervicogénica ↑.
+No FRT/Spurling si trauma no cribado, RA/Down o alarma vascular (SNOOP).
 
 COEXISTENCIA: cuello + cabeza permitido; integrar ambos cuestionarios sin mezclar hallazgos inventados.
 

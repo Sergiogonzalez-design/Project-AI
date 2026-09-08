@@ -19,9 +19,7 @@ export function useKeyboardOverlap() {
         Math.round(window.innerHeight - vv.height - vv.offsetTop)
       );
       setOverlap(next);
-      if (next > 0) {
-        window.scrollTo(0, 0);
-      }
+      // Do not window.scrollTo — patient chat owns an inner scroller; fighting it causes jitter.
     };
 
     update();

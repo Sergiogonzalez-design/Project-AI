@@ -76,11 +76,25 @@ No uses “contractura” como cajón de sastre.
 - Dedo que se traba en palma → trigger A1  
 - No flexiona IFP tras agarre → jersey (FDP) → médico  
 - No extiende punta → mallet → RX  
-- Pulgar en valgo (esquí) → UCL MCP, no De Quervain  
+- Hiperextensión IFP + dolor volar → placa volar (no «esguince banal»; RX si hinchazón/bloqueo)  
+- Pulgar en valgo (esquí) → UCL MCP, no De Quervain; holgura marcada ± bump → sospecha Stener → valoración/imagen  
 
 ---
 
-## 8. LENGUAJE OBLIGATORIO PARA LA IA
+## 8. LET / AGARRE vs ARTROSIS DE CODO
+
+| | LET / medial | OA de codo |
+|---|--------------|------------|
+| Sitio | Epicóndilo | Global / articular |
+| ROM | Suele conservarse | Pérdida vs contralateral |
+| Carga | Agarre, extensión/flexión muñeca | Apoyo, carga axial, crepitación |
+| Test especial | Cozen/Mill apoyan LET | **Ninguno** confirma OA; Cozen ≠ OA |
+
+**Trampa:** etiquetar «codo de tenista» un codo rígido de adulto/post-fractura.
+
+---
+
+## 9. LENGUAJE OBLIGATORIO PARA LA IA
 
 «Compatible con», «apoya el cluster», «no confirma», «cribado de cuello», «imagen si trauma/tabaquera», «derivación si rotura tendinosa o inestabilidad».
 

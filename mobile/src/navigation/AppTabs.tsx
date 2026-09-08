@@ -1,4 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import React from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppBackButton } from "../components/AppBackButton";
@@ -19,7 +21,7 @@ import { ProfileScreen } from "../screens/ProfileScreen";
 export type TabParamList = {
   AIInquiries: undefined;
   PhysioLink: undefined;
-  ClinicSearch: undefined;
+  ClinicSearch: { clinicSlug?: string } | undefined;
   Patients: undefined;
   PhysioConsult: undefined;
   ClinicConsult: undefined;
@@ -31,6 +33,20 @@ export type TabParamList = {
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
+
+function ClinicTeamBackButton() {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  return (
+    <AppBackButton onPress={() => navigation.navigate("ClinicHome")} />
+  );
+}
+
+function ConsultaBackButton() {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  return (
+    <AppBackButton onPress={() => navigation.navigate("AIInquiries")} />
+  );
+}
 
 type AppTabsProps = {
   isAdmin?: boolean;
@@ -94,9 +110,17 @@ export function AppTabs({
             options={{ title: t.headers.clinica }}
           />
           <Tab.Screen
+            name="ClinicSearch"
+            component={ClinicSearchScreen}
+            options={{ title: t.headers.buscar }}
+          />
+          <Tab.Screen
             name="ClinicTeam"
             component={ClinicTeamScreen}
-            options={{ title: "Equipo" }}
+            options={{
+              title: "Equipo",
+              headerLeft: () => <ClinicTeamBackButton />,
+            }}
           />
         </>
       ) : isPhysio ? (
@@ -111,6 +135,11 @@ export function AppTabs({
             component={PhysioConsultScreen}
             options={{ title: t.headers.consulta, headerLeft: () => null }}
           />
+          <Tab.Screen
+            name="ClinicSearch"
+            component={ClinicSearchScreen}
+            options={{ title: t.headers.buscar }}
+          />
         </>
       ) : (
         <>
@@ -122,7 +151,10 @@ export function AppTabs({
           <Tab.Screen
             name="PhysioLink"
             component={PhysioLinkScreen}
-            options={{ title: t.headers.fisioterapia, headerLeft: () => null }}
+            options={{
+              title: t.headers.fisioterapia,
+              headerLeft: () => <ConsultaBackButton />,
+            }}
           />
           <Tab.Screen
             name="ClinicSearch"

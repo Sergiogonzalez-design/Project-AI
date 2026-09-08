@@ -123,10 +123,11 @@ Agravantes referido S1:
 |---------|--------|
 | Fasciopatía plantar | Mañana, medial calcáneo, carga |
 | Fat pad heel | Centro talón, trauma, edad |
-| Túnel tarsiano | Ardor, medial tobillo, Tinel |
+| Túnel tarsiano | Ardor, medial tobillo, Tinel tarsal (`tinel-tarsal`) |
 | Stress calcáneo | Hop dolor óseo, night pain |
 | Aquiles insercional | Posterior calcáneo, heel-raise |
 | S1 / lumbar | SLR, lumbar, Windlass pobre |
+| Neuroma / metatarsalgia | Antepié; Mulder (`mulder`) si dolor interdigital |
 | Neuroma / metatarsalgia | Antepié, no talón |
 | DVT | Red flag pantorrilla edema |
 

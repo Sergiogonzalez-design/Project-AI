@@ -18,6 +18,7 @@ REGLAS:
 
 CLUSTER DE COMPATIBILIDAD (no inventar scores ni sensibilidad):
 dolor lateral + sensibilidad trocánter + dolor con carga monopodal + dolor con abducción resistida (familiar) → compatibilidad GTPS/glúteo ↑.
+Abducción resistida aislada ≠ rotura. Trendelenburg aislado ≠ GTPS confirmado.
 
 DIFERENCIAL OBLIGATORIO:
 - GTPS / glúteo medio-mínimo

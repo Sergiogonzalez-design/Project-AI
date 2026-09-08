@@ -160,7 +160,7 @@ DOLOR IRRADIADO A BRAZO (familiar)
 
 **Clasificación:** combinación clínica con respaldo en literatura; cuantos más componentes, más útil. No presentar como score validado con métricas inventadas.
 
-**Reglas:** Spurling negativo no excluye. No inventar nivel de raíz sin mapa de síntomas/déficit.
+**Reglas:** Spurling negativo no excluye. No inventar nivel de raíz sin mapa de síntomas/déficit. **Bakody** (mano en la cabeza alivia el brazo familiar) apoya el cluster; no confirma hernia.
 
 ### Cluster B — Cervicalgia mecánica
 
@@ -174,6 +174,18 @@ DOLOR LOCAL DE CUELLO
 
 **Regla:** no forzar hernia si el patrón es local y mecánico.
 
+### Cluster C — Cefalea cervicogénica / upper C (desde cuello)
+
+```
+CEFALEA UNILATERAL OCCIPITAL → SIEN
++ RELACIÓN CON MOVIMIENTO DE CUELLO
+± FRT (flexión–rotación) LIMITADO O FAMILIAR
+± SPURLING SI REPRODUCE LA CEFALEA (no solo brazo)
+→ CGH / UPPER C COMPATIBILITY ↑
+```
+
+**Cita:** Ogince 2007; JOSPT Neck Pain CPG. FRT no confirma CGH. No FRT si trauma/RA/Down/alarma vascular.
+
 ---
 
 ## 9. FUNCTIONAL TESTS (lenguaje paciente)
@@ -183,7 +195,9 @@ Preguntar en lenguaje cotidiano:
 - «¿Al inclinar o extender la cabeza se te va el dolor al brazo?»  
 - «¿Al girar la cabeza hacia el lado que duele tienes menos de medio giro?»  
 - «¿Cuando estiras el brazo se reproduce el hormigueo de siempre?»  
+- «¿Si pones la mano de ese brazo encima de la cabeza se te calma el hormigueo?» (Bakody)  
 - «¿Te cuesta mirar por encima del hombro al conducir?»  
+- «¿La cefalea empeora al mover el cuello o al mirar hacia abajo y girar?» (pista upper C / FRT en consulta)  
 - «¿Duermes peor si la almohada es alta o baja?»  
 - «¿Levantar el brazo por encima de la cabeza empeora el dolor del hombro o del cuello?»
 
@@ -196,9 +210,9 @@ Registrar **familiar pain** en cada respuesta.
 | Entidad | Claves |
 |---------|--------|
 | Cervicalgia mecánica | Dolor local, ROM mecánico, neural no familiar |
-| Radiculopatía cervical | Brazo, cluster Wainner, déficit/reflejo si consta |
+| Radiculopatía cervical | Brazo, cluster Wainner ± Bakody, déficit/reflejo si consta |
 | RCRSP / hombro | Dolor anterolateral, overhead, arc painful, Spurling no familiar |
-| Cefalea cervicogénica | Nuca → sien/ojo, palpación occipital/suboccipital |
+| Cefalea cervicogénica | Nuca → sien/ojo, FRT/movilidad upper C, palpación suboccipital |
 | TOS | Parestesias mano, posiciones overhead, diferenciar ULTT |
 | Mielopatía | Manos torpes, marcha, hiperreflexia, Lhermitte → urgente |
 | Whiplash / esguince | Trauma reciente, mecánico ± radicular |

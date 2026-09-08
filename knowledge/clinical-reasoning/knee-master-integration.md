@@ -195,7 +195,9 @@ Cluster LCA: mecanismo + pop + no continuar + hemartros + giving-way.
 | Medial LCM | Estrés en valgo | ¿Duele si empujan la rodilla hacia dentro? |
 | Menisco | Thessaly / McMurray (si seguro) | ¿Duele al girar con peso? ¿Se bloquea? |
 | Lateral LCL | Estrés en varo | ¿Duele si empujan hacia fuera? |
-| ITB | Noble / carrera-escaleras | ¿Siempre a la misma distancia o al bajar cuestas? |
+| ITB | Noble / Ober / carrera-escaleras | ¿Siempre a la misma distancia o al bajar cuestas? |
+| Rotuliana | Aprensión rotuliana | ¿Se te sale o se desplaza la rótula? |
+| PLC | Dial (± varo) | ¿Varo/hiperextensión + inestabilidad rotatoria? |
 | LCA | Lachman / pivot (si seguro) | Cluster historia primero; no tests agresivos en agudo |
 | LCP | Cajón posterior (si seguro) | ¿Golpe en espinilla con rodilla doblada? |
 

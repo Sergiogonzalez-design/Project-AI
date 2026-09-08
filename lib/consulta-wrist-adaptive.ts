@@ -3,6 +3,7 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "@/lib/consulta-timing";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 export const YES_NO = ["No", "Sí"] as const;
 
 export const WRIST_ONSET_OPTIONS = [
@@ -411,7 +412,12 @@ export function detectWristRedFlags(answers: WristAdaptiveAnswers): {
   for (const [k, label] of pairs) {
     if (answers[k] === "Sí") triggered.push(label);
   }
-  return { urgent: triggered.length > 0, triggered };
+  // All current wrist flags are hard emergencies.
+  const HARD_FLAG_IDS = pairs.map(([k]) => k);
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 export function getVisibleWristQuestions(answers: WristAdaptiveAnswers): WristQuestionDef[] {
@@ -483,9 +489,9 @@ function fmtList(items: string[]): string {
 export function formatWristAdaptive(answers: WristAdaptiveAnswers, introText?: string): string {
   const { urgent, triggered } = detectWristRedFlags(answers);
   const header = "Cuestionario adaptativo — Muñeca/mano";
-  const redFlagLine = urgent
-    ? `Banderas rojas: **SÍ** (${triggered.join(", ")})`
-    : "Banderas rojas: No detectadas";
+  const redFlagLine = formatRedFlagScreenBlock(urgent, triggered)
+    .filter(Boolean)
+    .join("\n");
 
   const mechanismBlock = [
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
@@ -826,7 +832,7 @@ export function localizeWristLabel(id: string, fallback: string, locale: Consult
 }
 export function localizeWristOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return WRIST_OPTION_EN[option] ?? option;
+  return WRIST_OPTION_EN[option as keyof typeof WRIST_OPTION_EN] ?? option;
 }
 export function localizeWristSection(section: string, locale: ConsultLocale): string {
   if (locale !== "en") return (WRIST_SECTION_LABELS as any)[section] ?? section;

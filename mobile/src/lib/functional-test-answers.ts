@@ -1,3 +1,12 @@
+import {
+  filterPatientSafeFunctionalTests,
+} from "./patient-safe-functional-tests";
+import {
+  isClinicRecommendLine,
+  isClinicRecommendPrompt,
+  isClinicSectionHeadingLine,
+} from "./consult-clinic-links";
+
 export type FunctionalTestItem = {
   n: number;
   /** May include a trailing ⟦media-id⟧ marker for demo video lookup. */
@@ -10,7 +19,7 @@ const SECTION_HEADING =
   /^(Pruebas funcionales|Functional tests|Preguntas\s*\/\s*pruebas para completar el informe|Questions\s*\/\s*tests to complete the report)\b/i;
 const NEXT_HEADING = /^(?:\*\*)([^*]+)(?:\*\*)\s*$/;
 const NUMBERED =
-  /^(?:[-*]\s+)?(?:\*\*)?(\d+)[.)](?:\*\*)?\s+(?:\*\*)?(.+?)(?:\*\*)?\s*$/;
+  /^(?:[-*]\s+)?(?:\*\*)?(\d+)[.)](?:\*\*)?\s+(.*)$/;
 
 function stripStars(text: string): string {
   return text.replace(/\*\*/g, "").trim();
@@ -44,32 +53,76 @@ export function splitFunctionalTests(content: string): {
   if (headingIndex === -1) return null;
 
   const tests: FunctionalTestItem[] = [];
-  let lastTestLine = -1;
+  let lastTestLine = headingIndex;
   for (let i = headingIndex + 1; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (!trimmed) continue;
+    if (isClinicSectionHeadingLine(trimmed)) {
+      break;
+    }
     const headingMatch = NEXT_HEADING.exec(trimmed);
     if (headingMatch && !SECTION_HEADING.test(headingMatch[1].trim())) {
       break;
     }
+    if (isClinicRecommendLine(trimmed)) {
+      break;
+    }
     const numbered = NUMBERED.exec(trimmed);
     if (numbered) {
+      const n = Number(numbered[1]);
+      const prompt = stripStars(numbered[2]);
+      if (isClinicRecommendPrompt(prompt)) {
+        break;
+      }
+      if (tests.length > 0 && n <= tests[tests.length - 1]!.n) {
+        break;
+      }
       lastTestLine = i;
       tests.push({
-        n: Number(numbered[1]),
-        prompt: stripStars(numbered[2]),
+        n,
+        prompt,
       });
     }
   }
 
-  if (tests.length < 2) return null;
-
+  const safe = filterPatientSafeFunctionalTests(
+    tests.filter((t) => !isClinicRecommendPrompt(t.prompt))
+  );
   return {
     before: lines.slice(0, headingIndex).join("\n").trimEnd(),
     heading,
-    tests,
+    tests: safe,
     after: lines.slice(lastTestLine + 1).join("\n").trim(),
   };
+}
+
+/** True when an orientation message includes patient Sí/No functional tests. */
+export function orientationOffersFunctionalTests(text: string): boolean {
+  const trimmed = text?.trim() ?? "";
+  if (!trimmed) return false;
+  const parsed = splitFunctionalTests(trimmed);
+  if (parsed && parsed.tests.length >= 2) return true;
+  return /\*\*Pruebas funcionales\*\*|\*\*Functional tests\*\*|^Pruebas funcionales\b|^Functional tests\b/m.test(
+    trimmed
+  );
+}
+
+/** Rebuild the section without clinician-named tests (safe to show as markdown). */
+export function reconstructFunctionalTestsSection(parsed: {
+  before: string;
+  heading: string;
+  tests: FunctionalTestItem[];
+  after: string;
+}): string {
+  const list = parsed.tests
+    .map((t) => `${t.n}. ${t.prompt.replace(/⟦[a-z0-9-]+⟧\s*$/i, "").trim()}`)
+    .join("\n");
+  const parts = [parsed.before];
+  if (parsed.tests.length > 0) {
+    parts.push(`**${parsed.heading}**`, list);
+  }
+  parts.push(parsed.after);
+  return parts.filter((p) => p && p.trim()).join("\n\n");
 }
 
 export function formatFunctionalTestAnswers(
@@ -102,7 +155,7 @@ export function latestUnansweredFunctionalTests(
     }
     if (msg.role !== "assistant") continue;
     const parsed = splitFunctionalTests(msg.content);
-    if (parsed) {
+    if (parsed && parsed.tests.length >= 2) {
       return {
         messageId: msg.id,
         tests: parsed.tests,
