@@ -17,6 +17,17 @@ function stripMarkdownStars(text: string) {
   return stripVisibleMarkup(text);
 }
 
+function isPhysioHighlightPhrase(text: string, phrases?: string[]): boolean {
+  const inner = stripMarkdownStars(text).trim();
+  if (!inner || !phrases?.length) return false;
+  return phrases.some((p) => p.toLowerCase() === inner.toLowerCase());
+}
+
+const physioNameBoldStyle = {
+  fontWeight: "700" as const,
+  color: Colors.text,
+};
+
 function splitHighlightParts(text: string, phrases?: string[]) {
   if (!text || !phrases?.length) return [{ text, highlight: false }];
   const present = phrases.filter(
@@ -45,11 +56,21 @@ function renderHighlighted(
   return parts.map((part, i) => (
     <Text
       key={`${keyPrefix}-${i}`}
-      style={part.highlight ? highlightStyle ?? style : undefined}
+      style={part.highlight ? physioNameBoldStyle : undefined}
     >
       {part.text}
     </Text>
   ));
+}
+
+function resolveBoldStyle(
+  text: string,
+  boldStyle: object | undefined,
+  highlightPhrases?: string[]
+) {
+  return isPhysioHighlightPhrase(text, highlightPhrases)
+    ? physioNameBoldStyle
+    : boldStyle;
 }
 
 function renderInlineBold(
@@ -75,9 +96,10 @@ function renderInlineBold(
     const plain = stripVisibleMarkup(isBold ? part.slice(2, -2) : part);
     if (!plain) return null;
     if (isBold) {
+      const resolvedBold = resolveBoldStyle(plain, boldStyle, highlightPhrases);
       return (
-        <Text key={`b${i}`} style={boldStyle}>
-          {renderHighlighted(plain, boldStyle, highlightPhrases, highlightStyle, `b${i}`)}
+        <Text key={`b${i}`} style={resolvedBold}>
+          {renderHighlighted(plain, resolvedBold, highlightPhrases, highlightStyle, `b${i}`)}
         </Text>
       );
     }

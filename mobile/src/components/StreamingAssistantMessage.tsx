@@ -13,6 +13,8 @@ type RevealCompleteMeta = { interrupted: boolean };
 type Props = {
   content: string;
   animate: boolean;
+  /** Show full text at once and fire onRevealComplete (instant mode). */
+  completeImmediately?: boolean;
   onRevealComplete?: (meta?: RevealCompleteMeta) => void;
   onRevealTick?: () => void;
   children: (visibleText: string, isRevealing: boolean) => React.ReactNode;
@@ -21,6 +23,7 @@ type Props = {
 export function StreamingAssistantMessage({
   content,
   animate,
+  completeImmediately = false,
   onRevealComplete,
   onRevealTick,
   children,
@@ -31,11 +34,24 @@ export function StreamingAssistantMessage({
   const onRevealCompleteRef = useRef(onRevealComplete);
   const onRevealTickRef = useRef(onRevealTick);
   const wasAnimatingRef = useRef(false);
+  const instantCompleteRef = useRef(false);
 
   useEffect(() => {
     onRevealCompleteRef.current = onRevealComplete;
     onRevealTickRef.current = onRevealTick;
   });
+
+  useEffect(() => {
+    if (!completeImmediately) {
+      instantCompleteRef.current = false;
+      return;
+    }
+    if (instantCompleteRef.current) return;
+    instantCompleteRef.current = true;
+    wasAnimatingRef.current = false;
+    setVisibleCount(chunks.length);
+    onRevealCompleteRef.current?.({ interrupted: false });
+  }, [completeImmediately, chunks.length]);
 
   useEffect(() => {
     let mounted = true;
@@ -65,7 +81,7 @@ export function StreamingAssistantMessage({
       }
     };
 
-    if (!animate) {
+    if (!animate || completeImmediately) {
       wasAnimatingRef.current = false;
       setVisibleCount(chunks.length);
       return clear;
@@ -114,10 +130,11 @@ export function StreamingAssistantMessage({
         finish(true);
       }
     };
-  }, [animate, content, chunks, reduceMotion]);
+  }, [animate, completeImmediately, content, chunks, reduceMotion]);
 
   const visibleText = visibleTextFromChunks(content, chunks, visibleCount);
-  const isRevealing = animate && visibleCount < chunks.length;
+  const isRevealing =
+    animate && !completeImmediately && visibleCount < chunks.length;
 
   return <View>{children(visibleText, isRevealing)}</View>;
 }

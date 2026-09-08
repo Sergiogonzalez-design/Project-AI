@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -40,12 +41,47 @@ import type { TabParamList } from "../navigation/AppTabs";
 
 type Tab = "explorar" | "guardadas" | "novedades";
 
+function ExploreSearchField({
+  value,
+  onChangeText,
+  placeholder,
+  onSearch,
+}: {
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  onSearch: () => void;
+}) {
+  return (
+    <View style={styles.searchFieldRow}>
+      <TextInput
+        style={styles.searchInput}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={Colors.textLight}
+        returnKeyType="search"
+        onSubmitEditing={onSearch}
+      />
+      <Pressable
+        style={styles.searchFieldBtn}
+        onPress={onSearch}
+        accessibilityRole="button"
+        accessibilityLabel="Buscar"
+      >
+        <Ionicons name="search" size={20} color="#fff" />
+      </Pressable>
+    </View>
+  );
+}
+
 export function ClinicSearchScreen() {
   const route = useRoute<RouteProp<TabParamList, "ClinicSearch">>();
   const navigation =
     useNavigation<BottomTabNavigationProp<TabParamList, "ClinicSearch">>();
   const [tab, setTab] = useState<Tab>("explorar");
-  const [query, setQuery] = useState("");
+  const [name, setName] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [city, setCity] = useState("");
   const [results, setResults] = useState<ClinicSearchCard[]>([]);
   const [favorites, setFavorites] = useState<ClinicSearchCard[]>([]);
@@ -65,13 +101,14 @@ export function ClinicSearchScreen() {
     setLoading(true);
     setError(null);
     const { data, error: err } = await supabase.rpc("clinic_search", {
-      p_query: query.trim(),
+      p_name: name.trim(),
+      p_specialty: specialty.trim(),
       p_city: city.trim(),
     });
     if (err) setError(err.message);
     else setResults((data as ClinicSearchCard[]) ?? []);
     setLoading(false);
-  }, [city, query]);
+  }, [city, name, specialty]);
 
   const loadFavorites = useCallback(async () => {
     setLoading(true);
@@ -139,23 +176,24 @@ export function ClinicSearchScreen() {
 
       {tab === "explorar" ? (
         <View style={styles.searchRow}>
-          <TextInput
-            style={styles.input}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Nombre o especialidad"
-            placeholderTextColor={Colors.textLight}
+          <ExploreSearchField
+            value={name}
+            onChangeText={setName}
+            placeholder="Nombre"
+            onSearch={() => void loadExplore()}
           />
-          <TextInput
-            style={styles.input}
+          <ExploreSearchField
+            value={specialty}
+            onChangeText={setSpecialty}
+            placeholder="Especialidad"
+            onSearch={() => void loadExplore()}
+          />
+          <ExploreSearchField
             value={city}
             onChangeText={setCity}
             placeholder="Ciudad"
-            placeholderTextColor={Colors.textLight}
+            onSearch={() => void loadExplore()}
           />
-          <Pressable style={styles.searchBtn} onPress={() => void loadExplore()}>
-            <Text style={styles.searchBtnText}>Buscar</Text>
-          </Pressable>
         </View>
       ) : null}
 
@@ -499,6 +537,26 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   tabTextOn: { color: "#fff" },
   searchRow: { gap: 8, marginBottom: 12 },
+  searchFieldRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  searchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: Colors.text,
+    backgroundColor: Colors.surface,
+  },
+  searchFieldBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   input: {
     borderWidth: 1,
     borderColor: Colors.border,
@@ -509,13 +567,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
     backgroundColor: Colors.surface,
   },
-  searchBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  searchBtnText: { color: "#fff", fontWeight: "700" },
   card: {
     borderWidth: 1,
     borderColor: Colors.border,

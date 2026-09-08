@@ -1047,7 +1047,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     justifyContent: "flex-end",
   },
-  coverImage: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  coverImage: { ...StyleSheet.absoluteFill, width: "100%", height: "100%" },
   coverPlaceholder: {
     flex: 1,
     alignItems: "center",

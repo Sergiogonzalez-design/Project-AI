@@ -153,12 +153,6 @@ export function AthleteProfileSection() {
     if (!weightKg || Number(weightKg) < 20) return "Introduce tu peso.";
     if (!dominantHand) return "Selecciona tu mano dominante.";
     if (!dominantFoot) return "Selecciona tu pie dominante.";
-    if (!primarySport.trim()) return "Indica tu deporte principal.";
-    if (!competitiveLevel) return "Selecciona tu nivel competitivo.";
-    if (!sessionsPerWeek) return "Indica tus sesiones por semana.";
-    if (!hoursPerWeek) return "Indica tus horas por semana.";
-    if (!currentSeason) return "Selecciona la temporada actual.";
-    if (performanceGoals.length === 0) return "Selecciona al menos un objetivo.";
     return null;
   }
 
@@ -180,13 +174,18 @@ export function AthleteProfileSection() {
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
         city: city.trim() || null,
-        primary_sport: normalizeSportsInput(primarySport),
-        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
-        competitive_level: competitiveLevel,
-        sessions_per_week: Number(sessionsPerWeek),
-        hours_per_week: Number(hoursPerWeek),
-        current_season: currentSeason,
-        performance_goals: performanceGoals,
+        primary_sport: primarySport.trim()
+          ? normalizeSportsInput(primarySport)
+          : null,
+        sport_position:
+          primarySport.trim() && sportHasPosition(primarySport)
+            ? sportPosition.trim() || null
+            : null,
+        competitive_level: competitiveLevel || null,
+        sessions_per_week: sessionsPerWeek.trim() ? Number(sessionsPerWeek) : null,
+        hours_per_week: hoursPerWeek.trim() ? Number(hoursPerWeek) : null,
+        current_season: currentSeason || null,
+        performance_goals: performanceGoals.length > 0 ? performanceGoals : null,
       };
 
       const { error: saveErr } = await supabase
@@ -365,7 +364,7 @@ export function AthleteProfileSection() {
           <div className="space-y-4 border-t border-slate-100 pt-6">
             <p className="text-sm font-bold text-slate-700">Perfil deportivo</p>
             <div>
-              <label className={labelClass}>¿Qué deporte practicas?</label>
+              <label className={labelClass}>¿Qué deporte practicas? (opcional)</label>
               <input
                 type="text"
                 value={primarySport}
@@ -394,25 +393,25 @@ export function AthleteProfileSection() {
               </div>
             )}
             <div>
-              <label className={labelClass}>Nivel competitivo</label>
+              <label className={labelClass}>Nivel competitivo (opcional)</label>
               <ChipGroup options={COMPETITIVE_LEVELS} value={competitiveLevel} onChange={setCompetitiveLevel} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Sesiones / semana</label>
+                <label className={labelClass}>Sesiones / semana (opcional)</label>
                 <input type="number" value={sessionsPerWeek} onChange={(e) => setSessionsPerWeek(e.target.value)} className={inputClass} />
               </div>
               <div>
-                <label className={labelClass}>Horas / semana</label>
+                <label className={labelClass}>Horas / semana (opcional)</label>
                 <input type="number" value={hoursPerWeek} onChange={(e) => setHoursPerWeek(e.target.value)} className={inputClass} />
               </div>
             </div>
             <div>
-              <label className={labelClass}>Temporada actual</label>
+              <label className={labelClass}>Temporada actual (opcional)</label>
               <ChipGroup options={CURRENT_SEASONS} value={currentSeason} onChange={setCurrentSeason} />
             </div>
             <div>
-              <label className={labelClass}>Objetivos de rendimiento</label>
+              <label className={labelClass}>Objetivos de rendimiento (opcional)</label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {PERFORMANCE_GOALS.map((goal) => (
                   <button

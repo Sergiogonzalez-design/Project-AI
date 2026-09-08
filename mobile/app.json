@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F8FAFF"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.physioguidea.app",
@@ -116,7 +111,8 @@
           ]
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-asset"
     ],
     "extra": {
       "eas": {

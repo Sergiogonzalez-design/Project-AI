@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: "700",
     color: Colors.primary,
+    flexShrink: 1,
   },
   row: { flexDirection: "row", gap: 8 },
   send: {

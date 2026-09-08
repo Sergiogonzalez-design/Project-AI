@@ -33,8 +33,9 @@ type Props = {
 
 export function SignupScreen({ onSwitch, onSignedUp }: Props) {
   const { t, locale } = useI18n();
-  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
+  const [accountType, setAccountType] = useState<"patient" | "physio" | "clinic">("patient");
   const [clinicInvite, setClinicInvite] = useState("");
+  const [inviteClinicName, setInviteClinicName] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -53,6 +54,26 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       setConvertingGuest(isGuestUser(data.user));
     });
   }, []);
+
+  useEffect(() => {
+    const key = clinicInvite.trim();
+    if (accountType !== "physio" || !key) {
+      setInviteClinicName(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      void supabase.rpc("clinic_lookup_invite", { p_token: key }).then(({ data }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.clinic_name) {
+          setInviteClinicName(String(row.clinic_name));
+          if (row.email) setEmail(String(row.email));
+        } else {
+          setInviteClinicName(null);
+        }
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [accountType, clinicInvite]);
 
   async function handleSignup() {
     setError(null);
@@ -76,12 +97,8 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       );
       return;
     }
-    if (accountType === "physio" && !clinicInvite.trim()) {
-      setError(
-        locale === "en"
-          ? "Physio accounts need a clinic invite code."
-          : "Las cuentas de fisioterapeuta necesitan un código de invitación de la clínica."
-      );
+    if (accountType === "physio" && clinicInvite.trim() && !inviteClinicName) {
+      setError("Código de clínica no válido o caducado.");
       return;
     }
     setLoading(true);
@@ -101,8 +118,9 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
         body: JSON.stringify({
           email: emailNorm,
           password,
+          accountType: converting ? "patient" : accountType,
           clinicInvite:
-            !converting && accountType === "physio"
+            !converting && accountType === "physio" && clinicInvite.trim()
               ? clinicInvite.trim()
               : undefined,
         }),
@@ -116,13 +134,19 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       if (converting) {
         await supabase.auth.signOut({ scope: "local" });
       }
-      onSignedUp?.(converting || accountType !== "physio" ? "patient" : "physio");
+      onSignedUp?.(converting ? "patient" : accountType);
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: emailNorm,
         password,
       });
       if (signError) {
         setError(signError.message);
+        return;
+      }
+      if (!converting && accountType === "physio" && clinicInvite.trim()) {
+        await supabase.rpc("clinic_claim_invite", {
+          p_token: clinicInvite.trim(),
+        });
       }
     } finally {
       setLoading(false);
@@ -194,32 +218,48 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
                 Fisio
               </Text>
             </Pressable>
+            <Pressable
+              style={[styles.roleOption, accountType === "clinic" && styles.roleOptionActive]}
+              onPress={() => setAccountType("clinic")}
+            >
+              <Text
+                style={[
+                  styles.roleOptionText,
+                  accountType === "clinic" && styles.roleOptionTextActive,
+                ]}
+              >
+                Clínica
+              </Text>
+            </Pressable>
           </View>
+          {accountType === "clinic" ? (
+            <Text style={styles.clinicHint}>
+              El plan de clínica será de pago más adelante. Ahora puedes configurar el espacio.
+            </Text>
+          ) : null}
           {accountType === "physio" ? (
             <>
               <Text style={styles.clinicHint}>
-                {locale === "en"
-                  ? "Physio accounts are created with a clinic invite. Paste the code you received."
-                  : "Las cuentas de fisioterapeuta se crean con invitación. Pega el código que te envió la clínica."}
+                Opcional: introduce el código de alta ahora, o más tarde en Clínica / al iniciar
+                sesión.
               </Text>
               <View style={{ height: 8 }} />
               <AuthTextField
-                label={locale === "en" ? "Clinic invite code" : "Código de invitación"}
-                placeholder="ABC123"
+                label="Código de clínica (opcional)"
+                placeholder="Ej. AB12CD"
                 value={clinicInvite}
-                onChangeText={setClinicInvite}
+                onChangeText={(v) => setClinicInvite(v.toUpperCase())}
                 editable={!loading}
                 autoCapitalize="characters"
                 autoCorrect={false}
               />
+              {inviteClinicName ? (
+                <Text style={styles.inviteOk}>Clínica: {inviteClinicName}</Text>
+              ) : clinicInvite.trim() ? (
+                <Text style={styles.clinicHint}>Comprobando código…</Text>
+              ) : null}
             </>
-          ) : (
-            <Text style={styles.clinicHint}>
-              {locale === "en"
-                ? "Clinic accounts are created by invitation. If you are a professional, ask your clinic for access."
-                : "Las cuentas de clínica se crean con invitación. Si eres profesional, pide acceso a tu clínica."}
-            </Text>
-          )}
+          ) : null}
           <View style={{ height: 12 }} />
             </>
           )}

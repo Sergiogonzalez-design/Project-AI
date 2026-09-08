@@ -173,10 +173,10 @@ export function FunctionalTestYesNo({
               className="questionnaire-question-enter"
               style={{ animationDelay: `${Math.min(index, 6) * 32}ms` }}
             >
-              <p className="text-sm text-neutral-900">
-                <strong className="font-bold text-blue-700">
+              <p className="break-words text-sm leading-relaxed text-neutral-900">
+                <span className="block break-words font-bold text-blue-700">
                   {test.n}. {prompt}
-                </strong>
+                </span>
               </p>
               {showMedia ? <ClinicalTestMediaBlock test={showMedia} /> : null}
               <div className="mt-2 flex gap-2">

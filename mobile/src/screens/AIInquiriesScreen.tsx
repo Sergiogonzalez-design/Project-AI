@@ -44,6 +44,7 @@ import { stripVisibleMarkup } from "../lib/strip-visible-markup";
 import { FunctionalTestChatBlock } from "../components/FunctionalTestChatBlock";
 import {
   latestUnansweredFunctionalTests,
+  orientationOffersFunctionalTests,
   reconstructFunctionalTestsSection,
   splitFunctionalTests,
 } from "../lib/functional-test-answers";
@@ -55,6 +56,7 @@ import { AppBurgerMenu } from "../components/AppBurgerMenu";
 import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
 import { ScrollToBottomButton } from "../components/ScrollToBottomButton";
+import { ASSISTANT_REVEAL_ENABLED } from "../lib/assistant-reveal";
 import { StreamingAssistantMessage } from "../components/StreamingAssistantMessage";
 import { TypingIndicator } from "../components/TypingIndicator";
 import { bodyPartLabel, type BodyPartId } from "../lib/body-parts";
@@ -395,6 +397,27 @@ function splitHighlightParts(text: string, phrases?: string[]) {
   }));
 }
 
+function isPhysioHighlightPhrase(text: string, phrases?: string[]): boolean {
+  const inner = stripVisibleMarkup(text).trim();
+  if (!inner || !phrases?.length) return false;
+  return phrases.some((p) => p.toLowerCase() === inner.toLowerCase());
+}
+
+const physioNameBoldStyle = {
+  fontWeight: "700" as const,
+  color: Colors.text,
+};
+
+function resolveBoldStyle(
+  text: string,
+  boldStyle: object | undefined,
+  highlightPhrases?: string[]
+) {
+  return isPhysioHighlightPhrase(text, highlightPhrases)
+    ? physioNameBoldStyle
+    : boldStyle;
+}
+
 function BoldText({ text, style, boldStyle, highlightPhrases, highlightStyle }: {
   text: string;
   style?: object;
@@ -437,18 +460,21 @@ function BoldText({ text, style, boldStyle, highlightPhrases, highlightStyle }: 
               if (!inner) return null;
               const chunks = splitHighlightParts(inner, highlightPhrases);
               if (chunks.length === 1 && !chunks[0].highlight) {
+                const resolvedBold = isBold
+                  ? resolveBoldStyle(inner, boldStyle, highlightPhrases)
+                  : undefined;
                 return (
-                  <Text key={i} style={isBold ? [style, boldStyle ?? { fontWeight: "700" }] : undefined}>
+                  <Text key={i} style={isBold ? [style, resolvedBold ?? { fontWeight: "700" }] : undefined}>
                     {chunks[0].text}
                   </Text>
                 );
               }
               return (
-                <Text key={i} style={isBold ? [style, boldStyle ?? { fontWeight: "700" }] : undefined}>
+                <Text key={i} style={isBold ? [style, resolveBoldStyle(inner, boldStyle, highlightPhrases) ?? { fontWeight: "700" }] : undefined}>
                   {chunks.map((chunk, ci) => (
                     <Text
                       key={ci}
-                      style={chunk.highlight ? highlightStyle : undefined}
+                      style={chunk.highlight ? physioNameBoldStyle : undefined}
                     >
                       {chunk.text}
                     </Text>
@@ -474,6 +500,7 @@ function titleFromText(text: string): string {
 }
 
 function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string | null) {
+  if (!ASSISTANT_REVEAL_ENABLED) return false;
   return (
     msg.role === "assistant" &&
     msg.id !== WELCOME_ID &&
@@ -856,11 +883,19 @@ export function AIInquiriesScreen({
     }
   }, []);
 
-  const beginAssistantReveal = useCallback((id: string, content: string) => {
-    pinRevealToStartRef.current = isLongAssistantReply(content);
-    revealingMessageIdRef.current = id;
-    setRevealingMessageId(id);
-  }, []);
+  const beginAssistantReveal = useCallback(
+    (id: string, content: string) => {
+      revealingMessageIdRef.current = id;
+      setRevealingMessageId(id);
+      if (!ASSISTANT_REVEAL_ENABLED) {
+        pinRevealToStartRef.current = false;
+        scrollToBottomAfterPaint();
+        return;
+      }
+      pinRevealToStartRef.current = isLongAssistantReply(content);
+    },
+    [scrollToBottomAfterPaint]
+  );
 
   const scrollQuestionnaireToTop = useCallback(() => {
     requestAnimationFrame(() => {
@@ -880,7 +915,7 @@ export function AIInquiriesScreen({
   );
 
   useEffect(() => {
-    if (!revealingMessageId) return;
+    if (!ASSISTANT_REVEAL_ENABLED || !revealingMessageId) return;
     if (pinRevealToStartRef.current) {
       requestAnimationFrame(() => scrollToMessageStart(revealingMessageId, false));
       const t1 = setTimeout(() => scrollToMessageStart(revealingMessageId, false), 80);
@@ -1658,7 +1693,11 @@ export function AIInquiriesScreen({
           ? `\n\nYou mentioned more than one area — we'll go one by one. After this, ${remainingCount} more questionnaire${remainingCount === 1 ? "" : "s"} remain.`
           : `\n\nHas mencionado más de una zona: iremos **una a una**. Después de esta, quedan ${remainingCount} cuestionario${remainingCount === 1 ? "" : "s"} más.`;
     }
-    beginAssistantReveal(introId, intro);
+    // Questionnaire UI renders assistant text without StreamingAssistantMessage,
+    // so do not set revealingMessageId — it would block handleQuestionnaireSubmit.
+    revealingMessageIdRef.current = null;
+    setRevealingMessageId(null);
+    pinRevealToStartRef.current = false;
     setMessages((prev) => [
       ...prev,
       {
@@ -2000,14 +2039,9 @@ export function AIInquiriesScreen({
       setPendingParts([]);
       setAwaitingNextPart(null);
       if (linkedPhysio) return;
-      const offeredTests =
-        Boolean(completedSummary) &&
-        /\*\*Preguntas de valoración funcional\*\*|Functional assessment questions|\*\*Preguntas de valoraci[oó]n funcional\*\*/i.test(
-          completedSummary ?? ""
-        );
-      // Multi-zone resumen waits until the patient reports functional-test
-      // results for this last injury (see reportsFunctionalTestResults path).
-      // If this orientation did not offer tests, send the resumen now.
+      const offeredTests = orientationOffersFunctionalTests(completedSummary ?? "");
+      // Multi-zone resumen waits until the patient submits functional-test
+      // Sí/No answers. If no tests were offered, send it now.
       if (!offeredTests && evaluations.length >= 2) {
         await appendMultiPartFinalSummary(conversationId, evaluations, language);
       }
@@ -2183,7 +2217,8 @@ export function AIInquiriesScreen({
 
   async function handleQuestionnaireSubmit() {
     setFormError(null);
-    if (chatLoading || submittingRef.current || revealingMessageIdRef.current) return;
+    if (chatLoading || submittingRef.current) return;
+    if (revealingMessageIdRef.current && phaseRef.current !== "questionnaire") return;
 
     // Prefer refs so "Enviar ahora (urgencia)" can setState + submit with the same answers.
     const kneeAnswers = kneeAnswersRef.current;
@@ -2701,8 +2736,7 @@ export function AIInquiriesScreen({
         dismissQuestionnaireLoading();
 
         const awaitingTests =
-          !redFlagsUrgent &&
-          (splitFunctionalTests(combined)?.tests.length ?? 0) >= 2;
+          !redFlagsUrgent && orientationOffersFunctionalTests(combined);
 
         // Only send (and show “report sent”) when there are no outstanding Sí/No tests.
         if (awaitingTests) {
@@ -2716,9 +2750,8 @@ export function AIInquiriesScreen({
             const reportParams = pendingPhysioReportRef.current;
             if (!reportParams) return;
             const sent = await maybeGenerateAndSendPhysioReport(reportParams);
+            pendingPhysioReportRef.current = null;
             if (sent) {
-              setPhysioReportSentBanner(true);
-              pendingPhysioReportRef.current = null;
               const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
                 guest: guestMode,
                 language: locale,
@@ -2739,6 +2772,7 @@ export function AIInquiriesScreen({
                 );
                 setMessages((prev) => [...prev, thanksMsg as Message]);
               }
+              setPhysioReportSentBanner(true);
               setPhase("complete");
             } else {
               setPhase("followup");
@@ -3254,16 +3288,17 @@ export function AIInquiriesScreen({
           ));
 
       // Retry report send only when not waiting on Sí/No functional tests.
+      const outstandingFunctionalTests = latestUnansweredFunctionalTests(messages);
       if (
         linkedPhysio &&
         pendingPhysio &&
         !physioReportSentBanner &&
         !pendingPhysio.awaitFunctionalTests &&
-        !answeringPendingPhysioTests
+        !answeringPendingPhysioTests &&
+        !outstandingFunctionalTests
       ) {
         const sent = await maybeGenerateAndSendPhysioReport(pendingPhysio);
         if (sent) {
-          setPhysioReportSentBanner(true);
           pendingPhysioReportRef.current = null;
         }
       }
@@ -3288,7 +3323,6 @@ export function AIInquiriesScreen({
           symptomContext: pendingPhysio.symptomContext + functionalBlock,
           patientSummary: pendingPhysio.patientSummary + functionalBlock,
         });
-        if (sent) setPhysioReportSentBanner(true);
 
         const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
           guest: guestMode,
@@ -3307,6 +3341,7 @@ export function AIInquiriesScreen({
           beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
           setMessages((prev) => [...prev, aiMsg as Message]);
         }
+        if (sent) setPhysioReportSentBanner(true);
         setPhase("complete");
         return;
       }
@@ -3402,7 +3437,7 @@ export function AIInquiriesScreen({
         beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
 
-        if (!moreZonesPending) {
+        if (!moreZonesPending && partEvaluationsRef.current.length >= 2) {
           // End of last injury's functional tests → multi-zone resumen, then follow-up Qs.
           await appendMultiPartFinalSummary(
             activeId,
@@ -3659,7 +3694,9 @@ export function AIInquiriesScreen({
     phase !== "complete" &&
     (phase === "intro" || phase === "followup") &&
     (!linkedPhysio || Boolean(activeId) || conversations.length === 0 || fisioNewConsultDraft);
-  const chatBusy = chatLoading || Boolean(revealingMessageId);
+  const chatBusy =
+    chatLoading ||
+    (ASSISTANT_REVEAL_ENABLED && Boolean(revealingMessageId));
   const awaitingFunctionalTests =
     phase === "followup" ? latestUnansweredFunctionalTests(messages) : null;
   const showFisioPickExisting =
@@ -3681,7 +3718,7 @@ export function AIInquiriesScreen({
       <View
         style={[
           styles.chatTopBar,
-          !guestMode && { paddingTop: screenHeaderTopInset(insets) },
+          !guestMode && { paddingTop: Math.max(insets.top, 8) },
         ]}
       >
         <Pressable
@@ -4320,7 +4357,7 @@ export function AIInquiriesScreen({
     <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: composerInset }}>
       {renderTopBar()}
 
-      {linkedPhysio && phase === "complete" ? null : linkedPhysio && physioReportSentBanner ? (
+      {linkedPhysio && phase === "complete" && physioReportSentBanner ? (
         <View
           style={{
             backgroundColor: "#ECFDF5",
@@ -4447,6 +4484,10 @@ export function AIInquiriesScreen({
                   <StreamingAssistantMessage
                     content={msg.content}
                     animate={shouldAnimateAssistantMessage(msg, revealingMessageId)}
+                    completeImmediately={
+                      !ASSISTANT_REVEAL_ENABLED &&
+                      msg.id === revealingMessageId
+                    }
                       onRevealComplete={(meta) => {
                         const stillCurrent = revealingMessageIdRef.current === msg.id;
                         if (stillCurrent) {
@@ -4477,18 +4518,27 @@ export function AIInquiriesScreen({
                           resumeConversationListening();
                         }
                       }}
-                      onRevealTick={updateScrollDownVisibility}
+                      onRevealTick={
+                        ASSISTANT_REVEAL_ENABLED
+                          ? updateScrollDownVisibility
+                          : undefined
+                      }
                   >
                     {(visibleText, isRevealing) => (
                       <>
                         <AssistantMessageWithSources
                           content={visibleText}
                           renderBody={(body) => {
-                            const parsed = splitFunctionalTests(body);
+                            const pendingFunctionalForm =
+                              awaitingFunctionalTests?.messageId === msg.id;
+                            const parseSource = pendingFunctionalForm
+                              ? msg.content
+                              : body;
+                            const parsed = splitFunctionalTests(parseSource);
                             const isActiveForm =
                               Boolean(parsed) &&
                               (parsed?.tests.length ?? 0) >= 2 &&
-                              awaitingFunctionalTests?.messageId === msg.id;
+                              pendingFunctionalForm;
 
                             if (!parsed) {
                               return (
@@ -4618,13 +4668,13 @@ export function AIInquiriesScreen({
                   textAlign: "center",
                 }}
               >
-                <Text style={styles.bubblePhysioHighlight}>
+                <Text style={{ fontWeight: "700" }}>
                   {physioDisplayName(linkedPhysio.physio_name)}
                 </Text>
                 {linkedPhysio.clinic_name?.trim() ? (
                   <>
                     {" "}
-                    <Text style={styles.bubblePhysioHighlight}>
+                    <Text style={{ fontWeight: "700" }}>
                       {linkedPhysio.clinic_name.trim()}
                     </Text>
                   </>
@@ -5039,7 +5089,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingBottom: 10,
     backgroundColor: Colors.white,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
@@ -5267,6 +5317,8 @@ const styles = StyleSheet.create({
   bubbleRowAI: { justifyContent: "flex-start" },
   bubble: {
     maxWidth: "82%",
+    flexShrink: 1,
+    minWidth: 0,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -5343,7 +5395,8 @@ const styles = StyleSheet.create({
   },
   bubbleBold: { color: Colors.primary, fontWeight: '700' },
   bubblePhysioHighlight: {
-    fontWeight: '700',
+    fontWeight: "700",
+    color: Colors.text,
   },
   bubbleDisclaimer: { marginTop: 8, fontSize: 11, color: Colors.textLight, lineHeight: 15 },
   questionnaireCard: {

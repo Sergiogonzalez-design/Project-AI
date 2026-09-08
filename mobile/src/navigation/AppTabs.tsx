@@ -41,6 +41,13 @@ function ClinicTeamBackButton() {
   );
 }
 
+function ConsultaBackButton() {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  return (
+    <AppBackButton onPress={() => navigation.navigate("AIInquiries")} />
+  );
+}
+
 type AppTabsProps = {
   isAdmin?: boolean;
   isPhysio?: boolean;
@@ -144,7 +151,10 @@ export function AppTabs({
           <Tab.Screen
             name="PhysioLink"
             component={PhysioLinkScreen}
-            options={{ title: t.headers.fisioterapia, headerLeft: () => null }}
+            options={{
+              title: t.headers.fisioterapia,
+              headerLeft: () => <ConsultaBackButton />,
+            }}
           />
           <Tab.Screen
             name="ClinicSearch"

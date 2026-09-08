@@ -19,7 +19,7 @@ const SECTION_HEADING =
   /^(Pruebas funcionales|Functional tests|Preguntas\s*\/\s*pruebas para completar el informe|Questions\s*\/\s*tests to complete the report)\b/i;
 const NEXT_HEADING = /^(?:\*\*)([^*]+)(?:\*\*)\s*$/;
 const NUMBERED =
-  /^(?:[-*]\s+)?(?:\*\*)?(\d+)[.)](?:\*\*)?\s+(?:\*\*)?(.+?)(?:\*\*)?\s*$/;
+  /^(?:[-*]\s+)?(?:\*\*)?(\d+)[.)](?:\*\*)?\s+(.*)$/;
 
 function stripStars(text: string): string {
   return text.replace(/\*\*/g, "").trim();
@@ -94,6 +94,17 @@ export function splitFunctionalTests(content: string): {
     tests: safe,
     after: lines.slice(lastTestLine + 1).join("\n").trim(),
   };
+}
+
+/** True when an orientation message includes patient Sí/No functional tests. */
+export function orientationOffersFunctionalTests(text: string): boolean {
+  const trimmed = text?.trim() ?? "";
+  if (!trimmed) return false;
+  const parsed = splitFunctionalTests(trimmed);
+  if (parsed && parsed.tests.length >= 2) return true;
+  return /\*\*Pruebas funcionales\*\*|\*\*Functional tests\*\*|^Pruebas funcionales\b|^Functional tests\b/m.test(
+    trimmed
+  );
 }
 
 /** Rebuild the section without clinician-named tests (safe to show as markdown). */

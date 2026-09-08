@@ -137,30 +137,6 @@ export function AthleteProfileCard() {
       setError("Selecciona tu pie dominante.");
       return;
     }
-    if (!primarySport.trim()) {
-      setError("Indica tu deporte principal.");
-      return;
-    }
-    if (!competitiveLevel) {
-      setError("Selecciona tu nivel competitivo.");
-      return;
-    }
-    if (!sessionsPerWeek) {
-      setError("Indica tus sesiones por semana.");
-      return;
-    }
-    if (!hoursPerWeek) {
-      setError("Indica tus horas por semana.");
-      return;
-    }
-    if (!currentSeason) {
-      setError("Selecciona la temporada actual.");
-      return;
-    }
-    if (performanceGoals.length === 0) {
-      setError("Selecciona al menos un objetivo.");
-      return;
-    }
 
     setSaving(true);
     setError(null);
@@ -173,13 +149,18 @@ export function AthleteProfileCard() {
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
         city: city.trim() || null,
-        primary_sport: normalizeSportsInput(primarySport),
-        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
-        competitive_level: competitiveLevel,
-        sessions_per_week: Number(sessionsPerWeek),
-        hours_per_week: Number(hoursPerWeek),
-        current_season: currentSeason,
-        performance_goals: performanceGoals,
+        primary_sport: primarySport.trim()
+          ? normalizeSportsInput(primarySport)
+          : null,
+        sport_position:
+          primarySport.trim() && sportHasPosition(primarySport)
+            ? sportPosition.trim() || null
+            : null,
+        competitive_level: competitiveLevel || null,
+        sessions_per_week: sessionsPerWeek.trim() ? Number(sessionsPerWeek) : null,
+        hours_per_week: hoursPerWeek.trim() ? Number(hoursPerWeek) : null,
+        current_season: currentSeason || null,
+        performance_goals: performanceGoals.length > 0 ? performanceGoals : null,
       };
       const { error: saveErr } = await supabase
         .from("profiles")
@@ -332,7 +313,7 @@ export function AthleteProfileCard() {
             onChangeText={setCity}
             placeholder="Ej: Madrid"
           />
-          <Text style={styles.fieldLabel}>¿Qué deporte practicas?</Text>
+          <Text style={styles.fieldLabel}>¿Qué deporte practicas? (opcional)</Text>
           <TextInput
             style={styles.input}
             value={primarySport}
@@ -350,16 +331,16 @@ export function AthleteProfileCard() {
               <TextInput style={styles.input} value={sportPosition} onChangeText={setSportPosition} />
             </>
           )}
-          <Text style={styles.fieldLabel}>Nivel</Text>
+          <Text style={styles.fieldLabel}>Nivel (opcional)</Text>
           <ChipPicker options={COMPETITIVE_LEVELS} value={competitiveLevel} onSelect={setCompetitiveLevel} />
-          <Text style={styles.fieldLabel}>Sesiones / Horas por semana</Text>
+          <Text style={styles.fieldLabel}>Sesiones / Horas por semana (opcional)</Text>
           <View style={styles.twoCol}>
             <TextInput style={[styles.input, styles.halfInput]} value={sessionsPerWeek} onChangeText={setSessionsPerWeek} keyboardType="numeric" />
             <TextInput style={[styles.input, styles.halfInput]} value={hoursPerWeek} onChangeText={setHoursPerWeek} keyboardType="numeric" />
           </View>
-          <Text style={styles.fieldLabel}>Temporada</Text>
+          <Text style={styles.fieldLabel}>Temporada (opcional)</Text>
           <ChipPicker options={CURRENT_SEASONS} value={currentSeason} onSelect={setCurrentSeason} />
-          <Text style={styles.fieldLabel}>Objetivos</Text>
+          <Text style={styles.fieldLabel}>Objetivos (opcional)</Text>
           <ChipPicker
             options={PERFORMANCE_GOALS}
             value={performanceGoals}

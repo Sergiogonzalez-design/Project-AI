@@ -258,6 +258,7 @@ import { AssistantMessageWithSources } from "@/components/assistant-message-with
 import { FunctionalTestChatBlock } from "@/components/functional-test-chat-block";
 import {
   latestUnansweredFunctionalTests,
+  orientationOffersFunctionalTests,
   reconstructFunctionalTestsSection,
   splitFunctionalTests,
 } from "@/lib/functional-test-answers";
@@ -394,8 +395,20 @@ function collectPhysioHighlightPhrases(
   return [...set].sort((a, b) => b.length - a.length);
 }
 
+function isPhysioHighlightPhrase(text: string, phrases: string[]): boolean {
+  const inner = stripVisibleMarkup(text).trim();
+  if (!inner || phrases.length === 0) return false;
+  return phrases.some((p) => p.toLowerCase() === inner.toLowerCase());
+}
+
+function assistantStrongClass(text: string, phrases: string[]): string {
+  return isPhysioHighlightPhrase(text, phrases)
+    ? "font-semibold text-slate-900"
+    : "font-bold text-blue-700";
+}
+
 function PhysioHighlight({ children }: { children: string }) {
-  return <strong className="font-bold text-inherit">{children}</strong>;
+  return <strong className="font-semibold text-slate-900">{children}</strong>;
 }
 
 function withPhysioHighlights(
@@ -564,7 +577,9 @@ function renderAssistantContent(
       return (
         <div key={li} className={li > 0 ? "mt-3" : undefined}>
           <p>
-            <strong className="font-bold text-blue-700">
+            <strong
+              className={assistantStrongClass(wholeBoldMatch[1], highlightPhrases)}
+            >
               {renderInlineText(
                 wholeBoldMatch[1],
                 highlightPhrases,
@@ -581,7 +596,7 @@ function renderAssistantContent(
       return (
         <div key={li} className={li > 0 ? "mt-3" : undefined}>
           <p>
-            <strong className="font-bold text-blue-700">
+            <strong className={assistantStrongClass(headingText, highlightPhrases)}>
               {renderInlineText(headingText, highlightPhrases, `${li}-h`)}
             </strong>
           </p>
@@ -593,11 +608,14 @@ function renderAssistantContent(
     const rendered = line.split(/(\*\*[^*]+\*\*)/).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         const inner = stripVisibleMarkup(part.slice(2, -2));
-        if (highlightPhrases.some((p) => p.toLowerCase() === inner.toLowerCase())) {
+        if (isPhysioHighlightPhrase(inner, highlightPhrases)) {
           return <PhysioHighlight key={i}>{inner}</PhysioHighlight>;
         }
         return (
-          <strong key={i} className="font-bold text-blue-700">
+          <strong
+            key={i}
+            className={assistantStrongClass(inner, highlightPhrases)}
+          >
             {withPhysioHighlights(inner, highlightPhrases, `${li}-${i}`)}
           </strong>
         );
@@ -1983,13 +2001,9 @@ export function ChatInterface({
       setAwaitingNextPart(null);
       if (linkedPhysio) return;
       // Keep chat open for functional tests / related questions — do NOT finish here.
-      const offeredTests =
-        Boolean(completedSummary) &&
-        /\*\*Preguntas de valoración funcional\*\*|Functional assessment questions|\*\*Preguntas de valoraci[oó]n funcional\*\*/i.test(
-          completedSummary ?? ""
-        );
-      // Multi-zone resumen waits until the patient reports functional-test
-      // results for this last injury. If no tests were offered, send it now.
+      const offeredTests = orientationOffersFunctionalTests(completedSummary ?? "");
+      // Multi-zone resumen waits until the patient submits functional-test
+      // Sí/No answers. If no tests were offered, send it now.
       if (!offeredTests && evaluations.length >= 2) {
         await appendMultiPartFinalSummary(conversationId, evaluations, language);
       }
@@ -2758,8 +2772,7 @@ export function ChatInterface({
         };
 
         const awaitingTests =
-          !redFlagsUrgent &&
-          (splitFunctionalTests(combined)?.tests.length ?? 0) >= 2;
+          !redFlagsUrgent && orientationOffersFunctionalTests(combined);
 
         // Only send (and show “report sent”) when there are no outstanding Sí/No tests.
         if (awaitingTests) {
@@ -2772,7 +2785,6 @@ export function ChatInterface({
             pendingPhysioReportRef.current
           );
           if (sent) {
-            setPhysioReportSentBanner(true);
             setLinkedPhysioLabel(
               physioLabel ||
                 [linkedPhysio.physio_name, linkedPhysio.clinic_name]
@@ -2823,6 +2835,7 @@ export function ChatInterface({
             beginAssistantReveal((thanksMsg as Message).id, (thanksMsg as Message).content);
             setMessages((prev) => [...prev, thanksMsg as Message]);
           }
+          setPhysioReportSentBanner(true);
           setPhase("complete");
         } else {
           setPhase("followup");
@@ -3342,23 +3355,17 @@ export function ChatInterface({
           ));
 
       // Retry report send only when not waiting on Sí/No functional tests.
+      const outstandingFunctionalTests = latestUnansweredFunctionalTests(messages);
       if (
         linkedPhysio &&
         pendingPhysio &&
         !physioReportSentBanner &&
         !pendingPhysio.awaitFunctionalTests &&
-        !answeringPendingPhysioTests
+        !answeringPendingPhysioTests &&
+        !outstandingFunctionalTests
       ) {
-        const { sent, physioLabel } = await maybeGenerateAndSendPhysioReport(pendingPhysio);
+        const { sent } = await maybeGenerateAndSendPhysioReport(pendingPhysio);
         if (sent) {
-          setPhysioReportSentBanner(true);
-          setLinkedPhysioLabel(
-            physioLabel ||
-              [linkedPhysio.physio_name, linkedPhysio.clinic_name]
-                .filter(Boolean)
-                .join(" · ") ||
-              null
-          );
           pendingPhysioReportRef.current = null;
         }
       }
@@ -3385,7 +3392,6 @@ export function ChatInterface({
         });
 
         if (sent) {
-          setPhysioReportSentBanner(true);
           setLinkedPhysioLabel(
             physioLabel ||
               [linkedPhysio.physio_name, linkedPhysio.clinic_name]
@@ -3412,6 +3418,7 @@ export function ChatInterface({
           beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
           setMessages((prev) => [...prev, aiMsg as Message]);
         }
+        if (sent) setPhysioReportSentBanner(true);
         setPhase("complete");
         return;
       }
@@ -3499,7 +3506,7 @@ export function ChatInterface({
         beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
 
-        if (!moreZonesPending) {
+        if (!moreZonesPending && partEvaluationsRef.current.length >= 2) {
           await appendMultiPartFinalSummary(
             activeId,
             partEvaluationsRef.current,
@@ -4137,7 +4144,7 @@ export function ChatInterface({
           <p className="flex-1 truncate text-[15px] font-semibold tracking-tight text-slate-900">{activeTitle}</p>
         </div>
 
-        {linkedPhysio && phase === "complete" ? null : linkedPhysio && physioReportSentBanner ? (
+        {linkedPhysio && phase === "complete" && physioReportSentBanner ? (
           <div className="shrink-0 border-b border-emerald-200 bg-emerald-50 px-4 py-3">
             <div className="mx-auto flex max-w-3xl items-start justify-between gap-3">
               <div>
@@ -4298,11 +4305,16 @@ export function ChatInterface({
                               <AssistantMessageWithSources
                                 content={visibleText}
                                 renderBody={(body) => {
-                                  const parsed = splitFunctionalTests(body);
+                                  const pendingFunctionalForm =
+                                    awaitingFunctionalTests?.messageId === msg.id;
+                                  const parseSource = pendingFunctionalForm
+                                    ? msg.content
+                                    : body;
+                                  const parsed = splitFunctionalTests(parseSource);
                                   const isActiveForm =
                                     Boolean(parsed) &&
                                     (parsed?.tests.length ?? 0) >= 2 &&
-                                    awaitingFunctionalTests?.messageId === msg.id;
+                                    pendingFunctionalForm;
 
                                   if (!parsed) {
                                     return (
