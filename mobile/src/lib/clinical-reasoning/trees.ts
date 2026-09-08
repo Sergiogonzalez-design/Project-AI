@@ -1,6 +1,6 @@
-import type { BodyPartId } from "@/lib/body-parts";
-import { branch, conclusionNode, testNode } from "@/lib/clinical-reasoning/node-helpers";
-import type { ClinicalReasoningTree } from "@/lib/clinical-reasoning/types";
+import type { BodyPartId } from "../body-parts";
+import { branch, conclusionNode, testNode } from "./node-helpers";
+import type { ClinicalReasoningTree } from "./types";
 
 /** Árbol tobillo / pie — esguince lateral, Aquiles, fascitis (evidencia Ottawa / MSK reviews). */
 const ANKLE_FOOT_TREE: ClinicalReasoningTree = {

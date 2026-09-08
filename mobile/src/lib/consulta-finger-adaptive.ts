@@ -1,8 +1,8 @@
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
+} from "./consulta-timing";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;

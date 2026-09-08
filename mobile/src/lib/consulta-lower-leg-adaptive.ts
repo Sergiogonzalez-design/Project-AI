@@ -1,14 +1,14 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
-import type { AnkleFootFocus } from "@/lib/detect-body-part";
+} from "./consulta-timing";
+import type { AnkleFootFocus } from "./detect-body-part";
 /**
  * Adaptive questionnaire for lower leg / shin / calf / Achilles / ankle / foot
  * (ankle_foot region) — adapts labels and location options to region_focus
  * (foot vs ankle vs lower_leg) from the patient's initial complaint.
  */
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;

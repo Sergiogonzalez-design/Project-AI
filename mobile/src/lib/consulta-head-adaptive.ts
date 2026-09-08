@@ -1,8 +1,8 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+} from "./consulta-timing";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 /**

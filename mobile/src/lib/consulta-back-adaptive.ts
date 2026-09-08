@@ -1,12 +1,12 @@
 import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
-} from "@/lib/consulta-timing";
+} from "./consulta-timing";
 /**
  * Adaptive questionnaire for back / lumbar-thoracic pain — same structure as knee / shoulder
  * (urgency → core → mechanism branches → neuro / sciatica pattern → history).
  */
-import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
