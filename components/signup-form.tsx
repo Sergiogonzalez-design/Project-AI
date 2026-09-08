@@ -10,15 +10,26 @@ import { isGuestUser } from "@/lib/guest-account";
 const inputClass =
   "rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
 
-export function SignupForm() {
+type InviteInfo = {
+  clinic_name: string;
+  email: string | null;
+  display_name: string | null;
+};
+
+type Props = {
+  clinicInviteToken?: string;
+};
+
+export function SignupForm({ clinicInviteToken }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [convertingGuest, setConvertingGuest] = useState(false);
+  const [invite, setInvite] = useState<InviteInfo | null>(null);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
-  const [asPhysio, setAsPhysio] = useState(false);
+  const joiningClinic = Boolean(clinicInviteToken);
 
   useEffect(() => {
     const supabase = createClient();
@@ -26,6 +37,20 @@ export function SignupForm() {
       setConvertingGuest(isGuestUser(data.user));
     });
   }, []);
+
+  useEffect(() => {
+    if (!clinicInviteToken) return;
+    const supabase = createClient();
+    void supabase
+      .rpc("clinic_lookup_invite", { p_token: clinicInviteToken })
+      .then(({ data }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.clinic_name) {
+          setInvite(row as InviteInfo);
+          if (row.email) setEmail(String(row.email));
+        }
+      });
+  }, [clinicInviteToken]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,7 +76,7 @@ export function SignupForm() {
         body: JSON.stringify({
           email: emailNorm,
           password,
-          accountType: asPhysio ? "physio" : "patient",
+          clinicInvite: clinicInviteToken || undefined,
         }),
       });
       const payload = (await res.json()) as { error?: string };
@@ -90,21 +115,18 @@ export function SignupForm() {
           <p className="mt-1 text-sm text-slate-500">
             {convertingGuest
               ? "Crea tu cuenta para seguir usando la IA"
-              : "Regístrate para usar AIKinora"}
+              : joiningClinic && invite
+                ? `Te unes a ${invite.clinic_name} como fisioterapeuta`
+                : "Regístrate para usar AIKinora"}
           </p>
         </div>
       </div>
 
-      {!convertingGuest ? (
-        <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={asPhysio}
-            onChange={(e) => setAsPhysio(e.target.checked)}
-            className="h-4 w-4 accent-blue-600"
-          />
-          Soy fisioterapeuta (me vincularé a una clínica más tarde)
-        </label>
+      {!joiningClinic && !convertingGuest ? (
+        <p className="mb-5 text-xs leading-relaxed text-slate-500">
+          Las cuentas de fisioterapeuta o clínica se crean con invitación. Si eres
+          profesional, pide acceso a tu clínica o contacta con el equipo.
+        </p>
       ) : null}
 
       <div className="mb-4 flex flex-col gap-1.5">
@@ -112,6 +134,7 @@ export function SignupForm() {
         <input
           type="email" name="email" autoComplete="email" required
           value={email} onChange={(e) => setEmail(e.target.value)}
+          readOnly={joiningClinic && Boolean(invite?.email)}
           className={inputClass}
           placeholder="tu@correo.com"
         />
@@ -163,7 +186,7 @@ export function SignupForm() {
         disabled={loading || !acceptedLegal}
         className="btn-primary w-full disabled:opacity-50"
       >
-        {loading ? "Creando cuenta…" : "Crear cuenta"}
+        {loading ? "Creando cuenta…" : joiningClinic ? "Unirme a la clínica" : "Crear cuenta"}
       </button>
 
       <p className="mt-5 text-center text-sm text-slate-500">

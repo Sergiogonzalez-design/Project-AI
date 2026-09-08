@@ -33,7 +33,8 @@ type Props = {
 
 export function SignupScreen({ onSwitch, onSignedUp }: Props) {
   const { t, locale } = useI18n();
-  const [accountType, setAccountType] = useState<"patient" | "physio" | "clinic">("patient");
+  const [accountType, setAccountType] = useState<"patient" | "physio">("patient");
+  const [clinicInvite, setClinicInvite] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -75,6 +76,14 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       );
       return;
     }
+    if (accountType === "physio" && !clinicInvite.trim()) {
+      setError(
+        locale === "en"
+          ? "Physio accounts need a clinic invite code."
+          : "Las cuentas de fisioterapeuta necesitan un código de invitación de la clínica."
+      );
+      return;
+    }
     setLoading(true);
     try {
       const emailNorm = email.trim().toLowerCase();
@@ -92,7 +101,10 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
         body: JSON.stringify({
           email: emailNorm,
           password,
-          accountType: converting ? "patient" : accountType,
+          clinicInvite:
+            !converting && accountType === "physio"
+              ? clinicInvite.trim()
+              : undefined,
         }),
       });
       const payload = (await res.json()) as { error?: string };
@@ -104,7 +116,7 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       if (converting) {
         await supabase.auth.signOut({ scope: "local" });
       }
-      onSignedUp?.(converting ? "patient" : accountType);
+      onSignedUp?.(converting || accountType !== "physio" ? "patient" : "physio");
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: emailNorm,
         password,
@@ -182,31 +194,32 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
                 Fisio
               </Text>
             </Pressable>
-            <Pressable
-              style={[styles.roleOption, accountType === "clinic" && styles.roleOptionActive]}
-              onPress={() => setAccountType("clinic")}
-            >
-              <Text
-                style={[
-                  styles.roleOptionText,
-                  accountType === "clinic" && styles.roleOptionTextActive,
-                ]}
-              >
-                Clínica
-              </Text>
-            </Pressable>
           </View>
-          {accountType === "clinic" ? (
-            <Text style={styles.clinicHint}>
-              El plan de clínica será de pago más adelante. Ahora puedes configurar el espacio.
-            </Text>
-          ) : null}
           {accountType === "physio" ? (
+            <>
+              <Text style={styles.clinicHint}>
+                {locale === "en"
+                  ? "Physio accounts are created with a clinic invite. Paste the code you received."
+                  : "Las cuentas de fisioterapeuta se crean con invitación. Pega el código que te envió la clínica."}
+              </Text>
+              <View style={{ height: 8 }} />
+              <AuthTextField
+                label={locale === "en" ? "Clinic invite code" : "Código de invitación"}
+                placeholder="ABC123"
+                value={clinicInvite}
+                onChangeText={setClinicInvite}
+                editable={!loading}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            </>
+          ) : (
             <Text style={styles.clinicHint}>
-              Después de crear la cuenta podrás vincularte a tu clínica desde
-              Clínica con el código de alta.
+              {locale === "en"
+                ? "Clinic accounts are created by invitation. If you are a professional, ask your clinic for access."
+                : "Las cuentas de clínica se crean con invitación. Si eres profesional, pide acceso a tu clínica."}
             </Text>
-          ) : null}
+          )}
           <View style={{ height: 12 }} />
             </>
           )}

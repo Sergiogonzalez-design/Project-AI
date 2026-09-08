@@ -18,12 +18,7 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
-/**
- * Public signup:
- * - patient (default)
- * - clinic (self-serve owner; JWT app_metadata.account_type=clinic)
- * - physio with or without invite (unlinked until they claim a clinic code)
- */
+/** Public signup: patient accounts only (physio via clinic invite; no self-serve physio/clinic). */
 export async function POST(request: NextRequest) {
   try {
     const limit = checkRateLimit(rateLimitKey(request.headers, "signup"), 10, 60_000);
@@ -56,7 +51,8 @@ export async function POST(request: NextRequest) {
     };
     const email = body.email?.trim().toLowerCase() ?? "";
     const password = body.password ?? "";
-    const requestedType = body.accountType ?? "patient";
+    // Ignore client-supplied accountType. Public signup is patient-only unless
+    // a valid clinic invite is present (physio). Clinic owners are not created here.
 
     if (!email || password.length < 6) {
       return NextResponse.json(
@@ -191,44 +187,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, accountType: "physio" }, { headers: CORS });
     }
 
-    // Physio without invite code: account is created unlinked; they claim the
-    // clinic code later at login or on the Clínica screen.
-    if (requestedType === "physio") {
-      const { data, error } = await adminClient.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        app_metadata: { account_type: "physio" },
-      });
-      if (error) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 400, headers: CORS }
-        );
-      }
-      if (!data.user) {
-        return NextResponse.json(
-          { error: "No se pudo crear la cuenta." },
-          { status: 500, headers: CORS }
-        );
-      }
-      await adminClient.from("profiles").upsert({
-        id: data.user.id,
-        onboarding_completed: false,
-        is_admin: false,
-        account_type: "physio",
-      });
-      return NextResponse.json({ ok: true, accountType: "physio" }, { headers: CORS });
-    }
-
-    const accountType: "patient" | "clinic" =
-      requestedType === "clinic" ? "clinic" : "patient";
-
     const { data, error } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      app_metadata: { account_type: accountType },
+      app_metadata: { account_type: "patient" },
     });
 
     if (error) {
@@ -238,7 +201,7 @@ export async function POST(request: NextRequest) {
     if (data.user) {
       const { error: metaErr } = await adminClient.auth.admin.updateUserById(
         data.user.id,
-        { app_metadata: { account_type: accountType } }
+        { app_metadata: { account_type: "patient" } }
       );
       if (metaErr) {
         return NextResponse.json({ error: metaErr.message }, { status: 400, headers: CORS });
@@ -248,7 +211,7 @@ export async function POST(request: NextRequest) {
         id: data.user.id,
         onboarding_completed: false,
         is_admin: false,
-        account_type: accountType,
+        account_type: "patient",
       });
       if (profileErr) {
         return NextResponse.json(
@@ -258,7 +221,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, accountType }, { headers: CORS });
+    return NextResponse.json({ ok: true, accountType: "patient" }, { headers: CORS });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500, headers: CORS });
