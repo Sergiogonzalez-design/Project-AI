@@ -255,7 +255,7 @@ import {
 import { useUiLocale } from "@/lib/ui-locale";
 import { stripVisibleMarkup } from "@/lib/strip-visible-markup";
 import { AssistantMessageWithSources } from "@/components/assistant-message-with-sources";
-import { FunctionalTestYesNo } from "@/components/functional-test-yes-no";
+import { FunctionalTestChatBlock } from "@/components/functional-test-chat-block";
 import {
   latestUnansweredFunctionalTests,
   reconstructFunctionalTestsSection,
@@ -4299,11 +4299,11 @@ export function ChatInterface({
                                 content={visibleText}
                                 renderBody={(body) => {
                                   const parsed = splitFunctionalTests(body);
-                                  const showButtons =
+                                  const isActiveForm =
                                     Boolean(parsed) &&
                                     (parsed?.tests.length ?? 0) >= 2 &&
-                                    awaitingFunctionalTests?.messageId === msg.id &&
-                                    !isRevealing;
+                                    awaitingFunctionalTests?.messageId === msg.id;
+
                                   if (!parsed) {
                                     return (
                                       <div className="whitespace-pre-wrap break-words">
@@ -4315,46 +4315,36 @@ export function ChatInterface({
                                       </div>
                                     );
                                   }
-                                  if (!showButtons) {
+
+                                  if (isActiveForm) {
                                     return (
-                                      <div className="whitespace-pre-wrap break-words">
-                                        {renderAssistantContent(
-                                          reconstructFunctionalTestsSection(parsed),
-                                          physioHighlightPhrases,
-                                          consultLanguage
-                                        )}
-                                      </div>
-                                    );
-                                  }
-                                  return (
-                                    <div className="whitespace-pre-wrap break-words">
-                                      {parsed.before
-                                        ? renderAssistantContent(
-                                            parsed.before,
-                                            physioHighlightPhrases,
-                                            consultLanguage
-                                          )
-                                        : null}
-                                      <p className={parsed.before ? "mt-3" : undefined}>
-                                        <strong className="font-bold text-blue-700">
-                                          {parsed.heading}
-                                        </strong>
-                                      </p>
-                                      <FunctionalTestYesNo
-                                        tests={parsed.tests}
+                                      <FunctionalTestChatBlock
+                                        parsed={parsed}
                                         language={consultLanguage}
                                         disabled={loading || Boolean(revealingMessageId)}
+                                        isRevealing={isRevealing}
                                         onSubmit={(text) =>
                                           sendVoiceTurnRef.current(text)
                                         }
-                                      />
-                                      {parsed.after
-                                        ? renderAssistantContent(
-                                            parsed.after,
+                                        onScrollTick={followRevealScroll}
+                                        renderMarkdown={(text) =>
+                                          renderAssistantContent(
+                                            text,
                                             physioHighlightPhrases,
                                             consultLanguage
                                           )
-                                        : null}
+                                        }
+                                      />
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="whitespace-pre-wrap break-words">
+                                      {renderAssistantContent(
+                                        reconstructFunctionalTestsSection(parsed),
+                                        physioHighlightPhrases,
+                                        consultLanguage
+                                      )}
                                     </div>
                                   );
                                 }}

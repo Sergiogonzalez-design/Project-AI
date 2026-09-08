@@ -41,7 +41,7 @@ import {
 import { AssistantMessageWithSources } from "../components/AssistantMessageWithSources";
 import { ConsultaAssistantBody } from "../components/ConsultaAssistantBody";
 import { stripVisibleMarkup } from "../lib/strip-visible-markup";
-import { FunctionalTestYesNo } from "../components/FunctionalTestYesNo";
+import { FunctionalTestChatBlock } from "../components/FunctionalTestChatBlock";
 import {
   latestUnansweredFunctionalTests,
   reconstructFunctionalTestsSection,
@@ -4485,11 +4485,11 @@ export function AIInquiriesScreen({
                           content={visibleText}
                           renderBody={(body) => {
                             const parsed = splitFunctionalTests(body);
-                            const showButtons =
+                            const isActiveForm =
                               Boolean(parsed) &&
                               (parsed?.tests.length ?? 0) >= 2 &&
-                              awaitingFunctionalTests?.messageId === msg.id &&
-                              !isRevealing;
+                              awaitingFunctionalTests?.messageId === msg.id;
+
                             if (!parsed) {
                               return (
                                 <ConsultaAssistantBody
@@ -4503,59 +4503,37 @@ export function AIInquiriesScreen({
                                 />
                               );
                             }
-                            if (!showButtons) {
+
+                            if (isActiveForm) {
                               return (
-                                <ConsultaAssistantBody
-                                  text={reconstructFunctionalTestsSection(parsed)}
-                                  style={styles.bubbleText}
-                                  boldStyle={styles.bubbleBold}
-                                  highlightPhrases={physioHighlightPhrases}
-                                  highlightStyle={styles.bubblePhysioHighlight}
-                                  onClinicPress={openClinicProfile}
-                                  language={locale}
-                                />
-                              );
-                            }
-                            return (
-                              <View>
-                                {parsed.before ? (
-                                  <ConsultaAssistantBody
-                                    text={parsed.before}
-                                    style={styles.bubbleText}
-                                    boldStyle={styles.bubbleBold}
-                                    highlightPhrases={physioHighlightPhrases}
-                                    highlightStyle={styles.bubblePhysioHighlight}
-                                    onClinicPress={openClinicProfile}
-                                    language={locale}
-                                  />
-                                ) : null}
-                                <ConsultaAssistantBody
-                                  text={`**${parsed.heading}**`}
-                                  style={styles.bubbleText}
-                                  boldStyle={styles.bubbleBold}
-                                  highlightPhrases={physioHighlightPhrases}
-                                  highlightStyle={styles.bubblePhysioHighlight}
-                                />
-                                <FunctionalTestYesNo
-                                  tests={parsed.tests}
+                                <FunctionalTestChatBlock
+                                  parsed={parsed}
                                   language={locale}
                                   disabled={chatBusy}
+                                  isRevealing={isRevealing}
                                   onSubmit={(text) =>
                                     sendVoiceTurnRef.current(text)
                                   }
+                                  onScrollTick={updateScrollDownVisibility}
+                                  onClinicPress={openClinicProfile}
+                                  bubbleText={styles.bubbleText}
+                                  bubbleBold={styles.bubbleBold}
+                                  highlightPhrases={physioHighlightPhrases}
+                                  highlightStyle={styles.bubblePhysioHighlight}
                                 />
-                                {parsed.after ? (
-                                  <ConsultaAssistantBody
-                                    text={parsed.after}
-                                    style={styles.bubbleText}
-                                    boldStyle={styles.bubbleBold}
-                                    highlightPhrases={physioHighlightPhrases}
-                                    highlightStyle={styles.bubblePhysioHighlight}
-                                    onClinicPress={openClinicProfile}
-                                    language={locale}
-                                  />
-                                ) : null}
-                              </View>
+                              );
+                            }
+
+                            return (
+                              <ConsultaAssistantBody
+                                text={reconstructFunctionalTestsSection(parsed)}
+                                style={styles.bubbleText}
+                                boldStyle={styles.bubbleBold}
+                                highlightPhrases={physioHighlightPhrases}
+                                highlightStyle={styles.bubblePhysioHighlight}
+                                onClinicPress={openClinicProfile}
+                                language={locale}
+                              />
                             );
                           }}
                         />
