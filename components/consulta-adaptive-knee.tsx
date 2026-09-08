@@ -203,6 +203,8 @@ export function ConsultaAdaptiveKnee({
     (q) => q.section === currentSection
   );
   const { urgent, triggered } = detectKneeRedFlags(answers);
+  const showUrgencyShortcut =
+    currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia;
   const isLastSection = sectionIndex >= sections.length - 1;
 
   useEffect(() => {
@@ -273,12 +275,20 @@ export function ConsultaAdaptiveKnee({
 
       {sectionError && <p className="mb-4 text-sm text-red-600">{sectionError}</p>}
 
-      <div className="mt-4 flex gap-3">
+      <div
+        className={
+          showUrgencyShortcut
+            ? "mt-4 flex flex-wrap items-center justify-center gap-2"
+            : "mt-4 flex gap-3"
+        }
+      >
         {sectionIndex > 0 && (
           <button
             type="button"
             onClick={() => onSectionIndexChange(sectionIndex - 1)}
-            className="btn-secondary flex-1"
+            className={
+              showUrgencyShortcut ? "btn-secondary btn-nav-compact" : "btn-secondary flex-1"
+            }
           >
             {consultaNavLabels(locale).previous}
           </button>
@@ -287,16 +297,18 @@ export function ConsultaAdaptiveKnee({
           <button
             type="button"
             onClick={handleNext}
-            className="btn-primary flex-1"
+            className={
+              showUrgencyShortcut ? "btn-primary btn-nav-compact" : "btn-primary flex-1"
+            }
           >
             {consultaNavLabels(locale).next}
           </button>
         )}
-        {currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia && (
+        {showUrgencyShortcut && (
           <button
             type="button"
             onClick={handleSkipUrgency}
-            className="btn-secondary flex-1"
+            className="btn-secondary btn-nav-compact"
           >
             {skipQuestionnaireForUrgencyLabel(locale)}
           </button>

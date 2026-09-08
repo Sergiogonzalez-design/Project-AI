@@ -100,7 +100,7 @@ function splitReportSections(content: string): {
       kept.push(line);
     }
     body = kept.join("\n").trim();
-    if (title === "Pruebas de imagen si procede") {
+    if (title === "Pruebas de imagen si procede" && !body) {
       body =
         "No se recomienda realizar pruebas de imagen en esta fase inicial hasta pasadas 24-48 horas.";
     }

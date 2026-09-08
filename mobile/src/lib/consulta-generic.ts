@@ -114,8 +114,8 @@ export function detectGenericRedFlags(a: GenericConsultaAnswers): {
   if (a.rf_fiebre === "Sí") {
     triggered.push("Fiebre");
   }
-  // Fever / deformity / sensory loss are hard for the short generic screen.
-  const HARD_FLAG_IDS = ["rf_deformidad", "rf_perdida_sensibilidad", "rf_fiebre"] as const;
+  // Deformity / sensory loss are hard; fever alone is soft cribado (align with back/sciatic).
+  const HARD_FLAG_IDS = ["rf_deformidad", "rf_perdida_sensibilidad"] as const;
   return {
     triggered,
     urgent: HARD_FLAG_IDS.some((id) => a[id] === "Sí"),

@@ -200,6 +200,8 @@ export function ConsultaAdaptiveKnee({
     (q) => q.section === currentSection
   );
   const { urgent, triggered } = detectKneeRedFlags(answers);
+  const showUrgencyShortcut =
+    currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia;
   const isLastSection = sectionIndex >= sections.length - 1;
 
   useEffect(() => {
@@ -264,20 +266,30 @@ export function ConsultaAdaptiveKnee({
 
       {sectionError ? <Text style={styles.error}>{sectionError}</Text> : null}
 
-      <View style={styles.navRow}>
+      <View style={[styles.navRow, showUrgencyShortcut && styles.navRowCompact]}>
         {sectionIndex > 0 && (
-          <Pressable style={styles.navBtnOutline} onPress={() => onSectionIndexChange(sectionIndex - 1)}>
-            <Text style={styles.navBtnOutlineText}>{consultaNavLabels(locale).previous}</Text>
+          <Pressable
+            style={[styles.navBtnOutline, showUrgencyShortcut && styles.navBtnCompact]}
+            onPress={() => onSectionIndexChange(sectionIndex - 1)}
+          >
+            <Text style={[styles.navBtnOutlineText, showUrgencyShortcut && styles.navBtnCompactText]}>
+              {consultaNavLabels(locale).previous}
+            </Text>
           </Pressable>
         )}
         {!isLastSection && (
-          <Pressable style={styles.navBtn} onPress={handleNext}>
-            <Text style={styles.navBtnText}>{consultaNavLabels(locale).next}</Text>
+          <Pressable
+            style={[styles.navBtn, showUrgencyShortcut && styles.navBtnCompact]}
+            onPress={handleNext}
+          >
+            <Text style={[styles.navBtnText, showUrgencyShortcut && styles.navBtnCompactText]}>
+              {consultaNavLabels(locale).next}
+            </Text>
           </Pressable>
         )}
-        {currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia && (
-          <Pressable style={styles.navBtnOutline} onPress={handleSkipUrgency}>
-            <Text style={styles.navBtnOutlineText}>
+        {showUrgencyShortcut && (
+          <Pressable style={[styles.navBtnOutline, styles.navBtnCompact]} onPress={handleSkipUrgency}>
+            <Text style={[styles.navBtnOutlineText, styles.navBtnCompactText]}>
               {skipQuestionnaireForUrgencyLabel(locale)}
             </Text>
           </Pressable>
@@ -353,14 +365,20 @@ const styles = {
   },
   error: { color: "#dc2626", fontSize: 13, marginBottom: 8 },
   navRow: { flexDirection: "row" as const, gap: 10, marginTop: 8 },
+  navRowCompact: {
+    flexWrap: "wrap" as const,
+    justifyContent: "center" as const,
+    gap: 8,
+  },
   navBtn: {
     flex: 1,
     backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
-  navBtnText: { color: Colors.white, fontWeight: "700" as const },
+  navBtnText: { color: Colors.white, fontWeight: "700" as const, textAlign: "center" as const },
   navBtnOutline: {
     flex: 1,
     borderWidth: 1,
@@ -368,6 +386,14 @@ const styles = {
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
-  navBtnOutlineText: { color: Colors.primary, fontWeight: "600" as const },
+  navBtnOutlineText: { color: Colors.primary, fontWeight: "600" as const, textAlign: "center" as const },
+  navBtnCompact: {
+    flex: 0,
+    flexGrow: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  navBtnCompactText: { fontSize: 13, textAlign: "center" as const },
 };
