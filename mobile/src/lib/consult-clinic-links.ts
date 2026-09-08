@@ -42,16 +42,6 @@ function stripListPrefix(line: string): string {
     .trim();
 }
 
-export function slugifyClinicLabel(label: string): string {
-  return label
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-}
-
 /** True when a numbered line is a clinic recommendation — not a patient functional test. */
 export function isClinicRecommendLine(line: string): boolean {
   if (lineHasClinicCentroLink(line)) return true;
@@ -62,8 +52,10 @@ export function isClinicRecommendLine(line: string): boolean {
   if (!body || body.includes("?")) return false;
   if (FUNCTIONAL_TEST_VERBS.test(body)) return false;
 
+  // Keyword only — do not treat bare numbered `|` lines as clinics
+  // (those are often tests or addresses). Real profile links already
+  // returned true via `/centro/{slug}` above.
   if (/\bcl[ií]n/i.test(body)) return true;
-  if (/\|/.test(body) && !FUNCTIONAL_TEST_VERBS.test(body)) return true;
 
   return false;
 }
@@ -92,21 +84,10 @@ export function parseClinicCentroFromLine(line: string): ConsultClinicLink | nul
   return { slug, label, meta };
 }
 
-/** Parse clinic button data from AI lines — with or without `/centro/{slug}`. */
+/**
+ * Parse a tappable clinic profile button.
+ * Only real `/centro/{slug}` paths become links — never invent slugs from labels.
+ */
 export function parseClinicRecommendLine(line: string): ConsultClinicLink | null {
-  const fromCentro = parseClinicCentroFromLine(line);
-  if (fromCentro) return fromCentro;
-  if (!isClinicRecommendLine(line)) return null;
-
-  const body = stripListPrefix(line);
-  const parts = body
-    .split("|")
-    .map((p) => p.replace(/\s+/g, " ").trim())
-    .filter(Boolean);
-  const label = (parts[0] ?? body).replace(/^[-•*]\s*/, "").trim();
-  if (!label) return null;
-  const meta = parts.slice(1).join(" · ").trim();
-  const slug = slugifyClinicLabel(label);
-  if (!slug) return null;
-  return { slug, label, meta };
+  return parseClinicCentroFromLine(line);
 }
