@@ -1,33 +1,61 @@
 import { supabase } from "./supabase";
-import {
-  SUPABASE_PROJECT_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-} from "./supabase-config";
 
-const EDGE_URL = `${SUPABASE_PROJECT_URL}/functions/v1/ai-consult`;
+/**
+ * Call ai-consult via the Supabase client so Auth JWT refresh is handled.
+ * Raw fetch + getSession() often sent expired/empty tokens on TestFlight.
+ */
+async function invokeAiConsult(
+  body: Record<string, unknown>,
+  extras?: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    const { data: refreshed, error: refreshError } =
+      await supabase.auth.refreshSession();
+    if (refreshError || !refreshed.session?.access_token) {
+      throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
+    }
+  }
 
-async function edgeHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${data.session?.access_token ?? ""}`,
-    apikey: SUPABASE_PUBLISHABLE_KEY,
-  };
+  const { data, error } = await supabase.functions.invoke("ai-consult", {
+    body: { ...(extras ?? {}), ...body },
+  });
+
+  if (error) {
+    // Prefer server JSON error body when present (e.g. 403 clinic message).
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.json === "function") {
+      try {
+        const payload = (await ctx.json()) as { error?: string };
+        if (typeof payload?.error === "string" && payload.error.trim()) {
+          throw new Error(payload.error);
+        }
+      } catch (inner) {
+        if (inner instanceof Error && inner.message !== error.message) {
+          throw inner;
+        }
+      }
+    }
+    throw new Error(error.message || "Error de red");
+  }
+
+  if (!data || typeof data !== "object") {
+    throw new Error("Respuesta inválida del servidor");
+  }
+  const payload = data as Record<string, unknown>;
+  if (typeof payload.error === "string") {
+    throw new Error(payload.error);
+  }
+  return payload;
 }
 
 export async function callEdgeText(
   body: Record<string, unknown>,
   extras?: Record<string, unknown>
 ): Promise<string> {
-  const res = await fetch(EDGE_URL, {
-    method: "POST",
-    headers: await edgeHeaders(),
-    body: JSON.stringify({ ...(extras ?? {}), ...body }),
-  });
-  const data = (await res.json()) as { answer?: string; error?: string };
-  if (!res.ok || data.error) {
-    throw new Error(data.error ?? "Error de red");
-  }
+  const data = await invokeAiConsult(body, extras);
   if (typeof data.answer !== "string") {
     throw new Error("Respuesta inválida del servidor");
   }
@@ -38,19 +66,5 @@ export async function callEdgeJson(
   body: Record<string, unknown>,
   extras?: Record<string, unknown>
 ): Promise<unknown> {
-  const res = await fetch(EDGE_URL, {
-    method: "POST",
-    headers: await edgeHeaders(),
-    body: JSON.stringify({ ...(extras ?? {}), ...body }),
-  });
-  const data = (await res.json()) as Record<string, unknown>;
-  if (!res.ok) {
-    throw new Error(
-      typeof data.error === "string" ? data.error : "Error de red"
-    );
-  }
-  if (typeof data.error === "string") {
-    throw new Error(data.error);
-  }
-  return data;
+  return invokeAiConsult(body, extras);
 }

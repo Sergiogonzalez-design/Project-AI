@@ -51,13 +51,16 @@ Antes de “cambiar de estructura”:
 
 ## 4. PERSISTENCIA / RECURRENCIA
 
-No asumir solo «dosis insuficiente». Reconsiderar:
+No asumir solo «dosis insuficiente». Reconsiderar (detalle + evidencia: `persistence-reevaluation.md`, `persistence-prognosis-pathways.md`):
 
 - ¿Hipótesis inicial incorrecta o incompleta?  
 - ¿Otra estructura / referido / múltiples generadores?  
-- ¿Evolución esperable más larga?  
-- ¿Factores psicosociales / carga?  
+- ¿Evolución esperable más larga? (p. ej. LBP: semanas–meses; hasta ~1/3 con dolor moderado al año — NICE NG59)  
+- ¿Factores psicosociales / yellow flags / carga?  
+- ¿La intervención tenía evidencia débil para esa condición? (p. ej. MT torácica sola)  
 - ¿Red flags o necesidad de imagen/derivación?  
+
+Trampas típicas si «sigue igual»: hombro≠solo manguito; LET≠solo Cozen; plantar≠solo fascia; tobillo≠solo ATFL; interescapular≠solo romboides.
 
 ---
 

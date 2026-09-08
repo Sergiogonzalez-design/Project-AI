@@ -3,6 +3,14 @@ export type CitedSource = {
   href: string | null;
 };
 
+export type CitedSourceOptions = {
+  /**
+   * Physio informe view: include Physioguide / knowledge-base titles as
+   * clickable /conocimientos links (hidden from patient chat citations).
+   */
+  forPhysio?: boolean;
+};
+
 const HEADING_LINE =
   /^(?:\*\*)?(Fuentes consultadas|Sources consulted)(?:\*\*)?$/i;
 const FUENTE_LINE = /^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*(.+)$/i;
@@ -66,6 +74,15 @@ function hostSearchUrl(title: string, host: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(`${title} site:${host}`)}`;
 }
 
+function knowledgeBaseHref(title: string): string {
+  return `/conocimientos?q=${encodeURIComponent(title)}`;
+}
+
+function isKnowledgeBaseLabel(label: string): boolean {
+  const t = label.trim();
+  return /^Physioguide\s*[—–-]/i.test(t) || /\b(?:ai)?kinora\b/i.test(t);
+}
+
 /** True when the source should appear in the Fuentes consultadas footer. */
 export function shouldShowInSourcesFooter(raw: string): boolean {
   const t = raw.trim();
@@ -89,14 +106,21 @@ export function hasWorkingSourceLink(raw: string): boolean {
   return resolveSourceHref(raw) != null;
 }
 
-export function resolveSourceHref(raw: string): string | null {
-  if (isInternalSource(raw)) return null;
-
+export function resolveSourceHref(
+  raw: string,
+  opts?: CitedSourceOptions
+): string | null {
   const md = markdownLink(raw);
   if (md) return md.href;
 
   const http = HTTP_URL.exec(raw);
   if (http) return sanitizeHttpUrl(http[0]);
+
+  if (opts?.forPhysio && isKnowledgeBaseLabel(raw)) {
+    return knowledgeBaseHref(displaySourceTitle(raw));
+  }
+
+  if (isInternalSource(raw)) return null;
 
   const pmcid = PMCID.exec(raw);
   if (pmcid) return `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcid[1]}/`;
@@ -117,29 +141,39 @@ export function resolveSourceHref(raw: string): string | null {
     return hostSearchUrl(withHost[1].trim(), withHost[2]);
   }
 
-  if (/\.pdf$/i.test(raw.trim())) {
-    const query = raw.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").trim();
-    return `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`;
+  if (/\.pdf(\b|$)/i.test(raw.trim())) {
+    const query = raw
+      .replace(/\.pdf\b/i, "")
+      .replace(/[_-]+/g, " ")
+      .trim();
+    return `https://scholar.google.com/scholar?q=${encodeURIComponent(query || raw)}`;
   }
 
   return null;
 }
 
-export function toCitedSource(raw: string): CitedSource {
+export function toCitedSource(
+  raw: string,
+  opts?: CitedSourceOptions
+): CitedSource {
   const title = displaySourceTitle(raw);
-  return { title, href: resolveSourceHref(raw) };
+  return { title, href: resolveSourceHref(raw, opts) };
 }
 
-function uniqueSources(labels: string[]): CitedSource[] {
+function uniqueSources(
+  labels: string[],
+  opts?: CitedSourceOptions
+): CitedSource[] {
   const seen = new Set<string>();
   const sources: CitedSource[] = [];
   for (const label of labels) {
     const trimmed = label.trim();
     if (!trimmed || HEADING_LINE.test(trimmed.replace(/\*/g, ""))) continue;
-    if (isInternalSource(trimmed)) continue;
-    const source = toCitedSource(trimmed);
-    if (!source.href) continue;
-    const key = source.href.toLowerCase();
+    if (/^criterio cl[ií]nico general$/i.test(trimmed)) continue;
+    if (!opts?.forPhysio && isInternalSource(trimmed)) continue;
+    const source = toCitedSource(trimmed, opts);
+    if (!opts?.forPhysio && !source.href) continue;
+    const key = (source.href ?? source.title).toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     sources.push(source);
@@ -147,7 +181,11 @@ function uniqueSources(labels: string[]): CitedSource[] {
   return sources;
 }
 
-export function extractCitedSources(content: string): {
+/** Pull unique sources out of an assistant message and return the body without them. */
+export function extractCitedSources(
+  content: string,
+  opts?: CitedSourceOptions
+): {
   body: string;
   sources: CitedSource[];
   heading: string;
@@ -195,11 +233,43 @@ export function extractCitedSources(content: string): {
 
   return {
     body: bodyLines.join("\n").trimEnd(),
-    sources: uniqueSources(labels),
+    sources: uniqueSources(labels, opts),
     heading,
   };
 }
 
 export function isInlineFuenteLine(line: string): boolean {
   return FUENTE_LINE.test(line.trim());
+}
+
+/**
+ * Remap patient-facing section titles so the physio reads about the patient
+ * (third person), not as if the AI is talking to the clinician.
+ */
+export function remapOrientationHeadingsForPhysio(content: string): string {
+  return content
+    .replace(
+      /\*\*\s*Qué debes hacer ahora\s*\*\*/gi,
+      "**Qué debe hacer el paciente**"
+    )
+    .replace(
+      /\*\*\s*What you should do now\s*\*\*/gi,
+      "**What the patient should do now**"
+    )
+    .replace(
+      /\*\*\s*Qué hacer mientras tanto\s*\*\*/gi,
+      "**Qué puede hacer el paciente mientras tanto**"
+    )
+    .replace(
+      /\*\*\s*What to do in the meantime\s*\*\*/gi,
+      "**What the patient can do in the meantime**"
+    )
+    .replace(
+      /\*\*\s*¿Contactar (?:con )?(?:un )?fisio\??\s*\*\*/gi,
+      "**Contacto con fisioterapeuta (sugerido al paciente)**"
+    )
+    .replace(
+      /\*\*\s*Contact (?:a )?physio\??\s*\*\*/gi,
+      "**Physio contact (suggested to the patient)**"
+    );
 }

@@ -1,7 +1,7 @@
 /**
  * Physioguide — knee instability / ACL rules for AI consult.
  * Source: knowledge/clinical-reasoning/knee-instability-acl.md
- * Keep in sync with lib/physioguide-knee-instability-acl-rules.ts
+ * Keep in sync with supabase/functions/ai-consult/response-rules.ts
  */
 
 export const AI_KNEE_INSTABILITY_ACL_RULES = `INESTABILIDAD DE RODILLA / LCA / LCP / ROTATORIA (Physioguide — CRÍTICO cuando hay torsión, pop, hinchazón aguda, no pudo continuar o sensación de ceder):
@@ -24,10 +24,12 @@ CLUSTER LCP:
 golpe en espinilla con rodilla flexionada (salpicadero / caída de rodillas) + inestabilidad posterior / bajada escaleras → LCP ↑.
 
 CLUSTER PLC:
-varo / hiperextensión + inestabilidad rotatoria + dolor posterolateral → complejo posterolateral ↑.
+varo / hiperextensión + inestabilidad rotatoria + dolor posterolateral ± dial test asimétrico (30° → PLC ↑; 30°+90° → PLC+LCP ↑) → complejo posterolateral ↑.
+Dial cualitativo: no inventar Sn/Sp; no confirma grado. Inestabilidad multiplanar severa → urgencia/especialista.
 
 CLUSTER ROTULIANA (no LCA):
-episodio de rótula que se desplaza/sale de sitio (± recolocación) → inestabilidad rotuliana, no LCA.
+episodio de rótula que se desplaza/sale de sitio (± recolocación) + aprensión rotuliana familiar → inestabilidad rotuliana, no LCA.
+Aprensión sin historia de luxación pesa menos; dolor PFPS sin aprensión ≠ inestabilidad.
 
 DIFERENCIAL OBLIGATORIO:
 - lesión LCA (parcial/completa — no afirmar grado sin datos)

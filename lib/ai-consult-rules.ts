@@ -30,6 +30,7 @@ import { AI_ELBOW_WRIST_NEURAL_RULES } from "@/lib/physioguide-elbow-wrist-neura
 import { AI_WRIST_DEQUERVAIN_RULES } from "@/lib/physioguide-wrist-dequervain-rules";
 import { AI_WRIST_TRAUMA_SCAPHOID_RULES } from "@/lib/physioguide-wrist-trauma-scaphoid-rules";
 import { AI_ELBOW_DISTAL_BICEPS_RULES } from "@/lib/physioguide-elbow-distal-biceps-rules";
+import { AI_ELBOW_OSTEOARTHRITIS_RULES } from "@/lib/physioguide-elbow-osteoarthritis-rules";
 import { AI_ELBOW_DISTAL_TRICEPS_RULES } from "@/lib/physioguide-elbow-distal-triceps-rules";
 import { AI_ELBOW_PLRI_RULES } from "@/lib/physioguide-elbow-plri-rules";
 import { AI_ELBOW_RADIAL_TUNNEL_RULES } from "@/lib/physioguide-elbow-radial-tunnel-rules";
@@ -42,14 +43,23 @@ import { AI_WRIST_CARPAL_INSTABILITY_RULES } from "@/lib/physioguide-wrist-carpa
 import { AI_CERVICAL_NECK_PAIN_RULES } from "@/lib/physioguide-cervical-neck-pain-rules";
 import { AI_CERVICAL_TRAUMA_REDFLAGS_RULES } from "@/lib/physioguide-cervical-trauma-redflags-rules";
 import { AI_LUMBAR_BACK_PAIN_RULES } from "@/lib/physioguide-lumbar-back-pain-rules";
+import { AI_LUMBAR_SI_PELVIS_RULES } from "@/lib/physioguide-lumbar-si-pelvis-rules";
 import { AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES } from "@/lib/physioguide-lumbar-redflags-inflammatory-rules";
 import { AI_SPINE_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-spine-master-rules";
+import { AI_THORACIC_MASTER_INTEGRATION_RULES } from "@/lib/physioguide-thoracic-master-rules";
+import { AI_THORACIC_REDFLAGS_VISCERAL_RULES } from "@/lib/physioguide-thoracic-redflags-rules";
+import { AI_THORACIC_SPINE_PAIN_RULES } from "@/lib/physioguide-thoracic-spine-pain-rules";
 import { AI_GLOBAL_CROSS_REGION_RULES } from "@/lib/physioguide-global-cross-region-rules";
 import { AI_FINGER_DIGITAL_PAIN_RULES } from "@/lib/physioguide-finger-digital-pain-rules";
 import { AI_HEAD_HEADACHE_MASTER_RULES } from "@/lib/physioguide-head-headache-master-rules";
 import { AI_HYPOTHESIS_EXPLORATION_RULES } from "@/lib/physioguide-hypothesis-mode-rules";
 import { AI_MTRP_FRAMEWORK_RULES } from "@/lib/physioguide-mtrp-framework-rules";
 import { AI_SHOULDER_LATERAL_REFERRED_RULES } from "@/lib/physioguide-shoulder-lateral-referred-rules";
+import { AI_CERVICAL_REFERRED_RULES } from "@/lib/physioguide-cervical-referred-rules";
+import {
+  AI_HIP_REFERRED_RULES,
+  AI_LUMBAR_REFERRED_RULES,
+} from "@/lib/physioguide-lumbar-hip-referred-rules";
 import {
   AI_CLARITY_NO_OVERDIAGNOSIS_RULES,
   AI_DIFFERENTIAL_MATRICES_RULES,
@@ -60,6 +70,12 @@ import {
   AI_REFERRED_PAIN_LIBRARY_RULES,
 } from "@/lib/physioguide-clinical-reasoning-library-rules";
 import { AI_READAPTATION_RULES } from "@/lib/physioguide-readaptation-rules";
+import {
+  AI_POST_SURGERY_ACL_RULES,
+  AI_POST_SURGERY_ANKLE_RULES,
+  AI_POST_SURGERY_ROTATOR_CUFF_RULES,
+  AI_POST_SURGERY_SCREENS_MASTER_RULES,
+} from "@/lib/physioguide-post-surgery-screens-rules";
 
 export const AI_DATA_FIDELITY_RULES = `FIDELIDAD A LOS DATOS (CRÍTICO — incumplir esto es un error grave):
 - El mecanismo u origen de la lesión DEBE coincidir EXACTAMENTE con lo que el usuario indicó en la descripción inicial y en el cuestionario (campos Inicio, Mecanismo, Actividad, detalle de actividad).
@@ -109,14 +125,24 @@ PASO 1 — ORIENTACIÓN INICIAL (DIFFERENTIAL COMPLETO):
 - En **Posibles lesiones** incluye al menos las hipótesis locales Y, si encaja, 1 hipótesis de origen proximal/referido con confianza (alta/media/baja).
 - Genera / usa las preguntas y tests según la zona + cribado de origen referido cuando proceda (OBLIGATORIO en hombro/codo/brazo con hormigueo, irradiación o tests locales negativos).
 
-PASO 2 — ¿ES URGENTE / HOSPITAL? (PRIORIDAD ALTA / BANDERAS ROJAS):
-- Si el contexto dice PRIORIDAD ALTA, banderas rojas, o hay lesión grave obvia (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, no apoyo post-trauma, etc.):
+PASO 2 — ¿ES URGENTE / HOSPITAL? (SOLO PRIORIDAD ALTA REAL — no inventes urgencia):
+- Hospital / urgencias SOLO si el contexto dice explícitamente «PRIORIDAD ALTA», «URGENCIA DETECTADA» o «BANDERAS ROJAS DETECTADAS», O hay lesión grave ya evidente (deformidad marcada, sospecha de fractura/luxación, déficit neurológico grave, cauda equina, pie caído súbito, dolor insoportable, herida abierta grave, no apoyo post-trauma, etc.).
+- PROHIBIDO mandar a hospital/urgencias por: dolor leve-moderado (p. ej. 3–5/10 o ≤6/10 sin otros alarmas), sobrecarga / esfuerzo / lumbalgia o cervicalgia mecánica, molestia de espalda/cuello sin banderas, o solo porque el cuestionario tiene un apartado titulado «BANDERAS ROJAS» con «Ninguna bandera roja marcada».
+- Si NO hay PRIORIDAD ALTA real:
+  → NO uses el flujo de hospital.
+  → En **Qué debes hacer ahora** prioriza fisioterapia / clínicas AIKinora / hacer las pruebas funcionales / autocuidado según el caso — NUNCA hospital por defecto.
+- Si SÍ hay PRIORIDAD ALTA real:
   → Recomienda HOSPITAL / URGENCIAS YA en **Qué debes hacer ahora**.
   → PROHIBIDO crear la sección **Pruebas funcionales** (ni título, ni lista, ni «haz estas pruebas», ni hop/salto).
   → PROHIBIDO el ciclo de reposo 24–36 h + retest como paso principal (la prioridad es urgencias).
   → Añade **Pruebas de imagen recomendadas** (RX, RMN, eco…) justo antes de **Qué debes hacer ahora**.
   → Hielo / reposo / elevación / no cargar van SOLO en **Qué hacer mientras tanto** (recomendaciones seguras mientras acude a urgencias), NUNCA como “prueba funcional”.
   → NO recomiendes clínicas de AIKinora: usa **Hospitales / Urgencias cerca de ti** (con ciudad del perfil → hospitales locales; sin ciudad → hospital más cercano + Maps / 112).
+
+DESTINO CORRECTO (CRÍTICO — error frecuente a evitar):
+- Sobrecarga / esfuerzo / dolor mecánico de espalda, cuello, hombro, etc. sin banderas rojas → fisioterapeuta / clínicas AIKinora (no urgencias).
+- Intensidad 4/10 sin déficit neurológico ni trauma grave → NO es urgencia hospitalaria.
+- Reserva hospital para cauda, trauma grave, déficit neurológico serio, dolor insoportable, infección sistémica, o PRIORIDAD ALTA explícita en el contexto.
 
 PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIACIÓN KINORA):
 - Solo si PASO 2 NO aplica. Si hay PRIORIDAD ALTA / hospital, salta este paso por completo.
@@ -214,7 +240,7 @@ Fuentes consultadas
 SECCIONES — NO MEZCLAR (CRÍTICO — error frecuente):
 - **Qué hacer mientras tanto** = recomendaciones de autocuidado (hielo, elevación, reposo relativo, evitar cargar, inmovilizar…). NO son pruebas. NO uses formato ¿…? ni botones Sí/No aquí. NUNCA digas «haz esta prueba: aplica hielo».
 - **Pruebas funcionales** = SOLO movimientos/provocaciones que el paciente hace YA y responde Sí/No (¿duele al…?, ¿puedes…?). NUNCA hielo, reposo, elevación, medicación, hospital ni consejos de tratamiento.
-- **Qué debes hacer ahora** = el siguiente paso concreto y priorizado (urgencias, imagen, fisio, o «haz las pruebas de arriba y responde»). Si PRIORIDAD ALTA → HOSPITAL / URGENCIAS YA aquí.
+- **Qué debes hacer ahora** = el siguiente paso concreto y priorizado (fisio, pruebas, imagen, o urgencias SOLO si PRIORIDAD ALTA real). Si PRIORIDAD ALTA → HOSPITAL / URGENCIAS YA aquí. Si NO → NO digas hospital «por precaución» en casos leves/mecánicos.
 - Si el caso ES urgente / PRIORIDAD ALTA: omite **Pruebas funcionales** y omite **Clínicas en AIKinora cerca de ti**. Orden: Resumen → Estructuras → Posibles lesiones → Qué hacer mientras tanto (solo medidas seguras de camino a urgencias) → Pruebas de imagen recomendadas → Qué debes hacer ahora (hospital) → **Hospitales / Urgencias cerca de ti** → Contactar fisio (opcional) → Fuentes.
 - Con ciudad en el perfil: nombra 2–3 hospitales/urgencias conocidos de esa ciudad. Sin ciudad: hospital más cercano + Maps («urgencias cerca de mí») / 112 — no inventes hospitales de una ciudad desconocida.
 
@@ -278,6 +304,12 @@ ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
 ${AI_SHOULDER_LATERAL_REFERRED_RULES}
 
+${AI_CERVICAL_REFERRED_RULES}
+
+${AI_LUMBAR_REFERRED_RULES}
+
+${AI_HIP_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
@@ -318,6 +350,8 @@ ${AI_ELBOW_RADIAL_TUNNEL_RULES}
 
 ${AI_ELBOW_UCL_MEDIAL_RULES}
 
+${AI_ELBOW_OSTEOARTHRITIS_RULES}
+
 ${AI_ELBOW_WRIST_GUYON_RULES}
 
 ${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
@@ -334,9 +368,17 @@ ${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
 
 ${AI_CERVICAL_NECK_PAIN_RULES}
 
+${AI_THORACIC_MASTER_INTEGRATION_RULES}
+
+${AI_THORACIC_REDFLAGS_VISCERAL_RULES}
+
+${AI_THORACIC_SPINE_PAIN_RULES}
+
 ${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
 
 ${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_LUMBAR_SI_PELVIS_RULES}
 
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
@@ -347,6 +389,14 @@ ${AI_HYPOTHESIS_EXPLORATION_RULES}
 ${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
 
 ${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_POST_SURGERY_SCREENS_MASTER_RULES}
+
+${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
+
+${AI_POST_SURGERY_ANKLE_RULES}
 
 ${AI_NO_IMAGING_DECISION_RULES}
 

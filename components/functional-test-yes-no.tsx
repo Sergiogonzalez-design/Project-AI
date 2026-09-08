@@ -11,7 +11,7 @@ import {
   resolveFunctionalTestMedia,
   stripFunctionalMediaMarker,
 } from "@/lib/functional-test-media";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   tests: FunctionalTestItem[];
@@ -30,6 +30,7 @@ export function FunctionalTestYesNo({
     {}
   );
   const [sent, setSent] = useState(false);
+  const wasDisabledRef = useRef(Boolean(disabled));
   const shown = new Set<string>();
   const complete = tests.every((t) => answers[t.n]);
   const yes = language === "en" ? "Yes" : "Sí";
@@ -40,6 +41,14 @@ export function FunctionalTestYesNo({
       : "Haz cada prueba y pulsa Sí o No.";
   const send =
     language === "en" ? "Send answers" : "Enviar respuestas";
+
+  // If send failed, parent becomes idle again while this card stays visible — allow retry.
+  useEffect(() => {
+    if (wasDisabledRef.current && !disabled && sent) {
+      setSent(false);
+    }
+    wasDisabledRef.current = Boolean(disabled);
+  }, [disabled, sent]);
 
   function choose(n: number, value: FunctionalTestAnswer) {
     if (disabled || sent) return;
@@ -88,7 +97,7 @@ export function FunctionalTestYesNo({
           type="button"
           disabled={disabled || sent}
           onClick={() => {
-            if (sent) return;
+            if (sent || disabled) return;
             setSent(true);
             onSubmit(formatFunctionalTestAnswers(tests, answers, language));
           }}

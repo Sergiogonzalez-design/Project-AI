@@ -6,11 +6,11 @@ NUNCA: Spurling aislado = cefalea cervicogénica confirmada. NUNCA inventar Sn/S
 
 ## CLUSTER: CEFALEA CERVICOGÉNICA (compatibilidad clínica)
 
-**Componentes:** cefalea unilateral (habitualmente occipital → temporal/sien) + dolor o rigidez de cuello concurrente + empeoramiento con movimientos cervicales familiares ± Spurling reproduce cefalea **familiar** ± movilidad cervical reducida mecánica.
+**Componentes:** cefalea unilateral (habitualmente occipital → temporal/sien) + dolor o rigidez de cuello concurrente + empeoramiento con movimientos cervicales familiares ± **FRT** limitado/familiar (upper C) ± Spurling reproduce cefalea **familiar** ± movilidad cervical reducida mecánica.
 
-**Cita:** IHS cefalea atribuida a trastorno cervical (referencia criterios); Blauenstein et al.; JOSPT Neck Pain CPG. Spurling/movilidad **apoyan**, no confirman.
+**Cita:** IHS cefalea atribuida a trastorno cervical; Ogince et al. FRT 2007; Blauenstein et al.; JOSPT Neck Pain CPG. Spurling/FRT/movilidad **apoyan**, no confirman.
 
-**AI:** Compatible con cefalea cervicogénica. Spurling negativo **no excluye**. Spurling positivo **no confirma**. Valorar coexistencia con migraña/tensional. No Spurling si trauma cervical agudo no filtrado.
+**AI:** Compatible con cefalea cervicogénica. Spurling o FRT negativos **no excluyen**. Positivos **no confirman**. Valorar coexistencia con migraña/tensional. No Spurling/FRT si trauma cervical agudo no filtrado o sospecha vascular/inestabilidad.
 
 ---
 

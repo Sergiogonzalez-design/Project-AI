@@ -1,7 +1,22 @@
 # Clinical relation data model
 
-JSON Schema: [`clinical-relation.schema.json`](./clinical-relation.schema.json)  
-Example packs: [`../relations/`](../relations/) (shoulder, cervical, thoracic, lumbar, hip, knee, ankle-foot, elbow-wrist, head).
+JSON Schema: [`clinical-relation.schema.json`](./clinical-relation.schema.json)
+
+## Packs — ALL ACTIVE v2
+
+| Pack | File |
+|------|------|
+| shoulder-lateral | [`../relations/shoulder-lateral.json`](../relations/shoulder-lateral.json) |
+| cervical | [`../relations/cervical.json`](../relations/cervical.json) |
+| lumbar | [`../relations/lumbar.json`](../relations/lumbar.json) |
+| hip | [`../relations/hip.json`](../relations/hip.json) |
+| knee | [`../relations/knee.json`](../relations/knee.json) |
+| ankle-foot | [`../relations/ankle-foot.json`](../relations/ankle-foot.json) |
+| thoracic | [`../relations/thoracic.json`](../relations/thoracic.json) |
+| head | [`../relations/head.json`](../relations/head.json) |
+| elbow-wrist | [`../relations/elbow-wrist.json`](../relations/elbow-wrist.json) |
+
+RAG companions: `evidence/relations-*.md`. Cited numbers (when allowed): `evidence/cited-diagnostic-accuracy.md`.
 
 ## Entity types
 
@@ -40,6 +55,6 @@ Example packs: [`../relations/`](../relations/) (shoulder, cervical, thoracic, l
 ## Rules
 
 1. Every relation needs ≥1 `references` entry (citation string + optional DOI/PMID).  
-2. Never invent Sn/Sp/LR; leave `diagnostic_accuracy` empty or mark `mixed` / `unknown`.  
+2. Never invent Sn/Sp/LR; leave `diagnostic_accuracy` empty or mark `mixed` / `unknown`, unless citing `cited-diagnostic-accuracy.md`.  
 3. `limitations` required when evidence_level is C, D, or insufficient.  
 4. Copyrighted book prose must not be stored verbatim.  

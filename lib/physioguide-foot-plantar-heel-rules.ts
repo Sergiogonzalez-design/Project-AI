@@ -14,6 +14,8 @@ REGLAS:
 
 CLUSTER FASCIA: primeros pasos + palpación inserción medial calcáneo ± Windlass familiar → fasciopatía ↑.
 CLUSTER S1: planta/pantorrilla + lumbar + SLR familiar + Windlass/Aquiles pobres → referido ↑.
+CLUSTER TÚNEL TARSIANO: ardor/hormigueo medial-plantar ± Tinel tarsal familiar → irritación túnel tarsiano ↑ (no uses Tinel de muñeca).
+CLUSTER ANTEPIÉ / NEUROMA: dolor interdigital + Mulder familiar → neuroma/irritación ↑; click solo no confirma.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Duele mucho en los primeros pasos al levantarte?

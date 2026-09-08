@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   AiOrientationDisclaimer,
+  PhysioPatientOrientationView,
   PhysioReportView,
 } from "@/components/physio-report-view";
 import { createClient } from "@/lib/supabase/client";
@@ -195,11 +196,10 @@ export function FisioPatientReports({
                         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-neutral-500">
                           Ver orientación mostrada al paciente
                         </summary>
-                        <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
-                          {report.patient_summary.replace(
-                            /Syndesmosis/gi,
-                            "Sindesmosis"
-                          )}
+                        <div className="mt-2">
+                          <PhysioPatientOrientationView
+                            content={report.patient_summary}
+                          />
                         </div>
                       </details>
                     )}

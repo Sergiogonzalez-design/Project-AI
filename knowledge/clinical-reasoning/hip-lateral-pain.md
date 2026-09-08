@@ -259,6 +259,13 @@ Si persiste duda o dolor profundo asociado:
 - **Meaning:** gluteal dysfunction / GTPS compatible OR L5 / hip joint / pain inhibition  
 - **AI rule:** nunca «Trendelenburg positivo = GTPS confirmado»
 
+### Resisted hip abduction
+
+- **Positive:** dolor **lateral / trocantérico familiar** (no solo debilidad)
+- **Meaning:** completa cluster GTPS con palpación + monopodal
+- **AI rule:** abducción resistida aislada ≠ rotura de glúteo medio; debilidad sin dolor es inespecífica
+- Catalog id: `resisted-abduction`
+
 ### Step-down / single-leg squat
 
 - Reproducción dolor familiar → carga lateral ↑  

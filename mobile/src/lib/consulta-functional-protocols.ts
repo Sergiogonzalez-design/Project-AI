@@ -47,6 +47,8 @@ export type FunctionalProtocolId =
   | "knee"
   | "hip"
   | "lumbar"
+  | "thoracic"
+  | "pelvis"
   | "cervical"
   | "finger"
   | "head";
@@ -1309,6 +1311,182 @@ export const LUMBAR_PROTOCOL: FunctionalProtocol = {
   },
 };
 
+/** Thoracic / mid-back — rotation, deep breath, scapular reach; chest-pain safety. */
+export const THORACIC_PROTOCOL: FunctionalProtocol = {
+  id: "thoracic",
+  match:
+    /tor[aá]cic|thoracic|dorsal(\s*(medio|alta))?|costilla|rib(\s*pain)?|espalda\s*media|mid[\s-]?back|entre\s*om[oó]platos|interscapular|t[oó]rax(?!\s*de\s*pecho)/i,
+  name: {
+    es: "Valoración funcional — Torácica / espalda media",
+    en: "Functional assessment — Thoracic / mid-back",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si el dolor de pecho/espalda media viene con falta de aire, opresión, sudor frío, dolor al brazo/mandíbula, mareo grave, o trauma fuerte con dificultad para respirar → URGENCIAS YA (no es un test casero).",
+    en:
+      "If mid-back/chest pain comes with shortness of breath, pressure, cold sweat, arm/jaw pain, severe dizziness, or major trauma with breathing difficulty → ER NOW (not a home test).",
+  },
+  historyItems: [
+    {
+      id: "hx_thoracic_onset",
+      question: {
+        es: "¿Empezó tras un golpe, caída, tos fuerte o esfuerzo de torsión del tronco?",
+        en: "Did it start after a blow, fall, strong cough, or a trunk-twisting effort?",
+      },
+    },
+    {
+      id: "hx_breath_related",
+      question: {
+        es: "¿Empeora claramente al inspirar hondo, toser o estornudar?",
+        en: "Does it clearly worsen with a deep breath, cough, or sneeze?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_trunk_rotation",
+      positiveWhen: "no",
+      question: {
+        es: "Sentado, ¿puedes girar el tronco a ambos lados de forma similar sin dolor fuerte en costillas/espalda media?",
+        en: "Seated, can you rotate the trunk both ways similarly without strong rib / mid-back pain?",
+      },
+    },
+    {
+      id: "test_deep_breath_rib",
+      question: {
+        es: "Al inspirar hondo o toser, ¿duele una costilla o un punto concreto de la espalda media?",
+        en: "With a deep breath or cough, does one rib or a specific mid-back spot hurt?",
+      },
+    },
+    {
+      id: "test_scapular_reach",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes elevar ambos brazos y juntar los omoplatos sin pinzamiento entre ellos?",
+        en: "Can you raise both arms and squeeze the shoulder blades together without pinching between them?",
+      },
+    },
+    {
+      id: "test_side_bend_thoracic",
+      positiveWhen: "no",
+      question: {
+        es: "¿Puedes inclinarte de lado (derecha e izquierda) sin dolor fuerte en la espalda media?",
+        en: "Can you side-bend left and right without strong mid-back pain?",
+      },
+    },
+    {
+      id: "test_neck_screen_thoracic",
+      question: {
+        es: "¿Al girar o inclinar la cabeza empeora el mismo dolor de espalda media o aparece hormigueo en el brazo?",
+        en: "Does turning or tilting the neck worsen the same mid-back pain or cause arm tingling?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar torsiones forzadas, cargas sobre el hombro y toses/esfuerzos intensos). Respiración suave y caminar si no empeora. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid forced twists, shoulder loads, and hard coughing/strain). Easy breathing and walking if it does not worsen. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; RX si trauma/costilla; RMN si irradiación o no mejora; descartar causa cardiopulmonar si el cuadro lo sugiere.",
+    en:
+      "If retest still bad → in-person; X-ray if trauma/rib concern; MRI if radiation or no improvement; rule out cardiopulmonary causes if the picture suggests it.",
+  },
+};
+
+/** Pelvis / SIJ — single-leg stance, step-up, SLR screen; not hip FAI and not pure adductor. */
+export const PELVIS_PROTOCOL: FunctionalProtocol = {
+  id: "pelvis",
+  match:
+    /pelvis|sacroil[ií]ac|sacro[\s-]?iliac|\bSIJ\b|articulaci[oó]n\s*sacro|pelvic\s*girdle|cintura\s*p[eé]lvica|nalga\s*(SI|sacro)|dolor\s*sacro/i,
+  name: {
+    es: "Valoración funcional — Pelvis / sacroilíaca",
+    en: "Functional assessment — Pelvis / sacroiliac",
+  },
+  urgentRedFlagNote: {
+    es:
+      "Si hay retención/incontinencia, anestesia en silla de montar, debilidad grave en ambas piernas, o trauma de alta energía en pelvis → URGENCIAS YA.",
+    en:
+      "If retention/incontinence, saddle anesthesia, severe bilateral leg weakness, or high-energy pelvic trauma → ER NOW.",
+  },
+  historyItems: [
+    {
+      id: "hx_pelvis_load",
+      question: {
+        es: "¿Empezó o empeora al estar mucho rato de pie, al subir escaleras o al pasar de sentado a de pie?",
+        en: "Did it start or worsen with long standing, stairs, or sit-to-stand?",
+      },
+    },
+    {
+      id: "hx_si_side",
+      question: {
+        es: "¿El dolor se localiza más en un lado de la nalga/sacro (no solo en la ingle profunda)?",
+        en: "Is the pain more on one side of the buttock/sacrum (not only deep groin)?",
+      },
+    },
+  ],
+  items: [
+    {
+      id: "test_sls_pelvis",
+      positiveWhen: "no",
+      question: {
+        es: "Al apoyar solo una pierna 20–30 s, ¿hay inestabilidad o dolor en ingle/nalga/sacro?",
+        en: "On single-leg stance 20–30 s, is there instability or pain in the groin/buttock/sacrum?",
+      },
+    },
+    {
+      id: "test_slr_pelvis",
+      question: {
+        es: "Tumbado boca arriba, ¿duele al levantar la pierna estirada 20–30 cm (nalga/espalda/pierna)?",
+        en: "Lying on your back, does raising the straight leg 20–30 cm hurt (buttock/back/leg)?",
+      },
+    },
+    {
+      id: "test_step_up_pelvis",
+      question: {
+        es: "Al subir un escalón con la pierna afectada, ¿aumenta el dolor en pelvis, nalga o sacro?",
+        en: "When stepping up with the affected leg, does pelvic, buttock, or sacral pain increase?",
+      },
+    },
+    {
+      id: "test_sit_to_stand_pelvis",
+      question: {
+        es: "Al levantarte de una silla sin manos, ¿duele en un lado de la pelvis/nalga?",
+        en: "When standing from a chair without hands, does one side of the pelvis/buttock hurt?",
+      },
+    },
+    {
+      id: "test_hip_screen_pelvis",
+      question: {
+        es: "¿Duele también al cruzar piernas o ponerte el calcetín (más ingle profunda que sacro)?",
+        en: "Does it also hurt crossing the legs or putting on a sock (more deep groin than sacrum)?",
+      },
+    },
+  ],
+  suspectThreshold: 0.4,
+  restHoursMin: 24,
+  restHoursMax: 36,
+  retestNotifyHours: 36,
+  restProtocolNote: {
+    es:
+      "Protocolo: 24–36 h de reposo relativo (evitar estar mucho rato de pie asimétrico, saltos y cargas a una pierna). Camina suave y cambia de postura. Luego repetir los mismos tests.",
+    en:
+      "Protocol: 24–36 h relative rest (avoid long uneven standing, jumps, and single-leg loads). Gentle walking and posture changes. Then repeat the same tests.",
+  },
+  ifRetestStillPositive: {
+    es:
+      "Si el retest sigue malo → presencial; distinguir SIJ vs cadera vs lumbar; RX/RMN según sospecha ósea o irradiación.",
+    en:
+      "If retest still bad → in-person; distinguish SIJ vs hip vs lumbar; X-ray/MRI per bone or radiation concern.",
+  },
+};
+
 /** Finger / thumb — neural screen, trigger, jersey/mallet, UCL, pinch. */
 export const FINGER_PROTOCOL: FunctionalProtocol = {
   id: "finger",
@@ -1603,6 +1781,8 @@ export const FUNCTIONAL_PROTOCOLS: FunctionalProtocol[] = [
   WRIST_HAND_PROTOCOL,
   KNEE_PROTOCOL,
   HIP_PROTOCOL,
+  THORACIC_PROTOCOL,
+  PELVIS_PROTOCOL,
   LUMBAR_PROTOCOL,
   CERVICAL_PROTOCOL,
   FINGER_PROTOCOL,
@@ -1680,7 +1860,17 @@ export function imagingAfterFailedRetest(
       ? "X-ray if significant trauma; MRI if arm pain/neurological symptoms persist."
       : "RX si traumatismo relevante; RMN si persiste dolor al brazo / síntomas neurológicos.";
   }
-  if (/espalda|lumbar|dorsal|back|torácic/i.test(area)) {
+  if (/tor[aá]cic|thoracic|espalda\s*media|mid[\s-]?back|costilla|rib|dorsal/i.test(area)) {
+    return en
+      ? "X-ray if trauma/rib concern; MRI if persistent mid-back pain or radiation; urgent medical care if cardiopulmonary red flags."
+      : "RX si trauma/sospecha de costilla; RMN si dolor torácico persistente o irradiación; valoración urgente si hay banderas cardiopulmonares.";
+  }
+  if (/pelvis|sacroil|SIJ|sacro/i.test(area)) {
+    return en
+      ? "X-ray if trauma/bone stress concern; MRI if SIJ vs hip vs lumbar remains unclear."
+      : "RX si trauma/sospecha ósea; RMN si no está claro SIJ vs cadera vs lumbar.";
+  }
+  if (/espalda|lumbar|low\s*back|back/i.test(area)) {
     return en
       ? "X-ray if trauma/red-flag concern; MRI if radicular pain or no improvement."
       : "RX si trauma/alarma; RMN si dolor irradiado o no mejora.";
@@ -1869,6 +2059,22 @@ export function findFunctionalProtocolLoose(
 
   if (/cadera|hip|FAI|trocanter/i.test(text)) {
     return HIP_PROTOCOL;
+  }
+
+  if (
+    /pelvis|sacroil[ií]ac|sacro[\s-]?iliac|\bSIJ\b|articulaci[oó]n\s*sacro|pelvic\s*girdle|cintura\s*p[eé]lvica/i.test(
+      text
+    )
+  ) {
+    return PELVIS_PROTOCOL;
+  }
+
+  if (
+    /tor[aá]cic|thoracic|espalda\s*media|mid[\s-]?back|costilla|rib|entre\s*om[oó]platos|interscapular/i.test(
+      text
+    )
+  ) {
+    return THORACIC_PROTOCOL;
   }
 
   if (/lumbar|lumbago|espalda(\s*baja)?|low\s*back|\bback\b|ci[aá]tica|lumbalgia/i.test(text)) {

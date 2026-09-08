@@ -29,11 +29,21 @@ NUNCA: un test positivo → diagnóstico. NUNCA inventar Sn/Sp.
 
 ## CLUSTER: HIP-RELATED GROIN / FAIS
 
-**Componentes:** dolor inguinal **profundo** + carga en flexión/rotación + FADIR familiar ± ROM IR limitada.
+**Componentes:** dolor inguinal **profundo** + carga en flexión/rotación + FADIR familiar ± ROM IR limitada ± log roll / Stinchfield / scour familiar (cluster cualitativo).
 
-**Cita:** Griffin et al. Warwick Agreement. *BJSM* 2016. Imagen CAM ≠ causa.
+**Cita:** Griffin et al. Warwick Agreement. *BJSM* 2016. Imagen CAM ≠ causa. Exploración: Reiman (log roll, Stinchfield, scour = apoyo, no regla de oro).
 
-**AI:** Compatible con dolor de cadera. FADIR no confirma FAI ni labrum.
+**AI:** Compatible con dolor de cadera. FADIR / log roll / Stinchfield / scour no confirman FAI ni labrum aislados.
+
+---
+
+## CLUSTER: HIP OA SCREEN (cualitativo)
+
+**Componentes:** edad / carga mecánica + pérdida IR (± flexión) + dolor inguinal profundo + (±) scour / carga familiar. RX confirma estructura si se necesita.
+
+**Cita:** Criterios clínicos de OA de cadera (uso clínico + imagen); no inventar Sn/Sp de un test.
+
+**AI:** Compatible con OA de cadera mecánica. Scour o IR limitada ≠ grado radiológico. No confundir con GTPS solo lateral.
 
 ---
 
@@ -43,7 +53,7 @@ NUNCA: un test positivo → diagnóstico. NUNCA inventar Sn/Sp.
 
 **Cita:** Grimaldi A, Fearon A. *JOSPT* 2015. No bursitis como etiqueta por defecto.
 
-**AI:** Compatible con GTPS. Trendelenburg aislado no confirma rotura.
+**AI:** Compatible con GTPS. Trendelenburg aislado no confirma rotura. Abducción resistida aislada no confirma rotura.
 
 ---
 
@@ -101,11 +111,31 @@ NUNCA: un test positivo → diagnóstico. NUNCA inventar Sn/Sp.
 
 ## CLUSTER: ITB
 
-**Componentes:** dolor lateral sobre cóndilo + carrera/escaleras/cuestas reproducible + sin torsión/bloqueo claro.
+**Componentes:** dolor lateral sobre cóndilo + carrera/escaleras/cuestas reproducible + sin torsión/bloqueo claro ± Noble y/o Ober familiar.
 
-**Cita:** Literatura clínica ITBS en corredores (revisiones BJSM de running injuries). Noble/Ober: apoyo, no regla de oro.
+**Cita:** Literatura clínica ITBS en corredores (revisiones BJSM de running injuries). Noble/Ober: apoyo, no regla de oro. Precisión cualitativa — no inventar Sn/Sp.
 
-**AI:** Compatible con síndrome de banda iliotibial. No LCL si no hay trauma/varo.
+**AI:** Compatible con síndrome de banda iliotibial. No LCL si no hay trauma/varo. Noble/Ober aislados no confirman.
+
+---
+
+## CLUSTER: INESTABILIDAD ROTULIANA
+
+**Componentes:** episodio de rótula que se desplaza/sale (± recolocación) + aprensión rotuliana familiar (± moving apprehension).
+
+**Cita:** Literatura clínica inestabilidad patelar / exploración MSK. No inventar Sn/Sp.
+
+**AI:** Compatible con inestabilidad rotuliana. No confundir con LCA (pop + hemartros sin «rótula se sale»). Aprensión aislada sin historia pesa menos.
+
+---
+
+## CLUSTER: PLC (posterolateral)
+
+**Componentes:** mecanismo varo y/o hiperextensión + inestabilidad rotatoria + dolor posterolateral ± dial test asimétrico (30° ± 90°) ± estrés en varo.
+
+**Cita:** LaPrade / Cooper exploración PLC; JOSPT CPG knee ligament (multi-ligamento). Cualitativo.
+
+**AI:** Compatible con lesión posterolateral. Dial asimétrico no confirma grado. Inestabilidad multiplanar severa → urgencia/especialista.
 
 ---
 

@@ -1,7 +1,7 @@
 /**
  * Physioguide — lateral knee pain rules for AI consult.
  * Source: knowledge/clinical-reasoning/knee-lateral-pain.md
- * Keep in sync with lib/physioguide-knee-lateral-rules.ts
+ * Keep in sync with supabase/functions/ai-consult/response-rules.ts
  */
 
 export const AI_KNEE_LATERAL_PAIN_RULES = `DOLOR LATERAL DE RODILLA / LCL / MENISCO LATERAL / ITB (Physioguide — CRÍTICO cuando localización = cara externa / línea articular lateral / banda iliotibial):
@@ -23,6 +23,7 @@ dolor línea articular lateral + torsión/pivot + (bloqueo/chasquido/hinchazón 
 
 CLUSTER ITB (banda iliotibial):
 dolor lateral ITB/cóndilo + carrera/ciclismo/escaleras/cuestas + patrón reproducible a misma distancia o bajada + SIN bloqueo/torsión clara → síndrome ITB ↑.
+Noble compression y/o Ober familiar apoyan el cluster; aislados NO confirman ITBS. Carrera sin trauma ≠ LCL.
 
 DIFERENCIAL OBLIGATORIO:
 - esguince LCL (I–III según inestabilidad)

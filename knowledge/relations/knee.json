@@ -1,0 +1,532 @@
+{
+  "pack": "knee",
+  "status": "active",
+  "version": 2,
+  "notes": "ACTIVE relation pack (upgraded from pilot). No invented Sn/Sp. Traditional MTrP maps labeled traditional. No Travell verbatim.",
+  "relations": [
+    {
+      "id": "hip-may-refer-or-mimic-knee-pain",
+      "source_structure": "hip joint / periarticular hip",
+      "target_region": "anterior / medial knee",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Knee pain with limited local knee findings, especially in children/adolescents or when hip ROM reproduces familiar knee pain.",
+      "supporting_evidence": [
+        "Hip pathology presenting as knee pain is a classic clinical pitfall",
+        "Negative meniscal/ligament tests do not locate the source to the knee"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Clinical pattern — no invented numeric accuracy."
+      },
+      "limitations": [
+        "Adults can also have dual hip–knee OA patterns",
+        "Do not skip local knee exam"
+      ],
+      "alternative_explanations": [
+        "PFPS",
+        "Meniscal / ligament injury",
+        "Lumbar referral (less common for isolated anterior knee)"
+      ],
+      "recommended_examination": [
+        "Hip ROM + FADIR when knee exam is incongruent",
+        "Standard knee cluster for mechanism-based suspicion",
+        "Red flags for infection / tumor if night pain systemic"
+      ],
+      "red_flags": [
+        "Child with knee pain — always screen hip (SCFE / Perthes pathways)",
+        "Unable to bear weight after trauma"
+      ],
+      "references": [
+        {
+          "citation": "Kocher MS / pediatric hip–knee pain clinical teaching literature — SCFE presenting as knee pain (clinical caution).",
+          "year": 2004
+        },
+        {
+          "citation": "Reiman MP et al. Hip examination reviews — referred pain considerations.",
+          "year": 2015
+        }
+      ]
+    },
+    {
+      "id": "mcmurray-negative-does-not-exclude-meniscal-injury",
+      "source_structure": "meniscus (medial or lateral clinical construct)",
+      "target_region": "joint line / knee",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Twist injury or mechanical symptoms; McMurray negative or equivocal.",
+      "supporting_evidence": [
+        "Meniscal special tests have limited standalone accuracy in systematic reviews",
+        "Clusters (history + joint-line tenderness + composite tests) preferred"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent Sn/Sp. Negative McMurray ≠ meniscus cleared."
+      },
+      "limitations": [
+        "OA and effusion reduce interpretability",
+        "Examiner technique variable"
+      ],
+      "alternative_explanations": [
+        "PFPS",
+        "Collateral sprain",
+        "Loose body / OA mechanical symptoms",
+        "Hip referral"
+      ],
+      "recommended_examination": [
+        "Joint-line tenderness + Thessaly / squat as adjuncts",
+        "Ligament screen if giving-way",
+        "Imaging if management depends on it"
+      ],
+      "red_flags": [
+        "Locked knee with true mechanical block — urgent pathway"
+      ],
+      "references": [
+        {
+          "citation": "Hegedus EJ et al. Physical examination tests of the knee / meniscus — systematic reviews with cautious interpretation.",
+          "year": 2007
+        },
+        {
+          "citation": "Solomon DH et al. Does this patient have a torn meniscus or ligament of the knee? JAMA Rational Clinical Examination.",
+          "year": 2001
+        }
+      ]
+    },
+    {
+      "id": "thessaly-negative-does-not-exclude-meniscal-injury",
+      "source_structure": "meniscus clinical construct",
+      "target_region": "knee joint line",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Suspected meniscal pathology; Thessaly negative or not tolerated.",
+      "supporting_evidence": [
+        "Early promising accuracy reports were not consistently replicated — treat as mixed"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Replication concerns; never invent numeric values from memory."
+      },
+      "limitations": [
+        "Irritability / OA confounders",
+        "Not an exclusion test"
+      ],
+      "alternative_explanations": [
+        "Same as McMurray differentials"
+      ],
+      "recommended_examination": [
+        "Composite meniscal cluster",
+        "Functional load tolerance",
+        "Do not auto-attribute to 'muscle' because Thessaly is negative"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Meniscal clinical test literature including Thessaly replication/critique discussions in sports medicine reviews (qualitative mixed evidence).",
+          "year": 2015
+        },
+        {
+          "citation": "Hegedus EJ et al. Knee exam systematic reviews.",
+          "year": 2007
+        }
+      ]
+    },
+    {
+      "id": "lachman-negative-does-not-perfectly-exclude-acl",
+      "source_structure": "ACL clinical construct",
+      "target_region": "knee (instability / giving way)",
+      "relationship": "negative_test_does_not_exclude",
+      "clinical_context": "Pivot trauma or giving-way; Lachman negative or equivocal — especially acute hemarthrosis / guard.",
+      "supporting_evidence": [
+        "Lachman is among the better ACL clinical tests but remains imperfect",
+        "Examiner experience and patient guarding matter"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "cited",
+        "sensitivity": "85% pooled (Benjaminse JOSPT 2006, 95% CI 83-87)",
+        "specificity": "94% pooled (95% CI 92-95)",
+        "lr_positive": "10.2 (4.6-22.7)",
+        "lr_negative": "0.2 (0.1-0.3)",
+        "notes": "Cite Benjaminse 2006 only. Still imperfect exclusion (LR- 0.2). Acute guarding lowers performance. See cited-diagnostic-accuracy.md."
+      },
+      "limitations": [
+        "Acute spasm / effusion",
+        "Partial tears harder clinically",
+        "Less experienced examiners lower performance"
+      ],
+      "alternative_explanations": [
+        "Meniscal injury",
+        "Collateral sprain",
+        "Patellofemoral giving-way from pain",
+        "Contusion"
+      ],
+      "recommended_examination": [
+        "Pivot shift / anterior drawer as adjuncts when tolerable",
+        "Compare contralateral",
+        "MRI when clinical uncertainty and management depends on it"
+      ],
+      "red_flags": [
+        "Multi-ligament / dislocation suspicion — vascular/neuro emergency pathway"
+      ],
+      "references": [
+        {
+          "citation": "Benjaminse A et al. Clinical diagnosis of an anterior cruciate ligament rupture: a meta-analysis. J Orthop Sports Phys Ther.",
+          "year": 2006
+        },
+        {
+          "citation": "Solomon DH et al. JAMA Rational Clinical Examination — knee ligaments.",
+          "year": 2001
+        }
+      ]
+    },
+    {
+      "id": "pfps-may-coexist-with-meniscal-or-oa-features",
+      "source_structure": "patellofemoral pain clinical construct",
+      "target_region": "anterior knee",
+      "relationship": "may_coexist_with",
+      "clinical_context": "Anterior knee pain with stairs/sitting plus possible joint-line or degenerative features.",
+      "supporting_evidence": [
+        "PFPS is a clinical diagnosis of exclusion/pattern; OA and meniscal changes can coexist on imaging without explaining all symptoms"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Pattern-based — avoid structural over-attribution from imaging alone."
+      },
+      "limitations": [
+        "Imaging findings often incidental",
+        "Do not chase every meniscal signal in middle-aged anterior pain"
+      ],
+      "alternative_explanations": [
+        "Isolated meniscal pathology",
+        "Hip referral",
+        "Fat pad / tendinopathy patterns"
+      ],
+      "recommended_examination": [
+        "Load/aggravating factor analysis (stairs, squat, prolonged flexion)",
+        "Hip and foot kinetic contributors as hypotheses",
+        "Meniscal/ligament tests when mechanism suggests"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Willy RW et al. Patellofemoral Pain CPG. JOSPT.",
+          "year": 2019
+        },
+        {
+          "citation": "Crossley KM et al. 2016 Patellofemoral pain consensus statement from the 4th International Patellofemoral Pain Research Retreat. BJSM.",
+          "year": 2016
+        }
+      ]
+    },
+    {
+      "id": "lumbar-may-refer-or-mimic-knee-pain",
+      "source_structure": "lumbar somatic / nerve root structures",
+      "target_region": "knee / proximal leg (often with buttock or thigh clues)",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Knee pain with lumbar contribution, weak local knee reproduction, or radicular clues.",
+      "supporting_evidence": [
+        "Somatic and radicular referral can present at the knee",
+        "Less common than hip-to-knee referral but clinically relevant when local tests incongruent"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Pattern-based; no invented referral accuracy."
+      },
+      "limitations": [
+        "Most isolated anterior knee pain is local PFPS/OA",
+        "Do not over-call lumbar"
+      ],
+      "alternative_explanations": [
+        "PFPS",
+        "Hip referral",
+        "Meniscal / ligament injury"
+      ],
+      "recommended_examination": [
+        "Lumbar AROM + neuro screen when proximal clues",
+        "Standard knee cluster",
+        "Hip screen"
+      ],
+      "red_flags": [
+        "Cauda features if severe lumbar neuro change",
+        "Child knee pain — screen hip"
+      ],
+      "references": [
+        {
+          "citation": "Delitto A et al. Low Back Pain CPG — referred/radicular framing. JOSPT.",
+          "year": 2012
+        },
+        {
+          "citation": "Bogduk N. Definitions of referred vs radicular pain (clinical framing).",
+          "year": 2009
+        }
+      ]
+    },
+    {
+      "id": "acl-tested-by-lachman-cluster",
+      "source_structure": "ACL clinical construct",
+      "target_region": "knee (instability / giving way)",
+      "relationship": "tested_by",
+      "clinical_context": "Pivot trauma or giving-way: Lachman + history ± pivot shift/drawer when tolerable — not one perfect test.",
+      "supporting_evidence": [
+        "Lachman among better ACL clinical tests but imperfect",
+        "Benjaminse meta-analysis and JAMA RCE support cautious cluster use"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Qualitative: better than many knee tests; still not perfect. No invented LR."
+      },
+      "limitations": [
+        "Acute spasm/effusion",
+        "Examiner experience matters",
+        "Partial tears harder"
+      ],
+      "alternative_explanations": [
+        "Meniscal injury",
+        "Collateral sprain",
+        "Patellofemoral giving-way from pain"
+      ],
+      "recommended_examination": [
+        "Lachman compare contralateral",
+        "Pivot shift / drawer if tolerable",
+        "MRI when management depends"
+      ],
+      "red_flags": [
+        "Multi-ligament / dislocation — vascular/neuro pathway"
+      ],
+      "references": [
+        {
+          "citation": "Benjaminse A et al. Clinical diagnosis of ACL rupture: a meta-analysis. JOSPT.",
+          "year": 2006
+        },
+        {
+          "citation": "Solomon DH et al. JAMA Rational Clinical Examination — knee ligaments.",
+          "year": 2001
+        }
+      ]
+    },
+    {
+      "id": "meniscal-tested-by-history-jointline-cluster",
+      "source_structure": "meniscus clinical construct",
+      "target_region": "knee joint line",
+      "relationship": "tested_by",
+      "clinical_context": "Twist injury or mechanical symptoms: history + joint-line tenderness + composite tests preferred over McMurray alone.",
+      "supporting_evidence": [
+        "Meniscal special tests limited standalone accuracy",
+        "Clusters preferred (Solomon; Hegedus reviews)"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent cluster Sn/Sp; qualitative compatibility only."
+      },
+      "limitations": [
+        "OA and effusion confound",
+        "Imaging meniscal signal often incidental in middle age"
+      ],
+      "alternative_explanations": [
+        "PFPS",
+        "OA mechanical symptoms",
+        "Collateral sprain",
+        "Hip referral"
+      ],
+      "recommended_examination": [
+        "Joint-line tenderness + mechanism",
+        "McMurray/Thessaly as adjuncts only",
+        "Do not chase every MRI signal"
+      ],
+      "red_flags": [
+        "True locked knee — urgent pathway"
+      ],
+      "references": [
+        {
+          "citation": "Hegedus EJ et al. Physical examination tests of the knee / meniscus — systematic reviews.",
+          "year": 2007
+        },
+        {
+          "citation": "Solomon DH et al. JAMA Rational Clinical Examination — meniscus/ligament.",
+          "year": 2001
+        }
+      ]
+    },
+    {
+      "id": "pfps-differentiated-by-load-pattern-without-trauma",
+      "source_structure": "patellofemoral pain clinical construct",
+      "target_region": "anterior knee",
+      "relationship": "differentiated_by",
+      "clinical_context": "Anterior knee pain with stairs/squat/prolonged flexion without major traumatic pivot; differs from acute ligament/meniscal mechanism.",
+      "supporting_evidence": [
+        "PFPS CPGs and consensus emphasize load/aggravating pattern diagnosis",
+        "Not a structural imaging diagnosis"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Pattern-based clinical construct. No invented Sn/Sp."
+      },
+      "limitations": [
+        "Can coexist with OA/meniscal imaging findings",
+        "Hip contributors are hypotheses"
+      ],
+      "alternative_explanations": [
+        "Fat pad",
+        "Patellar tendinopathy",
+        "Hip referral",
+        "Meniscal pathology"
+      ],
+      "recommended_examination": [
+        "Load/aggravating factor analysis",
+        "Hip and foot kinetic contributors as hypotheses",
+        "Ligament/meniscal tests when mechanism suggests"
+      ],
+      "red_flags": [],
+      "references": [
+        {
+          "citation": "Willy RW et al. Patellofemoral Pain CPG. JOSPT.",
+          "year": 2019
+        },
+        {
+          "citation": "Crossley KM et al. 2016 Patellofemoral pain consensus. BJSM.",
+          "year": 2016
+        }
+      ]
+    },
+    {
+      "id": "collateral-may-mimic-jointline-meniscal-pain",
+      "source_structure": "MCL / LCL sprain clinical construct",
+      "target_region": "medial or lateral joint line / collateral corridor",
+      "relationship": "may_mimic",
+      "clinical_context": "Valgus/varus mechanism with joint-line pain that may be labelled meniscal.",
+      "supporting_evidence": [
+        "Collateral and meniscal injuries often coexist after trauma",
+        "Pain location alone does not separate structures"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent Sn/Sp for valgus/varus stress tests."
+      },
+      "limitations": [
+        "Acute guarding limits grading",
+        "Concurrent ACL/meniscus common"
+      ],
+      "alternative_explanations": [
+        "Meniscal tear",
+        "PFPS medial",
+        "OA"
+      ],
+      "recommended_examination": [
+        "Valgus/varus stress at 0 and 20–30 deg as tolerated",
+        "Meniscal cluster",
+        "ACL screen if pivot"
+      ],
+      "red_flags": [
+        "Multi-ligament suspicion"
+      ],
+      "references": [
+        {
+          "citation": "Solomon DH et al. JAMA Rational Clinical Examination — knee ligaments.",
+          "year": 2001
+        },
+        {
+          "citation": "Hegedus EJ et al. Knee exam systematic reviews — collateral tests qualitative.",
+          "year": 2007
+        }
+      ]
+    },
+    {
+      "id": "locked-knee-red-flag-if-true-mechanical-block",
+      "source_structure": "true mechanical locked knee (bucket-handle / loose body construct)",
+      "target_region": "knee ROM block",
+      "relationship": "red_flag_if",
+      "clinical_context": "Inability to fully extend with springy block after trauma or known meniscal disease — not pain-inhibited stiffness alone.",
+      "supporting_evidence": [
+        "True locked knee warrants urgent orthopaedic pathway"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "do_not_invent",
+        "notes": "Safety/urgency pathway — not a special-test accuracy claim."
+      },
+      "limitations": [
+        "Pain inhibition can mimic lock",
+        "Distinguish from capsular stiffness"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Urgent imaging / ortho pathway",
+        "Do not force end-range mobilization"
+      ],
+      "red_flags": [
+        "True extension block",
+        "Acute tense hemarthrosis with neurovascular concern"
+      ],
+      "references": [
+        {
+          "citation": "Orthopaedic trauma / meniscal locked-knee urgent pathway framing (local protocol).",
+          "year": 2015
+        },
+        {
+          "citation": "Solomon DH et al. JAMA RCE — mechanical symptoms framing.",
+          "year": 2001
+        }
+      ]
+    },
+    {
+      "id": "quadriceps-may-mimic-anterior-knee-pain-traditional",
+      "source_structure": "vastus medialis / quadriceps region (myofascial hypothesis)",
+      "target_region": "anterior / medial knee",
+      "relationship": "may_mimic",
+      "clinical_context": "Anterior knee pain with familiar pain on quadriceps palpation after PFPS/hip/meniscal screens — traditional only.",
+      "supporting_evidence": [
+        "Traditional myofascial maps describe anterior knee patterns (traditional class only)"
+      ],
+      "evidence_level": "D",
+      "referred_pattern_class": "traditional",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "MTrP palpation reliability limited (Tough; Lucas)."
+      },
+      "limitations": [
+        "Must not replace hip screen in children or ligament reasoning",
+        "Traditional ≠ absolute anatomy"
+      ],
+      "alternative_explanations": [
+        "PFPS",
+        "Hip referral",
+        "Fat pad",
+        "Meniscal"
+      ],
+      "recommended_examination": [
+        "PFPS load pattern + hip screen first",
+        "Familiar-pain palpation as weak adjunct"
+      ],
+      "red_flags": [
+        "Child with knee pain — always screen hip"
+      ],
+      "references": [
+        {
+          "citation": "Tough EA et al. 2007; Lucas N et al. 2009 — MTrP caution.",
+          "year": 2009
+        },
+        {
+          "citation": "Willy RW et al. PFPS CPG — local load framing over muscle maps. JOSPT.",
+          "year": 2019
+        }
+      ]
+    }
+  ]
+}

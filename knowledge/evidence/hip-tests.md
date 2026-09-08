@@ -190,6 +190,110 @@
 
 ---
 
+## TEST: THOMAS (flexores / iliopsoas)
+
+**Purpose:** Cribado de acortamiento / irritación de flexores de cadera (iliopsoas / recto femoral) en ingle anterior; apoyo al diferencial Doha iliopsoas vs hip-related.
+
+**Position:** Supino al borde de la camilla (o Thomas modificado: rodilla contralateral al pecho).
+
+**Procedure:** Paciente abraza una rodilla al pecho; la pierna a explorar cuelga/extiende. Observar extensión de cadera, lordosis lumbar y **dolor familiar** anterior vs inguinal profundo.
+
+**Positive:** Limitación de extensión + dolor **anterior familiar** en flexor/ingle; lordosis que no se aplana sugiere acortamiento flexor.
+
+**Pain location:** Anterior / flexor. Ingle profunda mecánica → hip-related. Medial → aductor.
+
+**Familiar pain:** Sí. Tirantez nueva sin el dolor de consulta pesa poco.
+
+**Clinical meaning:** ↑ iliopsoas-related / flexor. NO confirma bursitis del iliopsoas ni FAI.
+
+**Limitations:** Evidencia de precisión **cualitativa / clínica** (no inventar Sn/Sp). Positivo en muchas caderas rígidas o lumbares hiperlordóticas.
+
+**Differential:** Hip-related (FAI/OA), rectus femoris, lumbar, inguinal.
+
+**AI rule:** «Thomas con dolor anterior familiar → compatible con flexor/iliopsoas. No “bursitis confirmada”. Si el dolor es profundo inguinal al sentarse, prioriza hip-related (FADIR/ROM).»
+
+**Citation:** Uso clínico estándar en exploración de cadera/ingle (Reiman / Doha contexto iliopsoas). Weir et al. BJSM 2015 (marco Doha — iliopsoas-related). No inventar métricas de precisión.
+
+---
+
+## TEST: LOG ROLL (rodamiento pasivo)
+
+**Purpose:** Provocación de bajo fricción de irritación intraarticular (hip-related groin / sinovitis / labrum irritable).
+
+**Position:** Supino, cadera en extensión neutra, rodilla extendida.
+
+**Procedure:** Rotar pasivamente el miembro inferior en rotación interna ↔ externa rodando el fémur. Registrar dolor **inguinal profundo familiar** vs lateral/muscular.
+
+**Positive:** Reproduce dolor inguinal profundo familiar (a menudo con poca fuerza).
+
+**Pain location:** Ingle profunda. Lateral/trocanter → GTPS. Muslo → muscular.
+
+**Familiar pain:** Obligatorio.
+
+**Clinical meaning:** ↑ participación de cadera (intraarticular). NO confirma labrum ni FAI.
+
+**Limitations:** Sensible clínicamente a irritación articular; **baja especificidad**. Evidencia cualitativa en exploración de cadera (no inventar Sn/Sp).
+
+**Differential:** FAIS, OA, labrum, bone stress, iliopsoas.
+
+**AI rule:** «Log roll doloroso en ingle profunda → aumenta sospecha de cadera. No “labrum confirmado”.»
+
+**Citation:** Reiman MP et al. revisiones de exploración clínica de cadera / hip joint-related pain. Uso clínico estándar; precisión mixta/no cuantificar sin fuente.
+
+---
+
+## TEST: STINCHFIELD (flexión resistida en 30°)
+
+**Purpose:** Provocar dolor hip-related (carga del iliopsoas sobre articulación) frente a ingle muscular pura.
+
+**Position:** Supino.
+
+**Procedure:** Paciente eleva la pierna recta ~20–30°; el clínico aplica resistencia distal. Registrar **dónde** duele.
+
+**Positive:** Dolor **inguinal profundo familiar** (no solo tirón anterior superficial).
+
+**Pain location:** Profundo inguinal → hip-related ↑. Anterior superficial → iliopsoas. Medial → aductor.
+
+**Familiar pain:** Sí.
+
+**Clinical meaning:** ↑ hip-related groin cuando el dolor es profundo. Complementa FADIR/FABER; no sustituye imagen.
+
+**Limitations:** Solapa con flexión resistida Doha. Evidencia **cualitativa**; no inventar Sn/Sp. Positivo en muchas ingle dolorosas.
+
+**Differential:** FAIS/labrum/OA, iliopsoas-related, hernia/inguinal, bone stress.
+
+**AI rule:** «Stinchfield con dolor profundo familiar → compatible con cadera. Si solo duele el flexor superficial, no lo uses para “confirmar FAI”.»
+
+**Citation:** Literatura clínica de exploración de cadera (Reiman; uso en cribado hip joint-related pain). No hay métrica canónica única — cluster con FADIR/ROM/historia.
+
+---
+
+## TEST: HIP SCOUR / QUADRANT
+
+**Purpose:** Carga compresiva + arco de movimiento para irritación intraarticular / OA / FAIS.
+
+**Position:** Supino.
+
+**Procedure:** Flexión de cadera; aplicar compresión axial a lo largo del fémur mientras se barre un arco (aducción↔abducción ± rotaciones). Registrar dolor familiar y crepitación.
+
+**Positive:** Reproduce dolor inguinal (o lateral profundo) **familiar** ± crepitación.
+
+**Pain location:** Ingle profunda típica. Lateral → valorar GTPS coexistente.
+
+**Familiar pain:** Sí. Molestia nueva por la compresión pesa poco.
+
+**Clinical meaning:** ↑ cadera intraarticular / OA mecánica. NO confirma grado de artrosis ni labrum.
+
+**Limitations:** Maniobra agresiva — **no** si sospecha fractura/bone stress o intolerancia extrema. Evidencia de precisión **mixta/cualitativa**; no inventar Sn/Sp.
+
+**Differential:** OA, FAIS, labrum, necrosis avascular (red flag si nocturno/progresivo), GTPS.
+
+**AI rule:** «Scour familiar → aumenta sospecha de cadera/OA. No diagnostica “artrosis grado X”. Evitar si red flag óseo.»
+
+**Citation:** Uso clínico en cribado OA/hip joint (revisiones Reiman / exploración de cadera). Precisión mixta; cluster con ROM IR + edad + carga, no test aislado.
+
+---
+
 ## TEST: SLR / LASEGUE (cribado posterior / lumbar)
 
 **Purpose:** Distinguir dolor de isquion/glúteo local vs radicular lumbar.

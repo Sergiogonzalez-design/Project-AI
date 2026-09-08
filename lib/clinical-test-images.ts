@@ -186,6 +186,69 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     aliases: ["hop test", "hop-test", "salto monopodal", "single leg hop"],
   },
   {
+    id: "syndesmosis-squeeze",
+    title: "Squeeze de sindesmosis",
+    src: `${CLINICAL_TEST_CDN}/syndesmosis-squeeze.webp`,
+    aliases: [
+      "syndesmosis squeeze",
+      "squeeze sindesmosis",
+      "squeeze de sindesmosis",
+      "tibiofibular squeeze",
+      "compresion tibiofibular",
+      "compresión tibiofibular",
+    ],
+  },
+  {
+    id: "kleiger",
+    title: "Kleiger / rotación externa",
+    src: `${CLINICAL_TEST_CDN}/kleiger.webp`,
+    aliases: [
+      "kleiger",
+      "kleiger test",
+      "external rotation ankle",
+      "rotacion externa tobillo",
+      "rotación externa tobillo",
+      "prueba de kleiger",
+    ],
+  },
+  {
+    id: "talar-tilt",
+    title: "Talar tilt",
+    src: `${CLINICAL_TEST_CDN}/talar-tilt.webp`,
+    aliases: [
+      "talar tilt",
+      "talar-tilt",
+      "inversion stress ankle",
+      "estres en inversion tobillo",
+      "estrés en inversión tobillo",
+    ],
+  },
+  {
+    id: "mulder",
+    title: "Test de Mulder",
+    src: `${CLINICAL_TEST_CDN}/mulder.webp`,
+    aliases: [
+      "mulder",
+      "mulder test",
+      "test de mulder",
+      "morton squeeze",
+      "compresion metatarsiana",
+      "compresión metatarsiana",
+    ],
+  },
+  {
+    id: "tinel-tarsal",
+    title: "Tinel tarsal",
+    src: `${CLINICAL_TEST_CDN}/tinel-tarsal.webp`,
+    aliases: [
+      "tinel tarsal",
+      "tinel-tarsal",
+      "tinel tunel tarsiano",
+      "tinel túnel tarsiano",
+      "tarsal tunnel tinel",
+    ],
+  },
+  {
     id: "faber",
     title: "FABER / Patrick",
     src: `${CLINICAL_TEST_CDN}/faber.webp`,
@@ -207,6 +270,73 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "pata coja",
       "apoyo monopodal",
       "single-leg stance",
+    ],
+  },
+  {
+    id: "resisted-adduction",
+    title: "Aducción resistida (squeeze)",
+    src: `${CLINICAL_TEST_CDN}/resisted-adduction.webp`,
+    aliases: [
+      "resisted adduction",
+      "aduccion resistida",
+      "aducción resistida",
+      "squeeze test",
+      "squeeze",
+      "apretar rodillas",
+    ],
+  },
+  {
+    id: "resisted-hip-flexion",
+    title: "Flexión de cadera resistida",
+    src: `${CLINICAL_TEST_CDN}/resisted-hip-flexion.webp`,
+    aliases: [
+      "resisted hip flexion",
+      "flexion resistida cadera",
+      "flexión resistida de cadera",
+      "slr resistido",
+      "iliopsoas resistido",
+    ],
+  },
+  {
+    id: "thomas-test",
+    title: "Test de Thomas",
+    src: `${CLINICAL_TEST_CDN}/thomas-test.webp`,
+    aliases: ["thomas", "thomas test", "test de thomas"],
+  },
+  {
+    id: "resisted-abduction",
+    title: "Abducción de cadera resistida",
+    src: `${CLINICAL_TEST_CDN}/resisted-abduction.webp`,
+    aliases: [
+      "resisted abduction",
+      "abduccion resistida",
+      "abducción resistida",
+      "abduccion de cadera resistida",
+    ],
+  },
+  {
+    id: "log-roll",
+    title: "Log roll",
+    src: `${CLINICAL_TEST_CDN}/log-roll.webp`,
+    aliases: ["log roll", "log-roll", "rodamiento de cadera", "passive log roll"],
+  },
+  {
+    id: "stinchfield",
+    title: "Stinchfield",
+    src: `${CLINICAL_TEST_CDN}/stinchfield.webp`,
+    aliases: ["stinchfield", "stinchfield test", "test de stinchfield"],
+  },
+  {
+    id: "hip-scour",
+    title: "Hip scour / quadrant",
+    src: `${CLINICAL_TEST_CDN}/hip-scour.webp`,
+    aliases: [
+      "hip scour",
+      "scour",
+      "scour test",
+      "quadrant test",
+      "quadrant",
+      "hip quadrant",
     ],
   },
   {
@@ -272,6 +402,20 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     ],
   },
   {
+    id: "biceps-squeeze",
+    title: "Biceps squeeze (bíceps distal)",
+    src: `${CLINICAL_TEST_CDN}/biceps-squeeze.webp`,
+    aliases: [
+      "biceps squeeze",
+      "bíceps squeeze",
+      "squeeze bíceps",
+      "squeeze biceps",
+      "compresión bíceps",
+      "compresion biceps",
+      "ruland",
+    ],
+  },
+  {
     id: "milking-maneuver",
     title: "Milking maneuver (UCL)",
     src: `${CLINICAL_TEST_CDN}/milking-maneuver.webp`,
@@ -301,6 +445,56 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     title: "Test de Schober",
     src: `${CLINICAL_TEST_CDN}/schober.webp`,
     aliases: ["schober", "test de schober"],
+  },
+  {
+    id: "thigh-thrust",
+    title: "Thigh thrust (SIJ)",
+    src: `${CLINICAL_TEST_CDN}/thigh-thrust.webp`,
+    aliases: [
+      "thigh thrust",
+      "posterior shear",
+      "shear sacroiliaco",
+      "shear sacroilíaco",
+      "thrust de muslo",
+    ],
+  },
+  {
+    id: "si-distraction",
+    title: "Distracción sacroilíaca",
+    src: `${CLINICAL_TEST_CDN}/si-distraction.webp`,
+    aliases: [
+      "distraccion si",
+      "distracción si",
+      "si distraction",
+      "gapping si",
+      "distraccion sacroiliaca",
+      "distracción sacroilíaca",
+    ],
+  },
+  {
+    id: "si-compression",
+    title: "Compresión sacroilíaca",
+    src: `${CLINICAL_TEST_CDN}/si-compression.webp`,
+    aliases: [
+      "compresion si",
+      "compresión si",
+      "si compression",
+      "compresion sacroiliaca",
+      "compresión sacroilíaca",
+    ],
+  },
+  {
+    id: "active-slr",
+    title: "Active SLR (pelvic girdle)",
+    src: `${CLINICAL_TEST_CDN}/active-slr.webp`,
+    aliases: [
+      "active slr",
+      "aslr",
+      "slr activo",
+      "elevacion activa pierna",
+      "elevación activa pierna",
+      "pelvic girdle",
+    ],
   },
   {
     id: "slr-lasegue",
@@ -471,6 +665,22 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     ],
   },
   {
+    id: "chair-push-plri",
+    title: "Chair push-up / chair sign (PLRI)",
+    src: `${CLINICAL_TEST_CDN}/chair-push-plri.webp`,
+    aliases: [
+      "chair push",
+      "chair push-up",
+      "chair sign",
+      "plri",
+      "posterolateral",
+      "pivot shift codo",
+      "tabletop relocation",
+      "inestabilidad posterolateral",
+      "plri codo",
+    ],
+  },
+  {
     id: "posterior-drawer-pcl",
     title: "Cajón posterior / sag (LCP)",
     src: `${CLINICAL_TEST_CDN}/posterior-drawer-pcl.webp`,
@@ -481,6 +691,51 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "posterior sag",
       "godfrey",
       "ligamento cruzado posterior",
+    ],
+  },
+  {
+    id: "noble-compression",
+    title: "Noble compression (ITB)",
+    src: `${CLINICAL_TEST_CDN}/noble-compression.webp`,
+    aliases: [
+      "noble",
+      "noble compression",
+      "noble test",
+      "test de noble",
+      "compresion de noble",
+      "compresión de noble",
+    ],
+  },
+  {
+    id: "ober-test",
+    title: "Test de Ober",
+    src: `${CLINICAL_TEST_CDN}/ober-test.webp`,
+    aliases: ["ober", "ober test", "test de ober", "ober's test"],
+  },
+  {
+    id: "patellar-apprehension",
+    title: "Aprensión rotuliana",
+    src: `${CLINICAL_TEST_CDN}/patellar-apprehension.webp`,
+    aliases: [
+      "patellar apprehension",
+      "aprehension rotuliana",
+      "aprensión rotuliana",
+      "apprehension test",
+      "aprehension de rotula",
+      "aprensión de rótula",
+      "moving apprehension",
+    ],
+  },
+  {
+    id: "dial-test",
+    title: "Dial test (PLC)",
+    src: `${CLINICAL_TEST_CDN}/dial-test.webp`,
+    aliases: [
+      "dial test",
+      "dial",
+      "test dial",
+      "external rotation dial",
+      "prueba dial",
     ],
   },
   {
@@ -519,6 +774,33 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     ],
   },
   {
+    id: "flexion-rotation",
+    title: "Flexion–rotation test (FRT / C1–C2)",
+    src: `${CLINICAL_TEST_CDN}/flexion-rotation.webp`,
+    aliases: [
+      "flexion rotation",
+      "flexion-rotation",
+      "frt",
+      "test de flexion rotacion",
+      "test de flexión rotación",
+      "c1 c2",
+      "upper cervical rotation",
+    ],
+  },
+  {
+    id: "bakody",
+    title: "Bakody (shoulder abduction relief)",
+    src: `${CLINICAL_TEST_CDN}/bakody.webp`,
+    aliases: [
+      "bakody",
+      "signo de bakody",
+      "shoulder abduction relief",
+      "abduccion alivio",
+      "abducción alivio",
+      "mano en la cabeza",
+    ],
+  },
+  {
     id: "thumb-ucl-stress",
     title: "Estrés UCL del pulgar (valgo MCP)",
     src: `${CLINICAL_TEST_CDN}/thumb-ucl-stress.webp`,
@@ -529,6 +811,9 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "gamekeeper",
       "estres ucl",
       "estrés ucl",
+      "stener",
+      "lesión de stener",
+      "stener lesion",
     ],
   },
   {
@@ -567,6 +852,11 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "scaphoid shift test",
       "shift del escafoides",
       "desplazamiento escafoides",
+      "lunotriquetral",
+      "ballottement lt",
+      "reagan",
+      "kleinman shear",
+      "lt shear",
     ],
   },
   {
@@ -605,6 +895,18 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     ],
   },
   {
+    id: "press-test",
+    title: "Press test (Lester / TFCC)",
+    src: `${CLINICAL_TEST_CDN}/press-test.webp`,
+    aliases: [
+      "press test",
+      "press test tfcc",
+      "lester press",
+      "lester",
+      "press test muñeca",
+    ],
+  },
+  {
     id: "fovea-sign",
     title: "Fovea sign (TFCC)",
     src: `${CLINICAL_TEST_CDN}/fovea-sign.webp`,
@@ -640,6 +942,10 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "artrosis cmc",
       "cmc grind",
       "base del pulgar",
+      "cmc lever",
+      "lever cmc",
+      "palanca cmc",
+      "rizartrosis",
     ],
   },
   {
@@ -652,6 +958,9 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "signo de froment",
       "froment sign",
       "papel froment",
+      "wartenberg",
+      "signo de wartenberg",
+      "wartenberg sign",
     ],
   },
   {
@@ -732,6 +1041,10 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "valgus-stress-mcl",
       "varus-stress-lcl",
       "posterior-drawer-pcl",
+      "noble-compression",
+      "ober-test",
+      "patellar-apprehension",
+      "dial-test",
     ],
   },
   {
@@ -761,7 +1074,7 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
   },
   {
     label: "Cuello / neural miembro superior",
-    ids: ["spurling", "ultt", "cervical-distraction"],
+    ids: ["spurling", "ultt", "cervical-distraction", "flexion-rotation", "bakody"],
   },
   {
     label: "Tobillo / pie",
@@ -769,14 +1082,31 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "thompson",
       "matles",
       "anterior-drawer-ankle",
+      "talar-tilt",
+      "syndesmosis-squeeze",
+      "kleiger",
       "windlass",
       "heel-raise",
+      "mulder",
+      "tinel-tarsal",
       "hop-test",
     ],
   },
   {
     label: "Cadera",
-    ids: ["faber", "fadir", "trendelenburg", "hop-test"],
+    ids: [
+      "faber",
+      "fadir",
+      "trendelenburg",
+      "resisted-adduction",
+      "resisted-hip-flexion",
+      "thomas-test",
+      "resisted-abduction",
+      "log-roll",
+      "stinchfield",
+      "hip-scour",
+      "hop-test",
+    ],
   },
   {
     label: "Muñeca / mano",
@@ -790,6 +1120,7 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "snuffbox-palpation",
       "thumb-axial-load",
       "tfcc-ulnar-load",
+      "press-test",
       "fovea-sign",
       "piano-key",
       "cmc-grind",
@@ -807,15 +1138,27 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "mill",
       "maudsley",
       "hook-test",
+      "biceps-squeeze",
       "milking-maneuver",
       "moving-valgus",
       "resisted-wrist-flexion",
       "elbow-flexion-cubital",
+      "chair-push-plri",
     ],
   },
   {
     label: "Columna lumbar / espalda",
-    ids: ["slr-lasegue", "crossed-slr", "kemp", "faber", "schober"],
+    ids: [
+      "slr-lasegue",
+      "crossed-slr",
+      "kemp",
+      "faber",
+      "schober",
+      "thigh-thrust",
+      "si-distraction",
+      "si-compression",
+      "active-slr",
+    ],
   },
 ];
 
@@ -845,15 +1188,15 @@ VÍDEOS (CRÍTICO — fuerza del producto):
 - Si pide N pruebas, elige las N más relevantes del catálogo de esa zona (si hay menos, lista todas las del grupo).
 - Si pide TODAS las pruebas / all tests / el catálogo de una zona, lista TODAS las del grupo de esa zona (una línea numerada por test, nombre canónico). Así la app muestra el vídeo de cada una.
 - Si pide todas las pruebas SIN zona, recorre CADA grupo con encabezado **Zona:** (p. ej. **Lumbar:**, **Rodilla:**) y lista todas las de ese grupo. NUNCA mezcles tests de rodilla bajo **Lumbar:**.
-- Lumbar/espalda: SOLO SLR / Lasègue, SLR cruzado (well-leg), Kemp, FABER (Patrick), Schober. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
+- Lumbar/espalda: SOLO SLR / Lasègue, SLR cruzado (well-leg), Kemp, FABER (Patrick), Schober, Thigh thrust (SIJ), Distracción/Compresión SI, Active SLR. PROHIBIDO Cajón posterior / sag / LCP (eso es RODILLA).
 - Si el caso es «Espalda» (sin más detalle), trata como lumbar y lista 4–5 de ese grupo (no tests genéricos).
 
 REGLA DE ZONA (CRÍTICO — error grave si se incumple):
 - Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, lumbar/espalda, etc.).
 - En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, pruebas funcionales, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
 - PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
-- Signo de Tinel y Phalen del catálogo son de MUÑECA/MANO (imagen de muñeca). NO los numeres para pie/túnel tarsiano aunque el nombre “Tinel” se use en tobillo.
-- Si una maniobra útil no está en el grupo de esa zona (p. ej. Mulder/compresión interdigital para Morton, Tinel en túnel tarsiano), menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
+- Signo de Tinel y Phalen (sin «tarsal») del catálogo son de MUÑECA/MANO. Para pie/túnel tarsiano numerar **Tinel tarsal** (grupo Tobillo / pie), NUNCA «Signo de Tinel» de muñeca.
+- Si una maniobra útil no está en el grupo de esa zona, menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
 
 Catálogo por zona:

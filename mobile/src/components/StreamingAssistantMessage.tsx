@@ -1,9 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+"use client";
+
 import {
-  REVEAL_LINE_INTERVAL_MS,
-  splitRevealLines,
-  visibleTextFromLines,
+  buildRevealChunks,
+  revealDelayMs,
+  visibleTextFromChunks,
 } from "../lib/reveal-text-lines";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AccessibilityInfo, View } from "react-native";
 
 type Props = {
   content: string;
@@ -20,10 +23,12 @@ export function StreamingAssistantMessage({
   onRevealTick,
   children,
 }: Props) {
-  const lines = useMemo(() => splitRevealLines(content), [content]);
-  const [visibleCount, setVisibleCount] = useState(animate ? 0 : lines.length);
+  const chunks = useMemo(() => buildRevealChunks(content), [content]);
+  const [visibleCount, setVisibleCount] = useState(animate ? 0 : chunks.length);
+  const [reduceMotion, setReduceMotion] = useState(false);
   const onRevealCompleteRef = useRef(onRevealComplete);
   const onRevealTickRef = useRef(onRevealTick);
+  const wasAnimatingRef = useRef(false);
 
   useEffect(() => {
     onRevealCompleteRef.current = onRevealComplete;
@@ -31,38 +36,86 @@ export function StreamingAssistantMessage({
   });
 
   useEffect(() => {
+    let mounted = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReduceMotion(Boolean(enabled));
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let completed = false;
+
+    const finish = () => {
+      if (completed) return;
+      completed = true;
+      onRevealCompleteRef.current?.();
+    };
+
+    const clear = () => {
+      if (timer != null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+
     if (!animate) {
-      setVisibleCount(lines.length);
-      return;
+      wasAnimatingRef.current = false;
+      setVisibleCount(chunks.length);
+      return clear;
+    }
+
+    wasAnimatingRef.current = true;
+
+    if (reduceMotion || chunks.length === 0) {
+      setVisibleCount(chunks.length);
+      finish();
+      return clear;
     }
 
     setVisibleCount(0);
     let count = 0;
-    let timer: ReturnType<typeof setInterval> | null = null;
 
-    const tick = () => {
-      count += 1;
-      setVisibleCount(count);
-      onRevealTickRef.current?.();
-
-      if (count >= lines.length) {
-        if (timer != null) clearInterval(timer);
-        onRevealCompleteRef.current?.();
+    const scheduleNext = () => {
+      if (cancelled) return;
+      if (count >= chunks.length) {
+        finish();
+        return;
       }
+
+      const delay = revealDelayMs(content, chunks, count);
+      timer = setTimeout(() => {
+        if (cancelled) return;
+        count += 1;
+        setVisibleCount(count);
+        onRevealTickRef.current?.();
+        scheduleNext();
+      }, delay);
     };
 
-    tick();
-    if (count < lines.length) {
-      timer = setInterval(tick, REVEAL_LINE_INTERVAL_MS);
-    }
+    timer = setTimeout(() => {
+      if (cancelled) return;
+      count = 1;
+      setVisibleCount(1);
+      onRevealTickRef.current?.();
+      scheduleNext();
+    }, 40);
 
     return () => {
-      if (timer != null) clearInterval(timer);
+      cancelled = true;
+      clear();
+      if (wasAnimatingRef.current && !completed) {
+        finish();
+      }
     };
-  }, [animate, content, lines.length]);
+  }, [animate, content, chunks, reduceMotion]);
 
-  const visibleText = visibleTextFromLines(lines, visibleCount);
-  const isRevealing = animate && visibleCount < lines.length;
+  const visibleText = visibleTextFromChunks(content, chunks, visibleCount);
+  const isRevealing = animate && visibleCount < chunks.length;
 
-  return <>{children(visibleText, isRevealing)}</>;
+  return <View>{children(visibleText, isRevealing)}</View>;
 }

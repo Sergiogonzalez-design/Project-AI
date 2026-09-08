@@ -43,8 +43,18 @@ async function getArticles(): Promise<Article[]> {
   }
 }
 
-export default async function ConocimientosPage() {
+export default async function ConocimientosPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ q?: string }> | { q?: string };
+}) {
+  const params = await Promise.resolve(searchParams ?? {});
+  const qRaw = (params.q ?? "").trim();
+  const q = qRaw.toLowerCase();
   const articles = await getArticles();
+  const filtered = q
+    ? articles.filter((a) => a.title.toLowerCase().includes(q))
+    : articles;
 
   return (
     <div className="flex flex-col">
@@ -76,18 +86,32 @@ export default async function ConocimientosPage() {
         {/* Uploaded documents */}
         <h2 className="mb-6 text-xl font-bold text-slate-800">
           Material disponible
+          {qRaw ? (
+            <span className="ml-2 text-sm font-medium text-slate-500">
+              · filtro: {qRaw}
+            </span>
+          ) : null}
         </h2>
-        {articles.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-blue-200 bg-white px-8 py-14 text-center text-slate-400">
             <p className="mb-3 text-4xl">📚</p>
             <p className="text-sm">
-              Próximamente el equipo publicará documentos y protocolos de
-              fisioterapia para que puedas consultar cuando lo necesites.
+              {qRaw
+                ? "No hay material que coincida con esa fuente. Prueba el listado completo."
+                : "Próximamente el equipo publicará documentos y protocolos de fisioterapia para que puedas consultar cuando lo necesites."}
             </p>
+            {qRaw ? (
+              <Link
+                href="/conocimientos"
+                className="mt-4 inline-block text-sm font-semibold text-blue-600 hover:underline"
+              >
+                Ver todo el material
+              </Link>
+            ) : null}
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {articles.map((a) => (
+            {filtered.map((a) => (
               <div
                 key={a.id}
                 className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm"

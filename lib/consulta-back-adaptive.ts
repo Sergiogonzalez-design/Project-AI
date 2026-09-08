@@ -165,6 +165,8 @@ export type BackAdaptiveAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   localizacion_espalda: string[];
+  toracico_respiracion: string;
+  toracico_cuello_hombro: string;
   dolor_familiar: string;
   tipo_dolor: string[];
   limitacion_funcional: string[];
@@ -220,6 +222,8 @@ export function defaultBackAdaptiveAnswers(): BackAdaptiveAnswers {
     mecanismo_otro: "",
     intensidad_dolor: 5,
     localizacion_espalda: [],
+    toracico_respiracion: "",
+    toracico_cuello_hombro: "",
     dolor_familiar: "",
     tipo_dolor: [],
     limitacion_funcional: [],
@@ -397,6 +401,30 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
     type: "multi",
     options: BACK_LOCATION_OPTIONS,
     required: true,
+  },
+  {
+    id: "toracico_respiracion",
+    section: "core",
+    label:
+      "¿Al respirar hondo, toser o estornudar aparece el mismo dolor de la espalda media o del pecho?",
+    type: "single",
+    options: YES_NO,
+    required: true,
+    showIf: (a) =>
+      a.localizacion_espalda.includes("Espalda media / entre omóplatos") ||
+      a.localizacion_espalda.includes("Parte baja del cuello / inicio de la espalda"),
+  },
+  {
+    id: "toracico_cuello_hombro",
+    section: "core",
+    label:
+      "¿Al mover el cuello o al levantar el brazo cambia ese dolor entre omóplatos / espalda media?",
+    type: "single",
+    options: ["Sí, el cuello", "Sí, el brazo/hombro", "Sí, ambos", "No", "No estoy seguro"],
+    required: true,
+    showIf: (a) =>
+      a.localizacion_espalda.includes("Espalda media / entre omóplatos") ||
+      a.localizacion_espalda.includes("Parte baja del cuello / inicio de la espalda"),
   },
   {
     id: "dolor_familiar",
@@ -847,6 +875,8 @@ export function formatBackAdaptive(
     `Mecanismo: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     `Intensidad dolor: ${answers.intensidad_dolor}/10`,
     `Localización espalda: ${formatMulti(answers.localizacion_espalda)}`,
+    `Respiración/tos reproduce dolor T/pared: ${answers.toracico_respiracion || "—"}`,
+    `Cuello/hombro modifican dolor interescapular: ${answers.toracico_cuello_hombro || "—"}`,
     `Dolor familiar (agacharse/arquear/pierna): ${answers.dolor_familiar || "—"}`,
     `Tipo de dolor: ${formatMulti(answers.tipo_dolor)}`,
     `Limitación funcional: ${answers.limitacion_funcional.join(", ") || "—"}`,
@@ -970,6 +1000,10 @@ export const BACK_LABEL_EN: Partial<Record<string, string>> = {
   mecanismo_otro: "Tell us what happened or how it started",
   intensidad_dolor: "Pain intensity (1–10)",
   localizacion_espalda: "Where do you feel the pain in your back? (you can select several)",
+  toracico_respiracion:
+    "Does the same mid-back or chest-wall pain appear when you take a deep breath, cough, or sneeze?",
+  toracico_cuello_hombro:
+    "Does moving your neck or lifting your arm change that pain between the shoulder blades / mid-back?",
   dolor_familiar:
     "Is it the same pain you notice when bending, arching, sitting, or when it goes down the leg?",
   tipo_dolor: "How would you describe the pain? (you can select several)",
@@ -1027,6 +1061,9 @@ export const BACK_OPTION_EN = {
   Otro: "Other",
   "Parte baja del cuello / inicio de la espalda": "Lower neck / start of the back",
   "Espalda media / entre omóplatos": "Mid-back / between shoulder blades",
+  "Sí, el cuello": "Yes, the neck",
+  "Sí, el brazo/hombro": "Yes, the arm/shoulder",
+  "Sí, ambos": "Yes, both",
   "Espalda baja (parte alta)": "Upper part of the low back",
   "Espalda baja (parte baja)": "Lower part of the low back",
   "Parte final de la espalda / junto al coxis (sacro)": "Bottom of the spine / near the tailbone (sacrum)",

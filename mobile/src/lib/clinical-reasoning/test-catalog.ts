@@ -75,6 +75,38 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     evidenceNote:
       "JOSPT CPG: LCP ↑ si mecanismo tibia anterior + rodilla flexionada (salpicadero). Agudo doloroso poco fiable.",
   },
+  "noble-compression": {
+    id: "noble-compression",
+    title: "Noble compression (ITB)",
+    procedure:
+      "Comprimir ITB/cóndilo lateral ~30° flexión mientras se flexo-extiende. Registrar dolor lateral familiar.",
+    evidenceNote:
+      "Apoyo clínico ITBS (revisiones running/BJSM). Cualitativo — no inventar Sn/Sp. Aislado no confirma.",
+  },
+  "ober-test": {
+    id: "ober-test",
+    title: "Test de Ober",
+    procedure:
+      "Decúbito lateral; abducir/extender cadera y soltar aducción. Observar descenso y dolor ITB familiar.",
+    evidenceNote:
+      "Apoyo TFL–ITB. Tirantez sola inespecífica. Cluster con historia + Noble.",
+  },
+  "patellar-apprehension": {
+    id: "patellar-apprehension",
+    title: "Aprensión rotuliana",
+    procedure:
+      "Empuje lateral suave de la rótula (~20–30°). Positivo si aprensión / «se va» familiar.",
+    evidenceNote:
+      "Inestabilidad patelar: cluster con historia de luxación. No confundir con LCA. No inventar Sn/Sp.",
+  },
+  "dial-test": {
+    id: "dial-test",
+    title: "Dial test (PLC)",
+    procedure:
+      "Prono; rotación externa tibial a 30° y 90°. Comparar lados. Asimetría 30° → PLC ↑; 30°+90° → PLC+LCP ↑.",
+    evidenceNote:
+      "LaPrade/Cooper PLC exam — cualitativo. No confirma grado. Multiplanar severa → urgencia.",
+  },
   neer: {
     id: "neer",
     title: "Test de Neer",
@@ -163,6 +195,46 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     evidenceNote:
       "ATFL. van Dijk: más fiable a 4–5 días que en agudo. Dolor sin holgura ≠ cajón positivo. No inventar grado. Primero Ottawa.",
   },
+  "syndesmosis-squeeze": {
+    id: "syndesmosis-squeeze",
+    title: "Squeeze de sindesmosis",
+    procedure:
+      "Comprimir tibia–peroné a mitad de pierna. Dolor tibiofibular anterior alto familiar.",
+    evidenceNote:
+      "JOSPT ankle CPG: apoyo sindesmosis en cluster. Precisión mixta aislada. ≠ Thompson (Aquiles).",
+  },
+  kleiger: {
+    id: "kleiger",
+    title: "Kleiger / rotación externa",
+    procedure:
+      "Rotación externa del pie (± dorsiflexión) estabilizando tibia. Dolor sindesmosis alto familiar.",
+    evidenceNote:
+      "Cluster sindesmosis con squeeze. Cualitativo — no inventar Sn/Sp ni grado.",
+  },
+  "talar-tilt": {
+    id: "talar-tilt",
+    title: "Talar tilt",
+    procedure:
+      "Inversión del calcáneo/astrágalo estabilizando tibia. Comparar holgura y dolor CFL.",
+    evidenceNote:
+      "CFL / complejo lateral. Mejor diferido. No inventar grado I–III.",
+  },
+  mulder: {
+    id: "mulder",
+    title: "Test de Mulder",
+    procedure:
+      "Comprimir cabezas metatarsianas (± presión en espacio interdigital). Dolor/click familiar antepié.",
+    evidenceNote:
+      "Neuroma/irritación interdigital. Click sin dolor familiar pesa poco. No inventar Sn/Sp.",
+  },
+  "tinel-tarsal": {
+    id: "tinel-tarsal",
+    title: "Tinel tarsal",
+    procedure:
+      "Percusión sobre nervio tibial posterior (maléolo medial). Hormigueo/ardor familiar plantar.",
+    evidenceNote:
+      "Túnel tarsiano en cluster. No uses Tinel de muñeca. Cualitativo.",
+  },
   windlass: {
     id: "windlass",
     title: "Test de Windlass",
@@ -210,6 +282,62 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
       "Apoyo monopodal: caída de pelvis contralateral indica debilidad glútea media.",
     evidenceNote:
       "Grimaldi & Fearon JOSPT 2015: cluster GTPS (palpación + carga monopodal). Caída pélvica ≠ rotura de glúteo; también L5.",
+  },
+  "resisted-adduction": {
+    id: "resisted-adduction",
+    title: "Aducción resistida (squeeze)",
+    procedure:
+      "Paciente aduce / aprieta rodillas contra resistencia. Registrar dolor medial familiar.",
+    evidenceNote:
+      "Doha (Weir BJSM 2015): medial + resisted adduction + palpación → adductor-related ↑. Resistencia aislada no confirma.",
+  },
+  "resisted-hip-flexion": {
+    id: "resisted-hip-flexion",
+    title: "Flexión de cadera resistida",
+    procedure:
+      "Flexión de cadera o SLR resistido en supino. Registrar dolor anterior familiar.",
+    evidenceNote:
+      "Doha iliopsoas-related. No bursitis automática. Si dolor profundo al sentarse → hip-related.",
+  },
+  "thomas-test": {
+    id: "thomas-test",
+    title: "Test de Thomas",
+    procedure:
+      "Rodilla contralateral al pecho; observar extensión de la cadera explorada y dolor anterior.",
+    evidenceNote:
+      "Cualitativo: flexor/iliopsoas ↑. No Sn/Sp inventados. No bursitis automática.",
+  },
+  "resisted-abduction": {
+    id: "resisted-abduction",
+    title: "Abducción de cadera resistida",
+    procedure:
+      "Resistencia a la abducción; dolor lateral/trocantérico familiar.",
+    evidenceNote:
+      "Cluster GTPS (Grimaldi & Fearon). Aislada ≠ rotura de glúteo.",
+  },
+  "log-roll": {
+    id: "log-roll",
+    title: "Log roll",
+    procedure:
+      "Rotación pasiva IR↔ER del miembro en extensión. Dolor inguinal profundo familiar.",
+    evidenceNote:
+      "↑ irritación intraarticular. Baja especificidad; no confirma labrum/FAI.",
+  },
+  stinchfield: {
+    id: "stinchfield",
+    title: "Stinchfield",
+    procedure:
+      "SLR ~20–30° resistido. Distinguir dolor profundo inguinal vs flexor superficial.",
+    evidenceNote:
+      "Cluster hip-related cualitativo. Profundo → cadera ↑; superficial → iliopsoas.",
+  },
+  "hip-scour": {
+    id: "hip-scour",
+    title: "Hip scour / quadrant",
+    procedure:
+      "Flexión + compresión axial + arco. Evitar si sospecha fractura/bone stress.",
+    evidenceNote:
+      "↑ OA/hip joint. Precisión mixta; no grado radiológico. Cluster con IR + edad.",
   },
   phalen: {
     id: "phalen",

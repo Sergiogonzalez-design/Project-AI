@@ -476,7 +476,6 @@ function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string 
   return (
     msg.role === "assistant" &&
     msg.id !== WELCOME_ID &&
-    !msg.id.startsWith("q-intro") &&
     msg.id === revealingMessageId
   );
 }
@@ -1637,6 +1636,7 @@ export function AIInquiriesScreen({
     setHipSectionIndex(0);
     setFormError(null);
 
+    const introId = `q-intro-${Date.now()}`;
     let intro = questionnaireIntroMessage(part, language, contextText);
     if (remainingCount > 0) {
       intro +=
@@ -1644,10 +1644,11 @@ export function AIInquiriesScreen({
           ? `\n\nYou mentioned more than one area — we'll go one by one. After this, ${remainingCount} more questionnaire${remainingCount === 1 ? "" : "s"} remain.`
           : `\n\nHas mencionado más de una zona: iremos **una a una**. Después de esta, quedan ${remainingCount} cuestionario${remainingCount === 1 ? "" : "s"} más.`;
     }
+    beginAssistantReveal(introId, intro);
     setMessages((prev) => [
       ...prev,
       {
-        id: `q-intro-${Date.now()}`,
+        id: introId,
         role: "assistant",
         content: intro,
       },

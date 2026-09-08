@@ -12,7 +12,7 @@ PASOS: (1) resumen hipótesis (2) qué apoya (3) qué contradice (4) qué falta 
 
 PRUEBA NEGATIVA ≠ EXCLUSIÓN. Antes de «cambiar de estructura»: ¿qué test? ¿qué estructura? ¿capacidad diagnóstica cualitativa (sin inventar Sn/Sp)? ¿sigue compatible la historia? ¿referido plausible? ¿qué discrimina?
 
-NO MEJORA: reevaluar hipótesis (no solo más dosis sobre la misma estructura). Valorar coexistencia, referido, factores perpetuadores, imagen/derivación si cambia el manejo.
+NO MEJORA / SIGUE IGUAL: aplicar bloque PERSISTENCIA (NICE NG59 historia natural LBP; reassess RF; trampas regionales; yellow flags cualitativos). No solo más dosis. Ver también persistence-prognosis-pathways.
 
 SIN IMAGEN: razonar con historia/exploración/familiar pain; no pedir eco «porque no hay»; sí si sospecha, red flags, persistencia atípica o impacto en decisión.
 

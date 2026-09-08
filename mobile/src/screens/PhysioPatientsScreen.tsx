@@ -24,6 +24,7 @@ import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
 import {
   AiOrientationDisclaimer,
+  PhysioPatientOrientationView,
   PhysioReportView,
 } from "../components/PhysioReportView";
 import { ClinicalReasoningFlow } from "../components/ClinicalReasoningFlow";
@@ -687,6 +688,16 @@ export function PhysioPatientsScreen() {
                           setReasoningReport(report)
                         }
                       />
+                      {report.patient_summary ? (
+                        <View style={{ marginTop: 16 }}>
+                          <Text style={styles.reportSectionLabel}>
+                            Orientación mostrada al paciente
+                          </Text>
+                          <PhysioPatientOrientationView
+                            content={report.patient_summary}
+                          />
+                        </View>
+                      ) : null}
                     </View>
                   )}
                 </View>

@@ -7,10 +7,11 @@
 export const AI_EVIDENCE_DB_RULES = `EVIDENCIA DE TESTS / CLUSTERS (Physioguide Fase 3 — cadera, rodilla, hombro, raquis, pie/tobillo, codo/muñeca, dedos, cabeza):
 
 REGLAS:
-- NUNCA inventes sensibilidad, especificidad, LR+ ni porcentajes.
+- NUNCA inventes sensibilidad, especificidad, LR+ ni porcentajes DE MEMORIA.
+- EXCEPCIÓN CITADA: si el módulo Physioguide «cited-diagnostic-accuracy» / RAG lo trae, puedes usar SOLO esas cifras con atribución (Wainner 2003 cluster; Bachmann 2003 Ottawa Sn 97.6%; Benjaminse 2006 Lachman Sn 85%/Sp 94%). Avisa IC anchos cuando aplique. Fuera de esa tabla → cualitativo.
 - NUNCA: un test positivo = diagnóstico. Usa CLUSTER (historia + localización + familiar pain + 1–2 tests).
 - Si la evidencia es MIXTA, dilo (p. ej. Thessaly; FADIR no confirma FAI; Neer/Hawkins aislados pobres; Kemp no confirma faceta).
-- Cita cualitativa permitida si encaja: Doha 2015, Warwick 2016, JOSPT CPG, Benjaminse 2006, Hegedus BJSM, Crossley 2016, Grimaldi/Fearon, Lewis RCRSP, Wainner 2003, van der Windt Cochrane SLR, Stiell Ottawa/C-spine, Maffulli Aquiles, D’Arcy/McGee JAMA STC, JOSPT CTS 2019.
+- Cita cualitativa permitida si encaja: Doha 2015, Warwick 2016, JOSPT CPG, Benjaminse 2006, Hegedus BJSM, Crossley 2016, Grimaldi/Fearon, Lewis RCRSP, Wainner 2003, van der Windt Cochrane SLR, Stiell Ottawa/C-spine, Bachmann Ottawa, Maffulli Aquiles, D’Arcy/McGee JAMA STC, JOSPT CTS 2019.
 - Si RAG trae un chunk «Physioguide — …», priorízalo frente a memoria y frente a PDFs/tablas antiguas.
 - Si un chunk que NO es Physioguide trae sensibilidad, especificidad, LR o %, IGNÓRALO.
 
@@ -46,6 +47,8 @@ RAQUIS (atajos):
 - Trauma de cuello: Canadian C-spine / NEXUS ANTES de Spurling (Stiell / Hoffman).
 - Radiculopatía cervical: cluster Wainner (ULTT-A + Spurling + distracción + rotación <60°). Spurling negativo no excluye.
 - ULTT aislado: sensible, poco específico; tirantez ≠ hernia.
+- TORÁCICO / espalda media: NO hay CPG específica (Briganti 2023). Cardíaco/pulmonar ANTES (AHA/ACC 2021). NUNCA T4/faceta/costilla confirmada. OPTIMa 2015: evidencia de manejo escasa; manipulación ≠ superior robusta a placebo.
+- AROM T + dolor familiar = compatibilidad mecánica (Tier C); Adam’s = cribado asimetría, no escoliosis confirmada.
 - SLR: ciática familiar (pierna), no tirón isquiotibial. No confirma hernia. Crossed SLR más específico, menos sensible (Cochrane).
 - Kemp: dolor mecánico local; NO confirma facetas.
 - Schober: cribado inflamatorio/AS, no disco.

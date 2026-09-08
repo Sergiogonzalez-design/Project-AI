@@ -12,8 +12,9 @@ REGLAS:
 - Dolor tibiofibular anterior alto + RE/dorsiflexión → NO tratar como ATFL simple.
 - Base 5.º MT dolorosa → Ottawa pie / fractura avulsión.
 
-CLUSTER LATERAL: inversión + dolor/hinchazón lateral + palpación ATFL familiar ± cajón → esguince lateral ↑.
-CLUSTER SINDESMOSIS: rotación externa/dorsiflexión + dolor alto tibiofibular ± squeeze/hop → sindesmosis ↑.
+CLUSTER LATERAL: inversión + dolor/hinchazón lateral + palpación ATFL familiar ± cajón ± talar tilt → esguince lateral ↑.
+CLUSTER SINDESMOSIS: rotación externa/dorsiflexión + dolor alto tibiofibular ± squeeze tibiofibular ± Kleiger → sindesmosis ↑.
+Squeeze de sindesmosis ≠ Thompson (Aquiles). Cajón/talar tilt aislados no inventan grado I–III.
 
 PRUEBAS (lenguaje cotidiano):
 - ¿Puedes dar 4 pasos seguidos ahora?

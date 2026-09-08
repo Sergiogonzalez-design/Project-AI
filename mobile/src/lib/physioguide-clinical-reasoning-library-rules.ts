@@ -23,20 +23,19 @@ Nunca generar alternativas solo porque «existen patrones de dolor referido» en
 
 export const AI_PERSISTENCE_REEVALUATION_RULES = `PERSISTENCIA / RECURRENCIA (Physioguide — paciente vuelve o «sigue igual»):
 
-NO asumir automáticamente: «el tratamiento falló por dosis insuficiente».
+NO asumir automáticamente: «el tratamiento falló por dosis insuficiente» ni «hay que buscar otro músculo».
 
-REEVALUAR:
-1) ¿Era correcta/completa la hipótesis inicial?
-2) ¿Se trató solo una manifestación?
-3) ¿Otra estructura / referido / múltiples generadores?
-4) ¿Evolución esperable más larga de esa condición?
-5) ¿Factores de carga / psicosociales / adherencia?
-6) ¿Red flags nuevos o progresivos?
-7) ¿La intervención tenía evidencia para ESA condición?
-8) ¿Imagen o derivación cambian el manejo?
+ORDEN OBLIGATORIO:
+1) Red flags de NUEVO (NICE/CKS: si empeora o no cede → reassess).
+2) ¿La hipótesis inicial sigue siendo la mejor? ¿Qué ya no encaja?
+3) ¿Evolución NATURAL vs fracaso? LBP: muchos mejoran en semanas–meses; hasta ~1/3 puede tener dolor ≥moderado al año; recurrencia frecuente (NICE NG59). Ciática: semanas–meses (CKS). Tendinopatía/RCRSP/heel: curso a menudo largo — 7–10 días sin cambio ≠ fracaso definitivo si el cluster sigue coherente.
+4) Otra estructura / referido / coexistencia (trampas: hombro≠solo manguito; LET≠solo Cozen; plantar≠solo fascia; tobillo≠solo ATFL; interescapular≠romboides; lumbar≠«contractura»; post-cirugía≠solo «más ejercicios»/alta por calendario → pantallas post-op LCA/manguito/tobillo).
+5) Carga / adherencia / yellow flags (miedo-evitación, creencias de daño) — modulan recuperación; NICE: valorar abordaje físico–psicológico si obstáculos o tratamientos previos ineficaces. NUNCA «el dolor es solo psicológico».
+6) ¿La intervención tenía evidencia para ESA condición? (p. ej. manipulación torácica sola — OPTIMa: no superior robusta a placebo).
+7) Imagen/derivación si cambia el manejo (RF, déficit progresivo, fracaso razonable + decisión especialista). No imagen rutinaria LBP/cuello sin RF. No eco «para MTrP».
 
-Salida: reordenar hipótesis + exploración discriminativa + seguridad primero.
-LENGUAJE: «conviene reevaluar la hipótesis…», no «hay que buscar otro músculo».`;
+Salida: REEVALUACIÓN (inicial vs actual) → 1 hipótesis prioritaria + máx. 1–2 alternativas + discriminación + plan/timing/expectativas.
+LENGUAJE: «conviene reevaluar…», «compatible con evolución esperable si…», «evidencia limitada».`;
 
 export const AI_NO_IMAGING_DECISION_RULES = `SIN ECOGRAFÍA / SIN IMAGEN (Physioguide):
 
@@ -77,6 +76,7 @@ Cuando el patrón no cuadra o tests locales no reproducen dolor familiar:
 4) Permitir coexistencia (p. ej. RCRSP + cervical).
 5) Miofascial solo como hipótesis, con controversia de MTrP (Tough; Lucas) y dolor familiar.
 6) Trazabilidad: referred-pain-sources.md / CPG / RS; si no hay fuente → no afirmar.
+7) Packs ACTIVE v2: relations/shoulder-lateral.json, cervical.json, lumbar.json, hip.json, knee.json, ankle-foot.json, thoracic.json, head.json, elbow-wrist.json.
 
 Nunca: «el dolor viene del músculo X» por proximidad anatómica sola.
 Relaciones deben ser rastreables a módulos referred-pain-* / relations JSON / RAG Physioguide.`;

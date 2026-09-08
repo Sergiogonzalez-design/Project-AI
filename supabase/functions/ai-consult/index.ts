@@ -26,6 +26,9 @@ import {
   AI_SHOULDER_INSTABILITY_TRAUMA_RULES,
   AI_SHOULDER_LATERAL_RCRSP_RULES,
   AI_SHOULDER_LATERAL_REFERRED_RULES,
+  AI_CERVICAL_REFERRED_RULES,
+  AI_LUMBAR_REFERRED_RULES,
+  AI_HIP_REFERRED_RULES,
   AI_SHOULDER_MASTER_INTEGRATION_RULES,
   AI_SHOULDER_POSTERIOR_INSTABILITY_RULES,
   AI_SHOULDER_SLAP_LABRUM_SCREEN_RULES,
@@ -45,6 +48,7 @@ import {
   AI_ELBOW_PLRI_RULES,
   AI_ELBOW_RADIAL_TUNNEL_RULES,
   AI_ELBOW_UCL_MEDIAL_RULES,
+  AI_ELBOW_OSTEOARTHRITIS_RULES,
   AI_ELBOW_WRIST_GUYON_RULES,
   AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES,
   AI_WRIST_TFCC_ULNAR_RULES,
@@ -53,13 +57,21 @@ import {
   AI_CERVICAL_NECK_PAIN_RULES,
   AI_CERVICAL_TRAUMA_REDFLAGS_RULES,
   AI_LUMBAR_BACK_PAIN_RULES,
+  AI_LUMBAR_SI_PELVIS_RULES,
   AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES,
+  AI_THORACIC_MASTER_INTEGRATION_RULES,
+  AI_THORACIC_REDFLAGS_VISCERAL_RULES,
+  AI_THORACIC_SPINE_PAIN_RULES,
   AI_FINGER_DIGITAL_PAIN_RULES,
   AI_HEAD_HEADACHE_MASTER_RULES,
   AI_HYPOTHESIS_EXPLORATION_RULES,
   AI_MTRP_FRAMEWORK_RULES,
   AI_CLARITY_NO_OVERDIAGNOSIS_RULES,
   AI_PERSISTENCE_REEVALUATION_RULES,
+  AI_POST_SURGERY_SCREENS_MASTER_RULES,
+  AI_POST_SURGERY_ACL_RULES,
+  AI_POST_SURGERY_ROTATOR_CUFF_RULES,
+  AI_POST_SURGERY_ANKLE_RULES,
   AI_NO_IMAGING_DECISION_RULES,
   AI_EVIDENCE_LEVELS_RULES,
   AI_DIFFERENTIAL_MATRICES_RULES,
@@ -770,6 +782,12 @@ ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
 ${AI_SHOULDER_LATERAL_REFERRED_RULES}
 
+${AI_CERVICAL_REFERRED_RULES}
+
+${AI_LUMBAR_REFERRED_RULES}
+
+${AI_HIP_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
@@ -814,6 +832,8 @@ ${AI_ELBOW_RADIAL_TUNNEL_RULES}
 
 ${AI_ELBOW_UCL_MEDIAL_RULES}
 
+${AI_ELBOW_OSTEOARTHRITIS_RULES}
+
 ${AI_ELBOW_WRIST_GUYON_RULES}
 
 ${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
@@ -824,7 +844,7 @@ ${AI_WRIST_DRUJ_RULES}
 
 ${AI_WRIST_CARPAL_INSTABILITY_RULES}
 
-RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (cuello/lumbar; Spurling/SLR/Kemp no confirman hernia/faceta):
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (cuello/torácico/lumbar; Spurling/SLR/Kemp no confirman hernia/faceta; TSP sin CPG específica):
 
 ${AI_SPINE_MASTER_INTEGRATION_RULES}
 
@@ -832,9 +852,17 @@ ${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
 
 ${AI_CERVICAL_NECK_PAIN_RULES}
 
+${AI_THORACIC_MASTER_INTEGRATION_RULES}
+
+${AI_THORACIC_REDFLAGS_VISCERAL_RULES}
+
+${AI_THORACIC_SPINE_PAIN_RULES}
+
 ${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
 
 ${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_LUMBAR_SI_PELVIS_RULES}
 
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
@@ -845,6 +873,14 @@ ${AI_HYPOTHESIS_EXPLORATION_RULES}
 ${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
 
 ${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_POST_SURGERY_SCREENS_MASTER_RULES}
+
+${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
+
+${AI_POST_SURGERY_ANKLE_RULES}
 
 ${AI_NO_IMAGING_DECISION_RULES}
 
@@ -926,6 +962,12 @@ ${AI_SHOULDER_LATERAL_RCRSP_RULES}
 
 ${AI_SHOULDER_LATERAL_REFERRED_RULES}
 
+${AI_CERVICAL_REFERRED_RULES}
+
+${AI_LUMBAR_REFERRED_RULES}
+
+${AI_HIP_REFERRED_RULES}
+
 ${AI_SHOULDER_ANTERIOR_PAIN_RULES}
 
 ${AI_SHOULDER_SUPERIOR_AC_RULES}
@@ -970,6 +1012,8 @@ ${AI_ELBOW_RADIAL_TUNNEL_RULES}
 
 ${AI_ELBOW_UCL_MEDIAL_RULES}
 
+${AI_ELBOW_OSTEOARTHRITIS_RULES}
+
 ${AI_ELBOW_WRIST_GUYON_RULES}
 
 ${AI_ELBOW_WRIST_HAND_DIFFERENTIALS_RULES}
@@ -980,7 +1024,7 @@ ${AI_WRIST_DRUJ_RULES}
 
 ${AI_WRIST_CARPAL_INSTABILITY_RULES}
 
-RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (informes de cuello/lumbar):
+RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RAQUIS (informes de cuello/torácico/lumbar):
 
 ${AI_SPINE_MASTER_INTEGRATION_RULES}
 
@@ -988,9 +1032,17 @@ ${AI_CERVICAL_TRAUMA_REDFLAGS_RULES}
 
 ${AI_CERVICAL_NECK_PAIN_RULES}
 
+${AI_THORACIC_MASTER_INTEGRATION_RULES}
+
+${AI_THORACIC_REDFLAGS_VISCERAL_RULES}
+
+${AI_THORACIC_SPINE_PAIN_RULES}
+
 ${AI_LUMBAR_REDFLAGS_INFLAMMATORY_RULES}
 
 ${AI_LUMBAR_BACK_PAIN_RULES}
+
+${AI_LUMBAR_SI_PELVIS_RULES}
 
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
@@ -1001,6 +1053,14 @@ ${AI_HYPOTHESIS_EXPLORATION_RULES}
 ${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
 
 ${AI_PERSISTENCE_REEVALUATION_RULES}
+
+${AI_POST_SURGERY_SCREENS_MASTER_RULES}
+
+${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
+
+${AI_POST_SURGERY_ANKLE_RULES}
 
 ${AI_NO_IMAGING_DECISION_RULES}
 
@@ -1043,7 +1103,9 @@ No se recomienda realizar pruebas de imagen en esta fase inicial hasta pasadas 2
 
 **Puntos de alerta** — MÁXIMO 3 viñetas muy cortas (banderas rojas, datos a confirmar, discrepancias). Sin párrafos largos.
 
-Sé clínico y conciso. Extensión orientativa: 250-450 palabras. No añadas secciones extra.`;
+Sé clínico y conciso. Extensión orientativa: 250-450 palabras. No añadas secciones extra.
+
+PROHIBIDO (tono paciente): NO uses encabezados ni frases de «tú» dirigidos al paciente dentro de este informe (ni «Qué debes hacer ahora», ni «Qué hacer mientras tanto», ni «Pruebas funcionales» del paciente, ni «Clínicas en AIKinora cerca de ti»). El lector es el fisioterapeuta. Si necesitas resumir la conducta del paciente, escribe en tercera persona (p. ej. «el paciente debería…») dentro de **Resumen para el fisioterapeuta** o **Puntos de alerta**, nunca con el título «Qué debes hacer ahora».`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -1443,33 +1505,13 @@ Deno.serve(async (req) => {
 
     if (mode === "physio_chat") {
       const accountType = (profile as { account_type?: string } | null)?.account_type;
-      const profileClinicId = (profile as { clinic_id?: string | null } | null)?.clinic_id;
-      let allowed = accountType === "clinic";
-      if (accountType === "physio") {
-        allowed = Boolean(profileClinicId);
-        if (!allowed && adminClient) {
-          const { data: member } = await adminClient
-            .from("clinic_members")
-            .select("clinic_id")
-            .eq("user_id", user.id)
-            .limit(1)
-            .maybeSingle();
-          allowed = Boolean(member?.clinic_id);
-        }
-      }
-      if (!allowed) {
-        return new Response(
-          JSON.stringify({
-            error:
-              accountType === "physio"
-                ? "Vincula tu clínica con el código de alta para usar el chat clínico."
-                : "Forbidden",
-          }),
-          {
-            status: 403,
-            headers: { ...CORS, "Content-Type": "application/json" },
-          }
-        );
+      // Clinical chat is for physio/clinic accounts. Clinic linking is optional
+      // (patient roster / invites) — do not block AI consult for unlinked physios.
+      if (!isClinicianAccount(accountType)) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...CORS, "Content-Type": "application/json" },
+        });
       }
 
       const message = body.message?.trim() ?? "";

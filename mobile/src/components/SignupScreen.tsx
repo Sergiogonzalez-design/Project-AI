@@ -37,8 +37,6 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
-  const [inviteClinicName, setInviteClinicName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [legalSection, setLegalSection] = useState<"privacy" | "terms" | null>(
@@ -55,26 +53,6 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
     });
   }, []);
 
-  useEffect(() => {
-    const key = inviteCode.trim();
-    if (accountType !== "physio" || !key) {
-      setInviteClinicName(null);
-      return;
-    }
-    const t = setTimeout(() => {
-      void supabase.rpc("clinic_lookup_invite", { p_token: key }).then(({ data }) => {
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row?.clinic_name) {
-          setInviteClinicName(String(row.clinic_name));
-          if (row.email) setEmail(String(row.email));
-        } else {
-          setInviteClinicName(null);
-        }
-      });
-    }, 300);
-    return () => clearTimeout(t);
-  }, [accountType, inviteCode]);
-
   async function handleSignup() {
     setError(null);
     if (!email.trim() || !password.trim()) {
@@ -87,10 +65,6 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
     }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
-      return;
-    }
-    if (accountType === "physio" && inviteCode.trim() && !inviteClinicName) {
-      setError("Código de clínica no válido o caducado.");
       return;
     }
     if (!acceptedLegal) {
@@ -119,10 +93,6 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
           email: emailNorm,
           password,
           accountType: converting ? "patient" : accountType,
-          clinicInvite:
-            !converting && accountType === "physio" && inviteCode.trim()
-              ? inviteCode.trim()
-              : undefined,
         }),
       });
       const payload = (await res.json()) as { error?: string };
@@ -141,13 +111,6 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
       });
       if (signError) {
         setError(signError.message);
-        return;
-      }
-      // Safety net: claim clinic after session exists (covers Expo/API race).
-      if (!converting && accountType === "physio" && inviteCode.trim()) {
-        await supabase.rpc("clinic_claim_invite", {
-          p_token: inviteCode.trim(),
-        });
       }
     } finally {
       setLoading(false);
@@ -239,27 +202,10 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
             </Text>
           ) : null}
           {accountType === "physio" ? (
-            <>
-              <Text style={styles.clinicHint}>
-                Opcional: introduce el código de alta ahora, o más tarde en
-                Clínica / al iniciar sesión.
-              </Text>
-              <View style={{ height: 8 }} />
-              <AuthTextField
-                label="Código de clínica (opcional)"
-                placeholder="Ej. AB12CD"
-                value={inviteCode}
-                onChangeText={(v) => setInviteCode(v.toUpperCase())}
-                editable={!loading}
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
-              {inviteClinicName ? (
-                <Text style={styles.inviteOk}>Clínica: {inviteClinicName}</Text>
-              ) : inviteCode.trim() ? (
-                <Text style={styles.clinicHint}>Comprobando código…</Text>
-              ) : null}
-            </>
+            <Text style={styles.clinicHint}>
+              Después de crear la cuenta podrás vincularte a tu clínica desde
+              Clínica con el código de alta.
+            </Text>
           ) : null}
           <View style={{ height: 12 }} />
             </>

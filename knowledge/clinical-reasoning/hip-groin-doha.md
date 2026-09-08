@@ -95,7 +95,9 @@ ANTERIOR GROIN PAIN
 → ILIOPSOAS-RELATED COMPATIBILITY ↑
 ```
 
-**Tests:** flexión resistida, SLR resistido, Thomas test, estiramiento flexor, palpación (cuando procede), snapping dinámico.
+**Tests:** flexión resistida (catalog: resisted-hip-flexion), SLR resistido, Thomas test, estiramiento flexor, palpación (cuando procede), snapping dinámico.
+
+**Thomas (cualitativo):** pierna contralateral al pecho; extensión limitada + dolor **anterior familiar** → ↑ iliopsoas/flexor. NO confirma bursitis. Si el dolor es profundo inguinal al sentarse/rotar → priorizar hip-related (FADIR, log roll, Stinchfield).
 
 **Diferencial:** hip joint, rectus femoris, inguinal, snapping interno.
 
@@ -169,6 +171,20 @@ Registrar **dónde duele:**
 - Dolor familiar sí/no  
 
 FABER positivo ≠ entidad específica.
+
+---
+
+## 12b. HIP-RELATED SECONDARY TESTS (cluster cualitativo)
+
+Usar **junto** a FADIR/FABER/ROM — no aislados. No inventar Sn/Sp.
+
+| Test | Hallazgo útil | AI |
+|------|---------------|-----|
+| Log roll | Dolor inguinal profundo familiar con poca carga rotatoria | ↑ cadera; no labrum confirmado |
+| Stinchfield | Flexión ~30° resistida → dolor **profundo** familiar | ↑ hip-related; si solo flexor superficial → iliopsoas |
+| Hip scour / quadrant | Compresión + arco reproduce dolor familiar ± crepitación | ↑ OA/hip joint; **evitar** si sospecha fractura/bone stress |
+
+**NUNCA:** un positivo = FAI / labrum / OA grado X.
 
 ---
 

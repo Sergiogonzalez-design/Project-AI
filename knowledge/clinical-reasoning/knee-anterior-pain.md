@@ -119,9 +119,10 @@ Puede coexistir con PFPS.
 
 ## 10. PATELLAR INSTABILITY (DIFERENCIAL)
 
-Luxación/inestabilidad rotuliana → **módulo aparte** (cuestionario rotula_desplaza).
+Luxación/inestabilidad rotuliana → cuestionario `patellar_instability` + test **patellar apprehension** (catalog: `patellar-apprehension`).
 
-No confundir con PFPS: episodio de «se sale la rótula», aprensión, derrame post-luxación.
+No confundir con PFPS: episodio de «se sale la rótula», aprensión familiar, derrame post-luxación.
+Aprensión sin historia de luxación pesa menos. Dolor PFPS sin aprensión ≠ inestabilidad.
 
 ---
 

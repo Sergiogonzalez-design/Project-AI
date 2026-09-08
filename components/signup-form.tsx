@@ -10,31 +10,15 @@ import { isGuestUser } from "@/lib/guest-account";
 const inputClass =
   "rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
 
-type InviteInfo = {
-  clinic_name: string;
-  email: string | null;
-  display_name: string | null;
-  invite_code?: string | null;
-  token?: string | null;
-};
-
-type Props = {
-  clinicInviteToken?: string;
-};
-
-export function SignupForm({ clinicInviteToken }: Props) {
+export function SignupForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [inviteCode, setInviteCode] = useState(clinicInviteToken ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [convertingGuest, setConvertingGuest] = useState(false);
-  const [invite, setInvite] = useState<InviteInfo | null>(null);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [asPhysio, setAsPhysio] = useState(false);
-  const activeInvite = (inviteCode || clinicInviteToken || "").trim();
-  const joiningClinic = Boolean(activeInvite && invite?.clinic_name);
 
   useEffect(() => {
     const supabase = createClient();
@@ -43,37 +27,11 @@ export function SignupForm({ clinicInviteToken }: Props) {
     });
   }, []);
 
-  useEffect(() => {
-    const key = (inviteCode || clinicInviteToken || "").trim();
-    if (!key) {
-      setInvite(null);
-      return;
-    }
-    const supabase = createClient();
-    const t = window.setTimeout(() => {
-      void supabase.rpc("clinic_lookup_invite", { p_token: key }).then(({ data }) => {
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row?.clinic_name) {
-          setInvite(row as InviteInfo);
-          if (row.email) setEmail(String(row.email));
-        } else {
-          setInvite(null);
-        }
-      });
-    }, 300);
-    return () => window.clearTimeout(t);
-  }, [inviteCode, clinicInviteToken]);
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!acceptedLegal) {
       setError("Debes aceptar la Política de privacidad y los Términos de uso.");
-      return;
-    }
-    const key = activeInvite;
-    if (key && !invite?.clinic_name) {
-      setError("Código o enlace de clínica no válido o caducado.");
       return;
     }
     setLoading(true);
@@ -93,8 +51,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
         body: JSON.stringify({
           email: emailNorm,
           password,
-          accountType: key || asPhysio ? "physio" : "patient",
-          clinicInvite: key || undefined,
+          accountType: asPhysio ? "physio" : "patient",
         }),
       });
       const payload = (await res.json()) as { error?: string };
@@ -114,12 +71,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
         setError(signError.message);
         return;
       }
-      if (key) {
-        await supabase.rpc("clinic_claim_invite", { p_token: key });
-        router.replace("/onboarding");
-      } else {
-        router.replace("/onboarding");
-      }
+      router.replace("/onboarding");
       router.refresh();
     } finally {
       setLoading(false);
@@ -138,42 +90,21 @@ export function SignupForm({ clinicInviteToken }: Props) {
           <p className="mt-1 text-sm text-slate-500">
             {convertingGuest
               ? "Crea tu cuenta para seguir usando la IA"
-              : joiningClinic
-                ? `Te unes a ${invite?.clinic_name} como fisioterapeuta`
-                : "Regístrate para usar AIKinora"}
+              : "Regístrate para usar AIKinora"}
           </p>
         </div>
       </div>
 
       {!convertingGuest ? (
-        <div className="mb-4 flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-slate-700">
-            Código de clínica (fisios, opcional)
-          </label>
+        <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
           <input
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-            className={inputClass}
-            placeholder="Ej. AB12CD"
-            autoCapitalize="characters"
-            spellCheck={false}
+            type="checkbox"
+            checked={asPhysio}
+            onChange={(e) => setAsPhysio(e.target.checked)}
+            className="h-4 w-4 accent-blue-600"
           />
-          <p className="text-xs text-slate-500">
-            Con código te registras como fisioterapeuta vinculado a esa clínica.
-            También puedes vincularlo después al iniciar sesión o en Clínica.
-          </p>
-          {!joiningClinic ? (
-            <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={asPhysio}
-                onChange={(e) => setAsPhysio(e.target.checked)}
-                className="h-4 w-4 accent-blue-600"
-              />
-              Soy fisioterapeuta (me vincularé a una clínica más tarde)
-            </label>
-          ) : null}
-        </div>
+          Soy fisioterapeuta (me vincularé a una clínica más tarde)
+        </label>
       ) : null}
 
       <div className="mb-4 flex flex-col gap-1.5">
@@ -181,7 +112,6 @@ export function SignupForm({ clinicInviteToken }: Props) {
         <input
           type="email" name="email" autoComplete="email" required
           value={email} onChange={(e) => setEmail(e.target.value)}
-          readOnly={joiningClinic && Boolean(invite?.email)}
           className={inputClass}
           placeholder="tu@correo.com"
         />
@@ -233,7 +163,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
         disabled={loading || !acceptedLegal}
         className="btn-primary w-full disabled:opacity-50"
       >
-        {loading ? "Creando cuenta…" : joiningClinic ? "Unirme a la clínica" : "Crear cuenta"}
+        {loading ? "Creando cuenta…" : "Crear cuenta"}
       </button>
 
       <p className="mt-5 text-center text-sm text-slate-500">
