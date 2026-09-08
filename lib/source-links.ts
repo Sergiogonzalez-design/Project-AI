@@ -249,19 +249,35 @@ export function isInlineFuenteLine(line: string): boolean {
 export function remapOrientationHeadingsForPhysio(content: string): string {
   return content
     .replace(
-      /\*\*\s*Qué debes hacer ahora\s*\*\*/gi,
+      /\*\*\s*Qué debes hacer ahora[:.]?\s*\*\*/gi,
       "**Qué debe hacer el paciente**"
     )
     .replace(
-      /\*\*\s*What you should do now\s*\*\*/gi,
+      /^#{1,6}\s*Qué debes hacer ahora[:.]?\s*$/gim,
+      "**Qué debe hacer el paciente**"
+    )
+    .replace(
+      /\*\*\s*What you should do now[:.]?\s*\*\*/gi,
       "**What the patient should do now**"
     )
     .replace(
-      /\*\*\s*Qué hacer mientras tanto\s*\*\*/gi,
+      /^#{1,6}\s*What you should do now[:.]?\s*$/gim,
+      "**What the patient should do now**"
+    )
+    .replace(
+      /\*\*\s*Qué hacer mientras tanto[:.]?\s*\*\*/gi,
       "**Qué puede hacer el paciente mientras tanto**"
     )
     .replace(
-      /\*\*\s*What to do in the meantime\s*\*\*/gi,
+      /^#{1,6}\s*Qué hacer mientras tanto[:.]?\s*$/gim,
+      "**Qué puede hacer el paciente mientras tanto**"
+    )
+    .replace(
+      /\*\*\s*What to do in the meantime[:.]?\s*\*\*/gi,
+      "**What the patient can do in the meantime**"
+    )
+    .replace(
+      /^#{1,6}\s*What to do in the meantime[:.]?\s*$/gim,
       "**What the patient can do in the meantime**"
     )
     .replace(

@@ -2565,8 +2565,7 @@ export function ChatInterface({
               : "No"
           : questionnairePart === "back"
             ? backAnswers.mecanismo.includes("Caída") ||
-              backAnswers.mecanismo.includes("Golpe directo") ||
-              backAnswers.mecanismo.includes("Levantamiento / esfuerzo")
+              backAnswers.mecanismo.includes("Golpe directo")
               ? `Sí: ${backAnswers.mecanismo.join(", ")}`
               : "No"
           : questionnairePart === "hip"

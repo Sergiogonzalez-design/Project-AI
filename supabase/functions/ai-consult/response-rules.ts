@@ -2346,10 +2346,12 @@ const GENERIC_FUNCTIONAL = [
 /** True when client/context already flagged hospital-level urgency.
  * Do NOT match bare «BANDERAS ROJAS» section titles in questionnaires
  * (those appear even when the answer is «Ninguna bandera roja…»).
+ * Do NOT match informal «high priority» / «urgencia absoluta» wording in
+ * differential notes — only explicit DETECTADA / PRIORIDAD ALTA flags.
  */
 export function isHighPriorityUrgentContext(...parts: Array<string | undefined | null>): boolean {
   const text = parts.filter(Boolean).join("\n");
-  return /PRIORIDAD\s*ALTA|URGENCIA\s+DETECTADA|BANDERAS?\s*ROJAS\s*DETECTADAS|FLUJO\s+FISIOTERAPIA\s*\+\s*URGENCIA|HIGH\s*PRIORITY|RED\s*FLAGS?\s*DETECTED|OVERRIDE\s+DE\s+URGENCIA|URGENT\s+OVERRIDE/i.test(
+  return /PRIORIDAD\s*ALTA|URGENCIA\s+DETECTADA|BANDERAS?\s*ROJAS\s*DETECTADAS|FLUJO\s+FISIOTERAPIA\s*\+\s*URGENCIA|RED\s*FLAGS?\s*DETECTED|OVERRIDE\s+DE\s+URGENCIA|URGENT\s+OVERRIDE/i.test(
     text
   );
 }
