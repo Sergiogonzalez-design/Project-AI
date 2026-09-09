@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { buildClinicStaffInviteUrl } from "@/lib/clinic-invite";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  buildClinicInviteShareMessage,
+  buildClinicStaffInviteUrl,
+  clinicInviteMailtoUrl,
+  clinicInviteWhatsAppUrl,
+} from "@/lib/clinic-invite";
 import { createClient } from "@/lib/supabase/client";
 
 type Member = {
@@ -14,58 +20,93 @@ type Member = {
 
 type Invite = {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string | null;
   created_at: string;
   expires_at: string;
   accepted_at: string | null;
   token: string;
+  invite_code?: string | null;
 };
 
-export function ClinicTeamPanel() {
+type CreatedInvite = {
+  link: string;
+  code: string;
+  email: string | null;
+};
+
+export function ClinicTeamPanel({
+  embedded = false,
+}: {
+  /** When true, hide page chrome (used inside Pacientes). */
+  embedded?: boolean;
+}) {
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [clinicName, setClinicName] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [lastLink, setLastLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [created, setCreated] = useState<CreatedInvite | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: m, error: mErr }, { data: i, error: iErr }] = await Promise.all([
-      supabase.rpc("clinic_list_members"),
-      supabase.rpc("clinic_list_invites"),
-    ]);
+    const [{ data: m, error: mErr }, { data: i, error: iErr }, { data: clinic }] =
+      await Promise.all([
+        supabase.rpc("clinic_list_members"),
+        supabase.rpc("clinic_list_invites"),
+        supabase.rpc("clinic_get_own"),
+      ]);
     if (mErr) setError(mErr.message);
     else setMembers((m as Member[]) ?? []);
     if (iErr) setError(iErr.message);
     else setInvites((i as Invite[]) ?? []);
+    if (clinic && typeof clinic === "object" && "name" in clinic) {
+      setClinicName(String((clinic as { name?: string }).name ?? "") || null);
+    }
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  async function invitePhysio(e: React.FormEvent) {
+  const shareMessage = useMemo(() => {
+    if (!created) return "";
+    return buildClinicInviteShareMessage({
+      clinicName,
+      inviteCode: created.code,
+      link: created.link,
+    });
+  }, [clinicName, created]);
+
+  async function invitePhysio(e: React.FormEvent, opts?: { openCode?: boolean }) {
     e.preventDefault();
     setError(null);
-    setLastLink(null);
     setBusy(true);
     try {
       const supabase = createClient();
+      const openCode = opts?.openCode || !email.trim();
       const { data, error: err } = await supabase.rpc("clinic_create_invite", {
-        p_email: email.trim().toLowerCase(),
+        p_email: openCode ? null : email.trim().toLowerCase(),
         p_display_name: displayName.trim() || null,
       });
       if (err) throw new Error(err.message);
       const row = Array.isArray(data) ? data[0] : data;
-      if (!row?.token) throw new Error("No se pudo crear la invitación.");
-      const link = buildClinicStaffInviteUrl(row.token);
-      setLastLink(link);
-      setEmail("");
-      setDisplayName("");
+      if (!row?.token || !row?.invite_code) {
+        throw new Error("No se pudo crear la invitación.");
+      }
+      setCreated({
+        link: buildClinicStaffInviteUrl(row.token),
+        code: String(row.invite_code),
+        email: row.email ?? null,
+      });
+      if (!openCode) {
+        setEmail("");
+        setDisplayName("");
+      }
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo invitar.");
@@ -74,20 +115,69 @@ export function ClinicTeamPanel() {
     }
   }
 
+  function markCopied(kind: "code" | "link") {
+    setCopied(kind);
+    window.setTimeout(() => setCopied(null), 1500);
+  }
+
+  async function deleteInvite(invite: Invite) {
+    const label = invite.email || invite.invite_code || "esta invitación";
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`¿Eliminar la invitación pendiente (${label})?`)
+    ) {
+      return;
+    }
+    setError(null);
+    setDeletingId(invite.id);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase.rpc("clinic_delete_invite", {
+        p_invite_id: invite.id,
+      });
+      if (err) throw new Error(err.message);
+      if (
+        created &&
+        (created.code === invite.invite_code ||
+          created.link.includes(invite.token))
+      ) {
+        setCreated(null);
+      }
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No se pudo eliminar la invitación."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const pending = invites.filter((i) => !i.accepted_at);
-  const physios = members.filter((m) => m.role === "physio");
-  const owners = members.filter((m) => m.role !== "physio");
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-neutral-900">Equipo</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Crea cuentas de fisioterapeuta. Ellos reciben un enlace, eligen
-          contraseña y heredan el nombre de la clínica. Cada uno tendrá su
-          código para pacientes.
+      {embedded ? (
+        <p className="text-sm text-neutral-600">
+          {/* Keep short; parent hub already labels the tab */}
+          Genera un código o enlace para que un fisioterapeuta cree su cuenta
+          (Crear cuenta → Fisio) y se una a la clínica.
         </p>
-      </div>
+      ) : (
+        <div>
+          <Link
+            href="/clinica"
+            className="text-sm font-semibold text-blue-600 hover:underline"
+          >
+            ← Clínica
+          </Link>
+          <h1 className="mt-2 text-xl font-bold text-neutral-900">Equipo</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Genera un código o enlace. El fisioterapeuta lo introduce en Crear
+            cuenta → Fisio, o abre el enlace en la web.
+          </p>
+        </div>
+      )}
 
       <form
         onSubmit={(e) => void invitePhysio(e)}
@@ -97,11 +187,10 @@ export function ClinicTeamPanel() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              Correo
+              Correo (opcional)
             </label>
             <input
               type="email"
-              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-neutral-200 px-3.5 py-2.5 text-sm"
@@ -121,53 +210,141 @@ export function ClinicTeamPanel() {
           </div>
         </div>
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={busy}
-          className="btn-primary mt-4 px-4 py-2.5 text-sm disabled:opacity-60"
-        >
-          {busy ? "Creando invitación…" : "Crear enlace de alta"}
-        </button>
-        {lastLink ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="submit"
+            disabled={busy}
+            className="btn-primary px-4 py-2.5 text-sm disabled:opacity-60"
+          >
+            {busy
+              ? "Creando…"
+              : email.trim()
+                ? "Crear invitación"
+                : "Generar código de alta"}
+          </button>
+          {email.trim() ? (
+            <button
+              type="button"
+              disabled={busy}
+              className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+              onClick={(e) => void invitePhysio(e, { openCode: true })}
+            >
+              Solo código (sin correo)
+            </button>
+          ) : null}
+        </div>
+
+        {created ? (
           <div className="mt-4 rounded-xl bg-blue-50 px-3 py-3 text-sm">
-            <p className="font-semibold text-blue-900">Envía este enlace al fisioterapeuta:</p>
-            <p className="mt-1 break-all text-blue-800">{lastLink}</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-blue-900">
+              Código de alta
+            </p>
+            <p className="mt-1 font-mono text-2xl font-extrabold tracking-[0.2em] text-slate-900">
+              {created.code}
+            </p>
             <button
               type="button"
               className="mt-2 text-xs font-bold text-blue-700 hover:underline"
               onClick={() => {
-                void navigator.clipboard.writeText(lastLink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
+                void navigator.clipboard.writeText(created.code);
+                markCopied("code");
               }}
             >
-              {copied ? "Copiado" : "Copiar enlace"}
+              {copied === "code" ? "Código copiado" : "Copiar código"}
             </button>
+
+            <p className="mt-4 text-xs font-bold uppercase tracking-wide text-blue-900">
+              Enlace web
+            </p>
+            <p className="mt-1 break-all text-blue-800">{created.link}</p>
+            <button
+              type="button"
+              className="mt-2 text-xs font-bold text-blue-700 hover:underline"
+              onClick={() => {
+                void navigator.clipboard.writeText(created.link);
+                markCopied("link");
+              }}
+            >
+              {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
+            </button>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href={clinicInviteWhatsAppUrl(shareMessage)}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white"
+              >
+                WhatsApp
+              </a>
+              <a
+                href={clinicInviteMailtoUrl(shareMessage, created.email)}
+                className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+              >
+                Email
+              </a>
+              <button
+                type="button"
+                className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white"
+                onClick={() => {
+                  if (navigator.share) {
+                    void navigator.share({
+                      title: "Invitación AIKinora",
+                      text: shareMessage,
+                    });
+                  } else {
+                    void navigator.clipboard.writeText(shareMessage);
+                    markCopied("link");
+                  }
+                }}
+              >
+                Compartir
+              </button>
+            </div>
           </div>
         ) : null}
       </form>
 
       <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-bold text-neutral-900">Fisioterapeutas</h2>
-        {physios.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-500">Aún no hay fisioterapeutas en el equipo.</p>
+        <h2 className="text-sm font-bold text-neutral-900">Equipo de la clínica</h2>
+        {members.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-500">Aún no hay miembros.</p>
         ) : (
           <ul className="mt-3 divide-y divide-neutral-100">
-            {physios.map((m) => (
-              <li key={m.user_id} className="py-2.5">
-                <p className="text-sm font-semibold text-neutral-900">
-                  {m.display_name || "Sin nombre"}
-                </p>
-                <p className="text-xs text-neutral-500">{m.email}</p>
-              </li>
-            ))}
+            {members.map((m) => {
+              const roleLabel =
+                m.role === "physio"
+                  ? "Fisioterapeuta"
+                  : m.role === "owner"
+                    ? "Admin (titular)"
+                    : m.role === "admin"
+                      ? "Admin"
+                      : m.role;
+              return (
+                <li
+                  key={m.user_id}
+                  className="flex items-start justify-between gap-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {m.display_name || "Sin nombre"}
+                    </p>
+                    <p className="text-xs text-neutral-500">{m.email}</p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                      m.role === "physio"
+                        ? "bg-blue-50 text-blue-700"
+                        : "bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    {roleLabel}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
-        {owners.length ? (
-          <p className="mt-4 text-xs text-neutral-400">
-            Titular: {owners.map((o) => o.display_name || o.email).join(", ")}
-          </p>
-        ) : null}
       </section>
 
       {pending.length > 0 ? (
@@ -178,8 +355,34 @@ export function ClinicTeamPanel() {
               const link = buildClinicStaffInviteUrl(inv.token);
               return (
                 <li key={inv.id} className="text-sm">
-                  <p className="font-semibold text-neutral-800">{inv.email}</p>
+                  <p className="font-semibold text-neutral-800">
+                    {inv.email || "Código libre"}
+                    {inv.invite_code ? ` · ${inv.invite_code}` : ""}
+                  </p>
                   <p className="break-all text-xs text-neutral-500">{link}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      className="text-xs font-bold text-blue-700 hover:underline"
+                      onClick={() =>
+                        setCreated({
+                          link,
+                          code: inv.invite_code || inv.token.slice(0, 8).toUpperCase(),
+                          email: inv.email,
+                        })
+                      }
+                    >
+                      Ver / compartir
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-bold text-red-600 hover:underline disabled:opacity-50"
+                      disabled={deletingId === inv.id}
+                      onClick={() => void deleteInvite(inv)}
+                    >
+                      {deletingId === inv.id ? "Eliminando…" : "Eliminar"}
+                    </button>
+                  </div>
                 </li>
               );
             })}

@@ -14,17 +14,30 @@ function screenLabelForPath(pathname: string): string {
   return match?.label ?? "Clínica";
 }
 
+function areaLabelForPath(pathname: string): string {
+  if (
+    pathname === "/clinica/pacientes" ||
+    pathname.startsWith("/clinica/pacientes/") ||
+    pathname === "/clinica/equipo" ||
+    pathname.startsWith("/clinica/equipo/")
+  ) {
+    return "Cuentas";
+  }
+  return "Clínica";
+}
+
 export function ClinicHeaderBar() {
   const pathname = usePathname();
   if (pathname.includes("access-denied")) return null;
   const screen = screenLabelForPath(pathname);
+  const area = areaLabelForPath(pathname);
 
   return (
     <header className="sticky top-0 z-[110] shrink-0 border-b border-neutral-200 bg-white">
       <div className="flex h-14 w-full items-center gap-2 px-4 sm:px-6">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-            Clínica
+            {area}
           </p>
           <p className="truncate text-sm font-medium text-neutral-800">
             {screen} · AIKinora

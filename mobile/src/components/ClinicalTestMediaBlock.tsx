@@ -33,7 +33,6 @@ function ClinicalTestVideoPlayer({ src, title }: { src: string; title: string })
       style={fullscreen ? styles.videoFullscreen : styles.videoPlayer}
       nativeControls
       contentFit="contain"
-      allowsFullscreen
       accessibilityLabel={`Vídeo demostrativo: ${title}`}
     />
   );

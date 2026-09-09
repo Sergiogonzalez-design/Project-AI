@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,11 +12,17 @@ import {
   TextInput,
   View,
 } from "react-native";
+import type { RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { WEB_APP_URL } from "../lib/admin-api";
 import {
+  clinicInstagramHref,
   clinicMailtoHref,
   clinicTelHref,
+  clinicTikTokHref,
   clinicWebsiteHref,
+  clinicWhatsAppHref,
   formatClinicPostDate,
   type ClinicFeedPost,
   type ClinicPost,
@@ -26,15 +33,55 @@ import {
   normalizeClinicAccent,
   parseClinicSpecialties,
 } from "../lib/clinic-brand";
+import { displayClinicHoursText } from "../lib/clinic-hours";
 import { clinicMapsQuery, googleMapsSearchUrl } from "../lib/clinic-maps";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
+import type { TabParamList } from "../navigation/AppTabs";
 
 type Tab = "explorar" | "guardadas" | "novedades";
 
+function ExploreSearchField({
+  value,
+  onChangeText,
+  placeholder,
+  onSearch,
+}: {
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  onSearch: () => void;
+}) {
+  return (
+    <View style={styles.searchFieldRow}>
+      <TextInput
+        style={styles.searchInput}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={Colors.textLight}
+        returnKeyType="search"
+        onSubmitEditing={onSearch}
+      />
+      <Pressable
+        style={styles.searchFieldBtn}
+        onPress={onSearch}
+        accessibilityRole="button"
+        accessibilityLabel="Buscar"
+      >
+        <Ionicons name="search" size={20} color="#fff" />
+      </Pressable>
+    </View>
+  );
+}
+
 export function ClinicSearchScreen() {
+  const route = useRoute<RouteProp<TabParamList, "ClinicSearch">>();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<TabParamList, "ClinicSearch">>();
   const [tab, setTab] = useState<Tab>("explorar");
-  const [query, setQuery] = useState("");
+  const [name, setName] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [city, setCity] = useState("");
   const [results, setResults] = useState<ClinicSearchCard[]>([]);
   const [favorites, setFavorites] = useState<ClinicSearchCard[]>([]);
@@ -43,17 +90,25 @@ export function ClinicSearchScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useFocusEffect(
+    useCallback(() => {
+      const next = route.params?.clinicSlug?.trim();
+      if (next) setSlug(next);
+    }, [route.params?.clinicSlug])
+  );
+
   const loadExplore = useCallback(async () => {
     setLoading(true);
     setError(null);
     const { data, error: err } = await supabase.rpc("clinic_search", {
-      p_query: query.trim(),
+      p_name: name.trim(),
+      p_specialty: specialty.trim(),
       p_city: city.trim(),
     });
     if (err) setError(err.message);
     else setResults((data as ClinicSearchCard[]) ?? []);
     setLoading(false);
-  }, [city, query]);
+  }, [city, name, specialty]);
 
   const loadFavorites = useCallback(async () => {
     setLoading(true);
@@ -81,7 +136,15 @@ export function ClinicSearchScreen() {
   }, [tab, slug, loadExplore, loadFavorites, loadFeed]);
 
   if (slug) {
-    return <ClinicProfileView slug={slug} onBack={() => setSlug(null)} />;
+    return (
+      <ClinicProfileView
+        slug={slug}
+        onBack={() => {
+          setSlug(null);
+          navigation.setParams({ clinicSlug: undefined });
+        }}
+      />
+    );
   }
 
   const list = tab === "guardadas" ? favorites : results;
@@ -113,23 +176,24 @@ export function ClinicSearchScreen() {
 
       {tab === "explorar" ? (
         <View style={styles.searchRow}>
-          <TextInput
-            style={styles.input}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Nombre o especialidad"
-            placeholderTextColor={Colors.textLight}
+          <ExploreSearchField
+            value={name}
+            onChangeText={setName}
+            placeholder="Nombre"
+            onSearch={() => void loadExplore()}
           />
-          <TextInput
-            style={styles.input}
+          <ExploreSearchField
+            value={specialty}
+            onChangeText={setSpecialty}
+            placeholder="Especialidad"
+            onSearch={() => void loadExplore()}
+          />
+          <ExploreSearchField
             value={city}
             onChangeText={setCity}
             placeholder="Ciudad"
-            placeholderTextColor={Colors.textLight}
+            onSearch={() => void loadExplore()}
           />
-          <Pressable style={styles.searchBtn} onPress={() => void loadExplore()}>
-            <Text style={styles.searchBtnText}>Buscar</Text>
-          </Pressable>
         </View>
       ) : null}
 
@@ -179,7 +243,11 @@ export function ClinicSearchScreen() {
             >
               <View style={[styles.cover, { backgroundColor: accent }]}>
                 {clinic.cover_url ? (
-                  <Image source={{ uri: clinic.cover_url }} style={styles.coverImg} />
+                  <Image
+                    source={{ uri: clinic.cover_url }}
+                    style={styles.coverImg}
+                    resizeMode="cover"
+                  />
                 ) : null}
               </View>
               <View style={styles.channelBody}>
@@ -245,6 +313,7 @@ function ClinicProfileView({
       }
       setClinic(row);
       setPosts((postRows as ClinicPost[]) ?? []);
+      setPageTab(((postRows as ClinicPost[]) ?? []).length > 0 ? "novedades" : "sobre");
       const { data: fav } = await supabase.rpc("clinic_is_favorited", {
         p_clinic_id: row.id,
       });
@@ -296,12 +365,21 @@ function ClinicProfileView({
 
   const accent = normalizeClinicAccent(clinic.accent_color);
   const chips = parseClinicSpecialties(clinic.specialties);
+  const hoursDisplay = displayClinicHoursText(clinic.hours);
+  const waHref = clinicWhatsAppHref(clinic.whatsapp, clinic.phone);
+  const bookingHref = clinic.booking_url
+    ? clinicWebsiteHref(clinic.booking_url)
+    : null;
 
   return (
     <ScrollView contentContainerStyle={styles.profileWrap}>
       <View style={[styles.coverTall, { backgroundColor: accent }]}>
         {clinic.cover_url ? (
-          <Image source={{ uri: clinic.cover_url }} style={styles.coverImg} />
+          <Image
+            source={{ uri: clinic.cover_url }}
+            style={styles.coverImg}
+            resizeMode="cover"
+          />
         ) : null}
         <Pressable onPress={onBack} style={styles.backPill}>
           <Text style={styles.backPillText}>← Buscar</Text>
@@ -337,6 +415,12 @@ function ClinicProfileView({
           {clinic.phone ? (
             <Action label="Llamar" onPress={() => void Linking.openURL(clinicTelHref(clinic.phone!))} />
           ) : null}
+          {waHref ? (
+            <Action label="WhatsApp" onPress={() => void Linking.openURL(waHref)} />
+          ) : null}
+          {bookingHref ? (
+            <Action label="Cita" onPress={() => void Linking.openURL(bookingHref)} />
+          ) : null}
           {clinic.contact_email ? (
             <Action
               label="Email"
@@ -350,6 +434,18 @@ function ClinicProfileView({
             <Action
               label="Web"
               onPress={() => void Linking.openURL(clinicWebsiteHref(clinic.website!))}
+            />
+          ) : null}
+          {clinic.instagram ? (
+            <Action
+              label="Instagram"
+              onPress={() => void Linking.openURL(clinicInstagramHref(clinic.instagram!))}
+            />
+          ) : null}
+          {clinic.tiktok ? (
+            <Action
+              label="TikTok"
+              onPress={() => void Linking.openURL(clinicTikTokHref(clinic.tiktok!))}
             />
           ) : null}
           <Action label="Compartir" onPress={() => void share()} />
@@ -383,10 +479,10 @@ function ClinicProfileView({
         ) : (
           <>
             {clinic.description ? <Text style={styles.body}>{clinic.description}</Text> : null}
-            {clinic.hours ? (
+            {hoursDisplay ? (
               <>
                 <Text style={styles.section}>Horario</Text>
-                <Text style={styles.body}>{clinic.hours}</Text>
+                <Text style={styles.body}>{hoursDisplay}</Text>
               </>
             ) : null}
             {clinic.address ? (
@@ -449,6 +545,26 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   tabTextOn: { color: "#fff" },
   searchRow: { gap: 8, marginBottom: 12 },
+  searchFieldRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  searchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: Colors.text,
+    backgroundColor: Colors.surface,
+  },
+  searchFieldBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   input: {
     borderWidth: 1,
     borderColor: Colors.border,
@@ -459,13 +575,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
     backgroundColor: Colors.surface,
   },
-  searchBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  searchBtnText: { color: "#fff", fontWeight: "700" },
   card: {
     borderWidth: 1,
     borderColor: Colors.border,
@@ -518,8 +627,19 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 12,
   },
-  cover: { height: 92 },
-  coverTall: { height: 150 },
+  cover: {
+    width: "100%",
+    aspectRatio: 2.4,
+    minHeight: 120,
+    maxHeight: 180,
+    backgroundColor: Colors.primary,
+  },
+  coverTall: {
+    width: "100%",
+    aspectRatio: 2.1,
+    minHeight: 160,
+    maxHeight: 240,
+  },
   coverImg: { width: "100%", height: "100%" },
   channelBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 22 },
   logoOverlap: {

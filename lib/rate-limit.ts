@@ -2,7 +2,6 @@ type Bucket = { count: number; resetAt: number };
 
 const buckets = new Map<string, Bucket>();
 
-/** Simple in-process sliding window limiter (per server instance). */
 export function checkRateLimit(
   key: string,
   max: number,
@@ -24,14 +23,27 @@ export function checkRateLimit(
   return { allowed: true, retryAfterSec: 0 };
 }
 
+/** Prefer x-real-ip; use last XFF hop only as fallback (not the spoofable first hop). */
+export function rateLimitKey(
+  headers: Headers,
+  scope: string,
+  userId?: string | null
+): string {
+  if (userId) return `${scope}:user:${userId}`;
+  const realIp = headers.get("x-real-ip")?.trim();
+  const forwarded = headers.get("x-forwarded-for");
+  const lastHop = forwarded?.split(",").pop()?.trim();
+  const ip = realIp || lastHop || "unknown";
+  return `${scope}:ip:${ip}`;
+}
+
 export function clientIpFromHeaders(
   headers: Headers,
   fallback = "unknown"
 ): string {
+  const realIp = headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
   const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  return headers.get("x-real-ip")?.trim() || fallback;
+  const lastHop = forwarded?.split(",").pop()?.trim();
+  return lastHop || fallback;
 }

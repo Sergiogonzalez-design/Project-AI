@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
+import { FadeInView } from "./ui/FadeInView";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { Colors } from "../lib/colors";
 import {
@@ -8,6 +9,7 @@ import {
   type FunctionalTestAnswer,
   type FunctionalTestItem,
 } from "../lib/functional-test-answers";
+import { functionalTestProgressLabel } from "../lib/functional-test-reveal";
 import {
   resolveFunctionalTestMedia,
   stripFunctionalMediaMarker,
@@ -17,44 +19,97 @@ type Props = {
   tests: FunctionalTestItem[];
   language?: "es" | "en";
   disabled?: boolean;
+  ready?: boolean;
   onSubmit: (text: string) => void;
+  onStaggerTick?: () => void;
+  onStaggerComplete?: () => void;
 };
 
 export function FunctionalTestYesNo({
   tests,
   language = "es",
   disabled,
+  ready = true,
   onSubmit,
+  onStaggerComplete,
 }: Props) {
   const [answers, setAnswers] = useState<Record<number, FunctionalTestAnswer>>(
     {}
   );
   const [sent, setSent] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [revealedCount, setRevealedCount] = useState(0);
+  const onStaggerCompleteRef = useRef(onStaggerComplete);
+  onStaggerCompleteRef.current = onStaggerComplete;
   const shown = new Set<string>();
+  const allRevealed = revealedCount >= tests.length;
   const complete = tests.every((t) => answers[t.n]);
   const yes = language === "en" ? "Yes" : "Sí";
   const no = language === "en" ? "No" : "No";
   const hint =
     language === "en"
-      ? "Do each test, then tap Yes or No."
-      : "Haz cada prueba y pulsa Sí o No.";
+      ? "Do each test at home, then tap Yes or No."
+      : "Haz cada prueba en casa y pulsa Sí o No.";
   const send = language === "en" ? "Send answers" : "Enviar respuestas";
+
+  const testKey = tests.map((t) => `${t.n}:${t.prompt}`).join("|");
+
+  useEffect(() => {
+    if (!ready || tests.length === 0) {
+      setShowHint(false);
+      setRevealedCount(0);
+      return;
+    }
+
+    // Show all tests immediately so consulta previa feels instant on phone.
+    setShowHint(true);
+    setRevealedCount(tests.length);
+    onStaggerCompleteRef.current?.();
+  }, [ready, testKey, tests.length]);
 
   function choose(n: number, value: FunctionalTestAnswer) {
     if (disabled || sent) return;
     setAnswers((prev) => ({ ...prev, [n]: value }));
   }
 
+  if (!ready) return null;
+
+  const visibleTests = tests.slice(0, revealedCount);
+
   return (
     <View style={styles.wrap}>
-      <Text style={styles.hint}>{hint}</Text>
-      {tests.map((test) => {
+      {showHint ? (
+        <FadeInView>
+          <Text style={styles.hint}>{hint}</Text>
+        </FadeInView>
+      ) : null}
+      {showHint && revealedCount > 0 && tests.length > 1 ? (
+        <FadeInView style={styles.progressWrap}>
+          <View style={styles.progressRow}>
+            <Text style={styles.progressLabel}>
+              {functionalTestProgressLabel(revealedCount, tests.length, language)}
+            </Text>
+            <Text style={styles.progressPct}>
+              {Math.round((revealedCount / tests.length) * 100)}%
+            </Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${(revealedCount / tests.length) * 100}%` },
+              ]}
+            />
+          </View>
+        </FadeInView>
+      ) : null}
+      {visibleTests.map((test) => {
         const prompt = stripFunctionalMediaMarker(test.prompt);
         const media = resolveFunctionalTestMedia({ prompt: test.prompt });
         const showMedia = media && !shown.has(media.id) ? media : null;
-        if (showMedia) shown.add(showMedia.id);
+        if (showMedia) shown.add(media.id);
         return (
-          <View key={test.n} style={styles.item}>
+          <FadeInView key={test.n} style={styles.item}>
             <Text style={styles.prompt}>
               {test.n}. {prompt}
             </Text>
@@ -75,21 +130,23 @@ export function FunctionalTestYesNo({
                 <Text style={chipTextStyle(answers[test.n] === "no")}>{no}</Text>
               </Pressable>
             </View>
-          </View>
+          </FadeInView>
         );
       })}
-      {complete ? (
-        <Pressable
-          disabled={disabled || sent}
-          onPress={() => {
-            if (sent) return;
-            setSent(true);
-            onSubmit(formatFunctionalTestAnswers(tests, answers, language));
-          }}
-          style={[styles.send, (disabled || sent) && { opacity: 0.5 }]}
-        >
-          <Text style={styles.sendText}>{send}</Text>
-        </Pressable>
+      {allRevealed && complete ? (
+        <FadeInView>
+          <Pressable
+            disabled={disabled || sent}
+            onPress={() => {
+              if (sent) return;
+              setSent(true);
+              onSubmit(formatFunctionalTestAnswers(tests, answers, language));
+            }}
+            style={[styles.send, (disabled || sent) && { opacity: 0.5 }]}
+          >
+            <Text style={styles.sendText}>{send}</Text>
+          </Pressable>
+        </FadeInView>
       ) : null}
     </View>
   );
@@ -98,12 +155,38 @@ export function FunctionalTestYesNo({
 const styles = StyleSheet.create({
   wrap: { marginTop: 10, gap: 14 },
   hint: { fontSize: 12, lineHeight: 16, color: Colors.textLight },
+  progressWrap: { gap: 6 },
+  progressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  progressLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: Colors.textLight,
+  },
+  progressPct: { fontSize: 11, color: Colors.textLight },
+  progressTrack: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#e2e8f0",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    backgroundColor: Colors.primary,
+  },
   item: { gap: 8 },
   prompt: {
     fontSize: 14,
     lineHeight: 20,
     fontWeight: "700",
     color: Colors.primary,
+    flexShrink: 1,
   },
   row: { flexDirection: "row", gap: 8 },
   send: {

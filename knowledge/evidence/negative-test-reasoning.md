@@ -2,7 +2,7 @@
 
 **Capa:** Fase 3 evidence (razonamiento probabilístico)  
 **Regla:** Nunca inventar Sn/Sp/LR. Si no hay cifra citada de confianza, hablar en cualitativo («limitada», «mixta», «no excluye»).  
-**Companion:** `evidence-levels-A-D.md`, `test-reliability-framework.md`, `knowledge/relations/*-pilot.json`
+**Companion:** `evidence-levels-A-D.md`, `test-reliability-framework.md`, `knowledge/relations/*.json` (ACTIVE: shoulder-lateral, cervical)
 
 ---
 

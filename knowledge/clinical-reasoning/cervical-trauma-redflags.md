@@ -173,12 +173,13 @@ Otros signos: tinnitus pulsátil, disequilibrio, visión borrosa persistente.
 
 | Test | Por qué evitar |
 |------|----------------|
-| Spurling | Cierra foramen; puede empeorar compresión/inestabilidad |
+| Spurling / FRT / Bakody provocativos | Cierra foramen o moviliza upper C; puede empeorar compresión/inestabilidad |
+| Sharp-Purser / alares (demo paciente) | Especializados; fiabilidad mixta; **no** Sí/No ni vídeo paciente — imagen/médico si RA/Down/trauma |
 | Manipulación thrust | Riesgo vascular, inestabilidad |
 | Tracción cervical agresiva | Inestabilidad, lesión vascular |
 | End-range repetido | Puede exacerbar lesión aguda |
 
-**Regla:** contraindicación ≠ «no tocar nunca»; significa evaluación médica/imagen primero.
+**Regla:** contraindicación ≠ «no tocar nunca»; significa evaluación médica/imagen primero. Ante RA, Down o inestabilidad sospechada → **no** thrust ni provocación; no afirmar inestabilidad por un test nominado (evidencia mixta de Sharp-Purser/alar).
 
 ---
 

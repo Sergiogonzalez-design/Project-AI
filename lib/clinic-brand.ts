@@ -26,10 +26,25 @@ export const CLINIC_SPECIALTY_PRESETS = [
 
 export const DEFAULT_CLINIC_ACCENT = "#2563EB";
 
+const HEX6_RE = /^#[0-9A-F]{6}$/i;
+const HEX3_RE = /^#[0-9A-F]{3}$/i;
+
+/** Expand #RGB → #RRGGBB; return null if invalid. */
+export function parseClinicAccentHex(hex: string | null | undefined): string | null {
+  const raw = (hex ?? "").trim();
+  if (!raw) return null;
+  const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+  if (HEX6_RE.test(withHash)) return withHash.toUpperCase();
+  if (HEX3_RE.test(withHash)) {
+    const h = withHash.slice(1).toUpperCase();
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+  }
+  return null;
+}
+
+/** Any valid #RRGGBB, or default if invalid. */
 export function normalizeClinicAccent(hex: string | null | undefined): string {
-  const raw = (hex ?? "").trim().toUpperCase();
-  const match = CLINIC_ACCENT_SWATCHES.find((s) => s.hex === raw);
-  return match?.hex ?? DEFAULT_CLINIC_ACCENT;
+  return parseClinicAccentHex(hex) ?? DEFAULT_CLINIC_ACCENT;
 }
 
 export function clinicAccentSoft(hex: string): string {
@@ -54,4 +69,54 @@ export function parseClinicSpecialties(value: unknown): string[] {
       .filter(Boolean);
   }
   return [];
+}
+
+export function isClinicSpecialtyPreset(value: string): boolean {
+  return (CLINIC_SPECIALTY_PRESETS as readonly string[]).includes(value);
+}
+
+/** Specialties the clinic added via «Otro» (not in the preset list). */
+export function customClinicSpecialties(specialties: string[]): string[] {
+  return specialties.filter((s) => !isClinicSpecialtyPreset(s));
+}
+
+/**
+ * Custom equipment / service entries are stored as:
+ *   custom:{categoryId}:{label}
+ * so they stay grouped under the right section.
+ */
+export const CUSTOM_EQUIPMENT_PREFIX = "custom:";
+
+export function customEquipmentKey(categoryId: string, label: string): string {
+  return `${CUSTOM_EQUIPMENT_PREFIX}${categoryId}:${label.trim()}`;
+}
+
+export function parseCustomEquipmentKey(
+  id: string,
+): { categoryId: string; label: string } | null {
+  if (!id.startsWith(CUSTOM_EQUIPMENT_PREFIX)) return null;
+  const rest = id.slice(CUSTOM_EQUIPMENT_PREFIX.length);
+  const colon = rest.indexOf(":");
+  if (colon <= 0) return null;
+  const categoryId = rest.slice(0, colon);
+  const label = rest.slice(colon + 1).trim();
+  if (!categoryId || !label) return null;
+  return { categoryId, label };
+}
+
+export function listCustomEquipmentForCategory(
+  equipment: string[],
+  categoryId: string,
+): string[] {
+  return equipment
+    .map(parseCustomEquipmentKey)
+    .filter((x): x is { categoryId: string; label: string } =>
+      Boolean(x && x.categoryId === categoryId),
+    )
+    .map((x) => x.label);
+}
+
+export function displayEquipmentLabel(id: string): string {
+  const custom = parseCustomEquipmentKey(id);
+  return custom?.label ?? id;
 }

@@ -3,7 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { GUEST_EMAIL_DOMAIN } from "@/lib/guest-account";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
-import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { getSupabaseUrl } from "@/lib/supabase/env";
 
 function getServiceRoleKey(): string | null {
@@ -27,8 +27,7 @@ export async function OPTIONS() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const ip = clientIpFromHeaders(request.headers);
-    const limit = checkRateLimit(`guest-physio:${ip}`, 8, 60_000);
+    const limit = checkRateLimit(rateLimitKey(request.headers, "guest-physio"), 8, 60_000);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: "Demasiados intentos. Espera un minuto e inténtalo de nuevo." },
@@ -73,7 +72,81 @@ export async function POST(request: NextRequest) {
         { status: 500, headers: CORS }
       );
     }
-    if (!physio?.id) {
+
+    let recipientId = physio?.id ?? null;
+    let recipientName = physio?.display_name ?? null;
+    let recipientClinic = physio?.clinic_name ?? null;
+
+    if (!recipientId) {
+      const { data: clinic, error: clinicErr } = await adminClient
+        .from("clinics")
+        .select("id, name")
+        .eq("patient_invite_code", normalized)
+        .maybeSingle();
+
+      if (clinicErr) {
+        return NextResponse.json(
+          { error: "No se pudo comprobar el código. Inténtalo de nuevo." },
+          { status: 500, headers: CORS }
+        );
+      }
+      if (!clinic?.id) {
+        return NextResponse.json(
+          { error: "Código no encontrado. Comprueba que lo has escrito bien." },
+          { status: 404, headers: CORS }
+        );
+      }
+
+      const { data: members } = await adminClient
+        .from("clinic_members")
+        .select("user_id, role")
+        .eq("clinic_id", clinic.id);
+
+      const memberIds = ((members as { user_id: string; role: string }[]) ?? []).map(
+        (m) => m.user_id
+      );
+      let picked: string | null = null;
+      let pickedName: string | null = null;
+
+      if (memberIds.length > 0) {
+        const { data: physioProfiles } = await adminClient
+          .from("profiles")
+          .select("id, display_name")
+          .eq("account_type", "physio")
+          .in("id", memberIds)
+          .limit(1);
+        const firstPhysio = (physioProfiles as { id: string; display_name: string | null }[] | null)?.[0];
+        if (firstPhysio) {
+          picked = firstPhysio.id;
+          pickedName = firstPhysio.display_name;
+        }
+      }
+
+      if (!picked) {
+        const ownerId = ((members as { user_id: string; role: string }[]) ?? []).find(
+          (m) => m.role === "owner"
+        )?.user_id;
+        if (!ownerId) {
+          return NextResponse.json(
+            { error: "Esta clínica aún no puede recibir pacientes." },
+            { status: 400, headers: CORS }
+          );
+        }
+        const { data: ownerProfile } = await adminClient
+          .from("profiles")
+          .select("display_name")
+          .eq("id", ownerId)
+          .maybeSingle();
+        picked = ownerId;
+        pickedName = (ownerProfile as { display_name?: string | null } | null)?.display_name ?? null;
+      }
+
+      recipientId = picked;
+      recipientName = pickedName;
+      recipientClinic = clinic.name;
+    }
+
+    if (!recipientId) {
       return NextResponse.json(
         { error: "Código no encontrado. Comprueba que lo has escrito bien." },
         { status: 404, headers: CORS }
@@ -106,7 +179,8 @@ export async function POST(request: NextRequest) {
       account_type: "patient",
       onboarding_completed: true,
       is_admin: false,
-      physio_id: physio.id,
+      physio_id: recipientId,
+      clinic_name: recipientClinic,
     });
 
     if (profileError) {
@@ -122,9 +196,9 @@ export async function POST(request: NextRequest) {
         email,
         password,
         physio: {
-          physio_id: physio.id,
-          physio_name: physio.display_name ?? null,
-          clinic_name: physio.clinic_name ?? null,
+          physio_id: recipientId,
+          physio_name: recipientName,
+          clinic_name: recipientClinic,
         },
       },
       { headers: CORS }

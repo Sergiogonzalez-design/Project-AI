@@ -29,7 +29,8 @@ Preguntar siempre:
 | Nudillo palmar (A1) + chasquido/bloqueo | Trigger finger / tenosinovitis A1 |
 | IFP / punta del dedo + trauma flexión | Jersey finger (FDP) — sospecha |
 | IFD / uña + no extiende punta | Mallet (extensor IFD) |
-| MCP pulgar + valgo/ESGRIMA | UCL pulgar (gamekeeper/skier) |
+| MCP pulgar + valgo/ESGRIMA | UCL pulgar (gamekeeper/skier); cribado **Stener** si inestabilidad marcada |
+| IFP volar + hiperextensión | Placa volar IFP (no esguince «banal») |
 | IF proximal/distal + torsión | Esguince interfalángico |
 
 **Regla:** un dedo bloqueado ≠ STC automáticamente.
@@ -131,7 +132,7 @@ TRAUMA EN PUNTA / IFD FLEXIONADA
 
 ---
 
-## 8. UCL PULGAR (gamekeeper / skier's thumb)
+## 8. UCL PULGAR (gamekeeper / skier's thumb) + STENER
 
 **Typical:** valgo forzado del pulgar (esquí, balón, caída); dolor **MCP pulgar**; inestabilidad al estrés en valgo; pinza débil.
 
@@ -145,44 +146,94 @@ TRAUMA EN VALGO PULGAR
 → UCL PULGAR COMPATIBILITY ↑
 ```
 
+**Stener lesion (cribado clínico — no confirmar grado sin imagen):**
+
+Cuando la UCL se avulsiona y el extremo proximal queda **atrapado por la aponeurosis del adductor**, la reparación espontánea es improbable. Clínicamente se **sospecha** (no se «confirma» solo con un estrés) si:
+
+```
+INESTABILIDAD UCL MARCADA vs CONTRALATERAL
+± MASA / «BUMP» PALPABLE EN MCP CUBITAL
+± APERTURA SIN TOPE FIRME EN ESTRÉS VALGO
+→ SOSPECHA DE LESIÓN COMPLETA ± STENER ↑ → VALORACIÓN MÉDICA / IMAGEN (eco/RMN)
+```
+
+**Reglas Stener (evidencia clínica, no Sn/Sp inventados):**
+
+- Estrés valgo **doloroso sin holgura clara** ≠ Stener.  
+- Holgura marcada / sin tope + mecanismo típico → **no** tratar como esguince leve «que se cura solo»; derivar.  
+- No inventar sensibilidad/especificidad del «bump de Stener»; es signo clínico clásico con valor orientativo (Stener 1962; revisiones UCL thumb).  
+- Lenguaje: «compatible con lesión UCL completa / posible Stener — valoración»; no «Stener confirmado» sin imagen/cirugía.
+
 **Diferencial:** contusión MCP, fracture Bennett/Rolando, De Quervain (sin trauma valgo).
 
-**Regla:** UCL positivo ≠ rotura confirmada sin imagen/clínica integrada.
+**Regla:** estrés UCL positivo ≠ rotura confirmada ni Stener confirmado sin imagen/clínica integrada.
 
 ---
 
-## 9. ESGUINCE INTERFALÁNGICO (IF)
+## 9. PLACA VOLAR IFP (hiperextensión)
 
-**Typical:** torsión o hiperextensión; dolor articular IF; hinchazón local; ROM limitado pero **sin** patrón FDP/mallet/UCL.
+**Typical:** hiperextensión forzada de la **IFP** (balón, caída, «dedo hacia atrás»); dolor **volar** en IFP; hinchazón; a menudo miedo a extender; flexión/extensión activas **conservadas** (a diferencia de jersey/mallet).
+
+**Patrón compatible:**
+
+```
+HIPEREXTENSIÓN IFP
++ DOLOR VOLAR IFP FAMILIAR
++ FLEXIÓN Y EXTENSIÓN ACTIVAS CONSERVADAS (no déficit FDP/mallet)
+± HEMATOMA VOLAR / INESTABILIDAD EN HIPEREXTENSIÓN
+→ PLACA VOLAR IFP COMPATIBILITY ↑
+```
+
+**No es** «esguince banal» automático: la placa volar puede asociar avulsión ósea o inestabilidad; **RX** si hinchazón marcada, bloqueo o duda ósea.
+
+**Diferencial:**
+
+| Entidad | Discriminador |
+|---------|----------------|
+| Jersey (FDP) | No flexiona **activamente** la IFP |
+| Mallet | Déficit extensión **IFD**, no IFP volar |
+| Esguince colateral IF | Mecanismo lateral/torsión > hiperextensión pura |
+| Trigger / A1 | Nudillo palmar + chasquido, sin trauma típico |
+
+**Limitación:** no hay un test especial con métricas robustas publicadas como «placa volar test»; el cluster es **mecanismo + localización volar + función activa conservada ± imagen**. No inventar Sn/Sp.
+
+**Citation:** Glickel / Hand Clinics — PIP volar plate injuries; práctica de cirugía de mano: hiperextensión IFP + dolor volar; RX para avulsión.
+
+---
+
+## 10. ESGUINCE INTERFALÁNGICO (IF)
+
+**Typical:** torsión o mecanismo mixto; dolor articular IF; hinchazón local; ROM limitado pero **sin** patrón FDP/mallet/UCL ni cluster claro de placa volar (hiperextensión + dolor volar dominante).
 
 **Patrón:**
 
 ```
-TRAUMA TORSIONAL / HIperextensión IF
+TRAUMA TORSIONAL / LATERAL IF
 + DOLOR ARTICULAR LOCAL FAMILIAR
 + FLEXIÓN Y EXTENSIÓN ACTIVAS CONSERVADAS (sin bloqueo A1 dominante)
 ± INESTABILIDAD LATERAL IF
 → ESGUINCE IF COMPATIBILITY ↑
 ```
 
-**Diferencial:** mallet (extensión IFD), jersey (flexión IFP), trigger (nudillo palmar).
+**Diferencial:** mallet (extensión IFD), jersey (flexión IFP), placa volar (hiperextensión + volar), trigger (nudillo palmar).
 
 ---
 
-## 10. PALPATION
+## 11. PALPATION
 
 | Zona | Qué buscar |
 |------|------------|
 | A1 (nudillo palmar) | Tenderness + chasquido |
+| IFP volar | Placa volar post-hiperextensión |
 | IFP / IFD | Dolor articular post-trauma |
-| MCP pulgar | UCL, hematoma |
+| MCP pulgar | UCL, hematoma, bump (cribado Stener) |
 | Pliegue muñeca | Tinel mediano (si neural) |
 
 **Familiar pain** en palpación aumenta peso clínico.
 
 ---
 
-## 11. TEST CLUSTERS
+## 12. TEST CLUSTERS
 
 Ver `knowledge/evidence/clusters-finger-hand.md`. Resumen:
 
@@ -193,13 +244,15 @@ Ver `knowledge/evidence/clusters-finger-hand.md`. Resumen:
 | **Jersey** | Trauma flexión + no flexión activa IFP |
 | **Mallet** | Trauma punta + no extensión activa IFD |
 | **UCL pulgar** | Valgo + MCP + estrés UCL familiar |
-| **IF sprain** | Trauma IF + dolor local sin déficit FDP/mallet |
+| **Stener (sospecha)** | UCL con holgura marcada ± bump → imagen/valoración |
+| **Placa volar IFP** | Hiperextensión + dolor volar IFP + activos conservados |
+| **IF sprain** | Trauma IF + dolor local sin déficit FDP/mallet ni placa volar clara |
 
 **Clasificación:** combinación clínica; no inventar Sn/Sp ni scores.
 
 ---
 
-## 12. DECISION TREE
+## 13. DECISION TREE
 
 ```
 DEDO / DEDOS — DOLOR O PARESTESIAS
@@ -215,7 +268,7 @@ LOCALIZACIÓN EXACTA (dedo + zona)
 ↓ SÍ → TRIGGER / A1
 ↓ NO
 ¿TRAUMA RECIENTE?
-↓ SÍ → JERSEY / MALLET / UCL / IF según mecanismo + tests activos
+↓ SÍ → JERSEY / MALLET / PLACA VOLAR / UCL (± Stener) / IF según mecanismo + tests activos
 ↓ NO
 ESGUINCE / SOBRECARGA / ARTROSIS IF según patrón
 ↓
@@ -226,7 +279,7 @@ CONFIANZA + SIGUIENTE PASO
 
 ---
 
-## 13. RED FLAGS
+## 14. RED FLAGS
 
 - Dedo frío, pálido o cianótico (vasoespasmo / vascular)  
 - Herida abierta, sangrado severo, hueso expuesto  
@@ -235,66 +288,71 @@ CONFIANZA + SIGUIENTE PASO
 - Fiebre + celulitis / infección  
 - Jersey finger sospechado (FDP) → derivación médica  
 - Mallet con fractura abierta o neurovascular comprometido  
-- UCL completa + inestabilidad funcional severa
+- UCL con inestabilidad marcada / sospecha Stener → valoración médica  
+- Placa volar con bloqueo, deformidad o sospecha ósea → RX / valoración
 
 ---
 
-## 14. IMAGING
+## 15. IMAGING
 
 | Modalidad | Cuándo considerar |
 |-----------|-------------------|
-| **RX** | Mallet, UCL, trauma IF, luxación |
-| **US** | UCL parcial, tendón FDP, A1 |
-| **RMN** | Duda tendón, UCL completa, persistencia |
+| **RX** | Mallet, UCL, placa volar IFP, trauma IF, luxación |
+| **US** | UCL parcial/completa (cribado Stener), tendón FDP, A1 |
+| **RMN** | Duda tendón, UCL completa/Stener, persistencia |
 | **Clínica** | Primera línea = historia + examen activo |
 
 **Regla:** imagen no sustituye tests activos IFP/IFD ni cluster clínico.
 
 ---
 
-## 15. COEXISTING PATHOLOGY
+## 16. COEXISTING PATHOLOGY
 
 Permitir:
 
 - STC + trigger en otro dedo  
 - De Quervain + dolor pulgar (ver `wrist-dequervain.md`)  
 - Esguince IF + contusión leve  
+- Placa volar + esguince colateral coexistente  
 - Cervical referido + síntomas digitales atípicos  
 
 **Entidad dominante** + **coexistente** + **incierta** + **requiere más valoración**.
 
 ---
 
-## 16. AI LANGUAGE RULES
+## 17. AI LANGUAGE RULES
 
 **Usar:**
 
 - «Los hallazgos son compatibles con trigger finger / tenosinovitis A1…»  
 - «Phalen y Tinel apoyan túnel carpiano en cluster; un test negativo no lo descarta.»  
 - «La incapacidad de flexionar activamente la articulación de la punta sugiere sospecha de jersey finger — valoración médica.»  
+- «Tras hiperextensión, dolor en la cara volar de la IFP es compatible con lesión de placa volar — no esguince banal automático.»  
+- «Inestabilidad marcada del UCL del pulgar puede ser compatible con lesión completa / posible Stener — valoración e imagen; no confirmado solo por el estrés.»  
 - «Este resultado debe interpretarse con el mecanismo y el dolor familiar.»
 
 **Evitar:**
 
 - «Phalen positivo = tienes túnel carpiano.»  
 - «Tinel confirma STC.»  
-- «Es un esguince leve» sin descartar jersey/mallet/UCL en trauma.  
-- «UCL positivo = rotura confirmada» sin contexto.
+- «Es un esguince leve» sin descartar jersey/mallet/UCL/placa volar en trauma.  
+- «UCL positivo = rotura confirmada» / «Stener confirmado» sin contexto/imagen.  
+- Inventar Sn/Sp del bump de Stener o de un «test de placa volar».
 
 ---
 
-## 17. FINAL CLASSIFICATION
+## 18. FINAL CLASSIFICATION
 
 | Clasificación | Criterio orientativo |
 |---------------|---------------------|
 | **LOW RISK / INFO** | Esguince leve, sin RF, autocuidado + reevaluación |
-| **PHYSIOTHERAPY ASSESSMENT** | Trigger, IF, función limitada, patrón MSK |
-| **MEDICAL ASSESSMENT** | Jersey, mallet, UCL, duda tendón, persistencia |
+| **PHYSIOTHERAPY ASSESSMENT** | Trigger, IF / placa volar estable, función limitada, patrón MSK |
+| **MEDICAL ASSESSMENT** | Jersey, mallet, UCL (± Stener), placa volar inestable/ósea, duda tendón |
 | **URGENT / EMERGENCY** | Vascular, infección, luxación, trauma mayor |
 
 ---
 
-## 18. DIFFERENTIAL SUMMARY
+## 19. DIFFERENTIAL SUMMARY
 
 | Entidad | Claves |
 |---------|--------|
@@ -302,14 +360,15 @@ Permitir:
 | Trigger / A1 | Nudillo, chasquido, bloqueo flexión |
 | Jersey (FDP) | Trauma flexión, no flexión activa IFP |
 | Mallet | Trauma punta, no extensión activa IFD |
-| UCL pulgar | Valgo, MCP, inestabilidad |
+| UCL pulgar | Valgo, MCP, inestabilidad (± sospecha Stener) |
+| Placa volar IFP | Hiperextensión, dolor volar, activos conservados |
 | IF sprain | Trauma IF, dolor local, ROM parcial |
 | Cubital | 4.º–5.º, codo — no STC |
 | Cervical referido | Cuello + parestesias atípicas |
 
 ---
 
-## 19. INTEGRATION
+## 20. INTEGRATION
 
 - **`elbow-wrist-neural.md`:** STC, cubital, cervical — no duplicar reglas Phalen/Tinel  
 - **`wrist-dequervain.md`:** dolor pulgar sin trauma valgo  
@@ -319,11 +378,11 @@ Permitir:
 
 ---
 
-## 20. EVIDENCE NOTE
+## 21. EVIDENCE NOTE
 
 No inventar sensibilidad, especificidad, LR+, LR−.
 
-Priorizar: D'Arcy/McGee JAMA (STC), JOSPT CTS CPG, literatura FDP/mallet/UCL (Hand Clinics, BJSM reviews).
+Priorizar: D'Arcy/McGee JAMA (STC), JOSPT CTS CPG, literatura FDP/mallet/UCL/Stener (Stener 1962; Hand Clinics), placa volar PIP (revisiones cirugía de mano).
 
 Si evidencia mixta → indicarlo.
 

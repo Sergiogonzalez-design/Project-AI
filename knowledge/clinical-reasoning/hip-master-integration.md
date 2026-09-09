@@ -215,13 +215,18 @@ Hop test: dolor óseo intenso / imposible → fractura/avulsión ↑.
 
 ## 12. SECONDARY TESTS & CLUSTERS
 
-- **Groin:** resisted abduction (adductor strain differential), Thomas test (flexor), palpation pubis/canal
-- **Hip-related:** log roll, Stinchfield, ROM IR/ flexión
-- **Lateral:** resisted abduction, single-leg stance, FABER screen inguinal
+- **Groin:** resisted adduction (squeeze), resisted hip flexion, Thomas test (flexor), palpation pubis/canal
+- **Hip-related:** log roll, Stinchfield, hip scour/quadrant, ROM IR/flexión (cluster cualitativo; ningún test aislado = FAI/labrum/OA)
+- **Lateral:** resisted abduction, single-leg stance / Trendelenburg, FABER screen inguinal
 - **Posterior:** resisted knee flexion, piriformis stretch (no confirmar piriformis por un test)
-- **Trauma:** deformity check, neurovascular, palpation ASIS/AIIS/isquion
+- **Trauma:** deformity check, neurovascular, palpation ASIS/AIIS/isquion; **no** scour agresivo si sospecha fractura/bone stress
 
-Siempre integrar en **cluster**, no aislar un test.
+Siempre integrar en **cluster**, no aislar un test. No inventar Sn/Sp.
+
+**AI language (secundarios):**
+- Thomas dolor anterior familiar → «compatible con flexor/iliopsoas», no bursitis automática.
+- Log roll / Stinchfield / scour con dolor inguinal profundo familiar → «aumenta sospecha de cadera», no «labrum/FAI confirmado».
+- Abducción resistida + monopodal + palpación → GTPS ↑; resistencia aislada ≠ rotura.
 
 ---
 

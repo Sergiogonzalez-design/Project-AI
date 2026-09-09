@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   mapSchematic: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
   },
   mapForearm: {

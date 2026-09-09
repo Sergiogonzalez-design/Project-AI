@@ -33,12 +33,15 @@ function isGuestAllowedPath(pathname: string): boolean {
   return (
     pathname === "/fisioterapia" ||
     pathname.startsWith("/fisioterapia/") ||
+    pathname === "/unirse" ||
     pathname === "/signup" ||
     pathname === "/privacidad" ||
     pathname === "/terminos" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/") ||
-    pathname.startsWith("/centro/")
+    pathname.startsWith("/centro/") ||
+    pathname === "/buscar" ||
+    pathname.startsWith("/buscar/")
   );
 }
 
@@ -115,10 +118,13 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     pathname === "/login" ||
     pathname === "/signup" ||
+    pathname === "/unirse" ||
     pathname === "/forgot-password" ||
     pathname === "/privacidad" ||
     pathname === "/terminos" ||
     pathname.startsWith("/centro/") ||
+    pathname === "/buscar" ||
+    pathname.startsWith("/buscar/") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/supabase-health" ||
@@ -131,11 +137,24 @@ export async function middleware(request: NextRequest) {
       (pathname === "/fisioterapia" || pathname.startsWith("/fisioterapia/")) &&
       code
     ) {
-      loginUrl.searchParams.set("code", code);
+      // Old deep links → patient join (guest consult), not account login.
+      const joinUrl = new URL("/unirse", request.url);
+      joinUrl.searchParams.set("code", code);
+      return NextResponse.redirect(joinUrl);
     } else {
       loginUrl.searchParams.set("next", `${pathname}${search}`);
     }
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Logged-out invite links: /login?code=… → patient join (consulta previa).
+  if (!user && pathname === "/login") {
+    const inviteCode = request.nextUrl.searchParams.get("code");
+    if (inviteCode && inviteCode.trim().length >= 6) {
+      const joinUrl = new URL("/unirse", request.url);
+      joinUrl.searchParams.set("code", inviteCode.trim());
+      return NextResponse.redirect(joinUrl);
+    }
   }
 
   const isAdminUser = isAdminEmail(user?.email);
@@ -145,6 +164,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && (pathname === "/login" || pathname === "/signup")) {
+    // Invite deep link: always send to patient join, even if a fisio is logged in.
+    const inviteCode = request.nextUrl.searchParams.get("code");
+    if (pathname === "/login" && inviteCode && inviteCode.trim().length >= 6) {
+      const joinUrl = new URL("/unirse", request.url);
+      joinUrl.searchParams.set("code", inviteCode.trim());
+      return NextResponse.redirect(joinUrl);
+    }
+
     // Same login for everyone — land on the app; admin sees Admin in the nav
     const next = request.nextUrl.searchParams.get("next");
     const safeNext =
@@ -254,6 +281,8 @@ export async function middleware(request: NextRequest) {
         pathname === "/sobre-nosotros" ||
         pathname.startsWith("/sobre-nosotros/") ||
         pathname.startsWith("/centro/") ||
+        pathname === "/buscar" ||
+        pathname.startsWith("/buscar/") ||
         pathname === "/privacidad" ||
         pathname === "/terminos";
       if (!onClinicArea && !onSharedSite) {
@@ -270,6 +299,8 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith("/perfil/") ||
         pathname === "/sobre-nosotros" ||
         pathname.startsWith("/sobre-nosotros/") ||
+        pathname === "/buscar" ||
+        pathname.startsWith("/buscar/") ||
         pathname === "/privacidad" ||
         pathname === "/terminos" ||
         pathname.startsWith("/centro/");

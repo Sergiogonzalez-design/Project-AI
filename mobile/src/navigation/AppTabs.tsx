@@ -9,6 +9,7 @@ import { AIInquiriesScreen } from "../screens/AIInquiriesScreen";
 import { AboutUsScreen } from "../screens/AboutUsScreen";
 import { AdminScreen } from "../screens/AdminScreen";
 import { ClinicHomeScreen } from "../screens/ClinicHomeScreen";
+import { ClinicPatientsScreen } from "../screens/ClinicPatientsScreen";
 import { ClinicSearchScreen } from "../screens/ClinicSearchScreen";
 import { ClinicTeamScreen } from "../screens/ClinicTeamScreen";
 import { PhysioConsultScreen } from "../screens/PhysioConsultScreen";
@@ -19,12 +20,13 @@ import { ProfileScreen } from "../screens/ProfileScreen";
 export type TabParamList = {
   AIInquiries: undefined;
   PhysioLink: undefined;
-  ClinicSearch: undefined;
+  ClinicSearch: { clinicSlug?: string } | undefined;
   Patients: undefined;
   PhysioConsult: undefined;
   ClinicConsult: undefined;
   ClinicHome: undefined;
   ClinicTeam: undefined;
+  ClinicPatients: { tab?: "pacientes" | "fisios" } | undefined;
   AboutUs: undefined;
   Admin: undefined;
   Profile: undefined;
@@ -63,7 +65,8 @@ export function AppTabs({
       color: Colors.text,
     },
     headerShadowVisible: false,
-    headerLeft: () => <AppBackButton />,
+    // Clinic hub uses in-screen tabs; back arrows clutter the header.
+    headerLeft: isClinic ? () => null : () => <AppBackButton />,
     headerRight: () => (
       <AppBurgerMenu
         isPhysio={isPhysio}
@@ -91,12 +94,28 @@ export function AppTabs({
           <Tab.Screen
             name="ClinicHome"
             component={ClinicHomeScreen}
-            options={{ title: t.headers.clinica }}
+            options={{ title: t.headers.clinica, headerLeft: () => null }}
+          />
+          <Tab.Screen
+            name="ClinicSearch"
+            component={ClinicSearchScreen}
+            options={{ title: t.headers.buscar, headerLeft: () => null }}
           />
           <Tab.Screen
             name="ClinicTeam"
             component={ClinicTeamScreen}
-            options={{ title: "Equipo" }}
+            options={{
+              title: t.clinicHub.headerTeam,
+              headerLeft: () => null,
+            }}
+          />
+          <Tab.Screen
+            name="ClinicPatients"
+            component={ClinicPatientsScreen}
+            options={{
+              title: t.clinicHub.headerPatients,
+              headerLeft: () => null,
+            }}
           />
         </>
       ) : isPhysio ? (
@@ -111,6 +130,11 @@ export function AppTabs({
             component={PhysioConsultScreen}
             options={{ title: t.headers.consulta, headerLeft: () => null }}
           />
+          <Tab.Screen
+            name="ClinicSearch"
+            component={ClinicSearchScreen}
+            options={{ title: t.headers.buscar }}
+          />
         </>
       ) : (
         <>
@@ -122,7 +146,10 @@ export function AppTabs({
           <Tab.Screen
             name="PhysioLink"
             component={PhysioLinkScreen}
-            options={{ title: t.headers.fisioterapia, headerLeft: () => null }}
+            options={{
+              title: t.headers.fisioterapia,
+              headerLeft: () => null,
+            }}
           />
           <Tab.Screen
             name="ClinicSearch"

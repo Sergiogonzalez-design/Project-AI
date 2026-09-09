@@ -5,6 +5,8 @@
  * 2. Specialized physiotherapy center (invasive therapies)
  */
 
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
+
 export const YES_NO = ["No", "Sí"] as const;
 
 export const EVOLUTION_OPTIONS = [
@@ -432,7 +434,17 @@ export function detectSciaticRedFlags(answers: SciaticAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  const HARD_FLAG_IDS: (keyof SciaticAdaptiveAnswers)[] = [
+    "rf_perdida_esfinteres",
+    "rf_anestesia_silla_montar",
+    "rf_debilidad_progresiva",
+    "rf_pie_caido_subito",
+    // rf_fiebre_perdida_peso is soft combined systemic screening — cribado, not auto-ER
+  ];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 export function detectSciaticSeverity(answers: SciaticAdaptiveAnswers): "high" | "moderate" | "mild" {
@@ -496,11 +508,10 @@ export function formatSciaticAdaptive(answers: SciaticAdaptiveAnswers): string {
   const severity = detectSciaticSeverity(answers);
   const lines: string[] = [
     "=== CUESTIONARIO ADAPTATIVO — NERVIO CIÁTICO ===",
-    "",
-    "— BANDERAS ROJAS (síndrome de cauda equina / urgencia) —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")} → DERIVAR A URGENCIAS INMEDIATAMENTE`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered, {
+      urgentHeaderSuffix: "síndrome de cauda equina",
+      urgentDetail: "→ DERIVAR A URGENCIAS INMEDIATAMENTE",
+    }),
     `Control esfínteres: ${answers.rf_perdida_esfinteres || "—"}`,
     `Anestesia silla de montar: ${answers.rf_anestesia_silla_montar || "—"}`,
     `Debilidad progresiva bilateral: ${answers.rf_debilidad_progresiva || "—"}`,
@@ -702,7 +713,7 @@ export function localizeSciaticLabel(id: string, fallback: string, locale: Consu
 
 export function localizeSciaticOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return SCIATIC_OPTION_EN[option] ?? option;
+  return SCIATIC_OPTION_EN[option as keyof typeof SCIATIC_OPTION_EN] ?? option;
 }
 
 export function localizeSciaticSection(section: string, locale: ConsultLocale): string {

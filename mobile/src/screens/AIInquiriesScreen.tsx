@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { composerBottomInset, useKeyboardHeight } from "../hooks/useKeyboardHeight";
 import { useOnAppBackground } from "../hooks/useAppLifecycle";
+import type { TabParamList } from "../navigation/AppTabs";
 import {
   ConsultaAdaptiveShoulder,
   isLastShoulderSection,
@@ -39,9 +41,11 @@ import {
 import { AssistantMessageWithSources } from "../components/AssistantMessageWithSources";
 import { ConsultaAssistantBody } from "../components/ConsultaAssistantBody";
 import { stripVisibleMarkup } from "../lib/strip-visible-markup";
-import { FunctionalTestYesNo } from "../components/FunctionalTestYesNo";
+import { FunctionalTestChatBlock } from "../components/FunctionalTestChatBlock";
 import {
   latestUnansweredFunctionalTests,
+  orientationOffersFunctionalTests,
+  reconstructFunctionalTestsSection,
   splitFunctionalTests,
 } from "../lib/functional-test-answers";
 import { ConsultaGenericFields } from "../components/ConsultaGenericFields";
@@ -52,11 +56,13 @@ import { AppBurgerMenu } from "../components/AppBurgerMenu";
 import { PhysioAvatar } from "../components/PhysioAvatar";
 import { PhysioIntro } from "../components/PhysioIntro";
 import { ScrollToBottomButton } from "../components/ScrollToBottomButton";
+import { ASSISTANT_REVEAL_ENABLED } from "../lib/assistant-reveal";
 import { StreamingAssistantMessage } from "../components/StreamingAssistantMessage";
 import { TypingIndicator } from "../components/TypingIndicator";
 import { bodyPartLabel, type BodyPartId } from "../lib/body-parts";
 import {
   defaultGenericConsultaAnswers,
+  detectGenericRedFlags,
   formatGenericConsulta,
   validateGenericConsulta,
   type GenericConsultaAnswers,
@@ -236,6 +242,11 @@ import {
   wantsToContinueToNextQuestionnaire,
   type AdaptiveQuestionnairePart,
 } from "../lib/consulta-triage";
+import {
+  affirmsExerciseOffer,
+  buildPostConsultCaseSummary,
+  declinesExerciseOffer,
+} from "../lib/consulta-exercise-offer";
 import { callEdgeText, callEdgeJson } from "../lib/consulta-api";
 import {
   type ConsultLanguage,
@@ -244,7 +255,9 @@ import { formatValidationIssueMessage } from "../lib/consulta-validation";
 import {
   consultAttachmentCaption,
   consultAttachmentHistoryNote,
-  consultVisionUrl,
+  consultPhotoAccessUrl,
+  consultPhotoVisionUrl,
+  signConsultMessageAttachments,
   isConsultImageMime,
   isConsultPdfUrl,
   MAX_CONSULT_ATTACHMENT_BYTES,
@@ -384,6 +397,27 @@ function splitHighlightParts(text: string, phrases?: string[]) {
   }));
 }
 
+function isPhysioHighlightPhrase(text: string, phrases?: string[]): boolean {
+  const inner = stripVisibleMarkup(text).trim();
+  if (!inner || !phrases?.length) return false;
+  return phrases.some((p) => p.toLowerCase() === inner.toLowerCase());
+}
+
+const physioNameBoldStyle = {
+  fontWeight: "700" as const,
+  color: Colors.text,
+};
+
+function resolveBoldStyle(
+  text: string,
+  boldStyle: object | undefined,
+  highlightPhrases?: string[]
+) {
+  return isPhysioHighlightPhrase(text, highlightPhrases)
+    ? physioNameBoldStyle
+    : boldStyle;
+}
+
 function BoldText({ text, style, boldStyle, highlightPhrases, highlightStyle }: {
   text: string;
   style?: object;
@@ -426,18 +460,21 @@ function BoldText({ text, style, boldStyle, highlightPhrases, highlightStyle }: 
               if (!inner) return null;
               const chunks = splitHighlightParts(inner, highlightPhrases);
               if (chunks.length === 1 && !chunks[0].highlight) {
+                const resolvedBold = isBold
+                  ? resolveBoldStyle(inner, boldStyle, highlightPhrases)
+                  : undefined;
                 return (
-                  <Text key={i} style={isBold ? [style, boldStyle ?? { fontWeight: "700" }] : undefined}>
+                  <Text key={i} style={isBold ? [style, resolvedBold ?? { fontWeight: "700" }] : undefined}>
                     {chunks[0].text}
                   </Text>
                 );
               }
               return (
-                <Text key={i} style={isBold ? [style, boldStyle ?? { fontWeight: "700" }] : undefined}>
+                <Text key={i} style={isBold ? [style, resolveBoldStyle(inner, boldStyle, highlightPhrases) ?? { fontWeight: "700" }] : undefined}>
                   {chunks.map((chunk, ci) => (
                     <Text
                       key={ci}
-                      style={chunk.highlight ? highlightStyle : undefined}
+                      style={chunk.highlight ? physioNameBoldStyle : undefined}
                     >
                       {chunk.text}
                     </Text>
@@ -463,10 +500,10 @@ function titleFromText(text: string): string {
 }
 
 function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string | null) {
+  if (!ASSISTANT_REVEAL_ENABLED) return false;
   return (
     msg.role === "assistant" &&
     msg.id !== WELCOME_ID &&
-    !msg.id.startsWith("q-intro") &&
     msg.id === revealingMessageId
   );
 }
@@ -521,7 +558,13 @@ export function AIInquiriesScreen({
   guestMode = false,
   onCreateAccount,
 }: AIInquiriesScreenProps) {
-  const navigation = useNavigation();
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const openClinicProfile = useCallback(
+    (clinicSlug: string) => {
+      navigation.navigate("ClinicSearch", { clinicSlug });
+    },
+    [navigation]
+  );
   const insets = useSafeAreaInsets();
   const keyboardHeight = useKeyboardHeight();
   const composerInset = composerBottomInset(keyboardHeight, insets.bottom);
@@ -604,6 +647,7 @@ export function AIInquiriesScreen({
   functionalTestsCompletedRef.current = functionalTestsCompletedParts;
   const [relatedFollowupActive, setRelatedFollowupActive] = useState(false);
   const [postGuidanceAsked, setPostGuidanceAsked] = useState(false);
+  const [exerciseOfferActive, setExerciseOfferActive] = useState(false);
   const [showUnrelatedCta, setShowUnrelatedCta] = useState(false);
   /** Original complaint while we ask where on the arm/leg it hurts. */
   const [pendingComplaintText, setPendingComplaintText] = useState<string | null>(
@@ -619,11 +663,14 @@ export function AIInquiriesScreen({
   const [loadingModal, setLoadingModal] = useState(false);
   const loadingModalStartedAtRef = useRef<number | null>(null);
   const [revealingMessageId, setRevealingMessageId] = useState<string | null>(null);
+  const revealingMessageIdRef = useRef<string | null>(null);
+  const submittingRef = useRef(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const pinRevealToStartRef = useRef(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [fisioBootDeadline, setFisioBootDeadline] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTitle, setActiveTitle] = useState(t.consulta.newConsulta);
@@ -674,6 +721,8 @@ export function AIInquiriesScreen({
     cancel: cancelSpeech,
     toggle: toggleSpeak,
   } = useSpeechSynthesis({ language: consultLanguage });
+  const speakingIdRef = useRef<string | null>(null);
+  speakingIdRef.current = speakingId;
 
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -683,6 +732,8 @@ export function AIInquiriesScreen({
   }, []);
 
   const resumeConversationListening = useCallback(() => {
+    if (speakingIdRef.current) return;
+    if (revealingMessageIdRef.current) return;
     conversationBusyRef.current = false;
     hearingTextRef.current = "";
     clearSilenceTimer();
@@ -692,6 +743,8 @@ export function AIInquiriesScreen({
       if (
         conversationModeRef.current &&
         !conversationBusyRef.current &&
+        !speakingIdRef.current &&
+        !revealingMessageIdRef.current &&
         phaseRef.current !== "questionnaire"
       ) {
         startMicRef.current();
@@ -768,6 +821,12 @@ export function AIInquiriesScreen({
   }, []);
 
   useEffect(() => {
+    if (!linkedPhysio) return;
+    const t = setTimeout(() => setFisioBootDeadline(true), 800);
+    return () => clearTimeout(t);
+  }, [linkedPhysio]);
+
+  useEffect(() => {
     if (!pendingFisioCodeReload.current || !linkedPhysio) return;
     pendingFisioCodeReload.current = false;
     void loadConversations({ skipAutoOpen: true });
@@ -783,7 +842,7 @@ export function AIInquiriesScreen({
     if (!physioIntro || activeId) return;
     const timer = setTimeout(() => {
       skipPhysioIntro();
-    }, 5000);
+    }, 600);
     return () => clearTimeout(timer);
   }, [physioIntro, activeId]);
 
@@ -831,10 +890,21 @@ export function AIInquiriesScreen({
     }
   }, []);
 
-  const beginAssistantReveal = useCallback((id: string, content: string) => {
-    pinRevealToStartRef.current = isLongAssistantReply(content);
-    setRevealingMessageId(id);
-  }, []);
+  const beginAssistantReveal = useCallback(
+    (id: string, content: string) => {
+      if (!ASSISTANT_REVEAL_ENABLED) {
+        revealingMessageIdRef.current = null;
+        setRevealingMessageId(null);
+        pinRevealToStartRef.current = false;
+        scrollToBottomAfterPaint();
+        return;
+      }
+      revealingMessageIdRef.current = id;
+      setRevealingMessageId(id);
+      pinRevealToStartRef.current = isLongAssistantReply(content);
+    },
+    [scrollToBottomAfterPaint]
+  );
 
   const scrollQuestionnaireToTop = useCallback(() => {
     requestAnimationFrame(() => {
@@ -854,7 +924,7 @@ export function AIInquiriesScreen({
   );
 
   useEffect(() => {
-    if (!revealingMessageId) return;
+    if (!ASSISTANT_REVEAL_ENABLED || !revealingMessageId) return;
     if (pinRevealToStartRef.current) {
       requestAnimationFrame(() => scrollToMessageStart(revealingMessageId, false));
       const t1 = setTimeout(() => scrollToMessageStart(revealingMessageId, false), 80);
@@ -916,28 +986,34 @@ export function AIInquiriesScreen({
   }
 
   async function loadConversations(opts?: { skipAutoOpen?: boolean }) {
-    const { data } = await supabase
-      .from("conversations")
-      .select("id, title, created_at, physio_id, physio_name, clinic_name")
-      .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
-      .order("created_at", { ascending: false })
-      .limit(linkedPhysio ? 30 : 10);
-    const list = (data as Conversation[]) ?? [];
-    setConversations(list);
+    try {
+      const { data } = await supabase
+        .from("conversations")
+        .select("id, title, created_at, physio_id, physio_name, clinic_name")
+        .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
+        .order("created_at", { ascending: false })
+        .limit(linkedPhysio ? 30 : 10);
+      const list = (data as Conversation[]) ?? [];
+      setConversations(list);
 
-    if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
-      const preferred =
-        (linkedPhysio.physio_id
-          ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
-          : null) ?? list[0];
-      await loadConversation(preferred.id, preferred.title);
-      return;
-    }
+      if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
+        const preferred =
+          (linkedPhysio.physio_id
+            ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
+            : null) ?? list[0];
+        await loadConversation(preferred.id, preferred.title);
+        return;
+      }
 
-    if (linkedPhysio) {
-      setPhysioIntro(true);
+      if (linkedPhysio) {
+        setPhysioIntro(true);
+      }
+    } catch (err) {
+      console.error("No se pudieron cargar las consultas:", err);
+      if (linkedPhysio) setPhysioIntro(true);
+    } finally {
+      setHistoryLoaded(true);
     }
-    setHistoryLoaded(true);
   }
 
   async function loadConversation(id: string, title: string) {
@@ -946,6 +1022,7 @@ export function AIInquiriesScreen({
     setOpeningConversation(true);
     setHistoryOpen(false);
     setPhysioIntro(false);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setEvaluatedParts([]);
     setPendingParts([]);
@@ -957,73 +1034,82 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setCaseImageUrl(null);
     setAttachedUri(null);
     setPhysioReportSentBanner(false);
 
-    const { data } = await supabase
-      .from("messages")
-      .select("id, role, content, image_url")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true });
-
-    let msgs = (data as Message[]) ?? [];
-
-    if (linkedPhysio) {
-      const { data: report } = await supabase
-        .from("clinical_reports")
-        .select("id")
+    try {
+      const { data } = await supabase
+        .from("messages")
+        .select("id, role, content, image_url")
         .eq("conversation_id", id)
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true });
 
-      msgs = msgs.filter(
-        (m) =>
-          m.role !== "assistant" ||
-          !/\*\*Resumen de tu consulta\*\*|Estructuras que podrían estar afectadas|Posibles lesiones \(orientativas\)/i.test(
-            m.content
-          )
-      );
+      let msgs = (data as Message[]) ?? [];
 
-      setPhase(report ? "complete" : "followup");
-      if (report) setPhysioReportSentBanner(true);
-    } else {
-      const finished = msgs.some(
-        (m) => m.role === "assistant" && isConsultaFinishedCloseMessage(m.content)
-      );
-      if (finished) {
-        setPhase("complete");
-      } else {
-        setPhase("followup");
-        const hasOrientation = msgs.some(
+      msgs = await signConsultMessageAttachments(msgs);
+
+      if (linkedPhysio) {
+        const { data: report } = await supabase
+          .from("clinical_reports")
+          .select("id")
+          .eq("conversation_id", id)
+          .limit(1)
+          .maybeSingle();
+
+        msgs = msgs.filter(
           (m) =>
-            m.role === "assistant" &&
-            /\*\*Resumen de tu consulta\*\*|Summary of your consultation/i.test(
+            m.role !== "assistant" ||
+            !/\*\*Resumen de tu consulta\*\*|Estructuras que podrían estar afectadas|Posibles lesiones \(orientativas\)/i.test(
               m.content
             )
         );
-        if (hasOrientation) {
-          setRelatedFollowupActive(true);
-          const lastAsst = [...msgs]
-            .reverse()
-            .find((m) => m.role === "assistant");
-          if (
-            lastAsst &&
-            /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
-              lastAsst.content
-            )
-          ) {
-            setPostGuidanceAsked(true);
+
+        setPhase(report ? "complete" : "followup");
+        if (report) setPhysioReportSentBanner(true);
+      } else {
+        const finished = msgs.some(
+          (m) => m.role === "assistant" && isConsultaFinishedCloseMessage(m.content)
+        );
+        if (finished) {
+          setPhase("complete");
+        } else {
+          setPhase("followup");
+          const hasOrientation = msgs.some(
+            (m) =>
+              m.role === "assistant" &&
+              /\*\*Resumen de tu consulta\*\*|Summary of your consultation/i.test(
+                m.content
+              )
+          );
+          if (hasOrientation) {
+            setRelatedFollowupActive(true);
+            const lastAsst = [...msgs]
+              .reverse()
+              .find((m) => m.role === "assistant");
+            if (
+              lastAsst &&
+              /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
+                lastAsst.content
+              )
+            ) {
+              setPostGuidanceAsked(true);
+            }
           }
         }
       }
-    }
 
-    setMessages(msgs);
-    setOpeningConversation(false);
-    setHistoryLoaded(true);
+      setMessages(msgs);
+    } catch (err) {
+      console.error("No se pudo abrir la consulta:", err);
+      setMessages([]);
+    } finally {
+      setOpeningConversation(false);
+      setHistoryLoaded(true);
+    }
   }
 
   function clearToFisioIdle() {
@@ -1034,6 +1120,7 @@ export function AIInquiriesScreen({
         : t.consulta.newConsulta
     );
     setMessages([]);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(false);
@@ -1049,6 +1136,7 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setChatInput("");
@@ -1097,6 +1185,7 @@ export function AIInquiriesScreen({
   function resetForNewFisioCodeLink() {
     setActiveId(null);
     setMessages([]);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(true);
@@ -1135,6 +1224,7 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setChatInput("");
@@ -1229,6 +1319,7 @@ export function AIInquiriesScreen({
     setActiveId(null);
     setActiveTitle(t.consulta.newConsulta);
     setMessages([]);
+    revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
     setPhysioIntro(true);
@@ -1267,6 +1358,7 @@ export function AIInquiriesScreen({
     functionalTestsCompletedRef.current = [];
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     setPendingComplaintText(null);
     setChatInput("");
@@ -1381,7 +1473,7 @@ export function AIInquiriesScreen({
     const answer = await respondToUserMessage(
       text,
       triage,
-      consultVisionUrl(imageUrl),
+      await consultPhotoVisionUrl(imageUrl),
       language,
       fisioEdgeExtras
     );
@@ -1404,9 +1496,6 @@ export function AIInquiriesScreen({
         title,
         user_id: user.id,
         kind: linkedPhysio ? "fisioterapia" : "consulta",
-        physio_id: linkedPhysio?.physio_id ?? null,
-        physio_name: linkedPhysio?.physio_name ?? null,
-        clinic_name: linkedPhysio?.clinic_name ?? null,
       })
       .select("id, title, created_at, physio_id, physio_name, clinic_name")
       .single();
@@ -1617,6 +1706,7 @@ export function AIInquiriesScreen({
     setHipSectionIndex(0);
     setFormError(null);
 
+    const introId = `q-intro-${Date.now()}`;
     let intro = questionnaireIntroMessage(part, language, contextText);
     if (remainingCount > 0) {
       intro +=
@@ -1624,10 +1714,15 @@ export function AIInquiriesScreen({
           ? `\n\nYou mentioned more than one area — we'll go one by one. After this, ${remainingCount} more questionnaire${remainingCount === 1 ? "" : "s"} remain.`
           : `\n\nHas mencionado más de una zona: iremos **una a una**. Después de esta, quedan ${remainingCount} cuestionario${remainingCount === 1 ? "" : "s"} más.`;
     }
+    // Questionnaire UI renders assistant text without StreamingAssistantMessage,
+    // so do not set revealingMessageId — it would block handleQuestionnaireSubmit.
+    revealingMessageIdRef.current = null;
+    setRevealingMessageId(null);
+    pinRevealToStartRef.current = false;
     setMessages((prev) => [
       ...prev,
       {
-        id: `q-intro-${Date.now()}`,
+        id: introId,
         role: "assistant",
         content: intro,
       },
@@ -1658,6 +1753,7 @@ export function AIInquiriesScreen({
     setShowUnrelatedCta(false);
     setRelatedFollowupActive(false);
     setPostGuidanceAsked(false);
+    setExerciseOfferActive(false);
     const closing = consultaFinishedCloseMessage(language);
     try {
       const { data: aiMsg } = await supabase
@@ -1798,6 +1894,7 @@ export function AIInquiriesScreen({
     options?: { askNow?: boolean; offeredTests?: boolean }
   ) {
     setRelatedFollowupActive(true);
+    setExerciseOfferActive(false);
     setShowUnrelatedCta(false);
     if (options?.askNow || options?.offeredTests === false) {
       await appendAssistantMessage(
@@ -1806,6 +1903,64 @@ export function AIInquiriesScreen({
       );
       setPostGuidanceAsked(true);
     }
+  }
+
+  function postConsultCaseSummaryForAi(): string {
+    const evaluations = partEvaluationsRef.current.map((e) => ({
+      label: e.label,
+      summary: e.summary,
+    }));
+    if (evaluations.length > 0) {
+      return buildPostConsultCaseSummary(evaluations, []);
+    }
+    const assistantTexts = messages
+      .filter(
+        (m) =>
+          m.role === "assistant" &&
+          !isConsultaFinishedCloseMessage(m.content),
+      )
+      .slice(-5)
+      .map((m) => m.content);
+    return buildPostConsultCaseSummary([], assistantTexts);
+  }
+
+  async function sendPostConsultExerciseOffer(conversationId: string) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callEdgeText(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "offer",
+        message: caseSummary,
+        bodyArea,
+        language: consultLanguage,
+      },
+      fisioEdgeExtras,
+    );
+    await appendAssistantMessage(conversationId, answer);
+    setRelatedFollowupActive(false);
+    setExerciseOfferActive(true);
+    setPostGuidanceAsked(false);
+  }
+
+  async function sendPostConsultExercisePlan(
+    conversationId: string,
+    patientReply: string,
+  ) {
+    const caseSummary = postConsultCaseSummaryForAi();
+    const bodyArea = currentInjuryLabel();
+    const answer = await callEdgeText(
+      {
+        mode: "post_consult_exercise",
+        postConsultStep: "plan",
+        message: caseSummary,
+        bodyArea,
+        description: patientReply,
+        language: consultLanguage,
+      },
+      fisioEdgeExtras,
+    );
+    await appendAssistantMessage(conversationId, answer);
   }
 
   async function appendMultiPartFinalSummary(
@@ -1905,14 +2060,9 @@ export function AIInquiriesScreen({
       setPendingParts([]);
       setAwaitingNextPart(null);
       if (linkedPhysio) return;
-      const offeredTests =
-        Boolean(completedSummary) &&
-        /\*\*Preguntas de valoración funcional\*\*|Functional assessment questions|\*\*Preguntas de valoraci[oó]n funcional\*\*/i.test(
-          completedSummary ?? ""
-        );
-      // Multi-zone resumen waits until the patient reports functional-test
-      // results for this last injury (see reportsFunctionalTestResults path).
-      // If this orientation did not offer tests, send the resumen now.
+      const offeredTests = orientationOffersFunctionalTests(completedSummary ?? "");
+      // Multi-zone resumen waits until the patient submits functional-test
+      // Sí/No answers. If no tests were offered, send it now.
       if (!offeredTests && evaluations.length >= 2) {
         await appendMultiPartFinalSummary(conversationId, evaluations, language);
       }
@@ -1948,25 +2098,34 @@ export function AIInquiriesScreen({
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
       (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading) {
+    if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading || submittingRef.current || revealingMessageIdRef.current) {
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `user-${Date.now()}`;
+    submittingRef.current = true;
     setChatInput("");
     setChatLoading(true);
     setFormError(null);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
       if (imageUrl) setCaseImageUrl(imageUrl);
 
       const lang = consultLanguage;
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -1982,7 +2141,7 @@ export function AIInquiriesScreen({
               intent: "general",
               answer: triage.answer?.trim() || decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -1996,7 +2155,7 @@ export function AIInquiriesScreen({
               intent: "general",
               answer: decision.message,
             },
-            attachmentUrl,
+            attachmentPath,
             lang
           );
           return;
@@ -2014,7 +2173,7 @@ export function AIInquiriesScreen({
         await respondToInitialMessage(
           text,
           { action: "respond", intent: "general", answer: triage.answer },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2030,7 +2189,7 @@ export function AIInquiriesScreen({
             intent: "general",
             answer: vagueArmClarifyMessage(lang),
           },
-          attachmentUrl,
+          attachmentPath,
           lang
         );
         return;
@@ -2065,19 +2224,22 @@ export function AIInquiriesScreen({
         return;
       }
 
-      await respondToInitialMessage(text, triage, attachmentUrl, lang);
+      await respondToInitialMessage(text, triage, attachmentPath, lang);
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       setFormError(
         err instanceof Error ? err.message : "No se pudo procesar tu mensaje. Inténtalo de nuevo."
       );
     } finally {
+      submittingRef.current = false;
       setChatLoading(false);
     }
   }
 
   async function handleQuestionnaireSubmit() {
     setFormError(null);
+    if (chatLoading || submittingRef.current) return;
+    if (revealingMessageIdRef.current && phaseRef.current !== "questionnaire") return;
 
     // Prefer refs so "Enviar ahora (urgencia)" can setState + submit with the same answers.
     const kneeAnswers = kneeAnswersRef.current;
@@ -2305,6 +2467,7 @@ export function AIInquiriesScreen({
 
     setChatLoading(true);
     setLoadingModal(true);
+    submittingRef.current = true;
 
     const symptomContext = buildSymptomContext();
     const detectedZones = detectBodyPartsFromText(initialMessage);
@@ -2415,8 +2578,7 @@ export function AIInquiriesScreen({
               : "No"
           : questionnairePart === "back"
             ? backAnswers.mecanismo.includes("Caída") ||
-              backAnswers.mecanismo.includes("Golpe directo") ||
-              backAnswers.mecanismo.includes("Levantamiento / esfuerzo")
+              backAnswers.mecanismo.includes("Golpe directo")
               ? `Sí: ${backAnswers.mecanismo.join(", ")}`
               : "No"
           : questionnairePart === "hip"
@@ -2449,9 +2611,7 @@ export function AIInquiriesScreen({
             ? detectBackRedFlags(backAnswers).urgent
           : questionnairePart === "hip"
             ? detectHipRedFlags(hipAnswers).urgent
-          : genericAnswers.rf_deformidad === "Sí" ||
-            genericAnswers.rf_fiebre === "Sí" ||
-            genericAnswers.rf_perdida_sensibilidad === "Sí";
+          : detectGenericRedFlags(genericAnswers).urgent;
     const contextForAi =
       (redFlagsUrgent
         ? consultLanguage === "en"
@@ -2465,8 +2625,8 @@ export function AIInquiriesScreen({
           ? `\n\nPHYSIOTHERAPY FLOW + URGENCY (CRITICAL): Red flags are present. This guidance is for the patient. Do NOT ask for functional tests or hop tests. Prioritize HOSPITAL / ER and imaging. Do NOT say the report was already sent to the physio.`
           : `\n\nPHYSIOTHERAPY FLOW (CRITICAL): This guidance is for the patient. ALWAYS include the **Functional tests** section specific to the injured area. Do NOT say the report was already sent to the physio: they must answer the tests first.`
         : redFlagsUrgent
-          ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas. Esta orientación es para el paciente. NO pidas pruebas funcionales ni hop. Prioriza HOSPITAL / URGENCIAS e imagen. NO digas que el informe ya se envió al fisio.`
-          : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** específicas de la zona lesionada. NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`
+          ? `\n\nFLUJO FISIOTERAPIA + URGENCIA (CRÍTICO): Hay banderas rojas / PRIORIDAD ALTA. Esta orientación es para el paciente. OMITÉ **Pruebas funcionales** y **Clínicas en AIKinora cerca de ti**. NO pidas hop ni «aplica hielo» como prueba. Hielo/reposo solo en **Qué hacer mientras tanto**. Prioriza HOSPITAL / URGENCIAS e imagen en **Qué debes hacer ahora**. Incluye **Hospitales / Urgencias cerca de ti**. NO digas que el informe ya se envió al fisio.`
+          : `\n\nFLUJO FISIOTERAPIA (CRÍTICO): Esta orientación es para el paciente. Incluye SIEMPRE la sección **Pruebas funcionales** (movimientos Sí/No; NO mezclar hielo/reposo ahí). NO digas que el informe ya se envió al fisio: primero debe responder a las pruebas.`
       : "";
 
     try {
@@ -2507,9 +2667,6 @@ export function AIInquiriesScreen({
               title,
               user_id: user.id,
               kind: "fisioterapia",
-              physio_id: linkedPhysio.physio_id ?? null,
-              physio_name: linkedPhysio.physio_name ?? null,
-              clinic_name: linkedPhysio.clinic_name ?? null,
             })
             .select("id, title, created_at, physio_id, physio_name, clinic_name")
             .single();
@@ -2600,8 +2757,7 @@ export function AIInquiriesScreen({
         dismissQuestionnaireLoading();
 
         const awaitingTests =
-          !redFlagsUrgent &&
-          (splitFunctionalTests(combined)?.tests.length ?? 0) >= 2;
+          !redFlagsUrgent && orientationOffersFunctionalTests(combined);
 
         // Only send (and show “report sent”) when there are no outstanding Sí/No tests.
         if (awaitingTests) {
@@ -2615,9 +2771,8 @@ export function AIInquiriesScreen({
             const reportParams = pendingPhysioReportRef.current;
             if (!reportParams) return;
             const sent = await maybeGenerateAndSendPhysioReport(reportParams);
+            pendingPhysioReportRef.current = null;
             if (sent) {
-              setPhysioReportSentBanner(true);
-              pendingPhysioReportRef.current = null;
               const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
                 guest: guestMode,
                 language: locale,
@@ -2638,6 +2793,7 @@ export function AIInquiriesScreen({
                 );
                 setMessages((prev) => [...prev, thanksMsg as Message]);
               }
+              setPhysioReportSentBanner(true);
               setPhase("complete");
             } else {
               setPhase("followup");
@@ -2721,9 +2877,6 @@ export function AIInquiriesScreen({
           title,
           user_id: user.id,
           kind: "consulta",
-          physio_id: null,
-          physio_name: null,
-          clinic_name: null,
         })
         .select("id, title, created_at, physio_id, physio_name, clinic_name")
         .single();
@@ -2798,6 +2951,7 @@ export function AIInquiriesScreen({
         err instanceof Error ? err.message : "No se pudo obtener la respuesta. Inténtalo de nuevo."
       );
     } finally {
+      submittingRef.current = false;
       setChatLoading(false);
       setLoadingModal(false);
     }
@@ -2808,21 +2962,30 @@ export function AIInquiriesScreen({
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
       (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedUri) || phase !== "followup" || chatLoading || !activeId) {
+    if ((!text && !attachedUri) || phase !== "followup" || chatLoading || submittingRef.current || revealingMessageIdRef.current || !activeId) {
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `u-${Date.now()}`;
+    submittingRef.current = true;
     setChatInput("");
     setChatLoading(true);
 
     try {
-      const attachmentUrl = await uploadOutgoingPhoto();
-      const imageUrl = consultVisionUrl(attachmentUrl);
+      const attachmentPath = await uploadOutgoingPhoto();
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
 
       setMessages((prev) => [
         ...prev,
-        { id: userMsgId, role: "user", content: text, image_url: attachmentUrl },
+        {
+          id: userMsgId,
+          role: "user",
+          content: text,
+          image_url: displayUrl ?? undefined,
+        },
       ]);
       scrollToBottomAfterPaint();
 
@@ -2835,7 +2998,7 @@ export function AIInquiriesScreen({
           conversation_id: activeId,
           role: "user",
           content: text,
-          image_url: attachmentUrl,
+          image_url: attachmentPath,
         });
         userSaved = true;
       }
@@ -2966,8 +3129,8 @@ export function AIInquiriesScreen({
               })),
             {
               role: "user" as const,
-              content: attachmentUrl
-                ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+              content: attachmentPath
+                ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
                 : text,
             },
           ].slice(-10);
@@ -3100,8 +3263,8 @@ export function AIInquiriesScreen({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
               : text,
           },
         ].slice(-10);
@@ -3146,16 +3309,17 @@ export function AIInquiriesScreen({
           ));
 
       // Retry report send only when not waiting on Sí/No functional tests.
+      const outstandingFunctionalTests = latestUnansweredFunctionalTests(messages);
       if (
         linkedPhysio &&
         pendingPhysio &&
         !physioReportSentBanner &&
         !pendingPhysio.awaitFunctionalTests &&
-        !answeringPendingPhysioTests
+        !answeringPendingPhysioTests &&
+        !outstandingFunctionalTests
       ) {
         const sent = await maybeGenerateAndSendPhysioReport(pendingPhysio);
         if (sent) {
-          setPhysioReportSentBanner(true);
           pendingPhysioReportRef.current = null;
         }
       }
@@ -3180,7 +3344,6 @@ export function AIInquiriesScreen({
           symptomContext: pendingPhysio.symptomContext + functionalBlock,
           patientSummary: pendingPhysio.patientSummary + functionalBlock,
         });
-        if (sent) setPhysioReportSentBanner(true);
 
         const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
           guest: guestMode,
@@ -3199,6 +3362,7 @@ export function AIInquiriesScreen({
           beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
           setMessages((prev) => [...prev, aiMsg as Message]);
         }
+        if (sent) setPhysioReportSentBanner(true);
         setPhase("complete");
         return;
       }
@@ -3255,8 +3419,8 @@ export function AIInquiriesScreen({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
               : text,
           },
         ].slice(-10);
@@ -3294,7 +3458,7 @@ export function AIInquiriesScreen({
         beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
         setMessages((prev) => [...prev, aiMsg as Message]);
 
-        if (!moreZonesPending) {
+        if (!moreZonesPending && partEvaluationsRef.current.length >= 2) {
           // End of last injury's functional tests → multi-zone resumen, then follow-up Qs.
           await appendMultiPartFinalSummary(
             activeId,
@@ -3304,6 +3468,30 @@ export function AIInquiriesScreen({
           setRelatedFollowupActive(true);
           setPostGuidanceAsked(true);
           setShowUnrelatedCta(false);
+        }
+        return;
+      }
+
+      if (exerciseOfferActive && !linkedPhysio) {
+        await saveUserMessage();
+        setShowUnrelatedCta(false);
+        setChatLoading(true);
+        setLoadingModal(true);
+        try {
+          if (declinesExerciseOffer(text)) {
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          if (affirmsExerciseOffer(text)) {
+            await sendPostConsultExercisePlan(activeId, text);
+            await finishConsultaSession(activeId, consultLanguage);
+            return;
+          }
+          await sendPostConsultExercisePlan(activeId, text);
+          await finishConsultaSession(activeId, consultLanguage);
+        } finally {
+          setChatLoading(false);
+          setLoadingModal(false);
         }
         return;
       }
@@ -3332,7 +3520,14 @@ export function AIInquiriesScreen({
           ) {
             return;
           }
-          await finishConsultaSession(activeId, consultLanguage);
+          setChatLoading(true);
+          setLoadingModal(true);
+          try {
+            await sendPostConsultExerciseOffer(activeId);
+          } finally {
+            setChatLoading(false);
+            setLoadingModal(false);
+          }
           return;
         }
 
@@ -3377,8 +3572,8 @@ export function AIInquiriesScreen({
             })),
           {
             role: "user" as const,
-            content: attachmentUrl
-              ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+            content: attachmentPath
+              ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
               : text,
           },
         ].slice(-10);
@@ -3439,8 +3634,8 @@ export function AIInquiriesScreen({
           })),
         {
           role: "user" as const,
-          content: attachmentUrl
-            ? `${text}\n${consultAttachmentHistoryNote(attachmentUrl, locale)}`
+          content: attachmentPath
+            ? `${text}\n${consultAttachmentHistoryNote(attachmentPath, locale)}`
             : text,
         },
       ].slice(-10);
@@ -3471,6 +3666,7 @@ export function AIInquiriesScreen({
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       setFormError("No se pudo procesar tu mensaje. Inténtalo de nuevo.");
     } finally {
+      submittingRef.current = false;
       setChatLoading(false);
     }
   }
@@ -3519,6 +3715,9 @@ export function AIInquiriesScreen({
     phase !== "complete" &&
     (phase === "intro" || phase === "followup") &&
     (!linkedPhysio || Boolean(activeId) || conversations.length === 0 || fisioNewConsultDraft);
+  const chatBusy =
+    chatLoading ||
+    (ASSISTANT_REVEAL_ENABLED && Boolean(revealingMessageId));
   const awaitingFunctionalTests =
     phase === "followup" ? latestUnansweredFunctionalTests(messages) : null;
   const showFisioPickExisting =
@@ -3529,7 +3728,9 @@ export function AIInquiriesScreen({
     conversations.length > 0 &&
     !activeId;
   const showFisioBootstrap =
-    Boolean(linkedPhysio) && (!historyLoaded || (openingConversation && messages.length === 0));
+    Boolean(linkedPhysio) &&
+    !fisioBootDeadline &&
+    (!historyLoaded || (openingConversation && messages.length === 0));
   const physioHighlightPhrases = collectPhysioHighlightPhrases(
     linkedPhysio,
     conversations
@@ -3540,7 +3741,7 @@ export function AIInquiriesScreen({
       <View
         style={[
           styles.chatTopBar,
-          !guestMode && { paddingTop: screenHeaderTopInset(insets) },
+          !guestMode && { paddingTop: Math.max(insets.top, 8) },
         ]}
       >
         <Pressable
@@ -4179,7 +4380,7 @@ export function AIInquiriesScreen({
     <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: composerInset }}>
       {renderTopBar()}
 
-      {linkedPhysio && phase === "complete" ? null : linkedPhysio && physioReportSentBanner ? (
+      {linkedPhysio && phase === "complete" && physioReportSentBanner ? (
         <View
           style={{
             backgroundColor: "#ECFDF5",
@@ -4306,12 +4507,19 @@ export function AIInquiriesScreen({
                   <StreamingAssistantMessage
                     content={msg.content}
                     animate={shouldAnimateAssistantMessage(msg, revealingMessageId)}
-                      onRevealComplete={() => {
-                        if (revealingMessageId === msg.id) {
+                    completeImmediately={
+                      !ASSISTANT_REVEAL_ENABLED &&
+                      msg.id === revealingMessageId
+                    }
+                      onRevealComplete={(meta) => {
+                        const stillCurrent = revealingMessageIdRef.current === msg.id;
+                        if (stillCurrent) {
+                          revealingMessageIdRef.current = null;
                           setRevealingMessageId(null);
                         }
                         pinRevealToStartRef.current = false;
                         updateScrollDownVisibility();
+                        if (meta?.interrupted || !stillCurrent) return;
                         if (
                           msg.id === WELCOME_ID ||
                           autoSpokenIdsRef.current.has(msg.id)
@@ -4333,19 +4541,29 @@ export function AIInquiriesScreen({
                           resumeConversationListening();
                         }
                       }}
-                      onRevealTick={updateScrollDownVisibility}
+                      onRevealTick={
+                        ASSISTANT_REVEAL_ENABLED
+                          ? updateScrollDownVisibility
+                          : undefined
+                      }
                   >
                     {(visibleText, isRevealing) => (
                       <>
                         <AssistantMessageWithSources
                           content={visibleText}
                           renderBody={(body) => {
-                            const parsed = splitFunctionalTests(body);
-                            const showButtons =
+                            const pendingFunctionalForm =
+                              awaitingFunctionalTests?.messageId === msg.id;
+                            const parseSource = pendingFunctionalForm
+                              ? msg.content
+                              : body;
+                            const parsed = splitFunctionalTests(parseSource);
+                            const isActiveForm =
                               Boolean(parsed) &&
-                              awaitingFunctionalTests?.messageId === msg.id &&
-                              !isRevealing;
-                            if (!parsed || !showButtons) {
+                              (parsed?.tests.length ?? 0) >= 2 &&
+                              pendingFunctionalForm;
+
+                            if (!parsed) {
                               return (
                                 <ConsultaAssistantBody
                                   text={body}
@@ -4353,45 +4571,42 @@ export function AIInquiriesScreen({
                                   boldStyle={styles.bubbleBold}
                                   highlightPhrases={physioHighlightPhrases}
                                   highlightStyle={styles.bubblePhysioHighlight}
+                                  onClinicPress={openClinicProfile}
+                                  language={locale}
                                 />
                               );
                             }
-                            return (
-                              <View>
-                                {parsed.before ? (
-                                  <ConsultaAssistantBody
-                                    text={parsed.before}
-                                    style={styles.bubbleText}
-                                    boldStyle={styles.bubbleBold}
-                                    highlightPhrases={physioHighlightPhrases}
-                                    highlightStyle={styles.bubblePhysioHighlight}
-                                  />
-                                ) : null}
-                                <ConsultaAssistantBody
-                                  text={`**${parsed.heading}**`}
-                                  style={styles.bubbleText}
-                                  boldStyle={styles.bubbleBold}
-                                  highlightPhrases={physioHighlightPhrases}
-                                  highlightStyle={styles.bubblePhysioHighlight}
-                                />
-                                <FunctionalTestYesNo
-                                  tests={parsed.tests}
+
+                            if (isActiveForm) {
+                              return (
+                                <FunctionalTestChatBlock
+                                  parsed={parsed}
                                   language={locale}
-                                  disabled={chatLoading}
+                                  disabled={chatBusy}
+                                  isRevealing={isRevealing}
                                   onSubmit={(text) =>
                                     sendVoiceTurnRef.current(text)
                                   }
+                                  onScrollTick={updateScrollDownVisibility}
+                                  onClinicPress={openClinicProfile}
+                                  bubbleText={styles.bubbleText}
+                                  bubbleBold={styles.bubbleBold}
+                                  highlightPhrases={physioHighlightPhrases}
+                                  highlightStyle={styles.bubblePhysioHighlight}
                                 />
-                                {parsed.after ? (
-                                  <ConsultaAssistantBody
-                                    text={parsed.after}
-                                    style={styles.bubbleText}
-                                    boldStyle={styles.bubbleBold}
-                                    highlightPhrases={physioHighlightPhrases}
-                                    highlightStyle={styles.bubblePhysioHighlight}
-                                  />
-                                ) : null}
-                              </View>
+                              );
+                            }
+
+                            return (
+                              <ConsultaAssistantBody
+                                text={reconstructFunctionalTestsSection(parsed)}
+                                style={styles.bubbleText}
+                                boldStyle={styles.bubbleBold}
+                                highlightPhrases={physioHighlightPhrases}
+                                highlightStyle={styles.bubblePhysioHighlight}
+                                onClinicPress={openClinicProfile}
+                                language={locale}
+                              />
                             );
                           }}
                         />
@@ -4476,13 +4691,13 @@ export function AIInquiriesScreen({
                   textAlign: "center",
                 }}
               >
-                <Text style={styles.bubblePhysioHighlight}>
+                <Text style={{ fontWeight: "700" }}>
                   {physioDisplayName(linkedPhysio.physio_name)}
                 </Text>
                 {linkedPhysio.clinic_name?.trim() ? (
                   <>
                     {" "}
-                    <Text style={styles.bubblePhysioHighlight}>
+                    <Text style={{ fontWeight: "700" }}>
                       {linkedPhysio.clinic_name.trim()}
                     </Text>
                   </>
@@ -4695,11 +4910,11 @@ export function AIInquiriesScreen({
               <Pressable
                 style={({ pressed }) => [
                   styles.micIconBtn,
-                  chatLoading && styles.sendBtnDisabled,
+                  chatBusy && styles.sendBtnDisabled,
                   pressed && styles.attachBtnPressed,
                 ]}
                 onPress={pickConsultAttachment}
-                disabled={chatLoading}
+                disabled={chatBusy}
                 accessibilityLabel={t.consulta.attachFile}
               >
                 <Ionicons name="add" size={24} color={Colors.textSecondary} />
@@ -4725,18 +4940,18 @@ export function AIInquiriesScreen({
               onChangeText={setChatInput}
               multiline
               maxLength={2000}
-              editable={!chatLoading && !conversationMode}
+              editable={!chatBusy && !conversationMode}
             />
             {sttSupported ? (
               <Pressable
                 style={({ pressed }) => [
                   styles.micIconBtn,
                   conversationMode && styles.micIconBtnActive,
-                  chatLoading && !conversationMode && styles.sendBtnDisabled,
+                  chatBusy && !conversationMode && styles.sendBtnDisabled,
                   pressed && styles.attachBtnPressed,
                 ]}
                 onPress={toggleConversationMode}
-                disabled={chatLoading && !conversationMode}
+                disabled={chatBusy && !conversationMode}
                 accessibilityLabel={
                   conversationMode ? "Salir de conversación" : "Conversación por voz"
                 }
@@ -4753,11 +4968,11 @@ export function AIInquiriesScreen({
                 <Pressable
                   style={({ pressed }) => [
                     styles.micIconBtn,
-                    chatLoading && styles.sendBtnDisabled,
+                    chatBusy && styles.sendBtnDisabled,
                     pressed && styles.attachBtnPressed,
                   ]}
                   onPress={() => void takeConsultPhoto()}
-                  disabled={chatLoading}
+                  disabled={chatBusy}
                   accessibilityLabel={t.consulta.takePhoto}
                 >
                   <Ionicons name="camera-outline" size={22} color={Colors.textSecondary} />
@@ -4765,18 +4980,19 @@ export function AIInquiriesScreen({
                 <Pressable
                   style={({ pressed }) => [
                     styles.sendBtn,
-                    (chatLoading || (!chatInput.trim() && !attachedUri)) &&
+                    (chatBusy || (!chatInput.trim() && !attachedUri)) &&
                       styles.sendBtnDisabled,
                     pressed && styles.sendBtnPressed,
                   ]}
                   onPress={() => {
+                    if (chatBusy) return;
                     if (!chatInput.trim() && !attachedUri) return;
                     stopMic();
                     cancelSpeech();
                     if (phase === "intro") handleIntroSubmit();
                     else handleFollowupSubmit();
                   }}
-                  disabled={chatLoading || (!chatInput.trim() && !attachedUri)}
+                  disabled={chatBusy || (!chatInput.trim() && !attachedUri)}
                   accessibilityLabel="Enviar"
                 >
                   <Ionicons name="arrow-up" size={20} color={Colors.white} />
@@ -4896,7 +5112,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingBottom: 10,
     backgroundColor: Colors.white,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
@@ -5124,6 +5340,8 @@ const styles = StyleSheet.create({
   bubbleRowAI: { justifyContent: "flex-start" },
   bubble: {
     maxWidth: "82%",
+    flexShrink: 1,
+    minWidth: 0,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -5200,7 +5418,8 @@ const styles = StyleSheet.create({
   },
   bubbleBold: { color: Colors.primary, fontWeight: '700' },
   bubblePhysioHighlight: {
-    fontWeight: '700',
+    fontWeight: "700",
+    color: Colors.text,
   },
   bubbleDisclaimer: { marginTop: 8, fontSize: 11, color: Colors.textLight, lineHeight: 15 },
   questionnaireCard: {

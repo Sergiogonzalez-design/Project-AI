@@ -70,7 +70,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [preference, setPreference, ready]
   );
 
-  return React.createElement(I18nContext.Provider, { value }, children);
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {
@@ -79,4 +79,18 @@ export function useI18n() {
     throw new Error("useI18n must be used within I18nProvider");
   }
   return ctx;
+}
+
+/** Safe when context is missing (e.g. boot shell, error fallbacks). */
+export function useI18nOptional(): I18nContextValue {
+  const ctx = useContext(I18nContext);
+  if (ctx) return ctx;
+  const locale = detectDeviceLocale();
+  return {
+    locale,
+    preference: locale,
+    t: translations[locale],
+    setPreference: async () => {},
+    ready: true,
+  };
 }

@@ -1,0 +1,524 @@
+{
+  "pack": "thoracic",
+  "status": "active",
+  "version": 2,
+  "notes": "ACTIVE relation pack (upgraded from pilot). No invented Sn/Sp. Traditional MTrP maps labeled traditional. No Travell verbatim.",
+  "relations": [
+    {
+      "id": "cardiac-visceral-red-flag-if-chest-or-interscapular-pain",
+      "source_structure": "cardiac / pulmonary / aortic / PE pathways",
+      "target_region": "chest / interscapular / arm",
+      "relationship": "red_flag_if",
+      "clinical_context": "Chest or interscapular pain with dyspnoea, diaphoresis, exertional pattern, syncope, or vascular risk.",
+      "supporting_evidence": [
+        "Chest-pain guidelines require urgent evaluation when ACS or other visceral features are present"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "do_not_invent",
+        "notes": "Safety pathway, not an MSK test."
+      },
+      "limitations": [
+        "Mechanical thoracic pain exists but must not delay emergency care"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Stop elective MSK cascade if visceral features present",
+        "Urgent medical referral"
+      ],
+      "red_flags": [
+        "ACS-type chest pain",
+        "Dyspnoea / syncope / diaphoresis",
+        "Pulsatile chest/back pain concerning for aortic syndrome"
+      ],
+      "references": [
+        {
+          "citation": "Gulati M et al. 2021 AHA/ACC Guideline for the Evaluation and Diagnosis of Chest Pain. Circulation/JACC.",
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "id": "thoracic-facet-may-refer-pain-to-axial-or-interscapular",
+      "source_structure": "thoracic zygapophyseal joints (provocation maps)",
+      "target_region": "thoracic axial / interscapular perceived pain",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Mechanical thoracic pain after visceral safety screen; local rhomboid palpation is not confirmatory.",
+      "supporting_evidence": [
+        "Provocation of thoracic zygapophyseal joints in volunteers can produce referred axial pain patterns"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "experimental",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Provocation maps ≠ clinic palpation accuracy. Do not invent Sn/Sp."
+      },
+      "limitations": [
+        "No Wainner-like cluster for thoracic facet in clinic",
+        "Cannot name a segmental level from a pain drawing"
+      ],
+      "alternative_explanations": [
+        "Cervical referral",
+        "Rib / chest wall",
+        "Shoulder source",
+        "Visceral"
+      ],
+      "recommended_examination": [
+        "Visceral safety first",
+        "Thoracic and cervical AROM",
+        "Shoulder load tests if symptoms change with arm use"
+      ],
+      "red_flags": [
+        "Cardiac / pulmonary / aortic features"
+      ],
+      "references": [
+        {
+          "citation": "Dreyfuss P, Tibiletti C, Dreyer SJ. Thoracic zygapophyseal joint pain patterns. A study in normal volunteers. Spine. 1994.",
+          "year": 1994
+        }
+      ]
+    },
+    {
+      "id": "cervical-may-refer-pain-to-medial-scapula",
+      "source_structure": "cervical zygapophyseal / somatic structures",
+      "target_region": "medial scapular / interscapular",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Interscapular pain that changes with neck movement, or with weak local shoulder reproduction.",
+      "supporting_evidence": [
+        "Cervical zygapophyseal provocation studies include scapular-girdle referral",
+        "Neck Pain CPGs endorse cervical contribution to upper-quarter symptoms"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Cannot localize segment from scapular pain alone."
+      },
+      "limitations": [
+        "Overlaps thoracic, rib, and shoulder sources"
+      ],
+      "alternative_explanations": [
+        "Thoracic segment",
+        "RCRSP perceived posteriorly",
+        "Traditional rhomboid hypothesis (D)"
+      ],
+      "recommended_examination": [
+        "Cervical AROM + radiculopathy cluster as indicated",
+        "Ask if neck movement changes scapular pain",
+        "Shoulder cluster for familiar pain"
+      ],
+      "red_flags": [
+        "Myelopathy",
+        "Visceral chest-pain features"
+      ],
+      "references": [
+        {
+          "citation": "Dwyer A, Aprill C, Bogduk N. Cervical zygapophyseal joint pain patterns. Spine. 1990.",
+          "year": 1990
+        },
+        {
+          "citation": "Fukui S et al. Referred pain distribution of the cervical zygapophyseal joints and cervical dorsal rami. Pain. 1996.",
+          "year": 1996
+        },
+        {
+          "citation": "Blanpied PR et al. Neck Pain: Revision 2017 (CPG). JOSPT.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "rhomboid-may-mimic-interscapular-pain-traditional",
+      "source_structure": "rhomboid / middle trapezius region (myofascial hypothesis)",
+      "target_region": "interscapular",
+      "relationship": "may_mimic",
+      "clinical_context": "Familiar pain on palpation after visceral and cervicothoracic hypotheses are considered.",
+      "supporting_evidence": [
+        "Classical myofascial maps describe interscapular patterns (traditional class only)"
+      ],
+      "evidence_level": "D",
+      "referred_pattern_class": "traditional",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "MTrP palpation reliability limited. Found ≠ cause."
+      },
+      "limitations": [
+        "Must not override cardiac/pulmonary screening",
+        "Maps are not absolute anatomy"
+      ],
+      "alternative_explanations": [
+        "Cervicothoracic referral",
+        "Rib / chest wall",
+        "Shoulder"
+      ],
+      "recommended_examination": [
+        "Familiar pain criterion",
+        "Cervical/thoracic/shoulder screens"
+      ],
+      "red_flags": [
+        "Visceral features"
+      ],
+      "references": [
+        {
+          "citation": "Tough EA et al. Variability of criteria used to diagnose myofascial trigger point pain syndrome. 2007.",
+          "year": 2007
+        },
+        {
+          "citation": "Lucas N et al. Reliability of physical examination for diagnosis of myofascial trigger points. Clin J Pain. 2009.",
+          "year": 2009
+        }
+      ]
+    },
+    {
+      "id": "thoracic-may-coexist-with-cervical-contribution",
+      "source_structure": "thoracic mechanical pain construct",
+      "target_region": "interscapular / mid-back / cervicothoracic",
+      "relationship": "may_coexist_with",
+      "clinical_context": "Interscapular pain with dual cervical and thoracic contribution after visceral safety screen.",
+      "supporting_evidence": [
+        "Cross-region cervicothoracic screening is standard when scapular pain is poorly localized",
+        "Thoracic-specific treatment evidence is limited (OPTIMa/Briganti themes)"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Coexistence is clinical reasoning, not a single accuracy metric."
+      },
+      "limitations": [
+        "Visceral red flags first",
+        "Do not invent a thoracic facet level from pain drawing"
+      ],
+      "alternative_explanations": [
+        "Pure cervical",
+        "Pure thoracic mechanical",
+        "Shoulder referred",
+        "Visceral"
+      ],
+      "recommended_examination": [
+        "Visceral safety first",
+        "Cervical + thoracic AROM familiar-pain mapping",
+        "Shoulder screen"
+      ],
+      "red_flags": [
+        "Cardiac / pulmonary / aortic features",
+        "Myelopathy"
+      ],
+      "references": [
+        {
+          "citation": "Blanpied PR et al. Neck Pain CPG. JOSPT.",
+          "year": 2017
+        },
+        {
+          "citation": "Briganti / OPTIMa thoracic pain evidence themes — limited treatment certainty.",
+          "year": 2015
+        }
+      ]
+    },
+    {
+      "id": "rib-may-mimic-thoracic-or-chest-wall-pain",
+      "source_structure": "rib / costovertebral / costosternal clinical constructs",
+      "target_region": "chest wall / lateral thorax / interscapular",
+      "relationship": "may_mimic",
+      "clinical_context": "Pain reproduced by local rib springing or breathing after visceral safety; may be labelled thoracic facet or cardiac by patient fear.",
+      "supporting_evidence": [
+        "Chest-wall and rib pain are recognized MSK differentials after visceral exclusion"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Do not invent Sn/Sp for rib spring. Safety screen precedes MSK labeling."
+      },
+      "limitations": [
+        "Must not delay ACS pathway",
+        "Palpation tenderness nonspecific"
+      ],
+      "alternative_explanations": [
+        "Visceral",
+        "Thoracic facet",
+        "Cervical referral",
+        "Shoulder"
+      ],
+      "recommended_examination": [
+        "Visceral red flags first",
+        "Breathing/rib spring with familiar pain",
+        "Cervical/shoulder screens"
+      ],
+      "red_flags": [
+        "ACS / PE / aortic features",
+        "Trauma with fracture risk"
+      ],
+      "references": [
+        {
+          "citation": "Gulati M et al. 2021 AHA/ACC Chest Pain Guideline — MSK after safety.",
+          "year": 2021
+        },
+        {
+          "citation": "Thoracic/chest-wall MSK differential reviews — qualitative.",
+          "year": 2015
+        }
+      ]
+    },
+    {
+      "id": "shoulder-may-refer-or-mimic-interscapular-pain",
+      "source_structure": "RCRSP / glenohumeral load clinical construct",
+      "target_region": "interscapular / medial scapular",
+      "relationship": "may_mimic",
+      "clinical_context": "Posterior scapular pain that changes with arm elevation/load more than with thoracic rotation.",
+      "supporting_evidence": [
+        "Shoulder pathology can be perceived posteriorly",
+        "Local cuff cluster helps discriminate"
+      ],
+      "evidence_level": "B",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Familiar-pain mapping over invented accuracy numbers."
+      },
+      "limitations": [
+        "Coexists with cervical/thoracic",
+        "Visceral still first if chest features"
+      ],
+      "alternative_explanations": [
+        "Cervical referral",
+        "Thoracic mechanical",
+        "Traditional rhomboid hypothesis"
+      ],
+      "recommended_examination": [
+        "Shoulder elevation load cluster",
+        "Cervical AROM",
+        "Thoracic AROM"
+      ],
+      "red_flags": [
+        "Cardiac features with arm/jaw symptoms"
+      ],
+      "references": [
+        {
+          "citation": "Lewis J. RCRSP assessment framework.",
+          "year": 2016
+        },
+        {
+          "citation": "Blanpied PR et al. Neck Pain CPG — upper quarter framing.",
+          "year": 2017
+        }
+      ]
+    },
+    {
+      "id": "thoracic-mechanical-tested-by-arom-familiar-pain",
+      "source_structure": "non-specific mechanical thoracic pain construct",
+      "target_region": "mid-back / interscapular",
+      "relationship": "tested_by",
+      "clinical_context": "After visceral safety: thoracic rotation/extension reproduces familiar pain without neurological red flags.",
+      "supporting_evidence": [
+        "Mechanical thoracic pain is a clinical pattern; no Wainner-like validated cluster",
+        "Familiar pain criterion essential"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "No invented cluster Sn/Sp for thoracic AROM."
+      },
+      "limitations": [
+        "Cannot name segmental level",
+        "Evidence for isolated thoracic labeling limited"
+      ],
+      "alternative_explanations": [
+        "Cervical",
+        "Rib",
+        "Shoulder",
+        "Visceral missed"
+      ],
+      "recommended_examination": [
+        "Visceral screen",
+        "Thoracic + cervical AROM",
+        "Shoulder load if arm-related"
+      ],
+      "red_flags": [
+        "Cardiac / pulmonary / aortic",
+        "Myelopathy"
+      ],
+      "references": [
+        {
+          "citation": "Briganti / OPTIMa thoracic pain evidence themes.",
+          "year": 2015
+        },
+        {
+          "citation": "Dreyfuss P et al. Thoracic zygapophyseal joint pain patterns. Spine.",
+          "year": 1994
+        }
+      ]
+    },
+    {
+      "id": "pe-pulmonary-red-flag-if-dyspnoea-pleuritic",
+      "source_structure": "pulmonary embolism / serious pulmonary pathways",
+      "target_region": "chest / lateral thorax / scapular",
+      "relationship": "red_flag_if",
+      "clinical_context": "Pleuritic pain, dyspnoea, hemoptysis, syncope, or VTE risk — not an MSK special test.",
+      "supporting_evidence": [
+        "Chest-pain and PE pathways require urgent medical evaluation"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "do_not_invent",
+        "notes": "Safety pathway, not physio test accuracy."
+      },
+      "limitations": [
+        "Not all pleuritic pain is PE",
+        "Do not delay care to complete MSK cluster"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Stop elective MSK cascade",
+        "Urgent medical pathway"
+      ],
+      "red_flags": [
+        "Sudden dyspnoea",
+        "Pleuritic pain with VTE risk",
+        "Hemoptysis / syncope"
+      ],
+      "references": [
+        {
+          "citation": "Gulati M et al. 2021 AHA/ACC Chest Pain Guideline.",
+          "year": 2021
+        },
+        {
+          "citation": "PE clinical decision pathway framing — use local emergency protocol.",
+          "year": 2019
+        }
+      ]
+    },
+    {
+      "id": "thoracic-disc-may-refer-pain-to-chest-wall",
+      "source_structure": "thoracic disc / nerve root clinical construct",
+      "target_region": "band-like chest wall / trunk",
+      "relationship": "may_refer_pain_to",
+      "clinical_context": "Band-like trunk pain with thoracic movement contribution after visceral safety; neurological screen required.",
+      "supporting_evidence": [
+        "Thoracic radicular patterns can mimic visceral or chest-wall pain",
+        "Rare relative to cervical/lumbar — do not over-call"
+      ],
+      "evidence_level": "C",
+      "referred_pattern_class": "clinical",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "Pattern-based; no invented Sn/Sp."
+      },
+      "limitations": [
+        "Visceral must be excluded first",
+        "Myelopathy risk if cord signs"
+      ],
+      "alternative_explanations": [
+        "Visceral",
+        "Rib / chest wall",
+        "Herpes zoster prodrome"
+      ],
+      "recommended_examination": [
+        "Visceral safety",
+        "Neurological screen including long tracts",
+        "Thoracic AROM familiar pain"
+      ],
+      "red_flags": [
+        "Myelopathy signs",
+        "Visceral features",
+        "Zoster skin changes"
+      ],
+      "references": [
+        {
+          "citation": "Thoracic disc / radicular clinical reviews — qualitative rarity and caution.",
+          "year": 2014
+        },
+        {
+          "citation": "Gulati M et al. Chest Pain Guideline — visceral first.",
+          "year": 2021
+        }
+      ]
+    },
+    {
+      "id": "myelopathy-red-flag-if-gait-or-hand-clumsiness-with-thoracic-pain",
+      "source_structure": "spinal cord (cervical or thoracic myelopathy construct)",
+      "target_region": "gait / hands / bilateral limbs",
+      "relationship": "red_flag_if",
+      "clinical_context": "Thoracic or interscapular pain plus gait disturbance, hand clumsiness, hyperreflexia, or long-tract signs.",
+      "supporting_evidence": [
+        "Myelopathy features require medical/imaging pathways before elective MSK care"
+      ],
+      "evidence_level": "A",
+      "referred_pattern_class": "not_applicable",
+      "diagnostic_accuracy": {
+        "status": "mixed",
+        "notes": "Individual signs imperfect; act on constellation. No invented Sn/Sp."
+      },
+      "limitations": [
+        "Single soft signs insufficient alone",
+        "Urgent pathway depends on progression"
+      ],
+      "alternative_explanations": [],
+      "recommended_examination": [
+        "Neurological screen upper and lower limbs",
+        "Urgent referral — stop elective hypothesis cascade"
+      ],
+      "red_flags": [
+        "Gait ataxia",
+        "Hand dexterity loss",
+        "Long-tract signs"
+      ],
+      "references": [
+        {
+          "citation": "Blanpied PR et al. Neck Pain CPG — myelopathy framing. JOSPT.",
+          "year": 2017
+        },
+        {
+          "citation": "Cook C et al. Clustered clinical findings for cervical myelopathy — qualitative clusters.",
+          "year": 2010
+        }
+      ]
+    },
+    {
+      "id": "serratus-may-mimic-lateral-chest-pain-traditional",
+      "source_structure": "serratus anterior / lateral chest wall myofascial hypothesis",
+      "target_region": "lateral chest / axillary wall",
+      "relationship": "may_mimic",
+      "clinical_context": "Lateral chest wall pain with familiar palpation after visceral and rib/shoulder screens — traditional only.",
+      "supporting_evidence": [
+        "Traditional maps describe lateral chest patterns (traditional class only)"
+      ],
+      "evidence_level": "D",
+      "referred_pattern_class": "traditional",
+      "diagnostic_accuracy": {
+        "status": "unknown",
+        "notes": "MTrP reliability limited; found ≠ cause."
+      },
+      "limitations": [
+        "Must not override cardiac/pulmonary screening",
+        "Traditional ≠ absolute anatomy"
+      ],
+      "alternative_explanations": [
+        "Visceral",
+        "Rib",
+        "Shoulder",
+        "Thoracic mechanical"
+      ],
+      "recommended_examination": [
+        "Visceral safety first",
+        "Shoulder/rib screens",
+        "Familiar-pain palpation as weak adjunct"
+      ],
+      "red_flags": [
+        "ACS / PE features"
+      ],
+      "references": [
+        {
+          "citation": "Tough EA et al. 2007; Lucas N et al. 2009 — MTrP caution.",
+          "year": 2009
+        },
+        {
+          "citation": "Gulati M et al. Chest Pain Guideline — safety first.",
+          "year": 2021
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -58,10 +58,7 @@ async function resolveUser(request: NextRequest) {
  * Remove clinic ownership first — clinics.owner_id is ON DELETE RESTRICT,
  * so profile / auth deletes fail (or leave orphans) while a clinic exists.
  */
-async function deleteOwnedClinics(
-  adminClient: ReturnType<typeof createSupabaseClient>,
-  userId: string
-) {
+async function deleteOwnedClinics(adminClient: SupabaseClient, userId: string) {
   const { data: owned, error: listError } = await adminClient
     .from("clinics")
     .select("id")
@@ -71,7 +68,7 @@ async function deleteOwnedClinics(
   }
   if (!owned?.length) return;
 
-  const ids = owned.map((c) => c.id as string);
+  const ids = (owned as { id: string }[]).map((c) => c.id);
   // Break profile → clinic links before removing the clinic row.
   await adminClient.from("profiles").update({ clinic_id: null }).in("clinic_id", ids);
 

@@ -7,14 +7,16 @@ export function buildPhysioInviteUrl(code: string, origin?: string): string {
       (typeof window !== "undefined" ? window.location.origin : "")) ||
     "https://project-ai-swart.vercel.app";
   const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
-  return `${base}/login?code=${encodeURIComponent(normalized)}`;
+  // Patient join flow → guest session → /fisioterapia (consulta previa).
+  // Do not use /login?code=…: a logged-in fisio would be sent to /fisio.
+  return `${base}/unirse?code=${encodeURIComponent(normalized)}`;
 }
 
 export function normalizeInviteCode(raw: string | null | undefined): string {
   return (raw ?? "").trim().toUpperCase().replace(/\s+/g, "");
 }
 
-/** Accept a raw code or a pasted invite URL (`/login?code=…`). */
+/** Accept a raw code or a pasted invite URL (`/unirse?code=…` or `/login?code=…`). */
 export function parsePastedInviteCode(raw: string | null | undefined): string {
   const text = (raw ?? "").trim();
   if (!text) return "";

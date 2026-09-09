@@ -22,7 +22,7 @@ import { setAppDisclaimerHeight } from "./src/lib/app-disclaimer-height";
 import { hideNativeSplash, startSplashHideWatchdog } from "./src/lib/hide-splash";
 import { ensureNotificationHandler } from "./src/lib/notifications";
 import { useOnAppForeground } from "./src/hooks/useAppLifecycle";
-import { I18nProvider, useI18n } from "./src/lib/i18n";
+import { I18nProvider, useI18nOptional } from "./src/lib/i18n";
 import { isAdminEmail, isSupabaseConfigured } from "./src/lib/supabase-config";
 import { supabase } from "./src/lib/supabase";
 import {
@@ -144,6 +144,9 @@ function AppInner() {
     setAuthView("login");
     setGuestSignup(false);
     setIsGuest(false);
+    void import("./src/lib/linked-physio-cache").then(({ setLinkedPhysioCache }) => {
+      setLinkedPhysioCache(null);
+    });
     void deleteOwnAccountAndSignOut();
   }, []);
 
@@ -444,7 +447,7 @@ function AppInner() {
 }
 
 function AppDisclaimer() {
-  const { t } = useI18n();
+  const { t } = useI18nOptional();
   const insets = useSafeAreaInsets();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
@@ -495,18 +498,18 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <AppErrorBoundary>
-        <I18nProvider>
+    <I18nProvider>
+      <SafeAreaProvider>
+        <AppErrorBoundary>
           <View style={{ flex: 1 }}>
             <View style={{ flex: 1 }}>
               <AppInner />
             </View>
             <AppDisclaimer />
           </View>
-        </I18nProvider>
-      </AppErrorBoundary>
-    </SafeAreaProvider>
+        </AppErrorBoundary>
+      </SafeAreaProvider>
+    </I18nProvider>
   );
 }
 

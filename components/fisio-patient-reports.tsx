@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   AiOrientationDisclaimer,
+  PhysioPatientOrientationView,
   PhysioReportView,
 } from "@/components/physio-report-view";
 import { createClient } from "@/lib/supabase/client";
@@ -30,9 +31,12 @@ function formatDate(value: string) {
 export function FisioPatientReports({
   patientId,
   patientLabel,
+  backHref = "/fisio",
 }: {
   patientId: string;
   patientLabel: string | null;
+  /** Back link target (physio roster or clinic patients). */
+  backHref?: string;
 }) {
   const [reports, setReports] = useState<ClinicalReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +123,7 @@ export function FisioPatientReports({
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/fisio" className="text-sm font-medium text-blue-600 hover:text-blue-800">
+      <Link href={backHref} className="text-sm font-medium text-blue-600 hover:text-blue-800">
         ← Volver a pacientes
       </Link>
 
@@ -195,11 +199,10 @@ export function FisioPatientReports({
                         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-neutral-500">
                           Ver orientación mostrada al paciente
                         </summary>
-                        <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
-                          {report.patient_summary.replace(
-                            /Syndesmosis/gi,
-                            "Sindesmosis"
-                          )}
+                        <div className="mt-2">
+                          <PhysioPatientOrientationView
+                            content={report.patient_summary}
+                          />
                         </div>
                       </details>
                     )}

@@ -1,10 +1,12 @@
 import type { BodyPartId } from "./body-parts";
 
 /**
- * Remove body-part words that only describe a workout/session
- * (e.g. "entreno de pierna", "día de pecho", "leg day") — not the injured site.
+ * Remove body-part words that only describe a workout/session or rehabilitation goal
+ * (e.g. "entreno de pierna", "entrenando para rehabilitar la rodilla") — not the injured site.
  */
 export function stripTrainingBodyPartContext(text: string): string {
+  const part =
+    String.raw`(?:rodillas?|knees?|espaldas?|backs?|pechos?|chests?|hombros?|shoulders?|brazos?|arms?|codos?|elbows?|caderas?|hips?|cuellos?|necks?|mu[ñn]ecas?|wrists?|manos?|hands?|tobillos?|ankles?|pies?|feet?|piernas?|legs?|muslos?|thighs?|gl[uú]teos?|glutes?|cuadr[ií]ceps|isquios?|core)`;
   return text
     .replace(
       /\b(?:entrenos?|entrenamientos?|ejercicios?|sesiones?|rutinas?|d[ií]as?|workouts?|training)\s+(?:de\s+(?:la\s+|las\s+|el\s+|los\s+)?)?(?:piernas?|legs?|espalda|backs?|pechos?|chests?|hombros?|shoulders?|brazos?|arms?|core|gl[uú]teos?|glutes?|cuadr[ií]ceps|isquios?|push|pull|full\s*body)\b/gi,
@@ -18,10 +20,28 @@ export function stripTrainingBodyPartContext(text: string): string {
       /\b(?:entren(?:ar|ando|é|e)|entreno)\s+(?:la\s+|las\s+|el\s+|los\s+)?(?:piernas?|legs?|espalda|backs?|pechos?|chests?|hombros?|shoulders?|brazos?|arms?)\b/gi,
       " "
     )
+    .replace(
+      new RegExp(
+        String.raw`\b(?:llevo\s+)?(?:unas?\s+)?(?:semanas?|meses?|d[ií]as?|weeks?|months?|days?)\s+(?:entrenando|haciendo\s+ejercicio|training)\s+(?:para\s+)?(?:rehabilitar|fortalecer|recuperar|strengthen|recover|rehab)\s+(?:la\s+|el\s+|los\s+|las\s+|mi\s+|mis\s+)?${part}\b`,
+        "gi"
+      ),
+      " "
+    )
+    .replace(
+      new RegExp(
+        String.raw`\b(?:entrenando|entrenar|entreno|entrenamiento|rehabilitar|rehabilitando|rehab(?:ilitat(?:ion|ing))?|fortalecer|fortaleciendo|recuperar|recuperando|strengthen(?:ing)?|recover(?:ing|y)?|training)\s+(?:para\s+)?(?:la\s+|el\s+|los\s+|las\s+|mi\s+|mis\s+)?${part}\b`,
+        "gi"
+      ),
+      " "
+    )
     .replace(/\b(?:leg|chest|back|arm|shoulder|push|pull)\s*days?\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
+
+/** Adverbs between “me duele” and the body part (e.g. “me duele bastante la espalda”). */
+const COMPLAINT_INTENSIFIER =
+  String.raw`(?:bastante|mucho|muy|un\s+poco|algo|demasiado|really|quite|very|pretty|so|a\s+lot)?\s*`;
 
 /** Body-part aliases used to spot “pain/molestia in X” phrasing. */
 const COMPLAINT_PART_ALIASES: Partial<Record<BodyPartId, string[]>> = {
@@ -74,7 +94,7 @@ export function detectComplaintLinkedBodyParts(text: string): BodyPartId[] {
         String.raw`(?:` +
           String.raw`(?:molestia|dolor|lesi[oó]n|pinchazo|tir[oó]n|contractura|rigidez|hinchaz[oó]n|inflamaci[oó]n|discomfort|pain|soreness)\s+(?:en|de|con|al)?\s*(?:la|el|mi|mis|una|un)?\s*${alias}` +
           String.raw`|` +
-          String.raw`(?:me\s+)?(?:duele|molest[ao]|ha\s+dolido|doli[oó]|noto|notado|siento|tengo)\s+(?:una?\s+)?(?:molestia|dolor)?\s*(?:en|de|con)?\s*(?:la|el|mi|mis)?\s*${alias}` +
+          String.raw`(?:me\s+)?(?:duele|molest[ao]|ha\s+dolido|doli[oó]|noto|notado|siento|tengo)\s+${COMPLAINT_INTENSIFIER}(?:una?\s+)?(?:molestia|dolor)?\s*(?:en|de|con)?\s*(?:la|el|mi|mis)?\s*${alias}` +
           String.raw`|` +
           String.raw`${alias}\s+(?:me\s+)?(?:duele|molest[ao]|dolorid[oa]|hurt|hurts)` +
           String.raw`)`,
@@ -84,6 +104,27 @@ export function detectComplaintLinkedBodyParts(text: string): BodyPartId[] {
       if (m?.index != null) {
         scored.push({ id, index: m.index });
         break;
+      }
+    }
+  }
+
+  // Coordinated second site: "me duele la rodilla y también la espalda"
+  if (/(?:duele|dolor|molest|pain|hurt|sore)/i.test(t)) {
+    for (const [id, aliases] of Object.entries(COMPLAINT_PART_ALIASES) as [
+      BodyPartId,
+      string[],
+    ][]) {
+      if (scored.some((s) => s.id === id)) continue;
+      for (const alias of aliases) {
+        const re = new RegExp(
+          String.raw`(?:y|e|and|tambi[eé]n|also)\s+(?:me\s+)?(?:duele|molest[ao]|dolor)?\s*${COMPLAINT_INTENSIFIER}?(?:la|el|mi|mis|una|un)?\s*${alias}\b`,
+          "i"
+        );
+        const m = re.exec(t);
+        if (m?.index != null) {
+          scored.push({ id, index: m.index });
+          break;
+        }
       }
     }
   }
@@ -559,11 +600,8 @@ export function detectBodyPartsFromText(text: string): BodyPartId[] {
   }
 
   if (linked.length > 0) {
-    const extras = found.filter((p) => !linked.includes(p));
-    return dropConflictingZones(
-      text,
-      sortPartsByFirstMention(text, [...linked, ...extras])
-    );
+    // Complaint-linked sites win — ignore keyword-only hits from rehab/training context.
+    return dropConflictingZones(text, linked);
   }
   return dropConflictingZones(text, sortPartsByFirstMention(text, found));
 }

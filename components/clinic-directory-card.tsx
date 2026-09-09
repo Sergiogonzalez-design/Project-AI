@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClinicCoverBanner } from "@/components/clinic-cover-banner";
 import {
   clinicAccentSoft,
   normalizeClinicAccent,
@@ -17,20 +18,13 @@ export function ClinicDirectoryCard({ clinic }: { clinic: ClinicSearchCard }) {
       href={`/centro/${clinic.slug}`}
       className="group block overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.1)]"
     >
-      <div
-        className="relative h-28 overflow-hidden"
-        style={{
-          background: clinic.cover_url
-            ? undefined
-            : `linear-gradient(135deg, ${accent} 0%, #0f172a 110%)`,
-        }}
-      >
-        {clinic.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={clinic.cover_url} alt="" className="h-full w-full object-cover" />
-        ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
-        <div className="absolute -bottom-6 left-4 h-14 w-14 overflow-hidden rounded-2xl border-2 border-white shadow-md">
+      <div className="relative">
+        <ClinicCoverBanner
+          coverUrl={clinic.cover_url}
+          accentColor={clinic.accent_color}
+          size="sm"
+        />
+        <div className="absolute -bottom-6 left-4 z-10 h-14 w-14 overflow-hidden rounded-2xl border-2 border-white shadow-md">
           {clinic.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={clinic.logo_url} alt="" className="h-full w-full object-cover" />

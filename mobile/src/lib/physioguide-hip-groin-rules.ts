@@ -1,7 +1,7 @@
 /**
  * Physioguide — groin pain (Doha) + hip-related groin rules for AI consult.
  * Source: knowledge/clinical-reasoning/hip-groin-doha.md
- * Keep in sync with lib/physioguide-hip-groin-rules.ts
+ * Keep in sync with supabase/functions/ai-consult/response-rules.ts
  */
 
 export const AI_HIP_GROIN_DOHA_RULES = `DOLOR DE INGLE / GROIN DOHA + HIP-RELATED (Physioguide — CRÍTICO cuando localización = ingle/medial/pubis/canal/profundo):
@@ -24,7 +24,9 @@ MARCO DOHA — PATRONES DE COMPATIBILIDAD (clusters, no inventar Sn/Sp):
 
 HIP-RELATED GROIN (profundo + mecánico intraarticular):
 Deep groin + sentarse/coche + flexión/rotación + FADIR reproduce dolor profundo familiar + FABER inguinal → ↑ cadera (FAI/labrum/OA/displasia/snapping interno/fractura estrés).
+Secundarios (cluster, no aislados): log roll, Stinchfield, hip scour — dolor inguinal profundo familiar ↑ cadera; NUNCA confirman labrum/FAI/OA grado. Evitar scour si sospecha ósea.
 FABER: registrar INGLE vs POSTERIOR vs LATERAL. Posterior → SI/lumbar; lateral → GTPS (otros módulos).
+Thomas: dolor ANTERIOR familiar / extensión limitada → ↑ iliopsoas/flexor; no bursitis automática. Si dolor profundo al sentarse → priorizar hip-related.
 
 ROM: IR limitada + dolor profundo inguinal → ↑ cadera. Activo limitado + pasivo normal → muscular/tendinoso.
 

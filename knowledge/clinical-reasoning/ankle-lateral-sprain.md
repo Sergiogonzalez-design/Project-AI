@@ -145,6 +145,13 @@ ROTACIÓN EXTERNA / DORSIFLEXIÓN FORZADA
 ### Cajón anterior — traslación ↑ vs contralateral; compatible lateral, **no confirma grado**; mejor diferido 4–5 días. Dolor sin holgura ≠ positivo.
 
 ### Squeeze — dolor anterior alto familiar; aumenta sindesmosis, no confirma rotura.
+**Catalog:** `syndesmosis-squeeze`. **NUNCA confundir** con Thompson (compresión de gemelo = Aquiles).
+
+### Kleiger / rotación externa — dolor tibiofibular alto familiar; completa cluster sindesmosis.
+**Catalog:** `kleiger`.
+
+### Talar tilt — dolor/laxitud CFL o complejo lateral; mejor diferido; no inventar grado.
+**Catalog:** `talar-tilt`.
 
 ### Hop — solo Ottawa − y apoyo seguro; contexto, no regla de oro.
 

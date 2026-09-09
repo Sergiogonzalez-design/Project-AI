@@ -15,6 +15,11 @@ const ANKLE_FOOT_TREE: ClinicalReasoningTree = {
     "heel-raise": "ankle_heel_raise",
     "slr-lasegue": "ankle_slr",
     "hop-test": "ankle_hop",
+    "syndesmosis-squeeze": "ankle_syndesmosis_squeeze",
+    kleiger: "ankle_kleiger",
+    "talar-tilt": "ankle_talar_tilt",
+    mulder: "ankle_mulder",
+    "tinel-tarsal": "ankle_tinel_tarsal",
   },
   nodes: {
     af_master_entry: conclusionNode(
@@ -199,6 +204,25 @@ const ANKLE_FOOT_TREE: ClinicalReasoningTree = {
           rationale: "Dolor más distal o inestabilidad persistente.",
         },
       ],
+      { nextNodeId: "ankle_talar_tilt" }
+    ),
+    ankle_talar_tilt: testNode(
+      "ankle_talar_tilt",
+      "talar-tilt",
+      branch("ankle_cfl_hint", "Dolor / laxitud CFL familiar"),
+      branch("ankle_hop", "Talar tilt no familiar")
+    ),
+    ankle_cfl_hint: conclusionNode(
+      "ankle_cfl_hint",
+      "Compatible con CFL / complejo lateral más amplio",
+      "Talar tilt familiar apoya CFL además de ATFL. Mejor diferido. No inventar grado.",
+      [
+        {
+          name: "Esguince CFL / complejo lateral",
+          probability: "alta",
+          rationale: "Inversión + talar tilt familiar.",
+        },
+      ],
       { nextNodeId: "ankle_hop" }
     ),
     ankle_syndesmosis_hint: conclusionNode(
@@ -215,6 +239,36 @@ const ANKLE_FOOT_TREE: ClinicalReasoningTree = {
           name: "Esguince leve / contusión sin laxitud detectable",
           probability: "media",
           rationale: "Agudo con guarda o microlesión.",
+        },
+      ],
+      { nextNodeId: "ankle_syndesmosis_squeeze" }
+    ),
+    ankle_syndesmosis_squeeze: testNode(
+      "ankle_syndesmosis_squeeze",
+      "syndesmosis-squeeze",
+      branch("ankle_kleiger", "Dolor tibiofibular alto familiar"),
+      branch("ankle_kleiger", "Squeeze no familiar — completar Kleiger")
+    ),
+    ankle_kleiger: testNode(
+      "ankle_kleiger",
+      "kleiger",
+      branch("ankle_syndesmosis_high", "Dolor sindesmosis alto familiar"),
+      branch("ankle_hop", "Kleiger no familiar")
+    ),
+    ankle_syndesmosis_high: conclusionNode(
+      "ankle_syndesmosis_high",
+      "Compatible con lesión de sindesmosis (esguince alto)",
+      "Squeeze y/o Kleiger con dolor tibiofibular alto + mecanismo RE/dorsiflexión → sindesmosis ↑. No ATFL simple. No inventar grado.",
+      [
+        {
+          name: "Lesión de sindesmosis",
+          probability: "alta",
+          rationale: "Cluster RE/dorsiflexión + dolor alto + squeeze/Kleiger.",
+        },
+        {
+          name: "ATFL coexistente",
+          probability: "media",
+          rationale: "Inversión + dolor lateral también posible.",
         },
       ],
       { nextNodeId: "ankle_hop" }
@@ -271,12 +325,12 @@ const ANKLE_FOOT_TREE: ClinicalReasoningTree = {
       "ankle_windlass",
       "windlass",
       branch("ankle_plantar_fasciitis", "Dolor arco / inserción familiar"),
-      branch("ankle_hop", "Sin dolor fascial")
+      branch("ankle_tinel_tarsal", "Sin dolor fascial — cribar túnel/antepié")
     ),
     ankle_plantar_fasciitis: conclusionNode(
       "ankle_plantar_fasciitis",
       "Compatible con fasciopatía plantar",
-      "Windlass familiar apoya; negativo no excluye. Integrar primeros pasos y palpación. Cribar S1 si procede.",
+      "Windlass familiar apoya; negativo no excluye. Integrar primeros pasos y palpación. Cribar S1 / túnel / neuroma si procede.",
       [
         {
           name: "Fasciopatía plantar",
@@ -289,7 +343,44 @@ const ANKLE_FOOT_TREE: ClinicalReasoningTree = {
           rationale: "Si cuadro neural o tests locales pobres.",
         },
       ],
-      { nextNodeId: "ankle_hop" }
+      { nextNodeId: "ankle_tinel_tarsal" }
+    ),
+    ankle_tinel_tarsal: testNode(
+      "ankle_tinel_tarsal",
+      "tinel-tarsal",
+      branch("ankle_tarsal_tunnel", "Hormigueo / ardor familiar plantar"),
+      branch("ankle_mulder", "Sin Tinel — valorar antepié")
+    ),
+    ankle_tarsal_tunnel: conclusionNode(
+      "ankle_tarsal_tunnel",
+      "Compatible con irritación del túnel tarsiano",
+      "Tinel tarsal + ardor/hormigueo medial-plantar → túnel tarsiano ↑. No uses Tinel de muñeca. Diferenciar de fascitis y S1.",
+      [
+        {
+          name: "Túnel tarsiano / nervio tibial",
+          probability: "alta",
+          rationale: "Parestesias familiares + Tinel tarsal.",
+        },
+      ],
+      { nextNodeId: "ankle_mulder" }
+    ),
+    ankle_mulder: testNode(
+      "ankle_mulder",
+      "mulder",
+      branch("ankle_morton", "Dolor / click interdigital familiar"),
+      branch("ankle_hop", "Mulder no familiar")
+    ),
+    ankle_morton: conclusionNode(
+      "ankle_morton",
+      "Compatible con neuroma / irritación interdigital",
+      "Mulder familiar en antepié → neuroma/irritación ↑. Click solo no confirma. No es fascitis de talón.",
+      [
+        {
+          name: "Neuroma de Morton / metatarsalgia interdigital",
+          probability: "alta",
+          rationale: "Dolor antepié + Mulder familiar.",
+        },
+      ]
     ),
     ankle_hop: testNode(
       "ankle_hop",
@@ -366,6 +457,10 @@ const KNEE_TREE: ClinicalReasoningTree = {
     "valgus-stress-mcl": "knee_valgus",
     "varus-stress-lcl": "knee_varus",
     "posterior-drawer-pcl": "knee_posterior_drawer",
+    "noble-compression": "knee_noble",
+    "ober-test": "knee_ober",
+    "patellar-apprehension": "knee_patellar_apprehension",
+    "dial-test": "knee_dial",
   },
   nodes: {
     knee_master_entry: conclusionNode(
@@ -483,7 +578,30 @@ const KNEE_TREE: ClinicalReasoningTree = {
           rationale: "Dolor tendón inferior + salto/carga.",
         },
       ],
-      { nextNodeId: "knee_patellofemoral" }
+      { nextNodeId: "knee_patellar_apprehension" }
+    ),
+    knee_patellar_apprehension: testNode(
+      "knee_patellar_apprehension",
+      "patellar-apprehension",
+      branch("knee_patellar_instability", "Aprensión / sensación de luxación familiar"),
+      branch("knee_patellofemoral", "Sin aprensión — PFPS/tendón")
+    ),
+    knee_patellar_instability: conclusionNode(
+      "knee_patellar_instability",
+      "Compatible con inestabilidad rotuliana",
+      "Aprensión rotuliana familiar (± historia de luxación/desplazamiento). No etiquetar LCA. Dolor PFPS sin aprensión ≠ inestabilidad.",
+      [
+        {
+          name: "Inestabilidad / subluxación rotuliana",
+          probability: "alta",
+          rationale: "Aprensión familiar ± episodio de rótula que se sale.",
+        },
+        {
+          name: "PFPS coexistente",
+          probability: "media",
+          rationale: "Dolor anterior puede coexistir tras inestabilidad.",
+        },
+      ]
     ),
     knee_route_instability: conclusionNode(
       "knee_route_instability",
@@ -716,6 +834,35 @@ const KNEE_TREE: ClinicalReasoningTree = {
           rationale: "Línea lateral + torsión/bloqueo.",
         },
       ],
+      { nextNodeId: "knee_dial" }
+    ),
+    knee_dial: testNode(
+      "knee_dial",
+      "dial-test",
+      branch("knee_plc_high", "Rotación externa asimétrica (30° ± 90°)"),
+      branch("knee_mcmurray", "Dial simétrico / no valorable")
+    ),
+    knee_plc_high: conclusionNode(
+      "knee_plc_high",
+      "Sospecha de complejo posterolateral (PLC)",
+      "Dial asimétrico + mecanismo varo/hiperextensión → PLC ↑ (± LCP si asimetría también a 90°). No confirma grado. Multiplanar severa → urgencia.",
+      [
+        {
+          name: "Lesión PLC",
+          probability: "alta",
+          rationale: "Dial asimétrico + varo/hiperextensión / dolor posterolateral.",
+        },
+        {
+          name: "LCP asociado",
+          probability: "media",
+          rationale: "Asimetría a 30° y 90°.",
+        },
+        {
+          name: "LCL aislado",
+          probability: "baja",
+          rationale: "Si solo varo sin dial/rotación.",
+        },
+      ],
       { nextNodeId: "knee_mcmurray" }
     ),
     knee_itb_cluster: conclusionNode(
@@ -734,7 +881,44 @@ const KNEE_TREE: ClinicalReasoningTree = {
           rationale: "Si aparece bloqueo o trauma diferido, reevaluar.",
         },
       ],
-      { nextNodeId: "knee_mcmurray" }
+      { nextNodeId: "knee_noble" }
+    ),
+    knee_noble: testNode(
+      "knee_noble",
+      "noble-compression",
+      branch("knee_itb_confirmed", "Dolor lateral familiar sobre cóndilo"),
+      branch("knee_ober", "Noble no familiar")
+    ),
+    knee_itb_confirmed: conclusionNode(
+      "knee_itb_confirmed",
+      "Compatible con ITB (Noble familiar)",
+      "Noble reproduce dolor lateral habitual + patrón carrera/escaleras → ITB ↑. No LCL. Completar Ober si procede.",
+      [
+        {
+          name: "Síndrome banda iliotibial",
+          probability: "alta",
+          rationale: "Noble familiar + sobreuso lateral.",
+        },
+      ],
+      { nextNodeId: "knee_ober" }
+    ),
+    knee_ober: testNode(
+      "knee_ober",
+      "ober-test",
+      branch("knee_itb_ober_pos", "Limitación / dolor ITB familiar"),
+      branch("knee_mcmurray", "Ober no familiar — cribar menisco si duda")
+    ),
+    knee_itb_ober_pos: conclusionNode(
+      "knee_itb_ober_pos",
+      "Apoyo TFL–ITB (Ober)",
+      "Ober con dolor/limitación familiar apoya ITB/TFL. Tirantez sola no diagnostica. No confundir con LCL.",
+      [
+        {
+          name: "ITB / TFL-related",
+          probability: "alta",
+          rationale: "Ober familiar en contexto lateral de sobreuso.",
+        },
+      ]
     ),
     knee_posterior_drawer: testNode(
       "knee_posterior_drawer",
@@ -1394,12 +1578,26 @@ const ELBOW_TREE: ClinicalReasoningTree = {
       "el_anterior_gate",
       "route-elbow-anterior",
       branch("el_distal_biceps_cluster", "Anterior + pop / debilidad flexión-supinación"),
-      branch("el_unclear_cluster", "Sin patrón claro"),
+      branch("el_oa_gate", "Sin patrón de bíceps distal"),
       {
         title: "¿Dolor anterior con pop o debilidad?",
         description:
-          "Pop + hueco en antebrazo + debilidad flexión/supinación → sospecha bíceps distal. Sin eso → ampliar anamnesis.",
+          "Pop + hueco en antebrazo + debilidad flexión/supinación → sospecha bíceps distal. Sin eso → cribar artrosis / cuadro inespecífico.",
         procedure: "Enrutado clínico de trauma/rotura.",
+      }
+    ),
+    el_oa_gate: testNode(
+      "el_oa_gate",
+      "route-elbow-oa",
+      branch("el_oa_cluster", "Rigidez + carga / crepitación (edad o post-trauma)"),
+      branch("el_unclear_cluster", "Sin patrón mecánico degenerativo"),
+      {
+        title: "¿Pérdida de movilidad + dolor al cargar/apoyar?",
+        description:
+          "Edad media-avanzada o fractura previa + ROM limitado + carga → OA de codo compatible. Solo epicóndilo + agarre → no forzar OA.",
+        procedure: "Enrutado clínico (sin test especial con Sn/Sp).",
+        evidenceNote:
+          "OA de codo: cluster historia+ROM+carga±RX. Cozen≠OA. No inventar Sn/Sp de crepitación.",
       }
     ),
     el_let_cluster: conclusionNode(
@@ -1473,15 +1671,42 @@ const ELBOW_TREE: ClinicalReasoningTree = {
       ],
       { nextNodeId: "el_hook" }
     ),
+    el_oa_cluster: conclusionNode(
+      "el_oa_cluster",
+      "Compatible con artrosis / cambios degenerativos de codo",
+      "Cluster: pérdida de ROM + dolor mecánico al cargar/apoyar ± crepitación ± antecedente óseo. No confirmado por Cozen/Mill. RX si rigidez persistente o plan de manejo. Fiebre/calor → no etiquetar OA.",
+      [
+        {
+          name: "Artrosis / OA de codo",
+          probability: "alta",
+          rationale: "Rigidez mecánica + carga familiar ± edad/post-trauma.",
+        },
+        {
+          name: "Cuerpo libre / bloqueo mecánico",
+          probability: "media",
+          rationale: "Si bloqueo duro o trauma reciente.",
+        },
+        {
+          name: "LET coexistente",
+          probability: "baja",
+          rationale: "Solo si también hay cluster epicóndilo lateral.",
+        },
+      ]
+    ),
     el_unclear_cluster: conclusionNode(
       "el_unclear_cluster",
       "Cuadro de codo sin patrón epicondílico claro",
-      "Revisar trauma, cabeza radial, neural y cervical. Evitar etiquetar LET sin cluster.",
+      "Revisar trauma, cabeza radial, neural, OA (si hay rigidez) y cervical. Evitar etiquetar LET sin cluster.",
       [
         {
           name: "Cuadro inespecífico — ampliar anamnesis",
           probability: "alta",
           rationale: "Sin localización ni carga familiar típicas.",
+        },
+        {
+          name: "Artrosis de codo (si hay pérdida de ROM)",
+          probability: "media",
+          rationale: "Edad/post-trauma + carga + crepitación.",
         },
         {
           name: "Referido cervical / neural",
@@ -2081,11 +2306,11 @@ const FINGER_TREE: ClinicalReasoningTree = {
       "fg_trauma_type",
       "route-finger-trauma-type",
       branch("fg_jersey_mallet_gate", "Flexión forzada / golpe en punta"),
-      branch("fg_thumb_gate", "Valgo / esguince de pulgar u otro"),
+      branch("fg_hyperextension_gate", "Hiperextensión / valgo / otro"),
       {
         title: "¿Mecanismo jersey/mallet (flexión o golpe en punta)?",
         description:
-          "Agarre forzado + no flexiona IFP → jersey. Golpe en punta + no extiende IFD → mallet. Valgo MCP pulgar → UCL.",
+          "Agarre forzado + no flexiona IFP → jersey. Golpe en punta + no extiende IFD → mallet. Hiperextensión IFP → placa volar. Valgo MCP pulgar → UCL.",
         procedure: "Enrutado por mecanismo.",
       }
     ),
@@ -2103,6 +2328,20 @@ const FINGER_TREE: ClinicalReasoningTree = {
           "Jersey/mallet: déficit activo; pasivo puede estar conservado. Valoración médica/imagen.",
       }
     ),
+    fg_hyperextension_gate: testNode(
+      "fg_hyperextension_gate",
+      "route-finger-hyperextension",
+      branch("fg_volar_plate_cluster", "Hiperextensión IFP + dolor volar"),
+      branch("fg_thumb_gate", "Valgo pulgar / torsión IF / otro"),
+      {
+        title: "¿Hiperextensión de la IFP con dolor volar?",
+        description:
+          "Dedo forzado hacia atrás + dolor en cara palmar de la IFP + flexión/extensión activas conservadas → placa volar. Valgo MCP pulgar → UCL.",
+        procedure: "Enrutado por mecanismo (sin Sn/Sp inventados).",
+        evidenceNote:
+          "Placa volar IFP: cluster mecanismo+localización volar+activos OK. RX si hinchazón/bloqueo.",
+      }
+    ),
     fg_thumb_gate: testNode(
       "fg_thumb_gate",
       "route-finger-thumb",
@@ -2111,7 +2350,7 @@ const FINGER_TREE: ClinicalReasoningTree = {
       {
         title: "¿Dolor/inestabilidad en la base del pulgar (MCP)?",
         description:
-          "Tras forzar el pulgar hacia fuera (esquí, balón) → UCL. Si IF de otro dedo tras torsión → esguince IF.",
+          "Tras forzar el pulgar hacia fuera (esquí, balón) → UCL (± cribado Stener si holgura marcada). Si IF de otro dedo tras torsión → esguince IF.",
         procedure: "Enrutado por localización y mecanismo.",
       }
     ),
@@ -2191,13 +2430,18 @@ const FINGER_TREE: ClinicalReasoningTree = {
     ),
     fg_ucl_cluster: conclusionNode(
       "fg_ucl_cluster",
-      "Compatible con lesión UCL del pulgar",
-      "Mecanismo en valgo + dolor/inestabilidad MCP. Estrés valgo apoya; no confirma grado. Imagen si persiste.",
+      "Compatible con lesión UCL del pulgar (± cribado Stener)",
+      "Mecanismo en valgo + dolor/inestabilidad MCP. Estrés valgo apoya; no confirma grado. Holgura marcada / sin tope ± bump → sospecha completa/Stener → valoración/imagen (Stener 1962; sin Sn/Sp inventados).",
       [
         {
           name: "Lesión UCL pulgar (skier's / gamekeeper)",
           probability: "alta",
           rationale: "Valgo + MCP ulnar familiar ± laxitud.",
+        },
+        {
+          name: "Sospecha UCL completa / Stener",
+          probability: "media",
+          rationale: "Holgura marcada vs contralateral ± bump cubital.",
         },
         {
           name: "Contusión MCP / esguince parcial",
@@ -2206,6 +2450,28 @@ const FINGER_TREE: ClinicalReasoningTree = {
         },
       ],
       { nextNodeId: "fg_ucl_stress" }
+    ),
+    fg_volar_plate_cluster: conclusionNode(
+      "fg_volar_plate_cluster",
+      "Compatible con lesión de placa volar IFP",
+      "Hiperextensión + dolor volar IFP + flexión/extensión activas conservadas. No jersey/mallet. RX si hinchazón marcada, bloqueo o duda ósea. No inventar Sn/Sp de un test nominado.",
+      [
+        {
+          name: "Placa volar IFP",
+          probability: "alta",
+          rationale: "Mecanismo de hiperextensión + localización volar.",
+        },
+        {
+          name: "Esguince colateral IF coexistente",
+          probability: "media",
+          rationale: "Si también hay componente torsional/lateral.",
+        },
+        {
+          name: "Avulsión ósea (cribado RX)",
+          probability: "media",
+          rationale: "Hinchazón/bloqueo o trauma mayor.",
+        },
+      ]
     ),
     fg_trigger_cluster: conclusionNode(
       "fg_trigger_cluster",
@@ -2308,6 +2574,8 @@ const NECK_TREE: ClinicalReasoningTree = {
     spurling: "nk_spurling",
     ultt: "nk_ultt",
     "cervical-distraction": "nk_distraction",
+    "flexion-rotation": "nk_frt",
+    bakody: "nk_bakody",
   },
   nodes: {
     nk_master_entry: conclusionNode(
@@ -2375,7 +2643,7 @@ const NECK_TREE: ClinicalReasoningTree = {
     nk_radiculopathy_cluster: conclusionNode(
       "nk_radiculopathy_cluster",
       "Compatible con radiculopatía cervical",
-      "Cluster Wainner (ULTT + Spurling + distracción que alivia + rotación ipsilateral <60°). Spurling negativo no excluye. No inventar nivel de raíz ni hernia confirmada.",
+      "Cluster Wainner (ULTT + Spurling + distracción que alivia + rotación ipsilateral <60°) ± Bakody (alivio con mano en la cabeza). Spurling negativo no excluye. No inventar nivel de raíz ni hernia confirmada.",
       [
         {
           name: "Radiculopatía cervical",
@@ -2393,12 +2661,12 @@ const NECK_TREE: ClinicalReasoningTree = {
     nk_cervicogenic_cluster: conclusionNode(
       "nk_cervicogenic_cluster",
       "Compatible con cefalea cervicogénica (desde cuello)",
-      "Cefalea unilateral occipital→sien + provocación cervical. Spurling puede apoyar si reproduce cefalea familiar; no confirma. Ver también árbol de cabeza.",
+      "Cefalea unilateral occipital→sien + provocación cervical. FRT (C1–C2) y/o Spurling pueden apoyar si reproducen cefalea familiar; no confirman (Ogince 2007). Ver también árbol de cabeza.",
       [
         {
-          name: "Cefalea cervicogénica",
+          name: "Cefalea cervicogénica / upper C",
           probability: "alta",
-          rationale: "Provocación cervical familiar de la cefalea.",
+          rationale: "Provocación cervical familiar de la cefalea ± FRT.",
         },
         {
           name: "Cervicalgia mecánica coexistente",
@@ -2406,7 +2674,7 @@ const NECK_TREE: ClinicalReasoningTree = {
           rationale: "Dolor local + cefalea parcial.",
         },
       ],
-      { nextNodeId: "nk_spurling" }
+      { nextNodeId: "nk_frt" }
     ),
     nk_mechanical_cluster: conclusionNode(
       "nk_mechanical_cluster",
@@ -2471,8 +2739,22 @@ const NECK_TREE: ClinicalReasoningTree = {
     nk_spurling: testNode(
       "nk_spurling",
       "spurling",
-      branch("nk_radiculopathy_cluster", "Reproduce dolor/hormigueo de brazo familiar"),
+      branch("nk_bakody", "Reproduce dolor/hormigueo de brazo familiar"),
       branch("nk_distraction", "Spurling no familiar / solo cuello")
+    ),
+    nk_bakody: testNode(
+      "nk_bakody",
+      "bakody",
+      branch("nk_radiculopathy_cluster", "Alivia síntomas de brazo (mano en la cabeza)"),
+      branch("nk_distraction", "Sin alivio Bakody — seguir cluster"),
+      {
+        title: "¿Alivio al poner la mano en la cabeza (Bakody)?",
+        description:
+          "Alivio del brazo familiar apoya radiculopatía en cluster. Si solo alivia el hombro → RCRSP. No confirma hernia.",
+        procedure: "Abducción del brazo sintomático; mano sobre la cabeza.",
+        evidenceNote:
+          "Bakody = signo clínico cualitativo; evidencia cuantitativa limitada. Complemento de Wainner.",
+      }
     ),
     nk_distraction: testNode(
       "nk_distraction",
@@ -2485,6 +2767,20 @@ const NECK_TREE: ClinicalReasoningTree = {
       "ultt",
       branch("nk_radiculopathy_cluster", "Reproduce síntomas familiares de brazo"),
       branch("nk_mechanical_cluster", "Solo tirantez inespecífica")
+    ),
+    nk_frt: testNode(
+      "nk_frt",
+      "flexion-rotation",
+      branch("nk_cervicogenic_cluster", "FRT limitado o cefalea familiar"),
+      branch("nk_spurling", "FRT no familiar — cribar Spurling"),
+      {
+        title: "¿Flexión–rotación (FRT) limitada o familiar?",
+        description:
+          "En flexión máxima, rotación C1–C2 asimétrica o que reproduce la cefalea → upper C / CGH ↑. No confirma. Contraindicado si trauma/RA/Down/alarma vascular.",
+        procedure: "Supino; flexión máxima cervical; rotación pasiva bilateral.",
+        evidenceNote:
+          "Ogince 2007 FRT en CGH relacionada con C1/2. Precisión aislada mixta; no inventar Sn/Sp.",
+      }
     ),
   },
 };
@@ -2501,18 +2797,22 @@ const BACK_TREE: ClinicalReasoningTree = {
     kemp: "bk_slr",
     schober: "bk_slr",
     faber: "bk_slr",
+    "thigh-thrust": "bk_thigh_thrust",
+    "si-distraction": "bk_si_distraction",
+    "si-compression": "bk_si_compression",
+    "active-slr": "bk_aslr",
   },
   nodes: {
     bk_master_entry: conclusionNode(
       "bk_master_entry",
-      "Lumbar — árbol maestro Physioguide",
-      "Flujo: cauda/RF → trauma/fractura → ¿ciática vs mecánico vs nalga/SI vs inflamatorio? → SLR ± cruzado / Kemp / FABER / Schober. Nunca SLR = hernia; nunca Kemp = faceta.",
+      "Espalda — árbol maestro Physioguide (lumbar + torácico)",
+      "Flujo: cauda/RF visceral → trauma/fractura → ¿espalda media/interescapular vs lumbar/ciática/SI? → AROM T / SLR / Kemp / FABER. Nunca SLR = hernia; nunca Kemp/faceta T confirmada; cardíaco ANTES si pecho/disnea.",
       [
         {
-          name: "Enrutar por urgencia y patrón radicular vs local",
+          name: "Enrutar por urgencia y región (T vs lumbar)",
           probability: "alta",
           rationale:
-            "Cauda → hospital. Pierna bajo rodilla → ciática. Nalga/SI → FABER. Rigidez inflamatoria → Schober. Solo lumbar → mecánico.",
+            "Cauda/visceral → hospital. Interescapular → TSP + cuello/hombro. Pierna bajo rodilla → ciática. Nalga/SI → FABER. Solo lumbar → mecánico.",
         },
       ],
       { nextNodeId: "bk_cauda_gate" }
@@ -2533,13 +2833,47 @@ const BACK_TREE: ClinicalReasoningTree = {
       "bk_trauma_gate",
       "route-back-trauma",
       branch("bk_fracture_cluster", "Trauma mayor / osteoporosis / imposibilidad de apoyar"),
-      branch("bk_radicular_gate", "Sin sospecha de fractura dominante"),
+      branch("bk_thoracic_gate", "Sin sospecha de fractura dominante"),
       {
         title: "¿Trauma mayor o sospecha de fractura?",
         description:
-          "Caída/golpe + dolor óseo intenso, edad/osteoporosis o no puede apoyar → imagen. Sin eso → patrón radicular/mecánico.",
+          "Caída/golpe + dolor óseo intenso, edad/osteoporosis o no puede apoyar → imagen. Sin eso → ¿espalda media vs lumbar?",
         procedure: "Enrutado de seguridad.",
       }
+    ),
+    bk_thoracic_gate: testNode(
+      "bk_thoracic_gate",
+      "route-back-thoracic",
+      branch("bk_thoracic_cluster", "Espalda media / interescapular / pared torácica"),
+      branch("bk_radicular_gate", "Espalda baja / glúteo / pierna dominante"),
+      {
+        title: "¿Dolor dominante en espalda media o entre omóplatos?",
+        description:
+          "Interescapular/T/pared → RF visceral ya cribados + AROM T + cuello/hombro. Lumbar/pierna → ciática/mecánico/SI.",
+        procedure: "Enrutado por localización (Briganti/OPTIMa: TSP sin CPG específica).",
+      }
+    ),
+    bk_thoracic_cluster: conclusionNode(
+      "bk_thoracic_cluster",
+      "Compatible con dolor torácico mecánico no específico (post-RF)",
+      "Tras RF visceral/fractura: AROM T + dolor familiar; cribado cervical y hombro; respiración/pared. Nunca T4/faceta/costilla confirmada. Evidencia de tests diagnósticos limitada (OPTIMa 2015; Briganti 2023).",
+      [
+        {
+          name: "TSP mecánico no específico",
+          probability: "media",
+          rationale: "Local T + mecánica familiar sin alarma visceral.",
+        },
+        {
+          name: "Contribución cervicotorácica",
+          probability: "media",
+          rationale: "Si el cuello modifica el dolor interescapular.",
+        },
+        {
+          name: "Pared torácica / costal MSK",
+          probability: "baja",
+          rationale: "Si respiración/tos/pared familiar y RF visceral OK.",
+        },
+      ]
     ),
     bk_radicular_gate: testNode(
       "bk_radicular_gate",
@@ -2633,21 +2967,26 @@ const BACK_TREE: ClinicalReasoningTree = {
     ),
     bk_si_cluster: conclusionNode(
       "bk_si_cluster",
-      "Compatible con dolor sacroilíaco / nalga",
-      "Nalga dominante. FABER con dolor posterior apoya SI/lumbar posterior; dolor inguinal → cadera. Completa la batería lumbar.",
+      "Compatible con dolor sacroilíaco / nalga — cluster Laslett",
+      "Nalga medial / Fortin. FABER posterior = cribado. Preferir ≥2–3 provocaciones Laslett (thigh thrust, distraction, compression, sacral thrust ± Gaenslen) con dolor familiar. Evidencia del composite mixta — no confirmar SI ni infiltrar por un test. Diferenciar cadera (ingle) y ciática (SLR).",
       [
         {
-          name: "Dolor sacroilíaco / nalga",
+          name: "Irritación sacroilíaca (cluster)",
           probability: "alta",
-          rationale: "Localización nalga ± provocación FABER posterior.",
+          rationale: "Localización SI + provocaciones familiares.",
         },
         {
           name: "Cadera / deep gluteal",
           probability: "media",
           rationale: "Si FABER inguinal o patrón de cadera.",
         },
+        {
+          name: "Referido lumbar / radicular",
+          probability: "media",
+          rationale: "Si SLR familiar o dolor lumbar central.",
+        },
       ],
-      { nextNodeId: "bk_slr" }
+      { nextNodeId: "bk_thigh_thrust" }
     ),
     bk_inflammatory_path: conclusionNode(
       "bk_inflammatory_path",
@@ -2806,7 +3145,7 @@ const BACK_TREE: ClinicalReasoningTree = {
     bk_nonspecific: conclusionNode(
       "bk_nonspecific",
       "Lumbalgia mecánica sin signos estructurales mayores",
-      "Batería lumbar completa (SLR, cruzado, Kemp, FABER, Schober). Sin radicular claro ni RF. Reevaluar si aparecen alarmas.",
+      "Batería lumbar completa (SLR, cruzado, Kemp, FABER, Schober) ± SI Laslett si nalga. Sin radicular claro ni RF. Reevaluar si aparecen alarmas.",
       [
         {
           name: "Lumbalgia mecánica inespecífica",
@@ -2814,6 +3153,68 @@ const BACK_TREE: ClinicalReasoningTree = {
           rationale: "Sin cluster ciático ni inflamatorio dominante.",
         },
       ]
+    ),
+    bk_thigh_thrust: testNode(
+      "bk_thigh_thrust",
+      "thigh-thrust",
+      branch("bk_si_provoked", "Dolor SI / nalga medial familiar"),
+      branch("bk_si_distraction", "Thigh thrust no familiar — seguir Laslett")
+    ),
+    bk_si_distraction: testNode(
+      "bk_si_distraction",
+      "si-distraction",
+      branch("bk_si_provoked", "Dolor SI familiar"),
+      branch("bk_si_compression", "Distracción no familiar")
+    ),
+    bk_si_compression: testNode(
+      "bk_si_compression",
+      "si-compression",
+      branch("bk_si_provoked", "Dolor SI familiar"),
+      branch("bk_aslr", "Compresión no familiar — ASLR / pelvic girdle")
+    ),
+    bk_aslr: testNode(
+      "bk_aslr",
+      "active-slr",
+      branch("bk_pelvic_girdle", "Dolor/dificultad que mejora con compresión pélvica"),
+      branch("bk_slr", "ASLR no familiar — continuar batería lumbar"),
+      {
+        title: "¿Active SLR difícil y mejora al estabilizar la pelvis?",
+        description:
+          "Compatible con pelvic girdle pain en cluster (embarazo/asimetría). No confirma SIJ ni hernia.",
+        procedure: "Elevación activa de pierna recta ± compresión pélvica.",
+        evidenceNote: "Mens ASLR / guías PGP — cualitativo; no inventar Sn/Sp.",
+      }
+    ),
+    bk_si_provoked: conclusionNode(
+      "bk_si_provoked",
+      "Compatible con irritación SIJ (cluster Laslett)",
+      "≥1–3 provocaciones familiares en contexto de dolor SI. Composite con evidencia mixta — no «SI confirmada». Completar ≥2–3 tests y cribado lumbar/cadera.",
+      [
+        {
+          name: "Irritación sacroilíaca (cluster)",
+          probability: "alta",
+          rationale: "Provocación SI familiar.",
+        },
+        {
+          name: "Lumbar / cadera coexistente",
+          probability: "media",
+          rationale: "Overlaps frecuentes.",
+        },
+      ],
+      { nextNodeId: "bk_si_distraction" }
+    ),
+    bk_pelvic_girdle: conclusionNode(
+      "bk_pelvic_girdle",
+      "Compatible con dolor de cintura pélvica (ASLR)",
+      "ASLR positivo en contexto (embarazo/carga asimétrica). No hernia. Combinar con Laslett si dolor SI local.",
+      [
+        {
+          name: "Pelvic girdle pain",
+          probability: "alta",
+          rationale: "ASLR + mejora con estabilización.",
+        },
+      ],
+      { nextNodeId: "bk_slr" }
     ),
     // Legacy aliases kept for any in-flight sessions / deep links.
     bk_sciatica_high: conclusionNode(
@@ -2886,6 +3287,13 @@ const HIP_TREE: ClinicalReasoningTree = {
     trendelenburg: "hp_lateral_trendelenburg",
     "slr-lasegue": "hp_posterior_slr",
     "hop-test": "hp_trauma_hop",
+    "resisted-adduction": "hp_resisted_adduction",
+    "resisted-hip-flexion": "hp_resisted_hip_flexion",
+    "thomas-test": "hp_thomas",
+    "resisted-abduction": "hp_resisted_abduction",
+    "log-roll": "hp_log_roll",
+    stinchfield: "hp_stinchfield",
+    "hip-scour": "hp_hip_scour",
   },
   nodes: {
     hp_master_entry: conclusionNode(
@@ -2987,6 +3395,78 @@ const HIP_TREE: ClinicalReasoningTree = {
           name: "Pubic / inguinal-related",
           probability: "baja",
           rationale: "Palpación pubis o canal inguinal + carga abdominal.",
+        },
+      ],
+      { nextNodeId: "hp_resisted_adduction" }
+    ),
+    hp_resisted_adduction: testNode(
+      "hp_resisted_adduction",
+      "resisted-adduction",
+      branch("hp_adductor_compatible", "Dolor medial familiar"),
+      branch("hp_resisted_hip_flexion", "Sin dolor medial / otro patrón")
+    ),
+    hp_adductor_compatible: conclusionNode(
+      "hp_adductor_compatible",
+      "Compatible con adductor-related groin pain",
+      "Dolor medial + aducción resistida familiar (± palpación) → adductor-related ↑ (Doha). Resistencia aislada no confirma. Continuar iliopsoas/hip-related si coexisten.",
+      [
+        {
+          name: "Adductor-related groin pain",
+          probability: "alta",
+          rationale: "Medial + resisted adduction familiar.",
+        },
+        {
+          name: "Pubic-related coexistente",
+          probability: "baja",
+          rationale: "Si también duele sínfisis/pubis central.",
+        },
+      ],
+      { nextNodeId: "hp_resisted_hip_flexion" }
+    ),
+    hp_resisted_hip_flexion: testNode(
+      "hp_resisted_hip_flexion",
+      "resisted-hip-flexion",
+      branch("hp_iliopsoas_compatible", "Dolor anterior familiar"),
+      branch("hp_thomas", "Sin dolor anterior claro")
+    ),
+    hp_iliopsoas_compatible: conclusionNode(
+      "hp_iliopsoas_compatible",
+      "Compatible con iliopsoas-related groin pain",
+      "Dolor anterior + flexión resistida familiar → iliopsoas-related ↑. No bursitis automática. Si profundo al sentarse → hip-related.",
+      [
+        {
+          name: "Iliopsoas-related groin pain",
+          probability: "alta",
+          rationale: "Anterior + resisted hip flexion familiar.",
+        },
+        {
+          name: "Hip-related coexistente",
+          probability: "media",
+          rationale: "Si FADIR/log roll también profundos.",
+        },
+      ],
+      { nextNodeId: "hp_thomas" }
+    ),
+    hp_thomas: testNode(
+      "hp_thomas",
+      "thomas-test",
+      branch("hp_thomas_flexor", "Extensión limitada / dolor anterior familiar"),
+      branch("hp_faber", "Thomas no familiar / sin limitación clara")
+    ),
+    hp_thomas_flexor: conclusionNode(
+      "hp_thomas_flexor",
+      "Compatible con acortamiento / irritación de flexores",
+      "Thomas con dolor anterior familiar → flexor/iliopsoas ↑. No confirma bursitis. Continuar FABER/FADIR para cribar hip-related.",
+      [
+        {
+          name: "Iliopsoas / flexor-related",
+          probability: "alta",
+          rationale: "Thomas familiar anterior.",
+        },
+        {
+          name: "Hip joint (si profundo)",
+          probability: "baja",
+          rationale: "Valorar FADIR si el dolor es profundo inguinal.",
         },
       ],
       { nextNodeId: "hp_faber" }
@@ -3167,19 +3647,25 @@ const HIP_TREE: ClinicalReasoningTree = {
     hp_lateral_branch: testNode(
       "hp_lateral_branch",
       "trendelenburg",
-      branch("hp_gtps_cluster", "Pelvis cae / dolor lateral"),
+      branch("hp_resisted_abduction", "Pelvis cae / dolor lateral"),
       branch("hp_lateral_lumbar", "Trendelenburg negativo")
     ),
     hp_lateral_trendelenburg: testNode(
       "hp_lateral_trendelenburg",
       "trendelenburg",
-      branch("hp_gtps_cluster", "Pelvis cae / dolor lateral familiar"),
+      branch("hp_resisted_abduction", "Pelvis cae / dolor lateral familiar"),
       branch("hp_lateral_lumbar", "Sin caída pelviana")
+    ),
+    hp_resisted_abduction: testNode(
+      "hp_resisted_abduction",
+      "resisted-abduction",
+      branch("hp_gtps_cluster", "Dolor lateral / trocantérico familiar"),
+      branch("hp_lateral_lumbar", "Sin dolor lateral familiar")
     ),
     hp_gtps_cluster: conclusionNode(
       "hp_gtps_cluster",
       "Compatible con GTPS / tendinopatía glútea",
-      "Dolor lateral + carga monopodal/Trendelenburg + palpación trocantérica (si consta) sugieren GTPS; no confirman bursitis ni rotura aisladas.",
+      "Dolor lateral + carga monopodal/Trendelenburg + abducción resistida familiar + palpación trocantérica (si consta) sugieren GTPS; no confirman bursitis ni rotura aisladas.",
       [
         {
           name: "GTPS / tendinopatía glúteo medio",
@@ -3267,20 +3753,56 @@ const HIP_TREE: ClinicalReasoningTree = {
     ),
     hp_fai: conclusionNode(
       "hp_fai",
-      "Conflicto femoroacetabular",
-      "FADIR positivo refuerza sospecha de pinzamiento anterior; NO confirma FAI sin correlación clínica e imagen.",
+      "Conflicto femoroacetabular / hip-related ↑",
+      "FADIR positivo refuerza sospecha de pinzamiento anterior / hip-related; NO confirma FAI sin correlación clínica e imagen. Completar cluster con log roll / Stinchfield / scour si seguro.",
       [
         {
-          name: "FAI cam/pincer",
+          name: "FAI cam/pincer / hip-related",
           probability: "alta",
           rationale: "Flexión-aducción-RI dolorosa familiar.",
+        },
+      ],
+      { nextNodeId: "hp_log_roll" }
+    ),
+    hp_log_roll: testNode(
+      "hp_log_roll",
+      "log-roll",
+      branch("hp_stinchfield", "Dolor inguinal profundo familiar"),
+      branch("hp_stinchfield", "Sin dolor profundo / otro patrón")
+    ),
+    hp_stinchfield: testNode(
+      "hp_stinchfield",
+      "stinchfield",
+      branch("hp_hip_scour", "Dolor inguinal profundo familiar"),
+      branch("hp_hip_scour", "Solo flexor superficial / negativo")
+    ),
+    hp_hip_scour: testNode(
+      "hp_hip_scour",
+      "hip-scour",
+      branch("hp_hip_cluster_done", "Scour familiar (± crepitación)"),
+      branch("hp_hip_cluster_done", "Scour no familiar / no realizado (sospecha ósea)")
+    ),
+    hp_hip_cluster_done: conclusionNode(
+      "hp_hip_cluster_done",
+      "Cluster hip-related (cualitativo)",
+      "Integrar FADIR ± log roll ± Stinchfield ± scour + ROM IR + historia. Compatible con cadera; ningún test aislado confirma labrum/FAI/OA. Evitar scour si red flag óseo.",
+      [
+        {
+          name: "Hip-related groin / FAIS / OA mecánica",
+          probability: "alta",
+          rationale: "Cluster de provocación inguinal profunda familiar.",
+        },
+        {
+          name: "Iliopsoas coexistente",
+          probability: "media",
+          rationale: "Si Stinchfield fue solo superficial anterior.",
         },
       ]
     ),
     hp_trendelenburg: testNode(
       "hp_trendelenburg",
       "trendelenburg",
-      branch("hp_gtps_cluster", "Pelvis cae"),
+      branch("hp_resisted_abduction", "Pelvis cae"),
       branch("hp_mild", "Trendelenburg negativo")
     ),
     hp_extraarticular: conclusionNode(

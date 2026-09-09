@@ -2,6 +2,7 @@
 
 import { ChatInterface } from "@/components/chat-interface";
 import { GuestNameGate } from "@/components/guest-name-gate";
+import { NavBackButton } from "@/components/nav-back-button";
 import { PhysioCodeGate } from "@/components/physio-code-gate";
 import { createClient } from "@/lib/supabase/client";
 import { guestNameStorageKey, isGuestUser } from "@/lib/guest-account";
@@ -25,10 +26,12 @@ function hasNamedThisGuest(userId: string): boolean {
 }
 
 export function FisioterapiaClient() {
-  const [linked, setLinked] = useState<LinkedPhysio | null>(null);
+  const [linked, setLinked] = useState<LinkedPhysio | null>(() =>
+    linkedPhysioCache?.physio_id ? linkedPhysioCache : null
+  );
   const [guestMode, setGuestMode] = useState(false);
   const [needsName, setNeedsName] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(Boolean(linkedPhysioCache?.physio_id));
 
   useEffect(() => {
     let cancelled = false;
@@ -39,14 +42,15 @@ export function FisioterapiaClient() {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) {
+          if (!cancelled) {
+            setLinked(null);
+            setReady(true);
+          }
           return;
         }
         const guest = isGuestUser(user);
         if (cancelled) return;
         setGuestMode(guest);
-        if (guest) {
-          setNeedsName(!hasNamedThisGuest(user.id));
-        }
 
         let next = linkedPhysioCache ?? null;
         if (!next?.physio_id) {
@@ -58,6 +62,28 @@ export function FisioterapiaClient() {
               : null;
         }
         linkedPhysioCache = next;
+
+        if (guest) {
+          if (hasNamedThisGuest(user.id)) {
+            setNeedsName(false);
+          } else {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("display_name")
+              .eq("id", user.id)
+              .maybeSingle();
+            const named = ((profile?.display_name as string | null) ?? "").trim().length >= 2;
+            if (named) {
+              try {
+                sessionStorage.setItem(guestNameStorageKey(user.id), "1");
+              } catch {
+                // ignore
+              }
+            }
+            if (!cancelled) setNeedsName(!named);
+          }
+        }
+
         if (!cancelled) {
           setLinked(next);
           setReady(true);
@@ -100,7 +126,10 @@ export function FisioterapiaClient() {
     }
 
     return (
-      <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+      <div className="relative flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+        <div className="absolute left-4 top-3 z-10 sm:left-6">
+          <NavBackButton fallbackHref="/consulta" />
+        </div>
         <PhysioCodeGate
           onLinked={(physio) => {
             linkedPhysioCache = physio;

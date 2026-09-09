@@ -7,6 +7,7 @@ import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
 import { chipClass } from "@/components/ui/chip-style";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
+import { QuestionnaireQuestionList } from "@/components/ui/questionnaire-question-list";
 import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote, skipQuestionnaireForUrgencyLabel } from "@/lib/consulta-red-flags-copy";
 
 import { useEffect } from "react";
@@ -202,6 +203,8 @@ export function ConsultaAdaptiveKnee({
     (q) => q.section === currentSection
   );
   const { urgent, triggered } = detectKneeRedFlags(answers);
+  const showUrgencyShortcut =
+    currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia;
   const isLastSection = sectionIndex >= sections.length - 1;
 
   useEffect(() => {
@@ -260,20 +263,32 @@ export function ConsultaAdaptiveKnee({
         {localizeKneeSection(currentSection, locale)}
       </h2>
 
-      {sectionQuestions.map((q) => (
-        <div key={q.id} data-question-id={q.id}>
-          <QuestionField q={q} answers={answers} onPatch={patch} locale={locale} />
-        </div>
-      ))}
+      {currentSection ? (
+        <QuestionnaireQuestionList sectionKey={String(currentSection)}>
+          {sectionQuestions.map((q) => (
+            <div key={q.id} data-question-id={q.id}>
+              <QuestionField q={q} answers={answers} onPatch={patch} locale={locale} />
+            </div>
+          ))}
+        </QuestionnaireQuestionList>
+      ) : null}
 
       {sectionError && <p className="mb-4 text-sm text-red-600">{sectionError}</p>}
 
-      <div className="mt-4 flex gap-3">
+      <div
+        className={
+          showUrgencyShortcut
+            ? "mt-4 flex flex-wrap items-center justify-center gap-2"
+            : "mt-4 flex gap-3"
+        }
+      >
         {sectionIndex > 0 && (
           <button
             type="button"
             onClick={() => onSectionIndexChange(sectionIndex - 1)}
-            className="btn-secondary flex-1"
+            className={
+              showUrgencyShortcut ? "btn-secondary btn-nav-compact" : "btn-secondary flex-1"
+            }
           >
             {consultaNavLabels(locale).previous}
           </button>
@@ -282,16 +297,18 @@ export function ConsultaAdaptiveKnee({
           <button
             type="button"
             onClick={handleNext}
-            className="btn-primary flex-1"
+            className={
+              showUrgencyShortcut ? "btn-primary btn-nav-compact" : "btn-primary flex-1"
+            }
           >
             {consultaNavLabels(locale).next}
           </button>
         )}
-        {currentSection === "red_flags" && urgent && !answers.acortar_por_urgencia && (
+        {showUrgencyShortcut && (
           <button
             type="button"
             onClick={handleSkipUrgency}
-            className="btn-secondary flex-1"
+            className="btn-secondary btn-nav-compact"
           >
             {skipQuestionnaireForUrgencyLabel(locale)}
           </button>

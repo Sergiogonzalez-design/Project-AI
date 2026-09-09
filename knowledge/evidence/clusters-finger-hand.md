@@ -44,23 +44,35 @@ NUNCA: Phalen = STC confirmado. NUNCA: Tinel = STC confirmado. NUNCA inventar Sn
 
 ---
 
-## CLUSTER: UCL PULGAR (gamekeeper / skier's thumb)
+## CLUSTER: UCL PULGAR (gamekeeper / skier's thumb) ± STENER
 
 **Componentes:** trauma en valgo pulgar + dolor MCP pulgar familiar + estrés UCL en valgo (laxitud/dolor vs contralateral) ± hematoma MCP ± pinza débil.
 
-**Cita:** Ritting et al. UCL thumb injuries *J Hand Surg Am* 2010.
+**Stener (sospecha, no confirmación):** holgura marcada / sin tope firme ± bump cubital MCP → valoración/imagen. No inventar Sn/Sp del bump (Stener 1962; revisiones UCL).
 
-**AI:** Compatible con lesión UCL. Estrés positivo ≠ rotura confirmada sin imagen. Diferenciar De Quervain (sin trauma valgo agudo típico).
+**Cita:** Stener *JBJS Br* 1962; Ritting et al. UCL thumb injuries *J Hand Surg Am* 2010.
+
+**AI:** Compatible con lesión UCL. Estrés positivo ≠ rotura ni Stener confirmados. Inestabilidad marcada → no esguince leve. Diferenciar De Quervain (sin trauma valgo agudo típico).
+
+---
+
+## CLUSTER: PLACA VOLAR IFP
+
+**Componentes:** hiperextensión IFP + dolor **volar** IFP familiar + flexión/extensión activas **conservadas** ± hematoma volar ± aprensión a hiperextender ± RX si duda ósea.
+
+**Cita:** Revisiones PIP volar plate (Hand Clinics / cirugía de mano). Cluster clínico; sin test especial con Sn/Sp robustos.
+
+**AI:** Compatible con placa volar. No jersey (flexión activa intacta). No mallet (IFD). No etiquetar «esguince banal» sin cribado óseo si hinchazón/bloqueo.
 
 ---
 
 ## CLUSTER: ESGUINCE INTERFALÁNGICO (IF)
 
-**Componentes:** trauma torsional/hiperextensión IF + dolor articular local familiar + flexión/extensión activas **conservadas** (sin déficit FDP/mallet dominante) ± hinchazón IF.
+**Componentes:** trauma torsional/lateral IF + dolor articular local familiar + flexión/extensión activas **conservadas** (sin déficit FDP/mallet dominante) ± hinchazón IF — **sin** patrón claro de placa volar (hiperextensión + volar dominante).
 
 **Cita:** Práctica clínica esguince IF; diferencial por tests activos FDP/IFD.
 
-**AI:** Compatible con esguince IF leve–moderado. Si falla flexión activa IFP → jersey. Si falla extensión activa IFD → mallet.
+**AI:** Compatible con esguince IF leve–moderado. Si falla flexión activa IFP → jersey. Si falla extensión activa IFD → mallet. Si hiperextensión + volar → placa volar.
 
 ---
 

@@ -16,11 +16,13 @@
 
 **Positive:** Criterios cumplidos → imagen. No es diagnóstico de esguince.
 
-**Limitations:** No sustituye juicio si hinchazón extrema, intoxicación, politrauma. Sensibilidad alta para **descartar** fractura; no «confirma» esguince.
+**Cited accuracy (Bachmann BMJ 2003 meta):** Sn pooled **97.6%** (IC95% 96.4–98.9); Sp mediana **31.5%** (IQR 23.8–44.4); LR− ~**0.08**. Ver `cited-diagnostic-accuracy.md`.
 
-**AI rule:** «Si no puedes apoyar y duele el hueso del tobillo → radiografía. Ottawa negativo reduce mucho la probabilidad de fractura, no de esguince.»
+**Limitations:** No sustituye juicio si hinchazón extrema, intoxicación, politrauma. Alta Sn para **descartar** fractura; Sp modesta → muchas RX si reglas +. No «confirma» esguince.
 
-**Citation:** Stiell IG et al. Decision rules for radiography in acute ankle injuries. *JAMA* 1993; validación posterior. Bachmann LM et al. meta-análisis Ottawa. *BMJ* 2003.
+**AI rule:** «Si no puedes apoyar y duele el hueso del tobillo → radiografía. Ottawa negativo reduce mucho la probabilidad de fractura (Bachmann ~Sn 97.6%), no de esguince.»
+
+**Citation:** Stiell IG et al. Decision rules for radiography in acute ankle injuries. *JAMA* 1993. Bachmann LM et al. *BMJ* 2003. `cited-diagnostic-accuracy.md`.
 
 ---
 
@@ -158,12 +160,130 @@
 
 ---
 
-## SINDESMOSIS (squeeze / dolor en dorsiflexión-RE) — cluster, no test único
+## TEST: SQUEEZE DE SINDESMOSIS (tibiofibular)
 
-Dolor tibiofibular anterior alto + mecanismo de rotación externa/dorsiflexión + squeeze o hop doloroso alto.
+**Purpose:** Provocar dolor de la sindesmosis (esguince «alto») comprimiendo tibia–peroné.
 
-**Limitations:** Squeeze aislado poco preciso.
+**Position:** Supino o sentado.
 
-**AI rule:** Esguince «alto» ≠ ATFL. No inventes grado de sindesmosis.
+**Procedure:** Comprimir tibia y peroné a mitad de pierna (o proximal) hacia la línea media. Registrar si el dolor es **tibiofibular anterior alto familiar** (no el Aquiles / gemelo).
 
-**Citation:** JOSPT ankle CPG; literatura de sindesmosis (Nussbaum / Williams) — cluster clínico + imagen si persiste.
+**Positive:** Reproduce dolor familiar en sindesmosis anterior (alta).
+
+**Pain location:** Tibiofibular anterior proximal al tobillo. Pantorrilla/Aquiles → otra rama (Thompson es otro «squeeze»).
+
+**Familiar pain:** Obligatorio. Presión ósea nueva ≠ sindesmosis.
+
+**Clinical meaning:** Apoya cluster de sindesmosis con mecanismo RE/dorsiflexión. NO confirma rotura ni grado. **No confundir** con Thompson (compresión de gemelo).
+
+**Limitations:** Precisión **mixta / limitada** aislada (JOSPT / literatura sindesmosis). Falsos positivos por contusión ósea. No inventar Sn/Sp.
+
+**Differential:** ATFL, fractura (Ottawa), contusión, peroneos.
+
+**AI rule:** «Squeeze tibiofibular doloroso alto + RE/dorsiflexión → compatible con sindesmosis. No es el squeeze del Aquiles (Thompson). Aislado no confirma.»
+
+**Citation:** JOSPT Ankle Ligament Sprain CPG (Martin et al.). Nussbaum / Williams y revisiones de sindesmosis — cluster clínico; squeeze apoyo, no regla de oro.
+
+---
+
+## TEST: KLEIGER / ROTACIÓN EXTERNA (sindesmosis)
+
+**Purpose:** Provocar sindesmosis con rotación externa (± dorsiflexión) del pie.
+
+**Position:** Sentado, rodilla ~90°, pierna colgando o estabilizada.
+
+**Procedure:** Estabilizar tibia; rotar externamente el pie (a menudo en dorsiflexión). Registrar dolor tibiofibular alto familiar vs lateral ATFL.
+
+**Positive:** Dolor familiar en sindesmosis anterior alta (± medial deltoides).
+
+**Pain location:** Anterior alta. Lateral puro ATFL → esguince lateral. Medial profundo → deltoides/sindesmosis.
+
+**Familiar pain:** Sí.
+
+**Clinical meaning:** Completa el cluster sindesmosis con squeeze/palpación. NO confirma grado ni sustituye imagen.
+
+**Limitations:** Evidencia **cualitativa / mixta**. Agudo con hinchazón poco fiable. No inventar Sn/Sp.
+
+**Differential:** Sindesmosis, ATFL, deltoides, fractura (Ottawa).
+
+**AI rule:** «Kleiger / RE dolorosa alta → aumenta sospecha de esguince alto. No trates como ATFL simple.»
+
+**Citation:** JOSPT ankle CPG; literatura clínica de exploración de sindesmosis (Kleiger / external rotation stress). Cluster, no cifra.
+
+---
+
+## TEST: TALAR TILT (estrés en inversión / CFL)
+
+**Purpose:** Laxitud/dolor del complejo lateral con énfasis en CFL (tilt en inversión ± plantarflexión según variante).
+
+**Position:** Supino o sentado; tobillo en posición neutra o ligera plantarflexión según técnica.
+
+**Procedure:** Estabilizar tibia; invertir el calcáneo/astrágalo. Comparar holgura y dolor familiar vs contralateral.
+
+**Positive:** Apertura lateral aumentada y/o dolor CFL/lateral familiar.
+
+**Pain location:** Lateral / CFL (más distal que ATFL). Sindesmosis alta → otra rama.
+
+**Familiar pain:** El de la inversión.
+
+**Clinical meaning:** Apoya CFL / complejo lateral más amplio. Mejor diferido (como el cajón). NO inventar grado I–III.
+
+**Limitations:** Evidencia cualitativa; agudo con guarda ↓ fiabilidad. No diagnostica sindesmosis.
+
+**Differential:** ATFL, CFL, peroneos, fractura base 5.º MT (Ottawa pie).
+
+**AI rule:** «Talar tilt doloroso/laxo → compatible con CFL/complejo lateral. En agudo puede no notarse. No inventes grado.»
+
+**Citation:** JOSPT Ankle Ligament Sprain CPG; van Dijk examen diferido (contexto lateral). Talar tilt = apoyo clínico, no métrica canónica única.
+
+---
+
+## TEST: MULDER (neuroma de Morton)
+
+**Purpose:** Provocar neuroma interdigital (clásicamente 3.er–4.º espacio) con compresión metatarsiana ± presión plantar.
+
+**Position:** Sentado o supino.
+
+**Procedure:** Comprimir las cabezas metatarsianas entre sí; opcional presión dorsal/plantar en el espacio. Registrar click/dolor **familiar** en antepié.
+
+**Positive:** Dolor familiar en espacio interdigital ± click de Mulder.
+
+**Pain location:** Antepié / espacios 2–3 o 3–4. Talón/arco → fascia. No es Windlass.
+
+**Familiar pain:** El de caminar con zapatos estrechos / antepié.
+
+**Clinical meaning:** Compatible con neuroma / irritación interdigital. NO confirma neuroma en imagen ni descarta metatarsalgia.
+
+**Limitations:** Precisión **mixta/cualitativa**. Click sin dolor familiar pesa poco.
+
+**Differential:** Metatarsalgia, estrés MT, fascitis (si mal localizado), radicular.
+
+**AI rule:** «Mulder familiar en antepié → compatible con neuroma/irritación interdigital. No “neuroma confirmado”.»
+
+**Citation:** Literatura clínica neuroma de Morton / exploración del antepié. Uso clínico estándar; no inventar Sn/Sp.
+
+---
+
+## TEST: TINEL TARSAL (túnel del tarso)
+
+**Purpose:** Provocar parestesias del nervio tibial posterior (túnel tarsiano).
+
+**Position:** Sentado o supino.
+
+**Procedure:** Percusión suave sobre el trayecto del nervio tibial posterior (detrás/debajo del maléolo medial). Registrar hormigueo/ardor **familiar** hacia planta.
+
+**Positive:** Parestesia/ardor familiar en territorio tibial/plantar.
+
+**Pain location:** Medial tobillo → planta. Talón medial puro fascial ≠ Tinel+.
+
+**Familiar pain:** El ardor/hormigueo de consulta, no solo sensibilidad local.
+
+**Clinical meaning:** Apoya irritación del túnel tarsiano en cluster (ardor + nocturno + medial). NO confirma atrapamiento ni sustituye EMG.
+
+**Limitations:** Evidencia cualitativa. **No usar el Tinel de muñeca** para pie. Falsos positivos por percusión dolorosa.
+
+**Differential:** Fasciopatía, PTT, S1 referido, neuropatía.
+
+**AI rule:** «Tinel tarsal con hormigueo familiar → compatible con irritación del túnel tarsiano. No confundas con fascitis ni con Tinel carpiano.»
+
+**Citation:** Literatura clínica de túnel tarsiano / exploración del nervio tibial. Cualitativo — cluster con síntomas neurales.

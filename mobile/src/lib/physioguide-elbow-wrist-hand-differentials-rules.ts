@@ -9,6 +9,7 @@ Antes de cerrar LET/STC/De Quervain/TFCC, cribar:
 - Medial: golfista vs UCL (lanzador) vs cubital.
 - Anterior: bíceps distal (pop + supinación) vs cabeza radial.
 - Posterior: bursitis vs tríceps vs fractura olécranon.
+- Rigidez global + carga + edad/post-trauma: OA de codo (no Cozen = artrosis).
 - Cubital: codo vs Guyon vs C8–T1.
 - Radial muñeca: De Quervain vs CMC vs escafoides (FOOSH/tabaquera primero).
 - Cubital muñeca: TFCC vs DRUJ vs ECU vs LT vs Guyon.

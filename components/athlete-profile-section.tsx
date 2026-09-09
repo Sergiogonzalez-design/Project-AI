@@ -26,6 +26,7 @@ type ProfileData = {
   weight_kg: number | null;
   dominant_hand: string | null;
   dominant_foot: string | null;
+  city: string | null;
   primary_sport: string | null;
   sport_position: string | null;
   competitive_level: string | null;
@@ -90,6 +91,7 @@ export function AthleteProfileSection() {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
+  const [city, setCity] = useState("");
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
   const [competitiveLevel, setCompetitiveLevel] = useState("");
@@ -105,6 +107,7 @@ export function AthleteProfileSection() {
     setWeightKg(data.weight_kg?.toString() ?? "");
     setDominantHand(data.dominant_hand ?? "");
     setDominantFoot(data.dominant_foot ?? "");
+    setCity(data.city ?? "");
     setPrimarySport(data.primary_sport ?? "");
     setSportPosition(data.sport_position ?? "");
     setCompetitiveLevel(data.competitive_level ?? "");
@@ -123,7 +126,7 @@ export function AthleteProfileSection() {
       const { data } = await supabase
         .from("profiles")
         .select(
-          "age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
+          "age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, city, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
         )
         .eq("id", user.id)
         .single();
@@ -150,12 +153,6 @@ export function AthleteProfileSection() {
     if (!weightKg || Number(weightKg) < 20) return "Introduce tu peso.";
     if (!dominantHand) return "Selecciona tu mano dominante.";
     if (!dominantFoot) return "Selecciona tu pie dominante.";
-    if (!primarySport.trim()) return "Indica tu deporte principal.";
-    if (!competitiveLevel) return "Selecciona tu nivel competitivo.";
-    if (!sessionsPerWeek) return "Indica tus sesiones por semana.";
-    if (!hoursPerWeek) return "Indica tus horas por semana.";
-    if (!currentSeason) return "Selecciona la temporada actual.";
-    if (performanceGoals.length === 0) return "Selecciona al menos un objetivo.";
     return null;
   }
 
@@ -176,13 +173,19 @@ export function AthleteProfileSection() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        primary_sport: normalizeSportsInput(primarySport),
-        sport_position: sportHasPosition(primarySport) ? sportPosition.trim() || null : null,
-        competitive_level: competitiveLevel,
-        sessions_per_week: Number(sessionsPerWeek),
-        hours_per_week: Number(hoursPerWeek),
-        current_season: currentSeason,
-        performance_goals: performanceGoals,
+        city: city.trim() || null,
+        primary_sport: primarySport.trim()
+          ? normalizeSportsInput(primarySport)
+          : null,
+        sport_position:
+          primarySport.trim() && sportHasPosition(primarySport)
+            ? sportPosition.trim() || null
+            : null,
+        competitive_level: competitiveLevel || null,
+        sessions_per_week: sessionsPerWeek.trim() ? Number(sessionsPerWeek) : null,
+        hours_per_week: hoursPerWeek.trim() ? Number(hoursPerWeek) : null,
+        current_season: currentSeason || null,
+        performance_goals: performanceGoals.length > 0 ? performanceGoals : null,
       };
 
       const { error: saveErr } = await supabase
@@ -266,6 +269,7 @@ export function AthleteProfileSection() {
               />
               <SummaryRow label="Mano dominante" value={profile?.dominant_hand} />
               <SummaryRow label="Pie dominante" value={profile?.dominant_foot} />
+              <SummaryRow label="Ciudad" value={profile?.city} />
             </div>
 
             <div className="space-y-3 pt-4">
@@ -341,12 +345,26 @@ export function AthleteProfileSection() {
               <label className={labelClass}>Pie dominante</label>
               <ChipGroup options={DOMINANT_FOOT_OPTIONS} value={dominantFoot} onChange={setDominantFoot} />
             </div>
+            <div>
+              <label className={labelClass}>Ciudad (opcional)</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Ej: Madrid"
+                className={inputClass}
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Si la indicas, priorizamos clínicas de tu ciudad. Si no, te
+                recomendamos centros que encajen con tu lesión.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4 border-t border-slate-100 pt-6">
             <p className="text-sm font-bold text-slate-700">Perfil deportivo</p>
             <div>
-              <label className={labelClass}>¿Qué deporte practicas?</label>
+              <label className={labelClass}>¿Qué deporte practicas? (opcional)</label>
               <input
                 type="text"
                 value={primarySport}
@@ -375,25 +393,25 @@ export function AthleteProfileSection() {
               </div>
             )}
             <div>
-              <label className={labelClass}>Nivel competitivo</label>
+              <label className={labelClass}>Nivel competitivo (opcional)</label>
               <ChipGroup options={COMPETITIVE_LEVELS} value={competitiveLevel} onChange={setCompetitiveLevel} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelClass}>Sesiones / semana</label>
+                <label className={labelClass}>Sesiones / semana (opcional)</label>
                 <input type="number" value={sessionsPerWeek} onChange={(e) => setSessionsPerWeek(e.target.value)} className={inputClass} />
               </div>
               <div>
-                <label className={labelClass}>Horas / semana</label>
+                <label className={labelClass}>Horas / semana (opcional)</label>
                 <input type="number" value={hoursPerWeek} onChange={(e) => setHoursPerWeek(e.target.value)} className={inputClass} />
               </div>
             </div>
             <div>
-              <label className={labelClass}>Temporada actual</label>
+              <label className={labelClass}>Temporada actual (opcional)</label>
               <ChipGroup options={CURRENT_SEASONS} value={currentSeason} onChange={setCurrentSeason} />
             </div>
             <div>
-              <label className={labelClass}>Objetivos de rendimiento</label>
+              <label className={labelClass}>Objetivos de rendimiento (opcional)</label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {PERFORMANCE_GOALS.map((goal) => (
                   <button

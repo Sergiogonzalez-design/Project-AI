@@ -1,22 +1,17 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { DismissKeyboard } from "../components/DismissKeyboard";
 import { ScreenScrollView } from "../components/ScreenScrollView";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
+import {
+  getLinkedPhysioCache,
+  setLinkedPhysioCache,
+  type LinkedPhysioCache,
+} from "../lib/linked-physio-cache";
 import { parsePastedInviteCode } from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
-import type { TabParamList } from "../navigation/AppTabs";
 import { AIInquiriesScreen } from "./AIInquiriesScreen";
-
-type LinkedPhysio = {
-  physio_id: string;
-  physio_name: string | null;
-  clinic_name: string | null;
-};
 
 /**
  * Standalone screen where a patient must enter their physiotherapist's code
@@ -24,11 +19,13 @@ type LinkedPhysio = {
  * here; finishing a consult auto-sends the clinical report to the physio.
  */
 export function PhysioLinkScreen() {
-  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const en = locale === "en";
-  const [loading, setLoading] = useState(true);
-  const [linked, setLinked] = useState<LinkedPhysio | null>(null);
+  const cached = getLinkedPhysioCache();
+  const [loading, setLoading] = useState(!cached?.physio_id);
+  const [linked, setLinked] = useState<LinkedPhysioCache | null>(
+    cached?.physio_id ? cached : null
+  );
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -36,11 +33,23 @@ export function PhysioLinkScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.rpc("patient_get_linked_physio");
-      const row = Array.isArray(data) ? data[0] : data;
-      if (!cancelled) {
-        setLinked(row?.physio_id ? (row as LinkedPhysio) : null);
-        setLoading(false);
+      try {
+        let next = getLinkedPhysioCache() ?? null;
+        if (!next?.physio_id) {
+          const { data } = await supabase.rpc("patient_get_linked_physio");
+          const row = Array.isArray(data) ? data[0] : data;
+          next = row?.physio_id ? (row as LinkedPhysioCache) : null;
+        }
+        setLinkedPhysioCache(next);
+        if (!cancelled) {
+          setLinked(next);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setLinked(null);
+          setLoading(false);
+        }
       }
     })();
     return () => {
@@ -88,11 +97,13 @@ export function PhysioLinkScreen() {
       );
       return;
     }
-    setLinked({
-      physio_id: row.physio_id,
-      physio_name: row.physio_name ?? null,
-      clinic_name: row.clinic_name ?? null,
-    });
+    const next = {
+      physio_id: row.physio_id as string,
+      physio_name: (row.physio_name as string | null) ?? null,
+      clinic_name: (row.clinic_name as string | null) ?? null,
+    };
+    setLinkedPhysioCache(next);
+    setLinked(next);
   }
 
   if (loading) {
@@ -107,7 +118,16 @@ export function PhysioLinkScreen() {
     return (
       <AIInquiriesScreen
         linkedPhysio={linked}
-        onLinkedPhysioChange={setLinked}
+        onLinkedPhysioChange={(physio) => {
+          if (!physio?.physio_id) return;
+          const next = {
+            physio_id: physio.physio_id,
+            physio_name: physio.physio_name ?? null,
+            clinic_name: physio.clinic_name ?? null,
+          };
+          setLinkedPhysioCache(next);
+          setLinked(next);
+        }}
       />
     );
   }
@@ -115,26 +135,6 @@ export function PhysioLinkScreen() {
   return (
     <DismissKeyboard>
       <View style={{ flex: 1, backgroundColor: Colors.background }}>
-        <Pressable
-          onPress={() => navigation.navigate("AIInquiries")}
-          style={{
-            alignSelf: "flex-start",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 4,
-            marginTop: 2,
-            marginHorizontal: 16,
-            paddingVertical: 4,
-            paddingRight: 8,
-          }}
-          accessibilityLabel={en ? "Back to Consulta" : "Volver a Consulta"}
-          hitSlop={8}
-        >
-          <Ionicons name="arrow-back" size={20} color={Colors.primary} />
-          <Text style={{ fontSize: 14, fontWeight: "600", color: Colors.primary }}>
-            {t.headers.consulta}
-          </Text>
-        </Pressable>
         <ScreenScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{

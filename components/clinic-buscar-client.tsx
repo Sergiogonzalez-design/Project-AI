@@ -8,10 +8,62 @@ import { createClient } from "@/lib/supabase/client";
 
 type Tab = "explorar" | "guardadas" | "novedades";
 
+function ExploreSearchField({
+  value,
+  onChange,
+  placeholder,
+  onSearch,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  onSearch: () => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSearch();
+          }
+        }}
+        placeholder={placeholder}
+        className="h-12 min-w-0 flex-1 rounded-2xl border-0 bg-white/95 px-4 text-sm text-slate-900 shadow-lg outline-none ring-2 ring-white/20 placeholder:text-slate-400"
+      />
+      <button
+        type="button"
+        onClick={onSearch}
+        aria-label="Buscar"
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-lg hover:bg-blue-50"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export function ClinicBuscarClient() {
   const supabase = createClient();
   const [tab, setTab] = useState<Tab>("explorar");
-  const [query, setQuery] = useState("");
+  const [signedIn, setSignedIn] = useState(false);
+  const [name, setName] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [city, setCity] = useState("");
   const [results, setResults] = useState<ClinicSearchCard[]>([]);
   const [favorites, setFavorites] = useState<ClinicSearchCard[]>([]);
@@ -23,17 +75,24 @@ export function ClinicBuscarClient() {
     setLoading(true);
     setError(null);
     const { data, error: err } = await supabase.rpc("clinic_search", {
-      p_query: query.trim(),
+      p_name: name.trim(),
+      p_specialty: specialty.trim(),
       p_city: city.trim(),
     });
     if (err) setError(err.message);
     else setResults((data as ClinicSearchCard[]) ?? []);
     setLoading(false);
-  }, [city, query, supabase]);
+  }, [city, name, specialty, supabase]);
 
   const loadFavorites = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setFavorites([]);
+      setLoading(false);
+      return;
+    }
     const { data, error: err } = await supabase.rpc("clinic_list_favorites");
     if (err) setError(err.message);
     else setFavorites((data as ClinicSearchCard[]) ?? []);
@@ -43,10 +102,20 @@ export function ClinicBuscarClient() {
   const loadFeed = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setFeed([]);
+      setLoading(false);
+      return;
+    }
     const { data, error: err } = await supabase.rpc("clinic_feed_posts");
     if (err) setError(err.message);
     else setFeed((data as ClinicFeedPost[]) ?? []);
     setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
   }, [supabase]);
 
   useEffect(() => {
@@ -70,32 +139,26 @@ export function ClinicBuscarClient() {
             fisioterapia.
           </p>
           {tab === "explorar" ? (
-            <form
-              className="mt-6 flex flex-col gap-2 sm:flex-row"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void loadExplore();
-              }}
-            >
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Nombre, especialidad…"
-                className="h-12 flex-1 rounded-2xl border-0 bg-white/95 px-4 text-sm text-slate-900 shadow-lg outline-none ring-2 ring-white/20 placeholder:text-slate-400"
+            <div className="mt-6 flex max-w-xl flex-col gap-2">
+              <ExploreSearchField
+                value={name}
+                onChange={setName}
+                placeholder="Nombre"
+                onSearch={() => void loadExplore()}
               />
-              <input
+              <ExploreSearchField
+                value={specialty}
+                onChange={setSpecialty}
+                placeholder="Especialidad"
+                onSearch={() => void loadExplore()}
+              />
+              <ExploreSearchField
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
+                onChange={setCity}
                 placeholder="Ciudad"
-                className="h-12 w-full rounded-2xl border-0 bg-white/95 px-4 text-sm text-slate-900 shadow-lg outline-none sm:w-40"
+                onSearch={() => void loadExplore()}
               />
-              <button
-                type="submit"
-                className="h-12 rounded-2xl bg-white px-6 text-sm font-bold text-slate-950 shadow-lg hover:bg-blue-50"
-              >
-                Buscar
-              </button>
-            </form>
+            </div>
           ) : null}
         </div>
       </div>
@@ -191,8 +254,10 @@ export function ClinicBuscarClient() {
               return (
                 <p className="text-sm text-slate-500">
                   {tab === "guardadas"
-                    ? "Todavía no has guardado ninguna clínica."
-                    : "No hay clínicas que coincidan. Prueba otra ciudad o nombre."}
+                    ? signedIn
+                      ? "Todavía no has guardado ninguna clínica."
+                      : "Inicia sesión para guardar clínicas."
+                    : "No hay clínicas que coincidan. Prueba otro nombre, especialidad o ciudad."}
                 </p>
               );
             }

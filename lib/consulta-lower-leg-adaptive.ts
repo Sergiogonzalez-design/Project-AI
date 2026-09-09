@@ -9,6 +9,7 @@ import type { AnkleFootFocus } from "@/lib/detect-body-part";
  * (foot vs ankle vs lower_leg) from the patient's initial complaint.
  */
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -1025,7 +1026,12 @@ export function detectLowerLegRedFlags(answers: LowerLegAdaptiveAnswers): {
   for (const id of RED_FLAG_IDS) {
     if (answers[id] === "Sí") triggered.push(labels[id] ?? id);
   }
-  return { urgent: triggered.length > 0, triggered };
+  // All current lower-leg flags are hard (fracture/DVT/compartment/neurovascular).
+  const HARD_FLAG_IDS: (keyof LowerLegAdaptiveAnswers)[] = [...RED_FLAG_IDS];
+  return {
+    triggered,
+    urgent: HARD_FLAG_IDS.some((id) => answers[id] === "Sí"),
+  };
 }
 
 function isAnswered(q: LowerLegQuestionDef, answers: LowerLegAdaptiveAnswers): boolean {
@@ -1239,11 +1245,7 @@ export function formatLowerLegAdaptive(
     "— MECANISMO DE LA LESIÓN (prioridad máxima — citar exactamente en el resumen) —",
     `Mecanismo según cuestionario: ${answers.mecanismo.join(", ")}${answers.mecanismo.includes("Otro") && answers.mecanismo_otro ? ` (${answers.mecanismo_otro})` : ""}`,
     "NO sustituir por el deporte habitual del perfil del paciente.",
-    "",
-    "— BANDERAS ROJAS —",
-    urgent
-      ? `⚠️ URGENCIA DETECTADA: ${triggered.join("; ")}`
-      : "Ninguna bandera roja marcada como Sí",
+    ...formatRedFlagScreenBlock(urgent, triggered),
     `Deformidad: ${answers.rf_deformidad || "—"}`,
     `Incapacidad para apoyar/caminar: ${answers.rf_no_apoyo || "—"}`,
     `Hinchazón súbita pantorrilla: ${answers.rf_hinchazon_subita || "—"}`,
@@ -1565,7 +1567,7 @@ export function localizeLowerLegLabel(
 }
 export function localizeLowerLegOption(option: string, locale: ConsultLocale): string {
   if (locale !== "en") return option;
-  return LOWER_LEG_OPTION_EN[option] ?? option;
+  return LOWER_LEG_OPTION_EN[option as keyof typeof LOWER_LEG_OPTION_EN] ?? option;
 }
 export function localizeLowerLegSection(
   section: string,

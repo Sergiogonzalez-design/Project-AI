@@ -1,15 +1,21 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
+import { NavBackButton } from "@/components/nav-back-button";
 import {
   clinicAccentSoft,
   normalizeClinicAccent,
   parseClinicSpecialties,
 } from "@/lib/clinic-brand";
+import { displayClinicHoursText } from "@/lib/clinic-hours";
 import {
+  clinicInstagramHref,
   clinicMailtoHref,
   clinicTelHref,
+  clinicTikTokHref,
   clinicWebsiteHref,
+  clinicWhatsAppHref,
   formatClinicPostDate,
   type ClinicPost,
   type ClinicPublicProfile as ClinicPublic,
@@ -21,22 +27,30 @@ import {
 } from "@/lib/clinic-maps";
 import { createClient } from "@/lib/supabase/client";
 
-type TeamMember = { display_name: string };
+type TeamMember = { user_id?: string; display_name: string };
 type PageTab = "novedades" | "sobre" | "equipo";
 
 type Props = {
   clinic: ClinicPublic;
   team: TeamMember[];
   posts: ClinicPost[];
+  /** Shown when opening from Clínica → Ver perfil público. */
+  backToClinic?: boolean;
 };
 
-export function ClinicPublicProfile({ clinic, team, posts }: Props) {
+export function ClinicPublicProfile({
+  clinic,
+  team,
+  posts,
+  backToClinic = false,
+}: Props) {
   const supabase = createClient();
-  const [tab, setTab] = useState<PageTab>("novedades");
+  const [tab, setTab] = useState<PageTab>(posts.length > 0 ? "novedades" : "sobre");
   const [saved, setSaved] = useState(false);
   const [canSave, setCanSave] = useState(false);
   const [saving, setSaving] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
+  const hoursDisplay = displayClinicHoursText(clinic.hours);
 
   const accent = normalizeClinicAccent(clinic.accent_color);
   const soft = clinicAccentSoft(accent);
@@ -61,6 +75,10 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
   });
   const mapsHref =
     clinic.google_maps_url || (query ? googleMapsSearchUrl(query) : null);
+  const waHref = clinicWhatsAppHref(clinic.whatsapp, clinic.phone);
+  const bookingHref = clinic.booking_url
+    ? clinicWebsiteHref(clinic.booking_url)
+    : null;
 
   async function toggleSave() {
     if (!canSave) return;
@@ -73,7 +91,10 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
   }
 
   async function shareProfile() {
-    const url = typeof window !== "undefined" ? window.location.href : "";
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${window.location.pathname}`
+        : "";
     try {
       if (navigator.share) {
         await navigator.share({ title: clinic.name, url });
@@ -92,24 +113,34 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
 
   return (
     <div className="min-h-full bg-[#f3f4f6] pb-16">
+      {backToClinic ? (
+        <div className="sticky top-14 z-20 flex items-center border-b border-slate-200/70 bg-white/90 px-4 py-2 backdrop-blur-md sm:px-6">
+          <NavBackButton fallbackHref="/clinica" />
+          <span className="ml-2 text-sm font-medium text-slate-700">
+            Personaliza tu página
+          </span>
+        </div>
+      ) : null}
       <div className="relative">
         <div
-          className="h-44 w-full sm:h-56 lg:h-64"
+          className="relative aspect-[2/1] min-h-[11rem] w-full overflow-hidden sm:aspect-[2.4/1] sm:min-h-[14rem] lg:aspect-[2.8/1] lg:min-h-[17rem]"
           style={{
             background: clinic.cover_url
-              ? undefined
+              ? accent
               : `linear-gradient(135deg, ${accent} 0%, #0f172a 100%)`,
           }}
         >
           {clinic.cover_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={clinic.cover_url}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover object-center"
+              priority
             />
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
         </div>
       </div>
 
@@ -117,12 +148,17 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
         <div className="-mt-12 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:-mt-16 sm:p-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div
-              className="-mt-16 h-24 w-24 shrink-0 overflow-hidden rounded-[22px] border-4 border-white shadow-lg sm:-mt-20 sm:h-28 sm:w-28"
+              className="relative -mt-16 h-24 w-24 shrink-0 overflow-hidden rounded-[22px] border-4 border-white shadow-lg sm:-mt-20 sm:h-28 sm:w-28"
               style={{ background: soft }}
             >
               {clinic.logo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={clinic.logo_url} alt="" className="h-full w-full object-cover" />
+                <Image
+                  src={clinic.logo_url}
+                  alt=""
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
               ) : (
                 <div
                   className="flex h-full w-full items-center justify-center text-3xl font-bold text-white"
@@ -184,6 +220,21 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                 Llamar
               </a>
             ) : null}
+            {waHref ? (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[#16A34A] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#15803d]"
+              >
+                WhatsApp
+              </a>
+            ) : null}
+            {bookingHref ? (
+              <a href={bookingHref} target="_blank" rel="noopener noreferrer" className={ghost}>
+                Pedir cita
+              </a>
+            ) : null}
             {clinic.contact_email ? (
               <a href={clinicMailtoHref(clinic.contact_email)} className={ghost}>
                 Email
@@ -202,6 +253,26 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                 className={ghost}
               >
                 Web
+              </a>
+            ) : null}
+            {clinic.instagram ? (
+              <a
+                href={clinicInstagramHref(clinic.instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={ghost}
+              >
+                Instagram
+              </a>
+            ) : null}
+            {clinic.tiktok ? (
+              <a
+                href={clinicTikTokHref(clinic.tiktok)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={ghost}
+              >
+                TikTok
               </a>
             ) : null}
             <button type="button" onClick={() => void shareProfile()} className={ghost}>
@@ -295,13 +366,13 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                   ) : (
                     <p className="text-sm text-slate-500">Sin descripción todavía.</p>
                   )}
-                  {clinic.hours ? (
+                  {hoursDisplay ? (
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                         Horario
                       </p>
                       <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
-                        {clinic.hours}
+                        {hoursDisplay}
                       </p>
                     </div>
                   ) : null}
@@ -370,7 +441,7 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {team.map((p) => (
                     <li
-                      key={p.display_name}
+                      key={p.user_id || p.display_name}
                       className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3"
                     >
                       <div

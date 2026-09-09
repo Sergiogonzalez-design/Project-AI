@@ -36,12 +36,12 @@ Cifras exactas **solo** si aparecen en un chunk Physioguide citado; aquí solo e
 | Dominio | Mensaje basado en evidencia | Fuentes ancla |
 |---------|-----------------------------|---------------|
 | Hombro (Neer/Hawkins/Jobe aislados) | Precisión **mixta/limitada** en aislamiento; no confirman «pinzamiento»; negativos no excluyen RCRSP | Hegedus EJ et al. BJSM systematic reviews of shoulder exam; Lewis J. RCRSP papers; JOSPT rotator cuff CPG |
-| Cervical radiculopatía | Cluster (Wainner) > test aislado; Spurling más útil para **subir** sospecha que para **excluir** | Wainner RS et al. *Spine* 2003; Tong/Haig Spurling; Blanpied JOSPT Neck Pain 2017 |
-| LCA (Lachman) | De los mejores tests clínicos de LCA en metaanálisis; **aún imperfecto** (agudo/guarda) | Benjaminse A et al. JOSPT 2006; van Eck et al.; Logerstedt JOSPT knee ligament CPG |
+| Cervical radiculopatía | Cluster (Wainner) > test aislado; 3/4 LR+ **6.1**, 4/4 LR+ **30.3** (IC anchos) — ver `cited-diagnostic-accuracy.md`; Spurling más para **subir** que **excluir** | Wainner RS et al. *Spine* 2003; Tong/Haig Spurling; Blanpied JOSPT Neck Pain 2017 |
+| LCA (Lachman) | Meta Benjaminse: Sn **85%**, Sp **94%**, LR− **0.2** — aún imperfecto (agudo/guarda) | Benjaminse A et al. JOSPT 2006; `cited-diagnostic-accuracy.md` |
 | Menisco (McMurray/Thessaly) | Precisión aislada **limitada/mixta**; negativos no excluyen | Hegedus / meniscal exam reviews; JOSPT meniscus CPG (Logerstedt et al.) |
 | Cadera FADIR | Útil para **hip-related** groin; **no** confirma FAI; morfología ≠ dolor | Griffin et al. Warwick Agreement *BJSM* 2016; Reiman hip exam reviews |
 | STC (Phalen/Tinel) | Mejores en **cluster** (historia + compresión); un negativo no descarta | D’Arcy CA, McGee S. JAMA Rational Clinical Exam CTS; JOSPT CTS CPG 2019 |
-| Fractura tobillo | Ottawa Rules: cribado de **imagen**, no de esguince | Stiell IG et al. Ottawa Ankle Rules |
+| Fractura tobillo | Ottawa: Sn pooled **97.6%**, Sp mediana **~31%** (Bachmann 2003) — cribado de **imagen**, no de esguince | Stiell; Bachmann *BMJ* 2003; `cited-diagnostic-accuracy.md` |
 | Fractura cervical trauma | Canadian C-spine / NEXUS **antes** de Spurling | Stiell / Hoffman |
 | SLR | Útil en contexto de ciática familiar; **no** confirma hernia; negativo no excluye | van der Windt et al. Cochrane-related SLR diagnostic literature (cualitativo) |
 

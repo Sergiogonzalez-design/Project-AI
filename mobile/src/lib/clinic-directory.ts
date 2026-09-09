@@ -23,6 +23,10 @@ export type ClinicPublicProfile = ClinicSearchCard & {
   google_maps_url: string | null;
   is_listed: boolean;
   hours?: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  tiktok?: string | null;
+  booking_url?: string | null;
 };
 
 export type ClinicPost = {
@@ -55,6 +59,34 @@ export function clinicMailtoHref(email: string): string {
 
 export function clinicTelHref(phone: string): string {
   return `tel:${phone.replace(/\s+/g, "")}`;
+}
+
+/** WhatsApp chat URL from a dedicated field or a mobile phone number. */
+export function clinicWhatsAppHref(
+  whatsapp: string | null | undefined,
+  phone?: string | null
+): string | null {
+  const raw = (whatsapp || phone || "").trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw) || raw.toLowerCase().startsWith("wa.me/")) {
+    return raw.startsWith("http") ? raw : `https://${raw.replace(/^\/+/, "")}`;
+  }
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length < 8) return null;
+  if (digits.length === 9 && /^[67]/.test(digits)) digits = `34${digits}`;
+  return `https://wa.me/${digits}`;
+}
+
+export function clinicInstagramHref(handle: string): string {
+  const t = handle.trim().replace(/^@/, "");
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://instagram.com/${t}`;
+}
+
+export function clinicTikTokHref(handle: string): string {
+  const t = handle.trim().replace(/^@/, "");
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://www.tiktok.com/@${t}`;
 }
 
 export function formatClinicPostDate(iso: string): string {

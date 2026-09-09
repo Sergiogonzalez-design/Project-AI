@@ -2,7 +2,7 @@ export function normalizeInviteCode(raw: string | null | undefined): string {
   return (raw ?? "").trim().toUpperCase().replace(/\s+/g, "");
 }
 
-/** Accept a raw code or a pasted invite URL (`/login?code=…`). */
+/** Accept a raw code or a pasted invite URL (`/unirse?code=…` or `/login?code=…`). */
 export function parsePastedInviteCode(raw: string | null | undefined): string {
   const text = (raw ?? "").trim();
   if (!text) return "";

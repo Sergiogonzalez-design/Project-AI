@@ -42,6 +42,8 @@ GROIN DOHA (cuando ingle/medial/pubis/canal inguinal):
 HIP-RELATED GROIN (solo si profundo + mecánico intraarticular):
 FADIR positivo = reproduce dolor profundo familiar → ↑ cadera (NO = FAI confirmado).
 FABER: registrar si duele en INGLE vs POSTERIOR vs LATERAL.
+Secundarios en cluster: log roll, Stinchfield, hip scour (dolor profundo familiar ↑ cadera; no confirman labrum/FAI/OA). Evitar scour si red flag óseo.
+Thomas: anterior familiar → flexor/iliopsoas ↑; no bursitis automática.
 ROM IR limitada + dolor profundo → ↑ cadera. CAM en imagen sin correlación clínica ≠ causa del dolor.
 
 CRIBADO LUMBAR/SI (cuando proceda):

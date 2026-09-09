@@ -370,7 +370,8 @@ export function ProfileScreen() {
       {accountType === "clinic" ? (
         <View style={styles.card}>
           <Text style={styles.collapseBtnText}>
-            Edita la ficha y el equipo en las pestañas Clínica y Equipo.
+            Edita la ficha en Clínica. El equipo (invitar fisioterapeutas) está
+            dentro de Clínica → Equipo.
           </Text>
         </View>
       ) : accountType === "physio" ? (

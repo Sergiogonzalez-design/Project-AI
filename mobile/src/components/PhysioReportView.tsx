@@ -1,8 +1,20 @@
 import React, { useMemo, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
+import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { hasClinicalReasoningForReport } from "../lib/clinical-reasoning";
-import { hasWorkingSourceLink, toCitedSource } from "../lib/source-links";
+import {
+  findClinicalTestImage,
+  shouldShowClinicalTestImage,
+  type ClinicalTestImage,
+} from "../lib/clinical-test-images";
+import {
+  extractCitedSources,
+  remapOrientationHeadingsForPhysio,
+  toCitedSource,
+  type CitedSource,
+} from "../lib/source-links";
 import { stripVisibleMarkup } from "../lib/strip-visible-markup";
 
 const SECTION_ORDER = [
@@ -14,6 +26,8 @@ const SECTION_ORDER = [
   "Historia y mecanismo",
   "Pruebas de imagen si procede",
   "Puntos de alerta",
+  "Qué debe hacer el paciente",
+  "Qué puede hacer el paciente mientras tanto",
 ] as const;
 
 function normalizeHeading(raw: string): string {
@@ -30,6 +44,18 @@ function normalizeHeading(raw: string): string {
   if (/pruebas de imagen/i.test(h)) return "Pruebas de imagen si procede";
   if (/puntos de alerta/i.test(h)) return "Puntos de alerta";
   if (/fuentes consultadas|sources consulted/i.test(h)) return "Fuentes consultadas";
+  if (/qu[eé]\s+debes\s+hacer\s+ahora|what you should do now/i.test(h)) {
+    return "Qué debe hacer el paciente";
+  }
+  if (/qu[eé]\s+debe\s+hacer\s+el\s+paciente|what the patient should do now/i.test(h)) {
+    return "Qué debe hacer el paciente";
+  }
+  if (/qu[eé]\s+hacer\s+mientras\s+tanto|what to do in the meantime/i.test(h)) {
+    return "Qué puede hacer el paciente mientras tanto";
+  }
+  if (/qu[eé]\s+puede\s+hacer\s+el\s+paciente\s+mientras/i.test(h)) {
+    return "Qué puede hacer el paciente mientras tanto";
+  }
   return h;
 }
 
@@ -37,13 +63,20 @@ function fixClinicalSpelling(text: string): string {
   return text.replace(/Syndesmosis/gi, "Sindesmosis");
 }
 
+function collectSourceLabel(raw: string, into: string[]) {
+  const item = raw.replace(/^[-*•]\s*/, "").trim();
+  if (!item) return;
+  if (/^criterio cl[ií]nico general$/i.test(item)) return;
+  into.push(item);
+}
+
 function splitReportSections(content: string): {
   sections: { title: string; body: string }[];
-  sources: string[];
+  sources: CitedSource[];
   preamble: string;
 } {
-  const fixed = fixClinicalSpelling(content);
-  const sources: string[] = [];
+  const fixed = remapOrientationHeadingsForPhysio(fixClinicalSpelling(content));
+  const sourceLabels: string[] = [];
   const sections: { title: string; body: string }[] = [];
   const parts = fixed.split(/\n(?=\*\*[^*]+\*\*)/);
   let preamble = "";
@@ -58,8 +91,7 @@ function splitReportSections(content: string): {
     let body = match[2].trim();
     if (title === "Fuentes consultadas") {
       for (const line of body.split("\n")) {
-        const item = line.replace(/^[-*•]\s*/, "").trim();
-        if (item && hasWorkingSourceLink(item)) sources.push(item);
+        collectSourceLabel(line, sourceLabels);
       }
       continue;
     }
@@ -68,13 +100,13 @@ function splitReportSections(content: string): {
       const trimmed = line.trim();
       if (/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:/i.test(trimmed)) {
         const item = trimmed.replace(/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*/i, "").trim();
-        if (item && hasWorkingSourceLink(item)) sources.push(item);
+        collectSourceLabel(item, sourceLabels);
         continue;
       }
       kept.push(line);
     }
     body = kept.join("\n").trim();
-    if (title === "Pruebas de imagen si procede") {
+    if (title === "Pruebas de imagen si procede" && !body) {
       body =
         "No se recomienda realizar pruebas de imagen en esta fase inicial hasta pasadas 24-48 horas.";
     }
@@ -86,6 +118,16 @@ function splitReportSections(content: string): {
     return i === -1 ? 100 : i;
   };
   sections.sort((a, b) => orderIndex(a.title) - orderIndex(b.title));
+
+  const seen = new Set<string>();
+  const sources: CitedSource[] = [];
+  for (const label of sourceLabels) {
+    const source = toCitedSource(label, { forPhysio: true });
+    const key = (source.href ?? source.title).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    sources.push(source);
+  }
 
   return { sections, sources, preamble };
 }
@@ -127,12 +169,115 @@ function InlineMarkdown({
   );
 }
 
+function matchPruebaLine(line: string): ClinicalTestImage | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const plain = stripVisibleMarkup(trimmed).replace(/^\*\s+/, "• ").trim();
+  const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
+  const numberedText = /^\d+[.)]\s+\S/.test(plain) ? plain : null;
+  const matched = shouldShowClinicalTestImage({
+    numberedText,
+    wholeBoldText: wholeBoldMatch?.[1] ?? null,
+  });
+  if (matched) return matched;
+  if (/^[-•*]\s+\S/.test(plain) && plain.length <= 160) {
+    return findClinicalTestImage(plain);
+  }
+  return null;
+}
+
+function PruebasWithVideos({ body }: { body: string }) {
+  const shown = new Set<string>();
+  return (
+    <View style={styles.pruebasWrap}>
+      {body.split("\n").map((line, i) => {
+        const matched = matchPruebaLine(line);
+        const show = matched && !shown.has(matched.id) ? matched : null;
+        if (show) shown.add(show.id);
+        if (!line.trim() && !show) {
+          return <View key={i} style={{ height: 8 }} />;
+        }
+        return (
+          <View key={i} style={styles.pruebaItem}>
+            {line.trim() ? <InlineMarkdown text={line} /> : null}
+            {show ? <ClinicalTestMediaBlock test={show} /> : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function openSourceHref(href: string) {
+  const finalUrl = href.startsWith("/") ? `${WEB_APP_URL}${href}` : href;
+  void Linking.openURL(finalUrl);
+}
+
+function SourcesBlock({
+  sources,
+  heading = "Fuentes consultadas",
+}: {
+  sources: CitedSource[];
+  heading?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  if (sources.length === 0) return null;
+
+  return (
+    <View style={styles.section}>
+      <Pressable onPress={() => setOpen((v) => !v)} style={styles.sourcesBtn}>
+        <Text style={styles.sourcesBtnText}>{heading}</Text>
+        <View style={styles.sourcesBadge}>
+          <Text style={styles.sourcesBadgeText}>{sources.length}</Text>
+        </View>
+      </Pressable>
+      {open
+        ? sources.map((source) => {
+            if (!source.href) {
+              return (
+                <Text key={source.title} style={styles.sourceItem}>
+                  • {source.title}
+                </Text>
+              );
+            }
+            return (
+              <Pressable
+                key={`${source.title}-${source.href}`}
+                onPress={() => openSourceHref(source.href!)}
+              >
+                <Text style={styles.sourceLink}>• {source.title}</Text>
+              </Pressable>
+            );
+          })
+        : null}
+    </View>
+  );
+}
+
 export function AiOrientationDisclaimer({ style }: { style?: object }) {
   return (
     <Text style={[styles.disclaimer, style]}>
       AIKinora es una IA orientativa: no sustituye el criterio clínico ni un
       diagnóstico médico presencial.
     </Text>
+  );
+}
+
+export function PhysioPatientOrientationView({ content }: { content: string }) {
+  const remapped = useMemo(
+    () => remapOrientationHeadingsForPhysio(fixClinicalSpelling(content)),
+    [content]
+  );
+  const { body, sources, heading } = useMemo(
+    () => extractCitedSources(remapped, { forPhysio: true }),
+    [remapped]
+  );
+
+  return (
+    <View style={styles.wrap}>
+      <InlineMarkdown text={body} />
+      <SourcesBlock sources={sources} heading={heading} />
+    </View>
   );
 }
 
@@ -145,7 +290,6 @@ export function PhysioReportView({
   bodyArea?: string | null;
   onStartClinicalReasoning?: () => void;
 }) {
-  const [sourcesOpen, setSourcesOpen] = useState(false);
   const { sections, sources, preamble } = useMemo(
     () => splitReportSections(content),
     [content]
@@ -165,13 +309,17 @@ export function PhysioReportView({
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
-          <InlineMarkdown
-            text={section.body}
-            boldYesNo={
-              section.title ===
-              "Resultados de las pruebas funcionales ya realizadas"
-            }
-          />
+          {section.title === "Pruebas/maniobras a realizar en la cita" ? (
+            <PruebasWithVideos body={section.body} />
+          ) : (
+            <InlineMarkdown
+              text={section.body}
+              boldYesNo={
+                section.title ===
+                "Resultados de las pruebas funcionales ya realizadas"
+              }
+            />
+          )}
           {section.title === "Pruebas/maniobras a realizar en la cita" &&
           showReasoningButton ? (
             <View style={styles.reasoningWrap}>
@@ -195,39 +343,7 @@ export function PhysioReportView({
         </View>
       ))}
 
-      {sources.length > 0 ? (
-        <View style={styles.section}>
-          <Pressable
-            onPress={() => setSourcesOpen((v) => !v)}
-            style={styles.sourcesBtn}
-          >
-            <Text style={styles.sourcesBtnText}>Fuentes consultadas</Text>
-            <View style={styles.sourcesBadge}>
-              <Text style={styles.sourcesBadgeText}>{sources.length}</Text>
-            </View>
-          </Pressable>
-          {sourcesOpen
-            ? sources.map((s) => {
-                const source = toCitedSource(s);
-                if (!source.href) {
-                  return (
-                    <Text key={s} style={styles.sourceItem}>
-                      • {source.title}
-                    </Text>
-                  );
-                }
-                return (
-                  <Pressable
-                    key={s}
-                    onPress={() => void Linking.openURL(source.href!)}
-                  >
-                    <Text style={styles.sourceLink}>• {source.title}</Text>
-                  </Pressable>
-                );
-              })
-            : null}
-        </View>
-      ) : null}
+      <SourcesBlock sources={sources} />
 
       <AiOrientationDisclaimer style={styles.disclaimerTop} />
     </View>
@@ -256,8 +372,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.background,
+    borderColor: "#bfdbfe",
+    backgroundColor: "#eff6ff",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -265,7 +381,7 @@ const styles = StyleSheet.create({
   sourcesBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: Colors.text,
+    color: "#1e40af",
   },
   sourcesBadge: {
     backgroundColor: Colors.primary,
@@ -318,4 +434,6 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: Colors.textLight,
   },
+  pruebasWrap: { gap: 10 },
+  pruebaItem: { gap: 6 },
 });

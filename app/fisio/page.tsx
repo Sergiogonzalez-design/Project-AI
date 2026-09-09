@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  PhysioClinicInfoCard,
+  type PhysioClinicSummary,
+} from "@/components/physio-clinic-info-card";
 import { buildPhysioInviteUrl } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 
@@ -35,6 +39,10 @@ export default function FisioPatientsPage() {
   const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
   const [clinicName, setClinicName] = useState<string | null>(null);
+  const [clinic, setClinic] = useState<PhysioClinicSummary | null>(null);
+  const [claimCode, setClaimCode] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
   const codeMenuRef = useRef<HTMLDivElement>(null);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
@@ -54,6 +62,21 @@ export default function FisioPatientsPage() {
           .single();
         setPhysioName(profile?.display_name ?? null);
         setClinicName(profile?.clinic_name ?? null);
+      }
+
+      const { data: clinicRow } = await supabase.rpc("clinic_get_own");
+      if (clinicRow && typeof clinicRow === "object" && "id" in clinicRow && clinicRow.id) {
+        const row = clinicRow as PhysioClinicSummary;
+        setClinic(row);
+        if (row.name) setClinicName(row.name);
+        if (user && row.name) {
+          void supabase
+            .from("profiles")
+            .update({ clinic_name: row.name, clinic_id: row.id })
+            .eq("id", user.id);
+        }
+      } else {
+        setClinic(null);
       }
 
       const { data: code, error: codeError } = await supabase.rpc(
@@ -109,6 +132,34 @@ export default function FisioPatientsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function claimClinic(e: React.FormEvent) {
+    e.preventDefault();
+    const code = claimCode.trim();
+    if (!code) {
+      setClaimError("Introduce el código de alta de tu clínica.");
+      return;
+    }
+    setClaimBusy(true);
+    setClaimError(null);
+    try {
+      const supabase = createClient();
+      const { data, error: rpcError } = await supabase.rpc("clinic_claim_invite", {
+        p_token: code,
+      });
+      if (rpcError) throw new Error(rpcError.message);
+      const row = (Array.isArray(data) ? data[0] : data) as PhysioClinicSummary | null;
+      if (!row?.id) throw new Error("No se pudo vincular la clínica.");
+      setClinic(row);
+      setClinicName(row.name);
+      setClaimCode("");
+      await load();
+    } catch (err) {
+      setClaimError(err instanceof Error ? err.message : "No se pudo vincular.");
+    } finally {
+      setClaimBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!codeMenuOpen) return;
@@ -182,6 +233,41 @@ export default function FisioPatientsPage() {
         {physioName ? `, ${physioName}` : ""}
         {clinicName ? ` · ${clinicName}` : ""}
       </h1>
+
+      {clinic ? (
+        <PhysioClinicInfoCard clinic={clinic} />
+      ) : !loading ? (
+        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="text-base font-bold text-amber-950">Vincula tu clínica</h2>
+          <p className="mt-1 text-sm text-amber-900/90">
+            Tu cuenta aún no está unida a una clínica. Introduce el código de
+            alta del titular para ver la ficha del centro.
+          </p>
+          <form
+            onSubmit={(e) => void claimClinic(e)}
+            className="mt-4 flex flex-col gap-2 sm:flex-row"
+          >
+            <input
+              value={claimCode}
+              onChange={(e) => setClaimCode(e.target.value.toUpperCase())}
+              placeholder="Código (ej. AB12CD)"
+              className="w-full rounded-xl border border-amber-200 bg-white px-3.5 py-2.5 text-sm font-semibold tracking-widest sm:max-w-xs"
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+            <button
+              type="submit"
+              disabled={claimBusy}
+              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {claimBusy ? "Vinculando…" : "Vincular clínica"}
+            </button>
+          </form>
+          {claimError ? (
+            <p className="mt-2 text-sm text-red-700">{claimError}</p>
+          ) : null}
+        </section>
+      ) : null}
 
       {error ? (
         <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">

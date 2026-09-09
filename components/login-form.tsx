@@ -52,9 +52,14 @@ export function LoginForm({
         email: email.trim().toLowerCase(),
         password,
       });
-      if (signError) { setError(signError.message); return; }
+      if (signError) {
+        setError(signError.message);
+        return;
+      }
       const safeNext =
-        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/consulta";
+        nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+          ? nextPath
+          : "/consulta";
       router.replace(safeNext);
       router.refresh();
     } finally {

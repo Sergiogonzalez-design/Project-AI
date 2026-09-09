@@ -380,6 +380,24 @@ Este documento cubre las pruebas que faltaban respecto al claustro de codo, muñ
 
 ---
 
+## CLUSTER CLÍNICO: ARTROSIS / OA DE CODO (sin test especial único)
+
+**Purpose:** Orientar OA de codo cuando **no** hay un test nominado validado (tipo Cozen) que la confirme.
+
+**Componentes (cualitativos):** edad media-avanzada o antecedente de fractura/inestabilidad + dolor mecánico con carga/apoyo + **pérdida de ROM** vs contralateral ± crepitación/bloqueo ± RX degenerativa si se indica.
+
+**Positive (cluster):** patrón mecánico + ROM limitado + carga dolorosa familiar — **no** un signo aislado.
+
+**Clinical meaning:** Compatible con artrosis / cambios degenerativos de codo. Cozen/Mill **no** diagnostican OA. Crepitación sola **no** confirma OA.
+
+**Limitations:** No hay Sn/Sp publicados robustos para «crepitación = OA de codo» que deban citarse. Infección/inflamatorio pueden imitar. LET puede coexistir.
+
+**AI rule:** «Codo que pierde movilidad y duele al apoyarse o cargar, en adulto o post-fractura → compatible con artrosis de codo. No lo llames codo de tenista solo por un Cozen. No inventes sensibilidad de la crepitación. RX si la decisión clínica lo requiere.»
+
+**Citation:** Morrey — artrosis de codo (clínica + RX). Revisiones JSES / Hand Clinics de elbow OA. Zwerus et al.: muchos tests de codo con evidencia limitada — no sustituyen imagen ante rigidez estructural.
+
+---
+
 ## REGLAS TRANSVERSALES PARA LA IA
 
 1. Nunca: un test positivo = diagnóstico confirmado.  
@@ -390,4 +408,5 @@ Este documento cubre las pruebas que faltaban respecto al claustro de codo, muñ
 6. Pop antecubital + hook ausente → bíceps distal, no LET.  
 7. Lanzador + dolor medial al valgo dinámico → UCL en cluster, no solo golfista.  
 8. Dolor cubital de muñeca → TFCC **y** DRUJ **y** LT **y** ECU; no un solo saco.  
-9. Citar; si la evidencia es una serie única, decirlo.
+9. Rigidez global + carga + edad/post-trauma → OA de codo en cluster; no Cozen = OA.  
+10. Citar; si la evidencia es una serie única, decirlo.

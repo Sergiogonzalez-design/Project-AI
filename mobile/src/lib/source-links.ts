@@ -3,6 +3,14 @@ export type CitedSource = {
   href: string | null;
 };
 
+export type CitedSourceOptions = {
+  /**
+   * Physio informe view: include Physioguide / knowledge-base titles as
+   * clickable /conocimientos links (hidden from patient chat citations).
+   */
+  forPhysio?: boolean;
+};
+
 const HEADING_LINE =
   /^(?:\*\*)?(Fuentes consultadas|Sources consulted)(?:\*\*)?$/i;
 const FUENTE_LINE = /^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*(.+)$/i;
@@ -66,6 +74,15 @@ function hostSearchUrl(title: string, host: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(`${title} site:${host}`)}`;
 }
 
+function knowledgeBaseHref(title: string): string {
+  return `/conocimientos?q=${encodeURIComponent(title)}`;
+}
+
+function isKnowledgeBaseLabel(label: string): boolean {
+  const t = label.trim();
+  return /^Physioguide\s*[—–-]/i.test(t) || /\b(?:ai)?kinora\b/i.test(t);
+}
+
 /** True when the source should appear in the Fuentes consultadas footer. */
 export function shouldShowInSourcesFooter(raw: string): boolean {
   const t = raw.trim();
@@ -89,14 +106,21 @@ export function hasWorkingSourceLink(raw: string): boolean {
   return resolveSourceHref(raw) != null;
 }
 
-export function resolveSourceHref(raw: string): string | null {
-  if (isInternalSource(raw)) return null;
-
+export function resolveSourceHref(
+  raw: string,
+  opts?: CitedSourceOptions
+): string | null {
   const md = markdownLink(raw);
   if (md) return md.href;
 
   const http = HTTP_URL.exec(raw);
   if (http) return sanitizeHttpUrl(http[0]);
+
+  if (opts?.forPhysio && isKnowledgeBaseLabel(raw)) {
+    return knowledgeBaseHref(displaySourceTitle(raw));
+  }
+
+  if (isInternalSource(raw)) return null;
 
   const pmcid = PMCID.exec(raw);
   if (pmcid) return `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcid[1]}/`;
@@ -117,29 +141,39 @@ export function resolveSourceHref(raw: string): string | null {
     return hostSearchUrl(withHost[1].trim(), withHost[2]);
   }
 
-  if (/\.pdf$/i.test(raw.trim())) {
-    const query = raw.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").trim();
-    return `https://scholar.google.com/scholar?q=${encodeURIComponent(query)}`;
+  if (/\.pdf(\b|$)/i.test(raw.trim())) {
+    const query = raw
+      .replace(/\.pdf\b/i, "")
+      .replace(/[_-]+/g, " ")
+      .trim();
+    return `https://scholar.google.com/scholar?q=${encodeURIComponent(query || raw)}`;
   }
 
   return null;
 }
 
-export function toCitedSource(raw: string): CitedSource {
+export function toCitedSource(
+  raw: string,
+  opts?: CitedSourceOptions
+): CitedSource {
   const title = displaySourceTitle(raw);
-  return { title, href: resolveSourceHref(raw) };
+  return { title, href: resolveSourceHref(raw, opts) };
 }
 
-function uniqueSources(labels: string[]): CitedSource[] {
+function uniqueSources(
+  labels: string[],
+  opts?: CitedSourceOptions
+): CitedSource[] {
   const seen = new Set<string>();
   const sources: CitedSource[] = [];
   for (const label of labels) {
     const trimmed = label.trim();
     if (!trimmed || HEADING_LINE.test(trimmed.replace(/\*/g, ""))) continue;
-    if (isInternalSource(trimmed)) continue;
-    const source = toCitedSource(trimmed);
-    if (!source.href) continue;
-    const key = source.href.toLowerCase();
+    if (/^criterio cl[ií]nico general$/i.test(trimmed)) continue;
+    if (!opts?.forPhysio && isInternalSource(trimmed)) continue;
+    const source = toCitedSource(trimmed, opts);
+    if (!opts?.forPhysio && !source.href) continue;
+    const key = (source.href ?? source.title).toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     sources.push(source);
@@ -147,7 +181,11 @@ function uniqueSources(labels: string[]): CitedSource[] {
   return sources;
 }
 
-export function extractCitedSources(content: string): {
+/** Pull unique sources out of an assistant message and return the body without them. */
+export function extractCitedSources(
+  content: string,
+  opts?: CitedSourceOptions
+): {
   body: string;
   sources: CitedSource[];
   heading: string;
@@ -195,11 +233,80 @@ export function extractCitedSources(content: string): {
 
   return {
     body: bodyLines.join("\n").trimEnd(),
-    sources: uniqueSources(labels),
+    sources: uniqueSources(labels, opts),
     heading,
   };
 }
 
 export function isInlineFuenteLine(line: string): boolean {
   return FUENTE_LINE.test(line.trim());
+}
+
+/**
+ * Patient AI output is usually plain lines (markdown is forbidden in the
+ * patient chat). Match the whole heading line only — not in-body mentions.
+ */
+const ORIENTATION_HEADING_REMAP: Array<[string, string]> = [
+  ["qué debes hacer ahora", "Qué debe hacer el paciente"],
+  ["what you should do now", "What the patient should do now"],
+  ["qué hacer mientras tanto", "Qué puede hacer el paciente mientras tanto"],
+  ["what to do in the meantime", "What the patient can do in the meantime"],
+  [
+    "pruebas funcionales (optional)",
+    "Pruebas funcionales (pedidas al paciente)",
+  ],
+  [
+    "pruebas funcionales (opcional)",
+    "Pruebas funcionales (pedidas al paciente)",
+  ],
+  [
+    "pruebas funcionales (opcionales)",
+    "Pruebas funcionales (pedidas al paciente)",
+  ],
+  ["pruebas funcionales", "Pruebas funcionales (pedidas al paciente)"],
+  [
+    "functional tests (optional)",
+    "Functional tests (asked of the patient)",
+  ],
+  ["functional tests", "Functional tests (asked of the patient)"],
+  ["contactar con un fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contactar un fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contactar con fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contactar fisio", "Contacto con fisioterapeuta (sugerido al paciente)"],
+  ["contact a physiotherapist", "Physio contact (suggested to the patient)"],
+  ["contact a physio", "Physio contact (suggested to the patient)"],
+];
+
+function normalizeOrientationHeadingKey(line: string): string {
+  return line
+    .trim()
+    .replace(/^#{1,6}\s+/, "")
+    .replace(/^\*\*(.+?)\*\*$/u, "$1")
+    .replace(/^[*-]\s+/, "")
+    .replace(/^¿\s*/, "")
+    .replace(/[:.¿?]\s*$/u, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Remap patient-facing section titles so the physio reads about the patient
+ * (third person), not as if the AI is talking to the clinician.
+ * Handles markdown `**…**`, `#` headings, and bare lines from patient AI output.
+ */
+export function remapOrientationHeadingsForPhysio(content: string): string {
+  if (!content) return content;
+  return content
+    .split("\n")
+    .map((line) => {
+      const key = normalizeOrientationHeadingKey(line);
+      if (!key) return line;
+      const match = ORIENTATION_HEADING_REMAP.find(([from]) => from === key);
+      if (!match) return line;
+      const replacement = match[1];
+      const hash = line.match(/^(#{1,6})\s+/);
+      if (hash) return `${hash[1]} ${replacement}`;
+      return `**${replacement}**`;
+    })
+    .join("\n");
 }
