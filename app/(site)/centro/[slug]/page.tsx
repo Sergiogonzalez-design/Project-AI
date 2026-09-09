@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
 };
 
 export const revalidate = 300;
@@ -53,8 +54,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function CentroPublicPage({ params }: PageProps) {
+export default async function CentroPublicPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const { from } = await searchParams;
   const supabase = await createClient();
   const clinic = await loadClinic(slug);
   if (!clinic) notFound();
@@ -65,6 +67,7 @@ export default async function CentroPublicPage({ params }: PageProps) {
   ]);
   const team = ((physios as PublicTeamMember[]) ?? []).filter((p) => p.display_name);
   const posts = ((postRows as ClinicPost[]) ?? []).filter((p) => p.body);
+  const backToClinic = from === "clinica";
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -91,7 +94,12 @@ export default async function CentroPublicPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ClinicPublicProfile clinic={clinic} team={team} posts={posts} />
+      <ClinicPublicProfile
+        clinic={clinic}
+        team={team}
+        posts={posts}
+        backToClinic={backToClinic}
+      />
     </>
   );
 }

@@ -21,6 +21,7 @@ export const PHYSIO_NAV_LINKS: AppNavLink[] = [
 /** Clinic-owner dashboard. */
 export const CLINIC_NAV_LINKS: AppNavLink[] = [
   { href: "/clinica/consulta", label: "Consulta" },
+  { href: "/clinica/pacientes", label: "Cuentas" },
   { href: "/clinica", label: "Clínica" },
   { href: "/buscar", label: "Buscar" },
   { href: "/sobre-nosotros", label: "Sobre nosotros" },
@@ -33,6 +34,9 @@ export function isNavLinkActive(pathname: string, href: string): boolean {
   }
   if (href === "/clinica/consulta") {
     return pathname === "/clinica/consulta" || pathname.startsWith("/clinica/consulta/");
+  }
+  if (href === "/clinica/pacientes") {
+    return pathname === "/clinica/pacientes" || pathname.startsWith("/clinica/pacientes/");
   }
   if (href === "/clinica") {
     return pathname === "/clinica";

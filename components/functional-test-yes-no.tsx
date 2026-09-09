@@ -7,11 +7,7 @@ import {
   type FunctionalTestAnswer,
   type FunctionalTestItem,
 } from "@/lib/functional-test-answers";
-import {
-  functionalTestProgressLabel,
-  functionalTestStaggerDelayMs,
-  FUNCTIONAL_TEST_HINT_DELAY_MS,
-} from "@/lib/functional-test-reveal";
+import { functionalTestProgressLabel } from "@/lib/functional-test-reveal";
 import {
   resolveFunctionalTestMedia,
   stripFunctionalMediaMarker,
@@ -29,18 +25,12 @@ type Props = {
   onStaggerComplete?: () => void;
 };
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export function FunctionalTestYesNo({
   tests,
   language = "es",
   disabled,
   ready = true,
   onSubmit,
-  onStaggerTick,
   onStaggerComplete,
 }: Props) {
   const [answers, setAnswers] = useState<Record<number, FunctionalTestAnswer>>(
@@ -50,9 +40,7 @@ export function FunctionalTestYesNo({
   const [showHint, setShowHint] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
   const wasDisabledRef = useRef(Boolean(disabled));
-  const onStaggerTickRef = useRef(onStaggerTick);
   const onStaggerCompleteRef = useRef(onStaggerComplete);
-  onStaggerTickRef.current = onStaggerTick;
   onStaggerCompleteRef.current = onStaggerComplete;
   const shown = new Set<string>();
   const allRevealed = revealedCount >= tests.length;
@@ -82,42 +70,10 @@ export function FunctionalTestYesNo({
       return;
     }
 
-    if (prefersReducedMotion()) {
-      setShowHint(true);
-      setRevealedCount(tests.length);
-      onStaggerCompleteRef.current?.();
-      return;
-    }
-
-    let cancelled = false;
-    const timers: number[] = [];
-
-    setShowHint(false);
-    setRevealedCount(0);
-
-    timers.push(
-      window.setTimeout(() => {
-        if (!cancelled) setShowHint(true);
-      }, FUNCTIONAL_TEST_HINT_DELAY_MS)
-    );
-
-    tests.forEach((_, index) => {
-      timers.push(
-        window.setTimeout(() => {
-          if (cancelled) return;
-          const count = index + 1;
-          setRevealedCount(count);
-          onStaggerTickRef.current?.();
-          if (count >= tests.length) onStaggerCompleteRef.current?.();
-        }, functionalTestStaggerDelayMs(index))
-      );
-    });
-
-    return () => {
-      cancelled = true;
-      timers.forEach((t) => window.clearTimeout(t));
-    };
-    // Callbacks are read via refs so parent scroll handlers cannot reset stagger.
+    // Instant reveal — matches mobile and avoids delayed Sí/No buttons.
+    setShowHint(true);
+    setRevealedCount(tests.length);
+    onStaggerCompleteRef.current?.();
   }, [ready, testKey, tests.length]);
 
   function choose(n: number, value: FunctionalTestAnswer) {

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { NavBackButton } from "@/components/nav-back-button";
 import {
   clinicAccentSoft,
   normalizeClinicAccent,
@@ -33,9 +34,16 @@ type Props = {
   clinic: ClinicPublic;
   team: TeamMember[];
   posts: ClinicPost[];
+  /** Shown when opening from Clínica → Ver perfil público. */
+  backToClinic?: boolean;
 };
 
-export function ClinicPublicProfile({ clinic, team, posts }: Props) {
+export function ClinicPublicProfile({
+  clinic,
+  team,
+  posts,
+  backToClinic = false,
+}: Props) {
   const supabase = createClient();
   const [tab, setTab] = useState<PageTab>(posts.length > 0 ? "novedades" : "sobre");
   const [saved, setSaved] = useState(false);
@@ -83,7 +91,10 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
   }
 
   async function shareProfile() {
-    const url = typeof window !== "undefined" ? window.location.href : "";
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${window.location.pathname}`
+        : "";
     try {
       if (navigator.share) {
         await navigator.share({ title: clinic.name, url });
@@ -102,12 +113,20 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
 
   return (
     <div className="min-h-full bg-[#f3f4f6] pb-16">
+      {backToClinic ? (
+        <div className="sticky top-14 z-20 flex items-center border-b border-slate-200/70 bg-white/90 px-4 py-2 backdrop-blur-md sm:px-6">
+          <NavBackButton fallbackHref="/clinica" />
+          <span className="ml-2 text-sm font-medium text-slate-700">
+            Personaliza tu página
+          </span>
+        </div>
+      ) : null}
       <div className="relative">
         <div
-          className="relative h-44 w-full sm:h-56 lg:h-64"
+          className="relative aspect-[2/1] min-h-[11rem] w-full overflow-hidden sm:aspect-[2.4/1] sm:min-h-[14rem] lg:aspect-[2.8/1] lg:min-h-[17rem]"
           style={{
             background: clinic.cover_url
-              ? undefined
+              ? accent
               : `linear-gradient(135deg, ${accent} 0%, #0f172a 100%)`,
           }}
         >
@@ -117,11 +136,11 @@ export function ClinicPublicProfile({ clinic, team, posts }: Props) {
               alt=""
               fill
               sizes="100vw"
-              className="object-cover"
+              className="object-cover object-center"
               priority
             />
           ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
         </div>
       </div>
 

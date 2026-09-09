@@ -51,6 +51,7 @@ export function AppBurgerMenu({
     const primary: MenuItem[] = isClinic
       ? [
           { route: "ClinicConsult", label: t.headers.consulta },
+          { route: "ClinicPatients", label: t.clinicHub.headerPatients },
           { route: "ClinicHome", label: t.headers.clinica },
           { route: "ClinicSearch", label: t.headers.buscar },
         ]

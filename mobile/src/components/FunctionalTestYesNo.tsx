@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { FadeInView } from "./ui/FadeInView";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
@@ -9,11 +9,7 @@ import {
   type FunctionalTestAnswer,
   type FunctionalTestItem,
 } from "../lib/functional-test-answers";
-import {
-  functionalTestProgressLabel,
-  functionalTestStaggerDelayMs,
-  FUNCTIONAL_TEST_HINT_DELAY_MS,
-} from "../lib/functional-test-reveal";
+import { functionalTestProgressLabel } from "../lib/functional-test-reveal";
 import {
   resolveFunctionalTestMedia,
   stripFunctionalMediaMarker,
@@ -35,7 +31,6 @@ export function FunctionalTestYesNo({
   disabled,
   ready = true,
   onSubmit,
-  onStaggerTick,
   onStaggerComplete,
 }: Props) {
   const [answers, setAnswers] = useState<Record<number, FunctionalTestAnswer>>(
@@ -44,10 +39,7 @@ export function FunctionalTestYesNo({
   const [sent, setSent] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const onStaggerTickRef = useRef(onStaggerTick);
   const onStaggerCompleteRef = useRef(onStaggerComplete);
-  onStaggerTickRef.current = onStaggerTick;
   onStaggerCompleteRef.current = onStaggerComplete;
   const shown = new Set<string>();
   const allRevealed = revealedCount >= tests.length;
@@ -63,59 +55,17 @@ export function FunctionalTestYesNo({
   const testKey = tests.map((t) => `${t.n}:${t.prompt}`).join("|");
 
   useEffect(() => {
-    let mounted = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (mounted) setReduceMotion(Boolean(enabled));
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!ready || tests.length === 0) {
       setShowHint(false);
       setRevealedCount(0);
       return;
     }
 
-    if (reduceMotion) {
-      setShowHint(true);
-      setRevealedCount(tests.length);
-      onStaggerCompleteRef.current?.();
-      return;
-    }
-
-    let cancelled = false;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    setShowHint(false);
-    setRevealedCount(0);
-
-    timers.push(
-      setTimeout(() => {
-        if (!cancelled) setShowHint(true);
-      }, FUNCTIONAL_TEST_HINT_DELAY_MS)
-    );
-
-    tests.forEach((_, index) => {
-      timers.push(
-        setTimeout(() => {
-          if (cancelled) return;
-          const count = index + 1;
-          setRevealedCount(count);
-          onStaggerTickRef.current?.();
-          if (count >= tests.length) onStaggerCompleteRef.current?.();
-        }, functionalTestStaggerDelayMs(index))
-      );
-    });
-
-    return () => {
-      cancelled = true;
-      timers.forEach(clearTimeout);
-    };
-    // Callbacks are read via refs so parent scroll handlers cannot reset stagger.
-  }, [ready, testKey, tests.length, reduceMotion]);
+    // Show all tests immediately so consulta previa feels instant on phone.
+    setShowHint(true);
+    setRevealedCount(tests.length);
+    onStaggerCompleteRef.current?.();
+  }, [ready, testKey, tests.length]);
 
   function choose(n: number, value: FunctionalTestAnswer) {
     if (disabled || sent) return;

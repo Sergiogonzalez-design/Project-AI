@@ -1,6 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import {
   clinicInviteWhatsAppUrl,
 } from "../lib/clinic-invite";
 import { Colors } from "../lib/colors";
+import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 
 type Member = {
@@ -40,7 +42,10 @@ type CreatedInvite = {
   email: string | null;
 };
 
-export function ClinicTeamScreen() {
+/** Team invite UI — embed inside Pacientes hub without nesting ScrollViews. */
+export function ClinicTeamPanel({ embedded = false }: { embedded?: boolean }) {
+  const { t } = useI18n();
+  const hub = t.clinicHub;
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [clinicName, setClinicName] = useState<string | null>(null);
@@ -50,6 +55,7 @@ export function ClinicTeamScreen() {
   const [created, setCreated] = useState<CreatedInvite | null>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [{ data: m }, { data: i }, { data: clinic }] = await Promise.all([
@@ -92,7 +98,7 @@ export function ClinicTeamScreen() {
           };
 
       if (!opts?.openCode && !payload.p_email) {
-        throw new Error("Introduce un correo o genera un código libre.");
+        throw new Error(hub.inviteNeedEmail);
       }
 
       const { data, error: err } = await supabase.rpc("clinic_create_invite", payload);
@@ -103,7 +109,7 @@ export function ClinicTeamScreen() {
         email?: string | null;
       } | null;
       if (!row?.token || !row?.invite_code) {
-        throw new Error("No se pudo crear la invitación. Inténtalo de nuevo.");
+        throw new Error(hub.inviteCreateError);
       }
       setCreated({
         link: buildClinicStaffInviteUrl(row.token),
@@ -116,7 +122,7 @@ export function ClinicTeamScreen() {
       }
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error");
+      setError(e instanceof Error ? e.message : hub.inviteCreateError);
     } finally {
       setBusy(false);
     }
@@ -133,40 +139,76 @@ export function ClinicTeamScreen() {
     try {
       await Share.share({
         message: shareMessage,
-        title: "Invitación AIKinora",
+        title: "AIKinora",
       });
     } catch {
       // dismissed
     }
   }
 
-  const physios = members.filter((m) => m.role === "physio");
+  async function deleteInvite(inviteRow: Invite) {
+    const label = inviteRow.email || inviteRow.invite_code || hub.openCode;
+    Alert.alert(
+      hub.deleteInviteTitle,
+      hub.deleteInviteBody.replace("{label}", label),
+      [
+        { text: hub.cancel, style: "cancel" },
+        {
+          text: hub.delete,
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              setError(null);
+              setDeletingId(inviteRow.id);
+              try {
+                const { error: err } = await supabase.rpc("clinic_delete_invite", {
+                  p_invite_id: inviteRow.id,
+                });
+                if (err) throw new Error(err.message);
+                if (
+                  created &&
+                  (created.code === inviteRow.invite_code ||
+                    created.link.includes(inviteRow.token))
+                ) {
+                  setCreated(null);
+                }
+                await load();
+              } catch (e) {
+                setError(
+                  e instanceof Error ? e.message : hub.inviteDeleteError
+                );
+              } finally {
+                setDeletingId(null);
+              }
+            })();
+          },
+        },
+      ]
+    );
+  }
+
   const pending = invites.filter((i) => !i.accepted_at);
 
-  return (
-    <ScrollView contentContainerStyle={styles.wrap} keyboardShouldPersistTaps="handled">
-      <Text style={styles.lead}>
-        Genera un código o enlace para que un fisioterapeuta cree su cuenta.
-        En Expo Go el enlace abre la web; el código funciona al registrarse en la
-        app (Crear cuenta → Fisio).
-      </Text>
+  const body = (
+    <View style={embedded ? undefined : styles.inner}>
+      <Text style={styles.lead}>{hub.physiosLead}</Text>
 
-      <Text style={styles.label}>Correo del fisioterapeuta (opcional)</Text>
+      <Text style={styles.label}>{hub.emailOptional}</Text>
       <TextInput
         style={styles.input}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-        placeholder="fisio@clinica.com"
+        placeholder={hub.emailPlaceholder}
         placeholderTextColor={Colors.textLight}
       />
-      <Text style={styles.label}>Nombre (opcional)</Text>
+      <Text style={styles.label}>{hub.nameOptional}</Text>
       <TextInput
         style={styles.input}
         value={displayName}
         onChangeText={setDisplayName}
-        placeholder="Nombre y apellidos"
+        placeholder={hub.namePlaceholder}
         placeholderTextColor={Colors.textLight}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -178,10 +220,10 @@ export function ClinicTeamScreen() {
       >
         <Text style={styles.btnText}>
           {busy
-            ? "Creando…"
+            ? hub.creating
             : email.trim()
-              ? "Crear invitación"
-              : "Generar código de alta"}
+              ? hub.createInvite
+              : hub.generateCode}
         </Text>
       </Pressable>
       {email.trim() ? (
@@ -190,31 +232,33 @@ export function ClinicTeamScreen() {
           onPress={() => void invite({ openCode: true })}
           disabled={busy}
         >
-          <Text style={styles.secondaryBtnText}>Solo generar código (sin correo)</Text>
+          <Text style={styles.secondaryBtnText}>{hub.codeOnly}</Text>
         </Pressable>
       ) : null}
 
       {created ? (
         <View style={styles.inviteCard}>
-          <Text style={styles.inviteTitle}>Código de alta</Text>
+          <Text style={styles.inviteTitle}>{hub.inviteCodeTitle}</Text>
           <Text style={styles.code}>{created.code}</Text>
           <Pressable onPress={() => void copyText("code", created.code)}>
             <Text style={styles.copyLink}>
-              {copied === "code" ? "Código copiado" : "Copiar código"}
+              {copied === "code" ? hub.codeCopied : hub.copyCodeLong}
             </Text>
           </Pressable>
 
-          <Text style={[styles.inviteTitle, { marginTop: 14 }]}>Enlace web</Text>
+          <Text style={[styles.inviteTitle, { marginTop: 14 }]}>
+            {hub.webLinkTitle}
+          </Text>
           <Text style={styles.link}>{created.link}</Text>
           <Pressable onPress={() => void copyText("link", created.link)}>
             <Text style={styles.copyLink}>
-              {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
+              {copied === "link" ? hub.linkCopied : hub.copyLinkLong}
             </Text>
           </Pressable>
 
           <View style={styles.shareRow}>
             <Pressable style={styles.shareBtn} onPress={() => void shareInvite()}>
-              <Text style={styles.shareBtnText}>Compartir</Text>
+              <Text style={styles.shareBtnText}>{hub.shareBtn}</Text>
             </Pressable>
             <Pressable
               style={[styles.shareBtn, styles.whatsappBtn]}
@@ -236,44 +280,80 @@ export function ClinicTeamScreen() {
         </View>
       ) : null}
 
-      <Text style={styles.section}>Equipo</Text>
-      {physios.length === 0 ? (
-        <Text style={styles.muted}>Aún no hay fisioterapeutas.</Text>
+      <Text style={styles.section}>{hub.teamTitle}</Text>
+      {members.length === 0 ? (
+        <Text style={styles.muted}>{hub.noMembers}</Text>
       ) : (
-        physios.map((m) => (
-          <View key={m.user_id} style={styles.row}>
-            <Text style={styles.name}>{m.display_name || "Sin nombre"}</Text>
-            <Text style={styles.muted}>{m.email}</Text>
-          </View>
-        ))
+        members.map((m) => {
+          const roleLabel =
+            m.role === "physio"
+              ? hub.rolePhysio
+              : m.role === "owner"
+                ? hub.roleOwner
+                : m.role === "admin"
+                  ? hub.roleAdmin
+                  : m.role;
+          return (
+            <View key={m.user_id} style={styles.row}>
+              <View style={styles.memberHead}>
+                <Text style={styles.name}>{m.display_name || hub.noName}</Text>
+                <Text style={styles.roleBadge}>{roleLabel}</Text>
+              </View>
+              <Text style={styles.muted}>{m.email}</Text>
+            </View>
+          );
+        })
       )}
       {pending.map((inv) => (
         <View key={inv.id} style={styles.pendingRow}>
           <Text style={styles.muted}>
-            Pendiente: {inv.email || "código libre"}
+            {hub.pending}: {inv.email || hub.openCode}
             {inv.invite_code ? ` · ${inv.invite_code}` : ""}
           </Text>
-          {inv.token ? (
+          <View style={styles.pendingActions}>
+            {inv.token ? (
+              <Pressable
+                onPress={() =>
+                  setCreated({
+                    link: buildClinicStaffInviteUrl(inv.token),
+                    code: inv.invite_code || inv.token.slice(0, 8).toUpperCase(),
+                    email: inv.email,
+                  })
+                }
+              >
+                <Text style={styles.copyLink}>{hub.viewShare}</Text>
+              </Pressable>
+            ) : null}
             <Pressable
-              onPress={() =>
-                setCreated({
-                  link: buildClinicStaffInviteUrl(inv.token),
-                  code: inv.invite_code || inv.token.slice(0, 8).toUpperCase(),
-                  email: inv.email,
-                })
-              }
+              disabled={deletingId === inv.id}
+              onPress={() => void deleteInvite(inv)}
             >
-              <Text style={styles.copyLink}>Ver / compartir</Text>
+              <Text style={styles.deleteLink}>
+                {deletingId === inv.id ? hub.deleting : hub.delete}
+              </Text>
             </Pressable>
-          ) : null}
+          </View>
         </View>
       ))}
+    </View>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <ScrollView contentContainerStyle={styles.wrap} keyboardShouldPersistTaps="handled">
+      {body}
     </ScrollView>
   );
 }
 
+export function ClinicTeamScreen() {
+  return <ClinicTeamPanel />;
+}
+
 const styles = StyleSheet.create({
   wrap: { padding: 16, paddingBottom: 40 },
+  inner: { paddingBottom: 8 },
   lead: { fontSize: 14, lineHeight: 20, color: Colors.textSecondary, marginBottom: 16 },
   label: { fontSize: 12, fontWeight: "700", color: Colors.textSecondary, marginTop: 10 },
   input: {
@@ -324,6 +404,8 @@ const styles = StyleSheet.create({
   },
   link: { marginTop: 6, fontSize: 12, color: Colors.primary, lineHeight: 18 },
   copyLink: { marginTop: 8, fontSize: 13, fontWeight: "700", color: Colors.primary },
+  deleteLink: { marginTop: 8, fontSize: 13, fontWeight: "700", color: Colors.danger },
+  pendingActions: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
   shareRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
   shareBtn: {
     borderRadius: 12,
@@ -338,5 +420,21 @@ const styles = StyleSheet.create({
   muted: { marginTop: 8, fontSize: 13, color: Colors.textSecondary },
   pendingRow: { marginTop: 10 },
   row: { marginTop: 10 },
-  name: { fontSize: 15, fontWeight: "700", color: Colors.text },
+  memberHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  name: { flex: 1, fontSize: 15, fontWeight: "700", color: Colors.text },
+  roleBadge: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.primary,
+    backgroundColor: "#EFF6FF",
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
 });

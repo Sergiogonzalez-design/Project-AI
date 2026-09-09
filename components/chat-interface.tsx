@@ -1213,7 +1213,7 @@ export function ChatInterface({
     if (!physioIntro || activeId) return;
     const timer = setTimeout(() => {
       skipPhysioIntro();
-    }, 5000);
+    }, 600);
     return () => clearTimeout(timer);
   }, [physioIntro, activeId]);
 

@@ -115,7 +115,7 @@ export function PhysioPatientsScreen() {
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const inviteLink = inviteCode
-    ? `${WEB_APP_URL}/login?code=${encodeURIComponent(inviteCode)}`
+    ? `${WEB_APP_URL}/unirse?code=${encodeURIComponent(inviteCode)}`
     : null;
 
   const [selectedPatient, setSelectedPatient] = useState<PhysioPatient | null>(null);

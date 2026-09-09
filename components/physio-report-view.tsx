@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import { hasClinicalReasoningForReport } from "@/lib/clinical-reasoning";
+import {
+  findClinicalTestImage,
+  shouldShowClinicalTestImage,
+  type ClinicalTestImage,
+} from "@/lib/clinical-test-images";
 import {
   extractCitedSources,
   remapOrientationHeadingsForPhysio,
@@ -162,6 +168,51 @@ function renderInline(text: string, opts?: { boldYesNo?: boolean }) {
   });
 }
 
+function matchPruebaLine(line: string): ClinicalTestImage | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const plain = stripVisibleMarkup(trimmed).replace(/^\*\s+/, "• ").trim();
+  const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
+  const numberedText = /^\d+[.)]\s+\S/.test(plain) ? plain : null;
+  const matched = shouldShowClinicalTestImage({
+    numberedText,
+    wholeBoldText: wholeBoldMatch?.[1] ?? null,
+  });
+  if (matched) return matched;
+  // Bullet / dash recommendations in the report (e.g. "• Test de Lachman").
+  if (/^[-•*]\s+\S/.test(plain) && plain.length <= 160) {
+    return findClinicalTestImage(plain);
+  }
+  return null;
+}
+
+/** Line-by-line pruebas with demo video under each matched maneuver. */
+function renderPruebasWithVideos(body: string): ReactNode {
+  const shown = new Set<string>();
+  const lines = body.split("\n");
+  return (
+    <div className="space-y-3">
+      {lines.map((line, i) => {
+        const matched = matchPruebaLine(line);
+        const show =
+          matched && !shown.has(matched.id) ? matched : null;
+        if (show) shown.add(show.id);
+        if (!line.trim() && !show) {
+          return <div key={i} className="h-2" />;
+        }
+        return (
+          <div key={i}>
+            {line.trim() ? (
+              <div className="whitespace-pre-wrap">{renderInline(line)}</div>
+            ) : null}
+            {show ? <ClinicalTestMediaBlock test={show} /> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function SourcesButton({
   sources,
   heading = "Fuentes consultadas",
@@ -307,13 +358,17 @@ export function PhysioReportView({
           <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-600">
             {section.title}
           </h4>
-          <div className="mt-1.5 whitespace-pre-wrap">
-            {renderInline(section.body, {
-              boldYesNo:
-                section.title ===
-                "Resultados de las pruebas funcionales ya realizadas",
-            })}
-          </div>
+          {section.title === "Pruebas/maniobras a realizar en la cita" ? (
+            <div className="mt-1.5">{renderPruebasWithVideos(section.body)}</div>
+          ) : (
+            <div className="mt-1.5 whitespace-pre-wrap">
+              {renderInline(section.body, {
+                boldYesNo:
+                  section.title ===
+                  "Resultados de las pruebas funcionales ya realizadas",
+              })}
+            </div>
+          )}
           {section.title === "Pruebas/maniobras a realizar en la cita" &&
           showReasoningButton &&
           reasoningHref ? (

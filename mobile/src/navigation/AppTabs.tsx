@@ -1,6 +1,4 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
-import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import React from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppBackButton } from "../components/AppBackButton";
@@ -11,6 +9,7 @@ import { AIInquiriesScreen } from "../screens/AIInquiriesScreen";
 import { AboutUsScreen } from "../screens/AboutUsScreen";
 import { AdminScreen } from "../screens/AdminScreen";
 import { ClinicHomeScreen } from "../screens/ClinicHomeScreen";
+import { ClinicPatientsScreen } from "../screens/ClinicPatientsScreen";
 import { ClinicSearchScreen } from "../screens/ClinicSearchScreen";
 import { ClinicTeamScreen } from "../screens/ClinicTeamScreen";
 import { PhysioConsultScreen } from "../screens/PhysioConsultScreen";
@@ -27,26 +26,13 @@ export type TabParamList = {
   ClinicConsult: undefined;
   ClinicHome: undefined;
   ClinicTeam: undefined;
+  ClinicPatients: { tab?: "pacientes" | "fisios" } | undefined;
   AboutUs: undefined;
   Admin: undefined;
   Profile: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
-
-function ClinicTeamBackButton() {
-  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
-  return (
-    <AppBackButton onPress={() => navigation.navigate("ClinicHome")} />
-  );
-}
-
-function ConsultaBackButton() {
-  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
-  return (
-    <AppBackButton onPress={() => navigation.navigate("AIInquiries")} />
-  );
-}
 
 type AppTabsProps = {
   isAdmin?: boolean;
@@ -79,7 +65,8 @@ export function AppTabs({
       color: Colors.text,
     },
     headerShadowVisible: false,
-    headerLeft: () => <AppBackButton />,
+    // Clinic hub uses in-screen tabs; back arrows clutter the header.
+    headerLeft: isClinic ? () => null : () => <AppBackButton />,
     headerRight: () => (
       <AppBurgerMenu
         isPhysio={isPhysio}
@@ -107,19 +94,27 @@ export function AppTabs({
           <Tab.Screen
             name="ClinicHome"
             component={ClinicHomeScreen}
-            options={{ title: t.headers.clinica }}
+            options={{ title: t.headers.clinica, headerLeft: () => null }}
           />
           <Tab.Screen
             name="ClinicSearch"
             component={ClinicSearchScreen}
-            options={{ title: t.headers.buscar }}
+            options={{ title: t.headers.buscar, headerLeft: () => null }}
           />
           <Tab.Screen
             name="ClinicTeam"
             component={ClinicTeamScreen}
             options={{
-              title: "Equipo",
-              headerLeft: () => <ClinicTeamBackButton />,
+              title: t.clinicHub.headerTeam,
+              headerLeft: () => null,
+            }}
+          />
+          <Tab.Screen
+            name="ClinicPatients"
+            component={ClinicPatientsScreen}
+            options={{
+              title: t.clinicHub.headerPatients,
+              headerLeft: () => null,
             }}
           />
         </>
@@ -153,7 +148,7 @@ export function AppTabs({
             component={PhysioLinkScreen}
             options={{
               title: t.headers.fisioterapia,
-              headerLeft: () => <ConsultaBackButton />,
+              headerLeft: () => null,
             }}
           />
           <Tab.Screen

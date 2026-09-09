@@ -31,9 +31,12 @@ function formatDate(value: string) {
 export function FisioPatientReports({
   patientId,
   patientLabel,
+  backHref = "/fisio",
 }: {
   patientId: string;
   patientLabel: string | null;
+  /** Back link target (physio roster or clinic patients). */
+  backHref?: string;
 }) {
   const [reports, setReports] = useState<ClinicalReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +123,7 @@ export function FisioPatientReports({
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/fisio" className="text-sm font-medium text-blue-600 hover:text-blue-800">
+      <Link href={backHref} className="text-sm font-medium text-blue-600 hover:text-blue-800">
         ← Volver a pacientes
       </Link>
 

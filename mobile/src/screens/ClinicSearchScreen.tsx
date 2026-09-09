@@ -243,7 +243,11 @@ export function ClinicSearchScreen() {
             >
               <View style={[styles.cover, { backgroundColor: accent }]}>
                 {clinic.cover_url ? (
-                  <Image source={{ uri: clinic.cover_url }} style={styles.coverImg} />
+                  <Image
+                    source={{ uri: clinic.cover_url }}
+                    style={styles.coverImg}
+                    resizeMode="cover"
+                  />
                 ) : null}
               </View>
               <View style={styles.channelBody}>
@@ -371,7 +375,11 @@ function ClinicProfileView({
     <ScrollView contentContainerStyle={styles.profileWrap}>
       <View style={[styles.coverTall, { backgroundColor: accent }]}>
         {clinic.cover_url ? (
-          <Image source={{ uri: clinic.cover_url }} style={styles.coverImg} />
+          <Image
+            source={{ uri: clinic.cover_url }}
+            style={styles.coverImg}
+            resizeMode="cover"
+          />
         ) : null}
         <Pressable onPress={onBack} style={styles.backPill}>
           <Text style={styles.backPillText}>← Buscar</Text>
@@ -619,8 +627,19 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 12,
   },
-  cover: { height: 92 },
-  coverTall: { height: 150 },
+  cover: {
+    width: "100%",
+    aspectRatio: 2.4,
+    minHeight: 120,
+    maxHeight: 180,
+    backgroundColor: Colors.primary,
+  },
+  coverTall: {
+    width: "100%",
+    aspectRatio: 2.1,
+    minHeight: 160,
+    maxHeight: 240,
+  },
   coverImg: { width: "100%", height: "100%" },
   channelBody: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 22 },
   logoOverlap: {

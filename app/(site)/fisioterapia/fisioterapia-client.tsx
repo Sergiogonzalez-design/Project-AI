@@ -26,10 +26,12 @@ function hasNamedThisGuest(userId: string): boolean {
 }
 
 export function FisioterapiaClient() {
-  const [linked, setLinked] = useState<LinkedPhysio | null>(null);
+  const [linked, setLinked] = useState<LinkedPhysio | null>(() =>
+    linkedPhysioCache?.physio_id ? linkedPhysioCache : null
+  );
   const [guestMode, setGuestMode] = useState(false);
   const [needsName, setNeedsName] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(Boolean(linkedPhysioCache?.physio_id));
 
   useEffect(() => {
     let cancelled = false;
@@ -40,14 +42,15 @@ export function FisioterapiaClient() {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) {
+          if (!cancelled) {
+            setLinked(null);
+            setReady(true);
+          }
           return;
         }
         const guest = isGuestUser(user);
         if (cancelled) return;
         setGuestMode(guest);
-        if (guest) {
-          setNeedsName(!hasNamedThisGuest(user.id));
-        }
 
         let next = linkedPhysioCache ?? null;
         if (!next?.physio_id) {
@@ -59,6 +62,28 @@ export function FisioterapiaClient() {
               : null;
         }
         linkedPhysioCache = next;
+
+        if (guest) {
+          if (hasNamedThisGuest(user.id)) {
+            setNeedsName(false);
+          } else {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("display_name")
+              .eq("id", user.id)
+              .maybeSingle();
+            const named = ((profile?.display_name as string | null) ?? "").trim().length >= 2;
+            if (named) {
+              try {
+                sessionStorage.setItem(guestNameStorageKey(user.id), "1");
+              } catch {
+                // ignore
+              }
+            }
+            if (!cancelled) setNeedsName(!named);
+          }
+        }
+
         if (!cancelled) {
           setLinked(next);
           setReady(true);

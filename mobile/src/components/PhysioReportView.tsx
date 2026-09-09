@@ -1,8 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { hasClinicalReasoningForReport } from "../lib/clinical-reasoning";
+import {
+  findClinicalTestImage,
+  shouldShowClinicalTestImage,
+  type ClinicalTestImage,
+} from "../lib/clinical-test-images";
 import {
   extractCitedSources,
   remapOrientationHeadingsForPhysio,
@@ -163,6 +169,45 @@ function InlineMarkdown({
   );
 }
 
+function matchPruebaLine(line: string): ClinicalTestImage | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  const plain = stripVisibleMarkup(trimmed).replace(/^\*\s+/, "• ").trim();
+  const wholeBoldMatch = /^\*\*(.+)\*\*$/.exec(trimmed);
+  const numberedText = /^\d+[.)]\s+\S/.test(plain) ? plain : null;
+  const matched = shouldShowClinicalTestImage({
+    numberedText,
+    wholeBoldText: wholeBoldMatch?.[1] ?? null,
+  });
+  if (matched) return matched;
+  if (/^[-•*]\s+\S/.test(plain) && plain.length <= 160) {
+    return findClinicalTestImage(plain);
+  }
+  return null;
+}
+
+function PruebasWithVideos({ body }: { body: string }) {
+  const shown = new Set<string>();
+  return (
+    <View style={styles.pruebasWrap}>
+      {body.split("\n").map((line, i) => {
+        const matched = matchPruebaLine(line);
+        const show = matched && !shown.has(matched.id) ? matched : null;
+        if (show) shown.add(show.id);
+        if (!line.trim() && !show) {
+          return <View key={i} style={{ height: 8 }} />;
+        }
+        return (
+          <View key={i} style={styles.pruebaItem}>
+            {line.trim() ? <InlineMarkdown text={line} /> : null}
+            {show ? <ClinicalTestMediaBlock test={show} /> : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 function openSourceHref(href: string) {
   const finalUrl = href.startsWith("/") ? `${WEB_APP_URL}${href}` : href;
   void Linking.openURL(finalUrl);
@@ -264,13 +309,17 @@ export function PhysioReportView({
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
-          <InlineMarkdown
-            text={section.body}
-            boldYesNo={
-              section.title ===
-              "Resultados de las pruebas funcionales ya realizadas"
-            }
-          />
+          {section.title === "Pruebas/maniobras a realizar en la cita" ? (
+            <PruebasWithVideos body={section.body} />
+          ) : (
+            <InlineMarkdown
+              text={section.body}
+              boldYesNo={
+                section.title ===
+                "Resultados de las pruebas funcionales ya realizadas"
+              }
+            />
+          )}
           {section.title === "Pruebas/maniobras a realizar en la cita" &&
           showReasoningButton ? (
             <View style={styles.reasoningWrap}>
@@ -385,4 +434,6 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: Colors.textLight,
   },
+  pruebasWrap: { gap: 10 },
+  pruebaItem: { gap: 6 },
 });

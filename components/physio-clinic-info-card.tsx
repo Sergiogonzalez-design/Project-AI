@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ClinicCoverBanner } from "@/components/clinic-cover-banner";
 import {
   normalizeClinicAccent,
   parseClinicSpecialties,
@@ -36,45 +37,35 @@ export function PhysioClinicInfoCard({ clinic }: { clinic: PhysioClinicSummary }
 
   return (
     <section className="mt-6 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-      <div
-        className="relative h-24 w-full"
-        style={{
-          background: clinic.cover_url
-            ? undefined
-            : `linear-gradient(135deg, ${accent} 0%, #0f172a 100%)`,
-        }}
-      >
-        {clinic.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={clinic.cover_url}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        ) : null}
-      </div>
-      <div className="px-5 pb-5">
-        <div className="-mt-7 flex items-end gap-3">
+      <ClinicCoverBanner
+        coverUrl={clinic.cover_url}
+        accentColor={clinic.accent_color}
+        size="md"
+      />
+      <div className="relative px-5 pb-5">
+        <div className="-mt-8 flex items-end gap-3 sm:-mt-10">
           {clinic.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={clinic.logo_url}
               alt=""
-              className="h-14 w-14 rounded-2xl border-4 border-white object-cover shadow"
+              className="h-16 w-16 rounded-2xl border-4 border-white object-cover shadow-md sm:h-[4.5rem] sm:w-[4.5rem]"
             />
           ) : (
             <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-white text-lg font-extrabold text-white shadow"
+              className="flex h-16 w-16 items-center justify-center rounded-2xl border-4 border-white text-lg font-extrabold text-white shadow-md sm:h-[4.5rem] sm:w-[4.5rem]"
               style={{ background: accent }}
             >
               {clinic.name.slice(0, 1).toUpperCase()}
             </div>
           )}
-          <div className="pb-1">
+          <div className="min-w-0 pb-1">
             <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
               Tu clínica
             </p>
-            <h2 className="text-lg font-bold text-neutral-900">{clinic.name}</h2>
+            <h2 className="truncate text-lg font-bold text-neutral-900 sm:text-xl">
+              {clinic.name}
+            </h2>
             {clinic.tagline ? (
               <p className="text-sm text-slate-500">{clinic.tagline}</p>
             ) : null}

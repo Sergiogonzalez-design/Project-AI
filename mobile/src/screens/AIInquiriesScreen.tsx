@@ -670,6 +670,7 @@ export function AIInquiriesScreen({
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [fisioBootDeadline, setFisioBootDeadline] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTitle, setActiveTitle] = useState(t.consulta.newConsulta);
@@ -820,6 +821,12 @@ export function AIInquiriesScreen({
   }, []);
 
   useEffect(() => {
+    if (!linkedPhysio) return;
+    const t = setTimeout(() => setFisioBootDeadline(true), 800);
+    return () => clearTimeout(t);
+  }, [linkedPhysio]);
+
+  useEffect(() => {
     if (!pendingFisioCodeReload.current || !linkedPhysio) return;
     pendingFisioCodeReload.current = false;
     void loadConversations({ skipAutoOpen: true });
@@ -835,7 +842,7 @@ export function AIInquiriesScreen({
     if (!physioIntro || activeId) return;
     const timer = setTimeout(() => {
       skipPhysioIntro();
-    }, 5000);
+    }, 600);
     return () => clearTimeout(timer);
   }, [physioIntro, activeId]);
 
@@ -885,13 +892,15 @@ export function AIInquiriesScreen({
 
   const beginAssistantReveal = useCallback(
     (id: string, content: string) => {
-      revealingMessageIdRef.current = id;
-      setRevealingMessageId(id);
       if (!ASSISTANT_REVEAL_ENABLED) {
+        revealingMessageIdRef.current = null;
+        setRevealingMessageId(null);
         pinRevealToStartRef.current = false;
         scrollToBottomAfterPaint();
         return;
       }
+      revealingMessageIdRef.current = id;
+      setRevealingMessageId(id);
       pinRevealToStartRef.current = isLongAssistantReply(content);
     },
     [scrollToBottomAfterPaint]
@@ -977,28 +986,34 @@ export function AIInquiriesScreen({
   }
 
   async function loadConversations(opts?: { skipAutoOpen?: boolean }) {
-    const { data } = await supabase
-      .from("conversations")
-      .select("id, title, created_at, physio_id, physio_name, clinic_name")
-      .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
-      .order("created_at", { ascending: false })
-      .limit(linkedPhysio ? 30 : 10);
-    const list = (data as Conversation[]) ?? [];
-    setConversations(list);
+    try {
+      const { data } = await supabase
+        .from("conversations")
+        .select("id, title, created_at, physio_id, physio_name, clinic_name")
+        .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
+        .order("created_at", { ascending: false })
+        .limit(linkedPhysio ? 30 : 10);
+      const list = (data as Conversation[]) ?? [];
+      setConversations(list);
 
-    if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
-      const preferred =
-        (linkedPhysio.physio_id
-          ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
-          : null) ?? list[0];
-      await loadConversation(preferred.id, preferred.title);
-      return;
-    }
+      if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
+        const preferred =
+          (linkedPhysio.physio_id
+            ? list.find((c) => c.physio_id === linkedPhysio.physio_id)
+            : null) ?? list[0];
+        await loadConversation(preferred.id, preferred.title);
+        return;
+      }
 
-    if (linkedPhysio) {
-      setPhysioIntro(true);
+      if (linkedPhysio) {
+        setPhysioIntro(true);
+      }
+    } catch (err) {
+      console.error("No se pudieron cargar las consultas:", err);
+      if (linkedPhysio) setPhysioIntro(true);
+    } finally {
+      setHistoryLoaded(true);
     }
-    setHistoryLoaded(true);
   }
 
   async function loadConversation(id: string, title: string) {
@@ -1026,69 +1041,75 @@ export function AIInquiriesScreen({
     setAttachedUri(null);
     setPhysioReportSentBanner(false);
 
-    const { data } = await supabase
-      .from("messages")
-      .select("id, role, content, image_url")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true });
-
-    let msgs = (data as Message[]) ?? [];
-
-    msgs = await signConsultMessageAttachments(msgs);
-
-    if (linkedPhysio) {
-      const { data: report } = await supabase
-        .from("clinical_reports")
-        .select("id")
+    try {
+      const { data } = await supabase
+        .from("messages")
+        .select("id, role, content, image_url")
         .eq("conversation_id", id)
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true });
 
-      msgs = msgs.filter(
-        (m) =>
-          m.role !== "assistant" ||
-          !/\*\*Resumen de tu consulta\*\*|Estructuras que podrían estar afectadas|Posibles lesiones \(orientativas\)/i.test(
-            m.content
-          )
-      );
+      let msgs = (data as Message[]) ?? [];
 
-      setPhase(report ? "complete" : "followup");
-      if (report) setPhysioReportSentBanner(true);
-    } else {
-      const finished = msgs.some(
-        (m) => m.role === "assistant" && isConsultaFinishedCloseMessage(m.content)
-      );
-      if (finished) {
-        setPhase("complete");
-      } else {
-        setPhase("followup");
-        const hasOrientation = msgs.some(
+      msgs = await signConsultMessageAttachments(msgs);
+
+      if (linkedPhysio) {
+        const { data: report } = await supabase
+          .from("clinical_reports")
+          .select("id")
+          .eq("conversation_id", id)
+          .limit(1)
+          .maybeSingle();
+
+        msgs = msgs.filter(
           (m) =>
-            m.role === "assistant" &&
-            /\*\*Resumen de tu consulta\*\*|Summary of your consultation/i.test(
+            m.role !== "assistant" ||
+            !/\*\*Resumen de tu consulta\*\*|Estructuras que podrían estar afectadas|Posibles lesiones \(orientativas\)/i.test(
               m.content
             )
         );
-        if (hasOrientation) {
-          setRelatedFollowupActive(true);
-          const lastAsst = [...msgs]
-            .reverse()
-            .find((m) => m.role === "assistant");
-          if (
-            lastAsst &&
-            /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
-              lastAsst.content
-            )
-          ) {
-            setPostGuidanceAsked(true);
+
+        setPhase(report ? "complete" : "followup");
+        if (report) setPhysioReportSentBanner(true);
+      } else {
+        const finished = msgs.some(
+          (m) => m.role === "assistant" && isConsultaFinishedCloseMessage(m.content)
+        );
+        if (finished) {
+          setPhase("complete");
+        } else {
+          setPhase("followup");
+          const hasOrientation = msgs.some(
+            (m) =>
+              m.role === "assistant" &&
+              /\*\*Resumen de tu consulta\*\*|Summary of your consultation/i.test(
+                m.content
+              )
+          );
+          if (hasOrientation) {
+            setRelatedFollowupActive(true);
+            const lastAsst = [...msgs]
+              .reverse()
+              .find((m) => m.role === "assistant");
+            if (
+              lastAsst &&
+              /otra pregunta relacionada|any other question related|alguna otra duda relacionada/i.test(
+                lastAsst.content
+              )
+            ) {
+              setPostGuidanceAsked(true);
+            }
           }
         }
       }
-    }
 
-    setMessages(msgs);
-    setOpeningConversation(false);
-    setHistoryLoaded(true);
+      setMessages(msgs);
+    } catch (err) {
+      console.error("No se pudo abrir la consulta:", err);
+      setMessages([]);
+    } finally {
+      setOpeningConversation(false);
+      setHistoryLoaded(true);
+    }
   }
 
   function clearToFisioIdle() {
@@ -3707,7 +3728,9 @@ export function AIInquiriesScreen({
     conversations.length > 0 &&
     !activeId;
   const showFisioBootstrap =
-    Boolean(linkedPhysio) && (!historyLoaded || (openingConversation && messages.length === 0));
+    Boolean(linkedPhysio) &&
+    !fisioBootDeadline &&
+    (!historyLoaded || (openingConversation && messages.length === 0));
   const physioHighlightPhrases = collectPhysioHighlightPhrases(
     linkedPhysio,
     conversations

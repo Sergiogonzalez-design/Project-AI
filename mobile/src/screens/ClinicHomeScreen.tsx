@@ -480,6 +480,7 @@ export function ClinicHomeScreen() {
             <Image
               source={{ uri: coverPreview || clinic?.cover_url || undefined }}
               style={styles.coverImage}
+              resizeMode="cover"
             />
           ) : (
             <View style={styles.coverPlaceholder}>
@@ -546,11 +547,23 @@ export function ClinicHomeScreen() {
 
       <Pressable
         style={styles.equipoBtn}
-        onPress={() => navigation.navigate("ClinicTeam")}
+        onPress={() => navigation.navigate("ClinicPatients", { tab: "pacientes" })}
         accessibilityRole="button"
-        accessibilityLabel="Equipo"
+        accessibilityLabel="Cuentas"
       >
-        <Text style={styles.equipoBtnText}>Equipo</Text>
+        <Text style={styles.equipoBtnText}>Cuentas</Text>
+        <Text style={styles.equipoBtnHint}>
+          Pacientes, fisioterapeutas e informes
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.equipoBtn}
+        onPress={() => navigation.navigate("ClinicPatients", { tab: "fisios" })}
+        accessibilityRole="button"
+        accessibilityLabel="Fisioterapeutas"
+      >
+        <Text style={styles.equipoBtnText}>Fisioterapeutas</Text>
         <Text style={styles.equipoBtnHint}>
           Invitar fisioterapeutas y gestionar el alta
         </Text>
@@ -925,7 +938,11 @@ export function ClinicHomeScreen() {
       </View>
       {clinic?.slug ? (
         <Pressable
-          onPress={() => void Linking.openURL(`${WEB_APP_URL}/centro/${clinic.slug}`)}
+          onPress={() =>
+            void Linking.openURL(
+              `${WEB_APP_URL}/centro/${clinic.slug}?from=clinica`
+            )
+          }
         >
           <Text style={styles.link}>Ver ficha pública</Text>
         </Pressable>
@@ -1042,12 +1059,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   coverTap: {
-    height: 140,
     width: "100%",
+    aspectRatio: 2.5,
+    minHeight: 148,
+    maxHeight: 220,
     backgroundColor: Colors.primary,
     justifyContent: "flex-end",
+    overflow: "hidden",
   },
-  coverImage: { ...StyleSheet.absoluteFill, width: "100%", height: "100%" },
+  coverImage: {
+    ...StyleSheet.absoluteFill,
+    width: "100%",
+    height: "100%",
+  },
   coverPlaceholder: {
     flex: 1,
     alignItems: "center",

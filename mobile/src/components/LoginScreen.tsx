@@ -1,9 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -39,6 +40,11 @@ function translateAuthError(message: string, t: ReturnType<typeof useI18n>["t"])
   return message;
 }
 
+function codeFromUrl(url: string | null): string {
+  if (!url) return "";
+  return parsePastedInviteCode(url);
+}
+
 export function LoginScreen({ onSwitch, onForgot }: Props) {
   const { t } = useI18n();
   const [email, setEmail] = useState("");
@@ -49,7 +55,33 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
   const [guestError, setGuestError] = useState<string | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
+  const autoGuestStarted = useRef(false);
   const busy = loading || guestLoading;
+
+  useEffect(() => {
+    function applyDeepLink(url: string | null) {
+      const code = codeFromUrl(url);
+      if (code.length < 6 || autoGuestStarted.current) return;
+      autoGuestStarted.current = true;
+      setInviteCode(code);
+      // Redeem on next tick so state is set for the form.
+      setTimeout(() => {
+        void redeemGuestCode(code);
+      }, 0);
+    }
+
+    let alive = true;
+    void Linking.getInitialURL().then((url) => {
+      if (alive) applyDeepLink(url);
+    });
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      applyDeepLink(url);
+    });
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, []);
 
   async function handleLogin() {
     setError(null);
@@ -72,17 +104,20 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
     }
   }
 
-  async function handleGuestCode() {
+  async function redeemGuestCode(rawCode: string) {
     setError(null);
     setGuestError(null);
     Keyboard.dismiss();
-    const normalized = parsePastedInviteCode(inviteCode);
+    const normalized = parsePastedInviteCode(rawCode);
     if (normalized.length < 6) {
       setGuestError(t.auth.guestCodeRequired);
       return;
     }
     setGuestLoading(true);
     try {
+      // Match web /unirse: clear any residual session before guest redeem.
+      await supabase.auth.signOut({ scope: "local" });
+
       let email: string | undefined;
       let password: string | undefined;
       let apiError: string | undefined;
@@ -132,6 +167,10 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
     } finally {
       setGuestLoading(false);
     }
+  }
+
+  async function handleGuestCode() {
+    await redeemGuestCode(inviteCode);
   }
 
   return (

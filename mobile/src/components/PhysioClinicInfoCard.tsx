@@ -50,8 +50,13 @@ export function PhysioClinicInfoCard({ clinic }: Props) {
     <View style={styles.card}>
       <View style={[styles.cover, { backgroundColor: accent }]}>
         {clinic.cover_url ? (
-          <Image source={{ uri: clinic.cover_url }} style={styles.coverImg} />
+          <Image
+            source={{ uri: clinic.cover_url }}
+            style={styles.coverImg}
+            resizeMode="cover"
+          />
         ) : null}
+        <View style={styles.coverShade} />
       </View>
       <View style={styles.body}>
         <View style={styles.logoRow}>
@@ -135,14 +140,28 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     overflow: "hidden",
   },
-  cover: { height: 88, width: "100%" },
-  coverImg: { width: "100%", height: "100%" },
-  body: { padding: 14, gap: 6 },
-  logoRow: { flexDirection: "row", gap: 12, alignItems: "flex-end", marginTop: -28 },
+  cover: {
+    width: "100%",
+    aspectRatio: 2.4,
+    minHeight: 132,
+    maxHeight: 200,
+    backgroundColor: Colors.primary,
+  },
+  coverImg: {
+    ...StyleSheet.absoluteFill,
+    width: "100%",
+    height: "100%",
+  },
+  coverShade: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(15,23,42,0.18)",
+  },
+  body: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 6, gap: 6 },
+  logoRow: { flexDirection: "row", gap: 12, alignItems: "flex-end", marginTop: -36 },
   logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
     borderWidth: 3,
     borderColor: "#fff",
     alignItems: "center",

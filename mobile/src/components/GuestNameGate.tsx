@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -10,6 +11,7 @@ import {
 } from "react-native";
 import { Colors } from "../lib/colors";
 import { deleteOwnAccountAndSignOut } from "../lib/delete-account";
+import { guestNameStorageKey } from "../lib/guest-account";
 import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { AuthBackBar } from "./AuthBackBar";
@@ -50,6 +52,11 @@ export function GuestNameGate({ onSaved, onExit }: Props) {
       if (updateError) {
         setError(t.guest.saveNameError);
         return;
+      }
+      try {
+        await AsyncStorage.setItem(guestNameStorageKey(user.id), "1");
+      } catch {
+        // Still continue into the consult.
       }
       onSaved(displayName);
     } finally {

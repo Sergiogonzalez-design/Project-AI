@@ -327,7 +327,10 @@ export function ClinicSpaceForm() {
           <h1 className="text-xl font-bold text-neutral-900">Personaliza tu página</h1>
           <p className="mt-1 text-sm text-neutral-500">
             Así te ven los pacientes en Buscar.{" "}
-            <Link href={publicHref} className="font-semibold text-blue-600 hover:underline">
+            <Link
+              href={`${publicHref}?from=clinica`}
+              className="font-semibold text-blue-600 hover:underline"
+            >
               Ver perfil público
             </Link>
           </p>
@@ -338,17 +341,22 @@ export function ClinicSpaceForm() {
         <button
           type="button"
           onClick={() => coverRef.current?.click()}
-          className="relative block h-36 w-full overflow-hidden sm:h-44"
+          className="relative block aspect-[2.2/1] min-h-[10rem] w-full overflow-hidden sm:aspect-[2.6/1] sm:min-h-[12rem] md:aspect-[3/1] md:min-h-[14rem]"
           style={{
             background: coverUrl
-              ? undefined
+              ? accent
               : `linear-gradient(135deg, ${accent} 0%, #0f172a 100%)`,
           }}
         >
           {coverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+            <img
+              src={coverUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover object-center"
+            />
           ) : null}
+          <span className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
           <span className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white">
             Cambiar portada
           </span>
@@ -405,6 +413,20 @@ export function ClinicSpaceForm() {
             }}
           />
           <div className="mt-4 space-y-3 border-t border-neutral-100 pt-4">
+            <Link
+              href="/clinica/pacientes"
+              className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-slate-50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
+            >
+              <span>
+                <span className="block text-sm font-bold text-neutral-900">
+                  Cuentas
+                </span>
+                <span className="mt-0.5 block text-xs text-neutral-500">
+                  Pacientes, fisioterapeutas e informes
+                </span>
+              </span>
+              <span className="text-sm font-semibold text-blue-600">Abrir →</span>
+            </Link>
             <Link
               href="/clinica/equipo"
               className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-slate-50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
