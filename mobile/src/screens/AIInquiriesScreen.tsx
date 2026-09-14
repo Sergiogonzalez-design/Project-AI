@@ -40,7 +40,9 @@ import {
 } from "../components/ConsultaAdaptiveWrist";
 import { AssistantMessageWithSources } from "../components/AssistantMessageWithSources";
 import { ConsultaAssistantBody } from "../components/ConsultaAssistantBody";
+import { contentHasHospitalSection } from "../lib/consult-clinic-links";
 import { stripVisibleMarkup } from "../lib/strip-visible-markup";
+import { extractCitedSources } from "../lib/source-links";
 import { FunctionalTestChatBlock } from "../components/FunctionalTestChatBlock";
 import {
   latestUnansweredFunctionalTests,
@@ -593,6 +595,9 @@ export function AIInquiriesScreen({
   useFocusEffect(
     useCallback(() => {
       navigation.setOptions({ headerShown: guestMode });
+      return () => {
+        navigation.setOptions({ headerShown: true });
+      };
     }, [navigation, guestMode])
   );
 
@@ -655,6 +660,17 @@ export function AIInquiriesScreen({
   );
 
   const [chatInput, setChatInput] = useState("");
+  /** Bump only for sticky autofill / conversation-mode resets — not every send. */
+  const [composerEpoch, setComposerEpoch] = useState(0);
+  const wipeComposer = useCallback((opts?: { remount?: boolean }) => {
+    pendingVoiceTextRef.current = null;
+    hearingTextRef.current = "";
+    setChatInput("");
+    if (opts?.remount) setComposerEpoch((n) => n + 1);
+  }, []);
+  const stickChatToEndRef = useRef(true);
+  const scrollGenRef = useRef(0);
+  const lastScrolledUserMsgIdRef = useRef<string | null>(null);
   const [attachedUri, setAttachedUri] = useState<string | null>(null);
   const [attachedMime, setAttachedMime] = useState("image/jpeg");
   const [attachedName, setAttachedName] = useState<string | null>(null);
@@ -673,7 +689,7 @@ export function AIInquiriesScreen({
   const [fisioBootDeadline, setFisioBootDeadline] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeTitle, setActiveTitle] = useState(t.consulta.newConsulta);
+  const [activeTitle, setActiveTitle] = useState<string>(t.consulta.newConsulta);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -736,6 +752,7 @@ export function AIInquiriesScreen({
     if (revealingMessageIdRef.current) return;
     conversationBusyRef.current = false;
     hearingTextRef.current = "";
+    wipeComposer({ remount: true });
     clearSilenceTimer();
     if (!conversationModeRef.current) return;
     if (phaseRef.current === "questionnaire") return;
@@ -750,7 +767,7 @@ export function AIInquiriesScreen({
         startMicRef.current();
       }
     }, 500);
-  }, [clearSilenceTimer]);
+  }, [clearSilenceTimer, wipeComposer]);
 
   const {
     supported: sttSupported,
@@ -764,7 +781,7 @@ export function AIInquiriesScreen({
     onHearing: (heard) => {
       if (!conversationModeRef.current || conversationBusyRef.current) return;
       hearingTextRef.current = heard;
-      setChatInput(heard);
+      // Keep the composer empty — live STT must not refill the text box.
       clearSilenceTimer();
       silenceTimerRef.current = setTimeout(() => {
         if (!conversationModeRef.current || conversationBusyRef.current) return;
@@ -794,6 +811,7 @@ export function AIInquiriesScreen({
   function toggleConversationMode() {
     clearSilenceTimer();
     hearingTextRef.current = "";
+    wipeComposer({ remount: true });
     if (conversationMode) {
       conversationModeRef.current = false;
       setConversationMode(false);
@@ -852,13 +870,19 @@ export function AIInquiriesScreen({
   }, []);
 
   const scrollToBottom = useCallback(() => {
+    if (!stickChatToEndRef.current) return;
     chatScrollRef.current?.scrollToEnd({ animated: true });
   }, []);
 
   const scrollToBottomAfterPaint = useCallback(() => {
-    requestAnimationFrame(() => {
-      setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 50);
-    });
+    if (!stickChatToEndRef.current) return;
+    const gen = ++scrollGenRef.current;
+    const run = (animated: boolean) => {
+      if (gen !== scrollGenRef.current || !stickChatToEndRef.current) return;
+      chatScrollRef.current?.scrollToEnd({ animated });
+    };
+    run(false);
+    requestAnimationFrame(() => run(false));
   }, []);
 
   const ensureQuestionnaireFieldVisible = useCallback(() => {
@@ -879,7 +903,10 @@ export function AIInquiriesScreen({
         clearTimeout(t2);
       };
     }
-    const t = setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 50);
+    const t = setTimeout(() => {
+      if (!stickChatToEndRef.current) return;
+      chatScrollRef.current?.scrollToEnd({ animated: true });
+    }, 50);
     return () => clearTimeout(t);
   }, [keyboardHeight, phase, ensureQuestionnaireFieldVisible]);
 
@@ -936,6 +963,45 @@ export function AIInquiriesScreen({
     }
     scrollToBottom();
   }, [revealingMessageId, scrollToMessageStart, scrollToBottom]);
+
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "user") return;
+    if (lastScrolledUserMsgIdRef.current === last.id) return;
+    lastScrolledUserMsgIdRef.current = last.id;
+    stickChatToEndRef.current = true;
+    setChatInput("");
+    scrollToBottomAfterPaint();
+  }, [messages, scrollToBottomAfterPaint]);
+
+  useEffect(() => {
+    if (!chatLoading) return;
+    stickChatToEndRef.current = true;
+    scrollToBottomAfterPaint();
+  }, [chatLoading, scrollToBottomAfterPaint]);
+
+  const prevPhaseRef = useRef(phase);
+  useEffect(() => {
+    if (prevPhaseRef.current === phase) return;
+    prevPhaseRef.current = phase;
+    if (phase === "questionnaire" || phase === "followup") {
+      wipeComposer({ remount: true });
+    }
+  }, [phase, wipeComposer]);
+
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    setChatInput((prev) => {
+      const t = prev.trim();
+      if (!t) return prev;
+      const prevUser = [...messages].reverse().find((m) => m.role === "user");
+      if (prevUser && t === prevUser.content.trim()) return "";
+      if (/^(prueba|test)\s*\d+/i.test(t)) return "";
+      if (conversationModeRef.current) return "";
+      return prev;
+    });
+  }, [messages]);
 
   useEffect(() => {
     updateScrollDownVisibility();
@@ -2094,40 +2160,56 @@ export function AIInquiriesScreen({
   }
 
   async function handleIntroSubmit() {
+    const pendingUri = attachedUri;
+    const pendingMime = attachedMime;
+    const pendingName = attachedName;
     const text =
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
-      (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
+      (pendingUri ? consultAttachmentCaption(locale, pendingMime, pendingName) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedUri) || phase !== "intro" || physioIntro || chatLoading || submittingRef.current || revealingMessageIdRef.current) {
+    if ((!text && !pendingUri) || phase !== "intro" || physioIntro || chatLoading || submittingRef.current || revealingMessageIdRef.current) {
+      setChatInput("");
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `user-${Date.now()}`;
+    const localPreview =
+      pendingUri && !isConsultPdfUrl(pendingUri) ? pendingUri : undefined;
     submittingRef.current = true;
     setChatInput("");
+    clearAttachment();
     setChatLoading(true);
     setFormError(null);
 
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: userMsgId,
+        role: "user",
+        content: text,
+        image_url: localPreview,
+      },
+    ]);
+    scrollToBottomAfterPaint();
+
     try {
-      const attachmentPath = await uploadOutgoingPhoto();
+      const attachmentPath = pendingUri
+        ? await uploadConsultPhotoFromUri(pendingUri, pendingMime)
+        : null;
       const displayUrl = attachmentPath
         ? await consultPhotoAccessUrl(attachmentPath)
         : null;
       const imageUrl = await consultPhotoVisionUrl(attachmentPath);
       if (imageUrl) setCaseImageUrl(imageUrl);
+      if (displayUrl) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === userMsgId ? { ...m, image_url: displayUrl } : m
+          )
+        );
+      }
 
       const lang = consultLanguage;
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: userMsgId,
-          role: "user",
-          content: text,
-          image_url: displayUrl ?? undefined,
-        },
-      ]);
-      scrollToBottomAfterPaint();
 
       const triage = await triageMessage(text, imageUrl, lang, fisioEdgeExtras);
 
@@ -2691,6 +2773,13 @@ export function AIInquiriesScreen({
           setActiveTitle(title);
           setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
         }
+        if (!conversationId) {
+          throw new Error(
+            locale === "en"
+              ? "Could not open the consultation."
+              : "No se pudo abrir la consulta."
+          );
+        }
 
         await supabase.from("consultas").insert({
           body_area: areaLabel,
@@ -2732,7 +2821,7 @@ export function AIInquiriesScreen({
         pendingPhysioReportRef.current = {
           patientId: user.id,
           conversationId,
-          bodyArea: areaLabel,
+          bodyArea: areaLabel ?? "",
           onsetType,
           painLevel,
           hadTrauma: hadTraumaVal,
@@ -2958,36 +3047,52 @@ export function AIInquiriesScreen({
   }
 
   async function handleFollowupSubmit() {
+    const pendingUri = attachedUri;
+    const pendingMime = attachedMime;
+    const pendingName = attachedName;
     const text =
       (pendingVoiceTextRef.current ?? chatInput).trim() ||
-      (attachedUri ? consultAttachmentCaption(locale, attachedMime, attachedName) : "");
+      (pendingUri ? consultAttachmentCaption(locale, pendingMime, pendingName) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedUri) || phase !== "followup" || chatLoading || submittingRef.current || revealingMessageIdRef.current || !activeId) {
+    if ((!text && !pendingUri) || phase !== "followup" || chatLoading || submittingRef.current || revealingMessageIdRef.current || !activeId) {
+      setChatInput("");
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `u-${Date.now()}`;
+    const localPreview =
+      pendingUri && !isConsultPdfUrl(pendingUri) ? pendingUri : undefined;
     submittingRef.current = true;
     setChatInput("");
+    clearAttachment();
     setChatLoading(true);
 
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: userMsgId,
+        role: "user",
+        content: text,
+        image_url: localPreview,
+      },
+    ]);
+    scrollToBottomAfterPaint();
+
     try {
-      const attachmentPath = await uploadOutgoingPhoto();
+      const attachmentPath = pendingUri
+        ? await uploadConsultPhotoFromUri(pendingUri, pendingMime)
+        : null;
       const displayUrl = attachmentPath
         ? await consultPhotoAccessUrl(attachmentPath)
         : null;
       const imageUrl = await consultPhotoVisionUrl(attachmentPath);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: userMsgId,
-          role: "user",
-          content: text,
-          image_url: displayUrl ?? undefined,
-        },
-      ]);
-      scrollToBottomAfterPaint();
+      if (displayUrl) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === userMsgId ? { ...m, image_url: displayUrl } : m
+          )
+        );
+      }
 
       const triage = await triageMessage(text, imageUrl, consultLanguage, fisioEdgeExtras);
       let userSaved = false;
@@ -3396,11 +3501,7 @@ export function AIInquiriesScreen({
           ? patientFacingPartLabel(nextZone, initialMessage, consultLanguage)
           : null;
         if (moreZonesPending && nextZone) {
-          ensureAwaitingNextZone(
-            completedPart && completedPart !== "generic"
-              ? completedPart
-              : questionnairePart
-          );
+          ensureAwaitingNextZone(completedPart);
         }
 
         const history = [
@@ -3673,7 +3774,7 @@ export function AIInquiriesScreen({
 
   sendVoiceTurnRef.current = (text: string) => {
     pendingVoiceTextRef.current = text;
-    setChatInput(text);
+    setChatInput("");
     if (phase === "intro") void handleIntroSubmit();
     else if (phase === "followup") void handleFollowupSubmit();
     else resumeConversationListening();
@@ -3685,10 +3786,9 @@ export function AIInquiriesScreen({
       clearSilenceTimer();
       stopMic();
       conversationBusyRef.current = true;
-    } else if (phase === "followup" && !chatLoading && !revealingMessageId) {
-      conversationBusyRef.current = false;
+      wipeComposer({ remount: true });
     }
-  }, [phase, chatLoading, revealingMessageId, stopMic, clearSilenceTimer]);
+  }, [phase, stopMic, clearSilenceTimer, wipeComposer]);
 
   useEffect(() => {
     if (!conversationMode || !conversationBusyRef.current) return;
@@ -4450,7 +4550,11 @@ export function AIInquiriesScreen({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          onScrollBeginDrag={Keyboard.dismiss}
+          onScrollBeginDrag={() => {
+            Keyboard.dismiss();
+            stickChatToEndRef.current = false;
+            scrollGenRef.current += 1;
+          }}
           onLayout={(e) => {
             scrollMetrics.current.viewport = e.nativeEvent.layout.height;
             updateScrollDownVisibility();
@@ -4458,14 +4562,31 @@ export function AIInquiriesScreen({
           onContentSizeChange={(_, height) => {
             scrollMetrics.current.content = height;
             updateScrollDownVisibility();
+            if (stickChatToEndRef.current) scrollToBottomAfterPaint();
           }}
           onScroll={(e) => {
             scrollMetrics.current.offset = e.nativeEvent.contentOffset.y;
+            const { offset, viewport, content } = scrollMetrics.current;
+            if (content - offset - viewport > 96) {
+              stickChatToEndRef.current = false;
+            } else {
+              stickChatToEndRef.current = true;
+            }
             updateScrollDownVisibility();
           }}
           scrollEventThrottle={16}
         >
-          {messages.map((msg) => (
+          {messages.map((msg, msgIndex) => {
+            const forceHospitalOnly =
+              msg.role === "assistant" &&
+              messages
+                .slice(0, msgIndex)
+                .some(
+                  (m) =>
+                    m.role === "assistant" &&
+                    contentHasHospitalSection(m.content ?? "")
+                );
+            return (
             <FadeInView
               key={msg.id}
               onLayout={(e) => {
@@ -4554,10 +4675,26 @@ export function AIInquiriesScreen({
                           renderBody={(body) => {
                             const pendingFunctionalForm =
                               awaitingFunctionalTests?.messageId === msg.id;
+                            // Prefer full message for complete tests while streaming,
+                            // but always strip Fuentes so they only appear in the button.
                             const parseSource = pendingFunctionalForm
-                              ? msg.content
+                              ? body.includes("Pruebas funcionales") ||
+                                body.includes("Functional tests") ||
+                                body.includes("Preguntas / pruebas") ||
+                                body.includes("Questions / tests")
+                                ? body
+                                : msg.content
                               : body;
-                            const parsed = splitFunctionalTests(parseSource);
+                            const parsedRaw = splitFunctionalTests(parseSource);
+                            const parsed = parsedRaw
+                              ? {
+                                  ...parsedRaw,
+                                  before: extractCitedSources(parsedRaw.before)
+                                    .body,
+                                  after: extractCitedSources(parsedRaw.after)
+                                    .body,
+                                }
+                              : null;
                             const isActiveForm =
                               Boolean(parsed) &&
                               (parsed?.tests.length ?? 0) >= 2 &&
@@ -4573,6 +4710,7 @@ export function AIInquiriesScreen({
                                   highlightStyle={styles.bubblePhysioHighlight}
                                   onClinicPress={openClinicProfile}
                                   language={locale}
+                                  forceHospitalOnly={forceHospitalOnly}
                                 />
                               );
                             }
@@ -4593,6 +4731,7 @@ export function AIInquiriesScreen({
                                   bubbleBold={styles.bubbleBold}
                                   highlightPhrases={physioHighlightPhrases}
                                   highlightStyle={styles.bubblePhysioHighlight}
+                                  forceHospitalOnly={forceHospitalOnly}
                                 />
                               );
                             }
@@ -4606,6 +4745,8 @@ export function AIInquiriesScreen({
                                 highlightStyle={styles.bubblePhysioHighlight}
                                 onClinicPress={openClinicProfile}
                                 language={locale}
+                                showClinicalTestMedia={false}
+                                forceHospitalOnly={forceHospitalOnly}
                               />
                             );
                           }}
@@ -4644,7 +4785,8 @@ export function AIInquiriesScreen({
                 )}
               </View>
             </FadeInView>
-          ))}
+            );
+          })}
           {linkedPhysio && phase === "complete" ? (
             <View
               style={{
@@ -4882,7 +5024,13 @@ export function AIInquiriesScreen({
             </View>
           ) : null}
         </ScrollView>
-        <ScrollToBottomButton visible={showScrollDown} onPress={scrollToBottom} />
+        <ScrollToBottomButton
+          visible={showScrollDown}
+          onPress={() => {
+            stickChatToEndRef.current = true;
+            scrollToBottomAfterPaint();
+          }}
+        />
       </View>
       )}
 
@@ -4921,14 +5069,13 @@ export function AIInquiriesScreen({
               </Pressable>
             ) : null}
             <TextInput
+              key={`composer-${composerEpoch}`}
               style={styles.chatInput}
               placeholder={
                 conversationMode
                   ? listening
                     ? t.consulta.placeholderListening
-                    : phase === "questionnaire"
-                      ? t.consulta.placeholderQuestionnaire
-                      : t.consulta.placeholderConversation
+                    : t.consulta.placeholderConversation
                   : linkedPhysio
                     ? t.consulta.placeholderFisio
                     : phase === "intro"
@@ -4941,6 +5088,9 @@ export function AIInquiriesScreen({
               multiline
               maxLength={2000}
               editable={!chatBusy && !conversationMode}
+              autoCorrect={false}
+              autoCapitalize="none"
+              textContentType="none"
             />
             {sttSupported ? (
               <Pressable
@@ -5003,17 +5153,13 @@ export function AIInquiriesScreen({
           {(conversationMode || sttError) && (
             <Text style={styles.voiceHint}>
               {sttError ??
-                (phase === "questionnaire"
+                (listening
                   ? locale === "en"
-                    ? "Conversation paused: complete the questionnaire. Then the AI will speak and you can continue."
-                    : "Conversación en pausa: completa el cuestionario. Luego la IA hablará y podréis seguir."
-                  : listening
-                    ? locale === "en"
-                      ? "Speak naturally. After 3 seconds of silence, it's the AI's turn."
-                      : "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
-                    : locale === "en"
-                      ? "AI is responding…"
-                      : "La IA está respondiendo…")}
+                    ? "Speak naturally. After 3 seconds of silence, it's the AI's turn."
+                    : "Habla con naturalidad. Tras 3 segundos de silencio, es el turno de la IA."
+                  : locale === "en"
+                    ? "AI is responding…"
+                    : "La IA está respondiendo…")}
             </Text>
           )}
         </View>

@@ -18,18 +18,9 @@ type PhysioPatient = {
   onboarding_completed: boolean;
 };
 
-type RecentReport = {
-  id: string;
-  created_at: string;
-  body_area: string | null;
-  status: string;
-  patient_id: string;
-};
-
 export default function FisioPatientsPage() {
   const [patients, setPatients] = useState<PhysioPatient[]>([]);
   const [unreadByPatient, setUnreadByPatient] = useState<Record<string, number>>({});
-  const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -96,13 +87,6 @@ export default function FisioPatientsPage() {
       }
       const list = (data as PhysioPatient[]) ?? [];
       setPatients(list);
-
-      const { data: reports } = await supabase
-        .from("clinical_reports")
-        .select("id, created_at, body_area, status, patient_id")
-        .order("created_at", { ascending: false })
-        .limit(20);
-      setRecentReports((reports as RecentReport[]) ?? []);
 
       const { data: unreadRows } = await supabase
         .from("clinical_reports")
@@ -275,56 +259,6 @@ export default function FisioPatientsPage() {
         </p>
       ) : null}
 
-      {!loading && recentReports.length > 0 ? (
-        <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-neutral-900">
-            Informes recientes
-          </h2>
-          <p className="mt-1 text-sm text-neutral-600">
-            Todos los informes enviados a esta cuenta (también si el paciente
-            entró solo con tu código).
-          </p>
-          <ul className="mt-4 divide-y divide-neutral-100">
-            {recentReports.map((report) => {
-              const patient = patients.find((p) => p.id === report.patient_id);
-              const label =
-                patient?.display_name || patient?.email || "Paciente";
-              const when = new Date(report.created_at).toLocaleString("es-ES", {
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              return (
-                <li key={report.id}>
-                  <Link
-                    href={`/fisio/patients/${report.patient_id}?name=${encodeURIComponent(label)}`}
-                    className="flex items-center justify-between gap-3 py-3 hover:bg-neutral-50"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-neutral-900">
-                          {label}
-                        </p>
-                        {report.status === "new" ? (
-                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                            Nuevo
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-0.5 text-xs text-neutral-500">
-                        {report.body_area || "Consulta"} · {when}
-                      </p>
-                    </div>
-                    <span className="text-neutral-400">→</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
-
       <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-neutral-900">
@@ -387,10 +321,10 @@ export default function FisioPatientsPage() {
             setVinculacionOpen((v) => !v);
             if (vinculacionOpen) setCodeMenuOpen(false);
           }}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-left text-base font-semibold text-neutral-900 hover:bg-neutral-50"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl bg-blue-600 px-5 py-4 text-left text-base font-semibold text-white hover:bg-blue-700"
         >
           <span>Vinculación</span>
-          <span className="text-neutral-400" aria-hidden>
+          <span className="text-blue-100" aria-hidden>
             {vinculacionOpen ? "▴" : "▾"}
           </span>
         </button>

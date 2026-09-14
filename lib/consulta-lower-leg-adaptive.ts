@@ -1179,7 +1179,10 @@ function differentialGuidanceForLocations(
     lines.push(
       "- Muslo / encima de la rodilla + correr o movimiento repetitivo → sobrecarga / lesión muscular de **cuádriceps** (recto femoral) o **isquiotibiales** (si es posterior). Hipótesis locales del MUSLO.",
       "- Muslo anterior + dolor al chutar, sentadilla o extensión resistida → cuádriceps / tendón cuadricipital.",
-      "- Muslo posterior + pedrada al correr o dolor al estirar con rodilla estirada → isquiotibiales.",
+      "- Muslo posterior + pedrada al correr o dolor al estirar con rodilla estirada → isquiotibiales (Askling tipo 1 sprint / tipo 2 stretch).",
+      "- Dolor cerca del isquion + sentarse en silla dura → tendinopatía proximal de isquiotibiales (diferenciar deep gluteal/ciática).",
+      "- Hematoma diferido o no pudo seguir → mayor sospecha de lesión muscular; no inventar grado BAMIC.",
+      "- Eco «normal» + dolor igual días después → segunda eco u RMN (frecuente en isquios).",
       "- PROHIBIDO proponer gemelos, Aquiles, periostitis tibial o fractura por estrés de tibia: el paciente localizó el **muslo**."
     );
   }

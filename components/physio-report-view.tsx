@@ -68,6 +68,7 @@ function collectSourceLabel(raw: string, into: string[]) {
   const item = raw.replace(/^[-*•]\s*/, "").trim();
   if (!item) return;
   if (/^criterio cl[ií]nico general$/i.test(item)) return;
+  if (/^fuentes consultadas$|^sources consulted$/i.test(item)) return;
   into.push(item);
 }
 
@@ -85,7 +86,11 @@ function splitReportSections(content: string): {
   for (const part of parts) {
     const match = /^\*\*([^*]+)\*\*\s*([\s\S]*)$/.exec(part.trim());
     if (!match) {
-      if (!sections.length) preamble += (preamble ? "\n" : "") + part.trim();
+      if (!sections.length) {
+        const peeled = extractCitedSources(part.trim(), { forPhysio: true });
+        preamble += (preamble ? "\n" : "") + peeled.body;
+        for (const s of peeled.sources) collectSourceLabel(s.title, sourceLabels);
+      }
       continue;
     }
     const title = normalizeHeading(match[1]);
@@ -96,17 +101,12 @@ function splitReportSections(content: string): {
       }
       continue;
     }
-    const kept: string[] = [];
-    for (const line of body.split("\n")) {
-      const trimmed = line.trim();
-      if (/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:/i.test(trimmed)) {
-        const item = trimmed.replace(/^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*/i, "").trim();
-        collectSourceLabel(item, sourceLabels);
-        continue;
-      }
-      kept.push(line);
-    }
-    body = kept.join("\n").trim();
+    // Move inline Fuente: lines and any trailing "Fuentes consultadas" block
+    // (often left under Puntos de alerta) into the footer button.
+    const peeled = extractCitedSources(body, { forPhysio: true });
+    body = peeled.body;
+    for (const s of peeled.sources) collectSourceLabel(s.title, sourceLabels);
+
     if (title === "Pruebas de imagen si procede" && !body) {
       body =
         "No se recomienda realizar pruebas de imagen en esta fase inicial hasta pasadas 24-48 horas.";

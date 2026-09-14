@@ -223,11 +223,17 @@ import {
 } from "@/lib/consulta-exercise-offer";
 import { ConsultaCompleteCard } from "@/components/consulta-complete-card";
 import { ConsultaNewConsultaPrompt } from "@/components/consulta-new-consulta-prompt";
+import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import { shouldShowClinicalTestImage } from "@/lib/clinical-test-images";
 import {
   clinicRecommendIntro,
+  contentHasHospitalSection,
+  hospitalRecommendIntro,
   isClinicSectionHeadingLine,
+  isHospitalSectionHeadingLine,
   parseClinicRecommendLine,
+  parseHospitalRecommendLine,
+  reconcileDestinationSections,
   type ConsultLocale,
 } from "@/lib/consult-clinic-links";
 import { parseReadaptExerciseFromLine } from "@/lib/consult-readaptation";
@@ -255,6 +261,7 @@ import {
 import { useUiLocale } from "@/lib/ui-locale";
 import { stripVisibleMarkup } from "@/lib/strip-visible-markup";
 import { AssistantMessageWithSources } from "@/components/assistant-message-with-sources";
+import { extractCitedSources } from "@/lib/source-links";
 import { FunctionalTestChatBlock } from "@/components/functional-test-chat-block";
 import {
   latestUnansweredFunctionalTests,
@@ -263,7 +270,6 @@ import {
   splitFunctionalTests,
 } from "@/lib/functional-test-answers";
 import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
@@ -453,12 +459,23 @@ function renderInlineText(text: string, phrases: string[], keyPrefix: string) {
 function renderAssistantContent(
   content: string,
   highlightPhrases: string[] = [],
-  language: ConsultLocale = "es"
+  language: ConsultLocale = "es",
+  opts?: {
+    showClinicalTestMedia?: boolean;
+    cityHint?: string | null;
+    forceHospitalOnly?: boolean;
+  }
 ) {
   const shownTestIds = new Set<string>();
   let clinicIntroShown = false;
+  let hospitalIntroShown = false;
+  let inHospitalSection = false;
+  const showClinicalTestMedia = opts?.showClinicalTestMedia === true;
+  const reconciled = reconcileDestinationSections(content, {
+    forceHospitalOnly: opts?.forceHospitalOnly,
+  });
 
-  return content.split("\n").map((line, li) => {
+  return reconciled.split("\n").map((line, li) => {
     const trimmed = line.trim();
     if (
       /^Fuente:/i.test(trimmed) ||
@@ -469,9 +486,62 @@ function renderAssistantContent(
       return null;
     }
 
-    if (isClinicSectionHeadingLine(trimmed)) {
+    if (isHospitalSectionHeadingLine(trimmed)) {
+      inHospitalSection = true;
+      hospitalIntroShown = false;
       clinicIntroShown = false;
       return null;
+    }
+
+    if (isClinicSectionHeadingLine(trimmed)) {
+      inHospitalSection = false;
+      clinicIntroShown = false;
+      return null;
+    }
+
+    const hospitalLink = parseHospitalRecommendLine(trimmed, {
+      inHospitalSection,
+      cityHint: opts?.cityHint,
+    });
+    if (hospitalLink) {
+      const showIntro = !hospitalIntroShown;
+      if (showIntro) hospitalIntroShown = true;
+      return (
+        <div key={li} className={li > 0 ? "mt-2" : undefined}>
+          {showIntro ? (
+            <p className="mb-2 text-sm font-semibold text-slate-800">
+              {hospitalRecommendIntro(language)}
+            </p>
+          ) : null}
+          <a
+            href={hospitalLink.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full max-w-md flex-col items-start gap-0.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-left transition-colors hover:border-rose-300 hover:bg-rose-100"
+          >
+            <span className="text-sm font-semibold text-rose-900">
+              {hospitalLink.label}
+            </span>
+            <span className="text-xs leading-snug text-rose-800/80">
+              {hospitalLink.meta ||
+                (language === "en"
+                  ? "Open in Maps / browser"
+                  : "Abrir en Maps / Internet")}
+            </span>
+          </a>
+        </div>
+      );
+    }
+
+    if (inHospitalSection && trimmed && !/^(?:[-*•]\s+)?(?:\*\*)?\d+[.)]/i.test(trimmed)) {
+      // Left hospital list — allow normal prose again.
+      if (
+        /^(?:qué debes|what you should|fuentes|sources|contactar|contact|resumen)\b/i.test(
+          trimmed.replace(/\*/g, "")
+        )
+      ) {
+        inHospitalSection = false;
+      }
     }
 
     const clinicLink = parseClinicRecommendLine(trimmed);
@@ -526,26 +596,19 @@ function renderAssistantContent(
             ? stripMarkdownStars(trimmed)
             : null;
 
-    const testImage = shouldShowClinicalTestImage({
-      numberedText,
-      headingText,
-      wholeBoldText: wholeBoldMatch?.[1] ?? null,
-    });
+    const testImage = showClinicalTestMedia
+      ? shouldShowClinicalTestImage({
+          numberedText,
+          headingText,
+          wholeBoldText: wholeBoldMatch?.[1] ?? null,
+        })
+      : null;
     const showImage =
       testImage && !shownTestIds.has(testImage.id) ? testImage : null;
     if (showImage) shownTestIds.add(showImage.id);
 
     const imageBlock = showImage ? (
-      <div className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
-        <Image
-          src={showImage.src}
-          alt={showImage.title}
-          width={640}
-          height={480}
-          className="h-auto w-full max-w-md object-cover"
-          sizes="(max-width: 768px) 100vw, 28rem"
-        />
-      </div>
+      <ClinicalTestMediaBlock test={showImage} className="w-full" />
     ) : null;
 
     if (numberedText) {
@@ -776,6 +839,17 @@ export function ChatInterface({
   );
 
   const [input, setInput] = useState("");
+  /** Bump only for sticky autofill / conversation-mode resets — not every send. */
+  const [composerEpoch, setComposerEpoch] = useState(0);
+  const wipeComposer = useCallback((opts?: { remount?: boolean }) => {
+    pendingVoiceTextRef.current = null;
+    hearingTextRef.current = "";
+    setInput("");
+    if (opts?.remount) setComposerEpoch((n) => n + 1);
+  }, []);
+  const stickChatToEndRef = useRef(true);
+  const scrollGenRef = useRef(0);
+  const lastScrolledUserMsgIdRef = useRef<string | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [attachedPreview, setAttachedPreview] = useState<string | null>(null);
   /** Injury photo kept from intro through the questionnaire for the clinical AI call */
@@ -895,6 +969,7 @@ export function ChatInterface({
     if (revealingMessageIdRef.current) return;
     conversationBusyRef.current = false;
     hearingTextRef.current = "";
+    wipeComposer({ remount: true });
     clearSilenceTimer();
     if (!conversationModeRef.current) return;
     if (phaseRef.current === "questionnaire") return;
@@ -909,7 +984,7 @@ export function ChatInterface({
         startMicRef.current();
       }
     }, 500);
-  }, [clearSilenceTimer]);
+  }, [clearSilenceTimer, wipeComposer]);
 
   const {
     supported: sttSupported,
@@ -923,7 +998,7 @@ export function ChatInterface({
     onHearing: (heard) => {
       if (!conversationModeRef.current || conversationBusyRef.current) return;
       hearingTextRef.current = heard;
-      setInput(heard);
+      // Keep the composer empty — live STT must not refill the text box.
       clearSilenceTimer();
       silenceTimerRef.current = window.setTimeout(() => {
         if (!conversationModeRef.current || conversationBusyRef.current) return;
@@ -943,6 +1018,7 @@ export function ChatInterface({
   function toggleConversationMode() {
     clearSilenceTimer();
     hearingTextRef.current = "";
+    wipeComposer({ remount: true });
     if (conversationMode) {
       conversationModeRef.current = false;
       setConversationMode(false);
@@ -1032,9 +1108,12 @@ export function ChatInterface({
     resumeConversationListening,
   ]);
 
-  function clearAttachment() {
+  function clearAttachment(options?: { revokePreview?: boolean }) {
+    const revoke = options?.revokePreview !== false;
     setAttachedFile(null);
-    if (attachedPreview?.startsWith("blob:")) URL.revokeObjectURL(attachedPreview);
+    if (revoke && attachedPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(attachedPreview);
+    }
     setAttachedPreview(null);
     if (photoInputRef.current) photoInputRef.current.value = "";
     if (cameraInputRef.current) cameraInputRef.current.value = "";
@@ -1089,18 +1168,22 @@ export function ChatInterface({
     setShowScrollDown(distance > 96);
   }, []);
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    if (!stickChatToEndRef.current) return;
     const el = messagesRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior });
   }, []);
 
   const scrollToBottomAfterPaint = useCallback(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        scrollToBottom("smooth");
-      });
-    });
+    if (!stickChatToEndRef.current) return;
+    const gen = ++scrollGenRef.current;
+    const run = (behavior: ScrollBehavior = "auto") => {
+      if (gen !== scrollGenRef.current || !stickChatToEndRef.current) return;
+      scrollToBottom(behavior);
+    };
+    run("auto");
+    requestAnimationFrame(() => run("auto"));
   }, [scrollToBottom]);
 
   const scrollToMessageStart = useCallback((id: string, behavior: ScrollBehavior = "smooth") => {
@@ -1148,6 +1231,7 @@ export function ChatInterface({
 
   const followRevealScroll = useCallback(() => {
     updateScrollDownVisibility();
+    if (!stickChatToEndRef.current) return;
     if (pinRevealToStartRef.current) return;
     const el = messagesRef.current;
     if (!el) return;
@@ -1196,8 +1280,50 @@ export function ChatInterface({
         window.clearTimeout(t2);
       };
     }
-    scrollToBottom("smooth");
+    stickChatToEndRef.current = true;
+    scrollToBottom("auto");
   }, [revealingMessageId, scrollToMessageStart, scrollToBottom]);
+
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "user") return;
+    if (lastScrolledUserMsgIdRef.current === last.id) return;
+    lastScrolledUserMsgIdRef.current = last.id;
+    stickChatToEndRef.current = true;
+    setInput("");
+    scrollToBottomAfterPaint();
+  }, [messages, scrollToBottomAfterPaint]);
+
+  useEffect(() => {
+    if (!loading) return;
+    stickChatToEndRef.current = true;
+    scrollToBottomAfterPaint();
+  }, [loading, scrollToBottomAfterPaint]);
+
+  // After the questionnaire ends (or starts), hard-reset the composer so no
+  // leftover sentence remains in the text box.
+  const prevPhaseRef = useRef(phase);
+  useEffect(() => {
+    if (prevPhaseRef.current === phase) return;
+    prevPhaseRef.current = phase;
+    if (phase === "questionnaire" || phase === "followup") {
+      wipeComposer({ remount: true });
+    }
+  }, [phase, wipeComposer]);
+
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return;
+    setInput((prev) => {
+      const t = prev.trim();
+      if (!t) return prev;
+      const prevUser = [...messages].reverse().find((m) => m.role === "user");
+      if (prevUser && t === prevUser.content.trim()) return "";
+      if (/^(prueba|test)\s*\d+/i.test(t)) return "";
+      if (conversationModeRef.current) return "";
+      return prev;
+    });
+  }, [messages]);
 
   useEffect(() => {
     updateScrollDownVisibility();
@@ -2159,46 +2285,63 @@ export function ChatInterface({
   }
 
   async function handleIntroSubmit() {
+    const pendingFile = attachedFile;
+    const pendingPreview = attachedPreview;
     const text =
       (pendingVoiceTextRef.current ?? input).trim() ||
-      (attachedFile ? consultAttachmentCaption(attachedFile) : "");
+      (pendingFile ? consultAttachmentCaption(pendingFile) : "");
     pendingVoiceTextRef.current = null;
     if (
-      (!text && !attachedFile) ||
+      (!text && !pendingFile) ||
       loading ||
       submittingRef.current ||
       revealingMessageIdRef.current ||
       phase !== "intro" ||
       physioIntro
     ) {
+      setInput("");
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `user-${Date.now()}`;
     submittingRef.current = true;
-    setInput("");
-    setLoading(true);
-
-    try {
-      const attachmentPath = await uploadOutgoingPhoto();
-      const displayUrl = attachmentPath
-        ? await consultPhotoAccessUrl(attachmentPath)
-        : null;
-      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
-      if (imageUrl) setCaseImageUrl(imageUrl);
-
-      const lang = consultLanguage;
-
+    flushSync(() => {
+      setInput("");
+      clearAttachment({ revokePreview: false });
       setMessages((prev) => [
         ...prev,
         {
           id: userMsgId,
           role: "user",
           content: text,
-          image_url: displayUrl ?? undefined,
+          image_url: pendingPreview ?? undefined,
         },
       ]);
-      scrollToBottomAfterPaint();
+      setLoading(true);
+    });
+    scrollToBottomAfterPaint();
+
+    try {
+      const attachmentPath = pendingFile
+        ? await uploadConsultPhoto(pendingFile)
+        : null;
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
+      if (imageUrl) setCaseImageUrl(imageUrl);
+      if (displayUrl) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === userMsgId ? { ...m, image_url: displayUrl } : m
+          )
+        );
+      }
+      if (pendingPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingPreview);
+      }
+
+      const lang = consultLanguage;
 
       const triage = await triageMessage(text, imageUrl, lang);
 
@@ -2297,6 +2440,9 @@ export function ChatInterface({
 
       await respondToInitialMessage(text, triage, attachmentPath, lang);
     } catch (err) {
+      if (pendingPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingPreview);
+      }
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       alert(err instanceof Error ? err.message : "Error al procesar tu mensaje.");
       if (conversationModeRef.current) resumeConversationListening();
@@ -2999,43 +3145,60 @@ export function ChatInterface({
   }
 
   async function handleFollowupSubmit() {
+    const pendingFile = attachedFile;
+    const pendingPreview = attachedPreview;
     const text =
       (pendingVoiceTextRef.current ?? input).trim() ||
-      (attachedFile ? consultAttachmentCaption(attachedFile) : "");
+      (pendingFile ? consultAttachmentCaption(pendingFile) : "");
     pendingVoiceTextRef.current = null;
     if (
-      (!text && !attachedFile) ||
+      (!text && !pendingFile) ||
       loading ||
       submittingRef.current ||
       revealingMessageIdRef.current ||
       phase !== "followup" ||
       !activeId
     ) {
+      setInput("");
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
     const userMsgId = `user-${Date.now()}`;
     submittingRef.current = true;
-    setInput("");
-    setLoading(true);
-
-    try {
-      const attachmentPath = await uploadOutgoingPhoto();
-      const displayUrl = attachmentPath
-        ? await consultPhotoAccessUrl(attachmentPath)
-        : null;
-      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
-
+    flushSync(() => {
+      setInput("");
+      clearAttachment({ revokePreview: false });
       setMessages((prev) => [
         ...prev,
         {
           id: userMsgId,
           role: "user",
           content: text,
-          image_url: displayUrl ?? undefined,
+          image_url: pendingPreview ?? undefined,
         },
       ]);
-      scrollToBottomAfterPaint();
+      setLoading(true);
+    });
+    scrollToBottomAfterPaint();
+
+    try {
+      const attachmentPath = pendingFile
+        ? await uploadConsultPhoto(pendingFile)
+        : null;
+      const displayUrl = attachmentPath
+        ? await consultPhotoAccessUrl(attachmentPath)
+        : null;
+      const imageUrl = await consultPhotoVisionUrl(attachmentPath);
+      if (displayUrl) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === userMsgId ? { ...m, image_url: displayUrl } : m
+          )
+        );
+      }
+      if (pendingPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingPreview);
+      }
 
       const triage = await triageMessage(text, imageUrl, consultLanguage);
       let userSaved = false;
@@ -3711,6 +3874,9 @@ export function ChatInterface({
       beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
       setMessages((prev) => [...prev, aiMsg as Message]);
     } catch {
+      if (pendingPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingPreview);
+      }
       setMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       if (conversationModeRef.current) resumeConversationListening();
     } finally {
@@ -4045,9 +4211,7 @@ export function ChatInterface({
     phase === "followup" ? latestUnansweredFunctionalTests(messages) : null;
   sendVoiceTurnRef.current = (text: string) => {
     pendingVoiceTextRef.current = text;
-    flushSync(() => {
-      setInput(text);
-    });
+    setInput("");
     if (phase === "intro") {
       void handleIntroSubmit();
     } else if (phase === "followup") {
@@ -4111,7 +4275,7 @@ export function ChatInterface({
       )}
 
       <aside
-        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200/80 sidebar-panel transition-all duration-200 ease-out`}
+        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200/80 sidebar-panel`}
       >
         <div className="w-72">
           <SidebarContent />
@@ -4178,9 +4342,18 @@ export function ChatInterface({
         <div
           ref={messagesRef}
           onScroll={() => {
+            const el = messagesRef.current;
+            if (el) {
+              const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+              if (distance > 96) {
+                stickChatToEndRef.current = false;
+                scrollGenRef.current += 1;
+              } else {
+                stickChatToEndRef.current = true;
+              }
+            }
             // If the patient scrolls manually during a long reveal, stop pinning to the top.
             if (pinRevealToStartRef.current) {
-              const el = messagesRef.current;
               const msgEl = revealingMessageId
                 ? messageRefs.current.get(revealingMessageId)
                 : null;
@@ -4239,8 +4412,21 @@ export function ChatInterface({
                 : undefined
             }
           >
-            {messages.map((msg) => {
+            {messages.map((msg, msgIndex) => {
               const time = formatTime(msg.created_at, consultLanguage);
+              const forceHospitalOnly =
+                msg.role === "assistant" &&
+                messages
+                  .slice(0, msgIndex)
+                  .some(
+                    (m) =>
+                      m.role === "assistant" &&
+                      contentHasHospitalSection(m.content ?? "")
+                  );
+              const assistOpts = {
+                showClinicalTestMedia: false as const,
+                forceHospitalOnly,
+              };
               return (
                 <div
                   key={msg.id}
@@ -4307,10 +4493,26 @@ export function ChatInterface({
                                 renderBody={(body) => {
                                   const pendingFunctionalForm =
                                     awaitingFunctionalTests?.messageId === msg.id;
+                                  // Prefer full message for complete tests while streaming,
+                                  // but always strip Fuentes so they only appear in the button.
                                   const parseSource = pendingFunctionalForm
-                                    ? msg.content
+                                    ? body.includes("Pruebas funcionales") ||
+                                      body.includes("Functional tests") ||
+                                      body.includes("Preguntas / pruebas") ||
+                                      body.includes("Questions / tests")
+                                      ? body
+                                      : msg.content
                                     : body;
-                                  const parsed = splitFunctionalTests(parseSource);
+                                  const parsedRaw = splitFunctionalTests(parseSource);
+                                  const parsed = parsedRaw
+                                    ? {
+                                        ...parsedRaw,
+                                        before: extractCitedSources(parsedRaw.before)
+                                          .body,
+                                        after: extractCitedSources(parsedRaw.after)
+                                          .body,
+                                      }
+                                    : null;
                                   const isActiveForm =
                                     Boolean(parsed) &&
                                     (parsed?.tests.length ?? 0) >= 2 &&
@@ -4322,7 +4524,8 @@ export function ChatInterface({
                                         {renderAssistantContent(
                                           body,
                                           physioHighlightPhrases,
-                                          consultLanguage
+                                          consultLanguage,
+                                          assistOpts
                                         )}
                                       </div>
                                     );
@@ -4343,7 +4546,8 @@ export function ChatInterface({
                                           renderAssistantContent(
                                             text,
                                             physioHighlightPhrases,
-                                            consultLanguage
+                                            consultLanguage,
+                                            assistOpts
                                           )
                                         }
                                       />
@@ -4355,7 +4559,8 @@ export function ChatInterface({
                                       {renderAssistantContent(
                                         reconstructFunctionalTestsSection(parsed),
                                         physioHighlightPhrases,
-                                        consultLanguage
+                                        consultLanguage,
+                                        assistOpts
                                       )}
                                     </div>
                                   );
@@ -4701,7 +4906,13 @@ export function ChatInterface({
           </div>
           )}
         </div>
-        <ScrollToBottomButton visible={showScrollDown} onClick={scrollToBottom} />
+        <ScrollToBottomButton
+          visible={showScrollDown}
+          onClick={() => {
+            stickChatToEndRef.current = true;
+            scrollToBottomAfterPaint();
+          }}
+        />
         </div>
 
         {conversationMode && phase === "questionnaire" ? (
@@ -4753,7 +4964,7 @@ export function ChatInterface({
                 )}
                 <button
                   type="button"
-                  onClick={clearAttachment}
+                  onClick={() => clearAttachment()}
                   disabled={chatBusy}
                   className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800"
                 >
@@ -4781,14 +4992,14 @@ export function ChatInterface({
                 </button>
               ) : null}
               <textarea
+                key={`composer-${composerEpoch}`}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onFocus={(e) => {
-                  const el = e.currentTarget;
-                  window.setTimeout(() => {
-                    el.scrollIntoView({ block: "nearest", inline: "nearest" });
-                  }, 350);
-                }}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                name="aikinora-consulta-composer"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

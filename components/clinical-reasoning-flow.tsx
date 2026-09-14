@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import {
-  applyAnswer,
-  advanceFromConclusion,
   countCompletedManiobras,
   createSession,
   getNode,
   getTreeForSession,
   goBack,
   pushStep,
+  recordAnswerAndAdvance,
+  resolveContinueNodeId,
+  resolveNextNodeId,
   type ReasoningSession,
 } from "@/lib/clinical-reasoning";
 import { CLINICAL_TEST_IMAGES } from "@/lib/clinical-test-images";
@@ -272,16 +273,18 @@ export function ClinicalReasoningFlow({
   const handleAnswer = useCallback(
     (result: "positive" | "negative") => {
       if (!session || !tree || !currentNode || currentNode.type !== "test") return;
-      const nextId = applyAnswer(tree, currentNode.id, result);
+      const nextId = resolveNextNodeId(tree, session, currentNode.id, result);
       if (!nextId) return;
-      setSession(pushStep(session, nextId, result));
+      setSession(
+        recordAnswerAndAdvance(session, currentNode.id, result, nextId)
+      );
     },
     [session, tree, currentNode]
   );
 
   const handleContinue = useCallback(() => {
     if (!session || !tree || !currentNode || currentNode.type !== "conclusion") return;
-    const nextId = advanceFromConclusion(tree, currentNode.id);
+    const nextId = resolveContinueNodeId(tree, session, currentNode.id);
     if (!nextId) return;
     setSession(pushStep(session, nextId));
   }, [session, tree, currentNode]);
@@ -347,7 +350,11 @@ export function ClinicalReasoningFlow({
 
       <div className="mt-8 rounded-2xl border border-neutral-200 bg-white px-5 py-6 shadow-sm">
         {currentNode.type === "test" ? (
-          <TestScreen node={currentNode} onAnswer={handleAnswer} />
+          <TestScreen
+            key={currentNode.id}
+            node={currentNode}
+            onAnswer={handleAnswer}
+          />
         ) : (
           <ConclusionScreen
             node={currentNode}

@@ -109,11 +109,13 @@ export function ClinicalTestMediaBlock({ test, className }: MediaBlockProps) {
       <ClinicalTestVideoPlayer
         src={videoSrc}
         title={test.title}
-        poster={test.src}
+        poster={test.src || undefined}
         className={className ?? "mt-2 max-w-md"}
       />
     );
   }
+
+  if (!test.src) return null;
 
   return (
     <div

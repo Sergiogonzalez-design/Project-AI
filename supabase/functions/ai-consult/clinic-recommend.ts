@@ -111,10 +111,13 @@ Hospitals / ER near you
 RULES:
 - Do NOT include **Clinics on AIKinora near you**. Clinics are wrong when the patient must go to hospital now.
 - Name 2–3 well-known public hospitals / emergency departments in or very near ${cityLabel} that typically have ER (Urgencias). Prefer major reference / university / public hospitals if you know them for that city.
-- Do NOT invent street addresses, phone numbers, wait times, or Google Maps links. If unsure of a name, say go to the nearest Hospital Emergency Department in ${cityLabel} and open Maps with “emergency room near me” / “urgencias ${cityLabel}”.
+- BUTTON FORMAT (CRITICAL — the app turns each line into a Maps / browser button): write EACH hospital on its own numbered line exactly like:
+  1. Hospital Name | maps:emergency Hospital Name ${cityLabel}
+  Use a real hospital name you know for ${cityLabel}. Do NOT invent street addresses, phones, or wait times. Do NOT use /centro/… paths (hospitals are not app profiles).
+- If unsure of a specific name, use one line:
+  1. Nearest hospital ER in ${cityLabel} | maps:emergency room ${cityLabel}
 - Remind: if symptoms worsen (loss of consciousness, chest pain, inability to breathe, severe bleeding) call emergency services (112 in Spain / local equivalent).
-- Make clear the priority is HOSPITAL / ER NOW, not physiotherapy clinics.
-- Do NOT write /centro/… paths for hospitals (they are not app profiles / not tappable buttons).`;
+- Make clear the priority is HOSPITAL / ER NOW, not physiotherapy clinics.`;
     }
     return `HOSPITALS / ER — HIGH PRIORITY (CRITICAL — DO NOT RECOMMEND AIKINORA CLINICS):
 The patient has NO city/location on their profile.
@@ -123,11 +126,11 @@ Hospitals / ER near you
 RULES:
 - Do NOT include **Clinics on AIKinora near you**.
 - Do NOT invent a specific hospital name for a city you do not know.
-- Tell them to go NOW to the nearest Hospital Emergency Department (Urgencias).
-- Tell them how to find it: open Google Maps / Apple Maps and search “emergency room near me” or “urgencias hospital”; or ask someone nearby / taxi / emergency services.
-- If severe or unsure how to get there: call 112 (Spain) or local emergency number.
-- Still name the destination clearly: Hospital / Emergency Department — not a physio clinic.
-- Do NOT write /centro/… paths for hospitals (they are not app profiles / not tappable buttons).`;
+- BUTTON FORMAT (CRITICAL — Maps / browser button): write ONE numbered line:
+  1. Nearest hospital ER | maps:emergency room near me
+- Also say they can call 112 (Spain) or local emergency number if severe.
+- Destination is Hospital / Emergency Department — not a physio clinic.
+- Do NOT write /centro/… paths for hospitals.`;
   }
 
   if (cityLabel) {
@@ -138,10 +141,13 @@ Hospitales / Urgencias cerca de ti
 REGLAS:
 - NO incluyas **Clínicas en AIKinora cerca de ti**. Con PRIORIDAD ALTA las clínicas de fisio no aplican: debe ir a hospital.
 - Nombra 2–3 hospitales públicos / servicios de Urgencias bien conocidos en o muy cerca de ${cityLabel}. Prioriza hospitales de referencia / universitarios / públicos si los conoces para esa ciudad.
-- NO inventes direcciones exactas, teléfonos, tiempos de espera ni enlaces de Maps. Si no estás seguro de un nombre, di que vaya a Urgencias del hospital más cercano en ${cityLabel} y busque en Maps «urgencias ${cityLabel}» o «hospital urgencias cerca».
+- FORMATO BOTÓN (CRÍTICO — la app convierte cada línea en un botón que abre Maps / Internet): escribe CADA hospital en su propia línea numerada exactamente así:
+  1. Nombre del hospital | maps:urgencias Nombre del hospital ${cityLabel}
+  Usa un nombre real que conozcas para ${cityLabel}. NO inventes direcciones, teléfonos ni tiempos de espera. NO uses rutas /centro/… (los hospitales no tienen ficha en la app).
+- Si no estás seguro de un nombre concreto, usa una línea:
+  1. Urgencias del hospital más cercano en ${cityLabel} | maps:urgencias ${cityLabel}
 - Recuerda: si empeora (pérdida de consciencia, dolor torácico, no puede respirar, sangrado grave) llame al 112.
-- Deja claro que la prioridad es HOSPITAL / URGENCIAS YA, no una clínica de fisioterapia.
-- NO uses rutas /centro/… para hospitales (no son fichas de la app / no son botones).`;
+- Deja claro que la prioridad es HOSPITAL / URGENCIAS YA, no una clínica de fisioterapia.`;
   }
 
   return `HOSPITALES / URGENCIAS — PRIORIDAD ALTA (CRÍTICO — NO RECOMIENDES CLÍNICAS AIKINORA):
@@ -151,11 +157,11 @@ Hospitales / Urgencias cerca de ti
 REGLAS:
 - NO incluyas **Clínicas en AIKinora cerca de ti**.
 - NO inventes el nombre de un hospital concreto de una ciudad que no conoces.
-- Di que debe ir YA a Urgencias del hospital más cercano.
-- Cómo encontrarlo: abrir Google Maps / Apple Maps y buscar «urgencias cerca de mí» o «hospital urgencias»; o pedir ayuda a alguien / taxi / 112.
-- Si es grave o no sabe cómo llegar: llamar al 112.
-- Nombra el destino con claridad: Hospital / Urgencias — no una clínica de fisioterapia.
-- NO uses rutas /centro/… para hospitales (no son fichas de la app / no son botones).`;
+- FORMATO BOTÓN (CRÍTICO — abre Maps / Internet): escribe UNA línea numerada:
+  1. Urgencias del hospital más cercano | maps:urgencias cerca de mí
+- Si es grave: llamar al 112.
+- Destino: Hospital / Urgencias — no una clínica de fisioterapia.
+- NO uses rutas /centro/… para hospitales.`;
 }
 
 export function buildClinicRecommendPrompt(

@@ -46,7 +46,9 @@ export function MessagesScreen() {
   const listRef = useRef<FlatList>(null);
 
   const scrollToEnd = useCallback(() => {
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
+    listRef.current?.scrollToEnd({ animated: false });
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 160);
   }, []);
 
   useEffect(() => {
@@ -116,9 +118,18 @@ export function MessagesScreen() {
           },
           (payload) => {
             const row = payload.new as TherapistMessage;
-            setMessages((prev) =>
-              prev.some((m) => m.id === row.id) ? prev : [...prev, row]
-            );
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === row.id)) return prev;
+              const withoutOptimistic = prev.filter(
+                (m) =>
+                  !(
+                    m.id.startsWith("tmp-") &&
+                    m.content === row.content &&
+                    m.sender_role === row.sender_role
+                  )
+              );
+              return [...withoutOptimistic, row];
+            });
           }
         )
         .subscribe();
@@ -139,19 +150,38 @@ export function MessagesScreen() {
   async function handleSend() {
     if (!input.trim() || !threadId || !isPremium || sending) return;
     const text = input.trim();
+    const tempId = `tmp-${Date.now()}`;
+    const optimistic: TherapistMessage = {
+      id: tempId,
+      sender_role: "user",
+      content: text,
+      created_at: new Date().toISOString(),
+    };
     setInput("");
     setSending(true);
     setError(null);
+    setMessages((prev) => [...prev, optimistic]);
 
-    const { error: sendErr } = await supabase.from("therapist_messages").insert({
-      thread_id: threadId,
-      sender_role: "user",
-      content: text,
-    });
+    const { data, error: sendErr } = await supabase
+      .from("therapist_messages")
+      .insert({
+        thread_id: threadId,
+        sender_role: "user",
+        content: text,
+      })
+      .select("id, sender_role, content, created_at")
+      .single();
 
     if (sendErr) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setError(sendErr.message);
       setInput(text);
+    } else if (data) {
+      setMessages((prev) => {
+        const withoutTemp = prev.filter((m) => m.id !== tempId);
+        if (withoutTemp.some((m) => m.id === data.id)) return withoutTemp;
+        return [...withoutTemp, data as TherapistMessage];
+      });
     }
     setSending(false);
   }

@@ -40,10 +40,14 @@ import {
 const SESSION_TIMEOUT_MS = 2_500;
 const PROFILE_TIMEOUT_MS = 2_500;
 
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+function withTimeout<T>(
+  promise: PromiseLike<T>,
+  ms: number,
+  fallback: T
+): Promise<T> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => resolve(fallback), ms);
-    promise.then(
+    Promise.resolve(promise).then(
       (value) => {
         clearTimeout(timer);
         resolve(value);
@@ -171,11 +175,13 @@ function AppInner() {
           return;
         }
         const { data: profile } = await withTimeout(
-          supabase
-            .from("profiles")
-            .select(`account_type, ${PHYSIO_PROFILE_COLUMNS}, ${ATHLETE_PROFILE_COLUMNS}, clinic_id`)
-            .eq("id", userId)
-            .maybeSingle(),
+          Promise.resolve(
+            supabase
+              .from("profiles")
+              .select(`account_type, ${PHYSIO_PROFILE_COLUMNS}, ${ATHLETE_PROFILE_COLUMNS}, clinic_id`)
+              .eq("id", userId)
+              .maybeSingle()
+          ) as Promise<{ data: Record<string, unknown> | null; error: unknown }>,
           PROFILE_TIMEOUT_MS,
           { data: null, error: null }
         );

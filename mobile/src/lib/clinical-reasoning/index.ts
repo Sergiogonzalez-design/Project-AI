@@ -20,7 +20,10 @@ export {
   goBack,
   hasClinicalReasoningForReport,
   pushStep,
+  recordAnswerAndAdvance,
+  resolveContinueNodeId,
   resolveEntryNodeId,
+  resolveNextNodeId,
 } from "./engine";
 
 export {

@@ -6,10 +6,17 @@ import { extractCitedSources, type CitedSource } from "../lib/source-links";
 type Props = {
   content: string;
   renderBody: (body: string) => React.ReactNode;
+  /** Clinician chat / informe: keep plain internal titles without a URL. */
+  forPhysio?: boolean;
 };
 
 function SourceItem({ source }: { source: CitedSource }) {
   if (!source.href) {
+    return <Text style={styles.sourcePlain}>• {source.title}</Text>;
+  }
+
+  // Relative app paths (e.g. /conocimientos) are not valid for Linking.
+  if (source.href.startsWith("/")) {
     return <Text style={styles.sourcePlain}>• {source.title}</Text>;
   }
 
@@ -20,10 +27,14 @@ function SourceItem({ source }: { source: CitedSource }) {
   );
 }
 
-export function AssistantMessageWithSources({ content, renderBody }: Props) {
+export function AssistantMessageWithSources({
+  content,
+  renderBody,
+  forPhysio,
+}: Props) {
   const { body, sources, heading } = useMemo(
-    () => extractCitedSources(content),
-    [content]
+    () => extractCitedSources(content, { forPhysio }),
+    [content, forPhysio]
   );
   const [open, setOpen] = useState(false);
 

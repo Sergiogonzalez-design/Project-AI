@@ -104,13 +104,32 @@ export const CLINICAL_TEST_VIDEOS = {
   "mallet-finger": `${CLINICAL_TEST_CDN}/videos/mallet-finger.mp4?${VIDEO_CACHE}`,
   "trigger-a1": `${CLINICAL_TEST_CDN}/videos/trigger-a1.mp4?${VIDEO_CACHE}`,
   "crossed-slr": `${CLINICAL_TEST_CDN}/videos/crossed-slr.mp4?${VIDEO_CACHE}`,
+  // Shared demos until dedicated clips ship (same CDN file as the target id).
+  "cmc-lever": `${CLINICAL_TEST_CDN}/videos/cmc-grind.mp4?${VIDEO_CACHE}`,
+  "lt-ballottement": `${CLINICAL_TEST_CDN}/videos/watson-scaphoid-shift.mp4?${VIDEO_CACHE}`,
+  "hamstring-stretch": `${CLINICAL_TEST_CDN}/videos/slr-lasegue.mp4?${VIDEO_CACHE}`,
+  "resisted-knee-flexion": `${CLINICAL_TEST_CDN}/videos/active-slr.mp4?${VIDEO_CACHE}`,
+  "sitting-ischium": `${CLINICAL_TEST_CDN}/videos/active-slr.mp4?${VIDEO_CACHE}`,
 } as const;
 
 export type ClinicalTestVideoId = keyof typeof CLINICAL_TEST_VIDEOS;
+
+/** Map tree / catalog ids that reuse another clip’s file. */
+export const CLINICAL_TEST_VIDEO_ALIASES: Readonly<
+  Record<string, ClinicalTestVideoId>
+> = {
+  "cmc-lever": "cmc-grind",
+  "lt-ballottement": "watson-scaphoid-shift",
+  "hamstring-stretch": "slr-lasegue",
+  "resisted-knee-flexion": "active-slr",
+  "sitting-ischium": "active-slr",
+};
 
 export function getClinicalTestVideoSrc(testId: string): string | null {
   if (testId in CLINICAL_TEST_VIDEOS) {
     return CLINICAL_TEST_VIDEOS[testId as ClinicalTestVideoId];
   }
+  const alias = CLINICAL_TEST_VIDEO_ALIASES[testId];
+  if (alias) return CLINICAL_TEST_VIDEOS[alias];
   return null;
 }

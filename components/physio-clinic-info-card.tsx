@@ -60,9 +60,6 @@ export function PhysioClinicInfoCard({ clinic }: { clinic: PhysioClinicSummary }
             </div>
           )}
           <div className="min-w-0 pb-1">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-              Tu clínica
-            </p>
             <h2 className="truncate text-lg font-bold text-neutral-900 sm:text-xl">
               {clinic.name}
             </h2>

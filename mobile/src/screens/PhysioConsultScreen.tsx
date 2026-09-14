@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -122,10 +122,37 @@ export function PhysioConsultScreen() {
   const [attachedMime, setAttachedMime] = useState("image/jpeg");
   const [attachedName, setAttachedName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const chatScrollRef = useRef<ScrollView>(null);
+  const stickChatToEndRef = useRef(false);
+
+  const scrollChatToEnd = useCallback(() => {
+    chatScrollRef.current?.scrollToEnd({ animated: false });
+    requestAnimationFrame(() => {
+      chatScrollRef.current?.scrollToEnd({ animated: true });
+      setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 120);
+      setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: false }), 280);
+    });
+  }, []);
+
+  useEffect(() => {
+    const last = chatMessages[chatMessages.length - 1];
+    if (!last || last.role !== "user") return;
+    stickChatToEndRef.current = true;
+    scrollChatToEnd();
+  }, [chatMessages, scrollChatToEnd]);
+
+  useEffect(() => {
+    if (!chatLoading) return;
+    stickChatToEndRef.current = true;
+    scrollChatToEnd();
+  }, [chatLoading, scrollChatToEnd]);
 
   useFocusEffect(
     useCallback(() => {
       navigation.setOptions({ headerShown: false });
+      return () => {
+        navigation.setOptions({ headerShown: true });
+      };
     }, [navigation])
   );
 
@@ -302,27 +329,45 @@ export function PhysioConsultScreen() {
   }
 
   async function sendClinicalChat() {
+    const pendingUri = attachedUri;
+    const pendingMime = attachedMime;
+    const pendingName = attachedName;
     const text =
       chatInput.trim() ||
-      (attachedUri ? consultAttachmentCaption("es", attachedMime, attachedName) : "");
-    if ((!text && !attachedUri) || chatLoading) return;
+      (pendingUri ? consultAttachmentCaption("es", pendingMime, pendingName) : "");
+    if ((!text && !pendingUri) || chatLoading) return;
+    const userMsgId = `${Date.now()}-u`;
+    const localPreview =
+      pendingUri && !isConsultPdfUrl(pendingUri) ? pendingUri : undefined;
     setChatInput("");
+    clearAttachment();
     setChatLoading(true);
     setError(null);
+
+    const userMsg: ChatMessage = {
+      id: userMsgId,
+      role: "user",
+      content: text,
+      image_url: localPreview,
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+
     try {
-      const attachmentPath = await uploadOutgoingPhoto();
+      const attachmentPath = pendingUri
+        ? await uploadConsultPhotoFromUri(pendingUri, pendingMime)
+        : null;
       const displayUrl = attachmentPath
         ? await consultPhotoAccessUrl(attachmentPath)
         : null;
       const imageUrl = await consultPhotoVisionUrl(attachmentPath);
-      const userMsg: ChatMessage = {
-        id: `${Date.now()}-u`,
-        role: "user",
-        content: text,
-        image_url: displayUrl ?? undefined,
-      };
-      setChatMessages((prev) => [...prev, userMsg]);
-      const history = [...chatMessages, userMsg]
+      if (displayUrl) {
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === userMsgId ? { ...m, image_url: displayUrl } : m
+          )
+        );
+      }
+      const history = [...chatMessages, { ...userMsg, image_url: displayUrl ?? localPreview }]
         .filter((m) => m.id !== WELCOME_ID)
         .map((m) => ({ role: m.role, content: m.content }));
       const {
@@ -388,6 +433,7 @@ export function PhysioConsultScreen() {
         },
       ]);
     } catch (err) {
+      setChatMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       setError(err instanceof Error ? err.message : "Error en la consulta clínica.");
     } finally {
       setChatLoading(false);
@@ -574,9 +620,16 @@ export function PhysioConsultScreen() {
       ) : (
         <>
           <ScrollView
+            ref={chatScrollRef}
             style={{ flex: 1 }}
             contentContainerStyle={styles.messages}
             keyboardShouldPersistTaps="handled"
+            onContentSizeChange={() => {
+              if (stickChatToEndRef.current) scrollChatToEnd();
+            }}
+            onScrollBeginDrag={() => {
+              stickChatToEndRef.current = false;
+            }}
           >
             {chatMessages.map((m, msgIndex) => {
               const prevUser =
@@ -629,6 +682,7 @@ export function PhysioConsultScreen() {
                   ) : (
                     <AssistantMessageWithSources
                       content={m.content}
+                      forPhysio
                       renderBody={(body) => (
                         <PhysioAssistantBody
                           text={body}

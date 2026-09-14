@@ -16,6 +16,7 @@ import {
   AI_HIP_LATERAL_PAIN_RULES,
   AI_HIP_MASTER_INTEGRATION_RULES,
   AI_HIP_POSTERIOR_PAIN_RULES,
+  AI_HAMSTRING_INJURY_RULES,
   AI_HIP_TRAUMATIC_RULES,
   AI_KNEE_ANTERIOR_PAIN_RULES,
   AI_KNEE_INSTABILITY_ACL_RULES,
@@ -64,12 +65,18 @@ import {
   AI_THORACIC_SPINE_PAIN_RULES,
   AI_FINGER_DIGITAL_PAIN_RULES,
   AI_HEAD_HEADACHE_MASTER_RULES,
+  AI_TMJ_TMD_RULES,
+  AI_LOWER_LEG_COMPARTMENT_RULES,
+  AI_PELVIC_FLOOR_PGPAIN_RULES,
   AI_HYPOTHESIS_EXPLORATION_RULES,
   AI_MTRP_FRAMEWORK_RULES,
   AI_CLARITY_NO_OVERDIAGNOSIS_RULES,
   AI_PERSISTENCE_REEVALUATION_RULES,
   AI_POST_SURGERY_SCREENS_MASTER_RULES,
   AI_POST_SURGERY_ACL_RULES,
+  AI_POST_SURGERY_MENISCUS_RULES,
+  AI_POST_SURGERY_ARTHROPLASTY_RULES,
+  AI_POST_SURGERY_LUMBAR_RULES,
   AI_POST_SURGERY_ROTATOR_CUFF_RULES,
   AI_POST_SURGERY_ANKLE_RULES,
   AI_NO_IMAGING_DECISION_RULES,
@@ -394,6 +401,19 @@ function buildAthleteContext(profile: Record<string, unknown> | null): string {
   ].join("\n");
 }
 
+function historyAlreadyRecommendedHospital(
+  history: HistoryMessage[] | undefined
+): boolean {
+  if (!history?.length) return false;
+  return history.some((m) => {
+    if (m.role !== "assistant") return false;
+    const c = typeof m.content === "string" ? m.content : "";
+    return /Hospitales\s*\/\s*Urgencias cerca de ti|Hospitals\s*\/\s*ER near you/i.test(
+      c
+    );
+  });
+}
+
 async function fetchClinicRecommendBlock(
   supabase: ReturnType<typeof createClient>,
   profile: Record<string, unknown> | null,
@@ -404,13 +424,16 @@ async function fetchClinicRecommendBlock(
   if (isClinicianAccount(accountType)) return "";
   const city =
     typeof profile?.city === "string" ? profile.city.trim() : "";
-  const urgent = isHighPriorityUrgentContext(
-    body.symptomContext,
-    body.message,
-    body.description,
-    body.bodyArea
-  );
+  const urgent =
+    isHighPriorityUrgentContext(
+      body.symptomContext,
+      body.message,
+      body.description,
+      body.bodyArea
+    ) || historyAlreadyRecommendedHospital(body.conversationHistory);
   // Hospital-first when PRIORIDAD ALTA — including Fisioterapia-linked consults.
+  // Also keep hospital if an earlier reply in this chat already recommended ER
+  // (avoids later “resumen final” flipping to AIKinora clinics).
   if (urgent) {
     return buildHospitalRecommendPrompt(city || null, language);
   }
@@ -762,6 +785,8 @@ ${AI_HIP_LATERAL_PAIN_RULES}
 
 ${AI_HIP_POSTERIOR_PAIN_RULES}
 
+${AI_HAMSTRING_INJURY_RULES}
+
 RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RODILLA (aplicar cuando el caso sea rodilla; combinar con RAG):
 
 ${AI_KNEE_MASTER_INTEGRATION_RULES}
@@ -864,9 +889,15 @@ ${AI_LUMBAR_BACK_PAIN_RULES}
 
 ${AI_LUMBAR_SI_PELVIS_RULES}
 
+${AI_PELVIC_FLOOR_PGPAIN_RULES}
+
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
 ${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_TMJ_TMD_RULES}
+
+${AI_LOWER_LEG_COMPARTMENT_RULES}
 
 ${AI_HYPOTHESIS_EXPLORATION_RULES}
 
@@ -877,6 +908,12 @@ ${AI_PERSISTENCE_REEVALUATION_RULES}
 ${AI_POST_SURGERY_SCREENS_MASTER_RULES}
 
 ${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_MENISCUS_RULES}
+
+${AI_POST_SURGERY_ARTHROPLASTY_RULES}
+
+${AI_POST_SURGERY_LUMBAR_RULES}
 
 ${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
 
@@ -941,6 +978,8 @@ ${AI_HIP_TRAUMATIC_RULES}
 ${AI_HIP_LATERAL_PAIN_RULES}
 
 ${AI_HIP_POSTERIOR_PAIN_RULES}
+
+${AI_HAMSTRING_INJURY_RULES}
 
 RAZONAMIENTO CLÍNICO PHYSIOGUIDE — RODILLA (aplicar en informes de rodilla; combinar con RAG):
 
@@ -1044,9 +1083,15 @@ ${AI_LUMBAR_BACK_PAIN_RULES}
 
 ${AI_LUMBAR_SI_PELVIS_RULES}
 
+${AI_PELVIC_FLOOR_PGPAIN_RULES}
+
 ${AI_FINGER_DIGITAL_PAIN_RULES}
 
 ${AI_HEAD_HEADACHE_MASTER_RULES}
+
+${AI_TMJ_TMD_RULES}
+
+${AI_LOWER_LEG_COMPARTMENT_RULES}
 
 ${AI_HYPOTHESIS_EXPLORATION_RULES}
 
@@ -1057,6 +1102,12 @@ ${AI_PERSISTENCE_REEVALUATION_RULES}
 ${AI_POST_SURGERY_SCREENS_MASTER_RULES}
 
 ${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_MENISCUS_RULES}
+
+${AI_POST_SURGERY_ARTHROPLASTY_RULES}
+
+${AI_POST_SURGERY_LUMBAR_RULES}
 
 ${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
 

@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GuestNameGate } from "../components/GuestNameGate";
 import { Colors } from "../lib/colors";
-import { guestNameStorageKey } from "../lib/guest-account";
+import { guestNameStorageKey, isGuestDisplayNameSet } from "../lib/guest-account";
 import { useI18n } from "../lib/i18n";
 import {
   getLinkedPhysioCache,
@@ -33,27 +33,22 @@ type Props = {
 const Tab = createBottomTabNavigator();
 
 async function guestAlreadyNamed(userId: string): Promise<boolean> {
-  try {
-    const flag = await AsyncStorage.getItem(guestNameStorageKey(userId));
-    if (flag === "1") return true;
-  } catch {
-    // fall through
-  }
   const { data } = await supabase
     .from("profiles")
     .select("display_name")
     .eq("id", userId)
     .maybeSingle();
-  const name = (data?.display_name ?? "").trim();
-  if (name.length >= 2) {
-    try {
+  const named = isGuestDisplayNameSet(data?.display_name ?? null);
+  try {
+    if (named) {
       await AsyncStorage.setItem(guestNameStorageKey(userId), "1");
-    } catch {
-      // ignore
+    } else {
+      await AsyncStorage.removeItem(guestNameStorageKey(userId));
     }
-    return true;
+  } catch {
+    // ignore
   }
-  return false;
+  return named;
 }
 
 /** Isolated navigator so the login screen never imports the heavy consult chat. */
@@ -194,6 +189,7 @@ export function GuestPhysioNavigator({ onCreateAccount, onExitToLogin }: Props) 
             </Pressable>
           ),
           tabBarStyle: { display: "none" },
+          animation: "none",
         }}
       >
         <Tab.Screen name="GuestPhysio" options={{ title: t.headers.consultaPrevia }}>

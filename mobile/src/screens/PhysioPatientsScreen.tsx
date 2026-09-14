@@ -29,6 +29,7 @@ import {
 } from "../components/PhysioReportView";
 import { ClinicalReasoningFlow } from "../components/ClinicalReasoningFlow";
 import { PhysioAssistantBody } from "../components/PhysioAssistantBody";
+import { StaffPatientProfileEditor } from "../components/StaffPatientProfileEditor";
 import { TypingIndicator } from "../components/TypingIndicator";
 import {
   composerBottomInset,
@@ -92,15 +93,6 @@ export function PhysioPatientsScreen() {
   const subviewHeaderPad = screenHeaderBarPadding(insets);
   const [patients, setPatients] = useState<PhysioPatient[]>([]);
   const [unreadByPatient, setUnreadByPatient] = useState<Record<string, number>>({});
-  const [recentReports, setRecentReports] = useState<
-    {
-      id: string;
-      created_at: string;
-      body_area: string | null;
-      status: string;
-      patient_id: string;
-    }[]
-  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -142,6 +134,31 @@ export function PhysioPatientsScreen() {
   const [attachedMime, setAttachedMime] = useState("image/jpeg");
   const detailScrollRef = useRef<ScrollView>(null);
   const listScrollRef = useRef<ScrollView>(null);
+  const chatScrollRef = useRef<ScrollView>(null);
+  const stickChatToEndRef = useRef(false);
+
+  const scrollChatToEnd = useCallback(() => {
+    chatScrollRef.current?.scrollToEnd({ animated: false });
+    requestAnimationFrame(() => {
+      chatScrollRef.current?.scrollToEnd({ animated: true });
+      setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 120);
+      setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: false }), 280);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!chatOpen) return;
+    const last = chatMessages[chatMessages.length - 1];
+    if (!last || last.role !== "user") return;
+    stickChatToEndRef.current = true;
+    scrollChatToEnd();
+  }, [chatOpen, chatMessages, scrollChatToEnd]);
+
+  useEffect(() => {
+    if (!chatOpen || !chatLoading) return;
+    stickChatToEndRef.current = true;
+    scrollChatToEnd();
+  }, [chatOpen, chatLoading, scrollChatToEnd]);
 
   function clearAttachment() {
     setAttachedUri(null);
@@ -153,6 +170,9 @@ export function PhysioPatientsScreen() {
       const inSubView =
         chatOpen || selectedPatient != null || reasoningReport != null;
       navigation.setOptions({ headerShown: !inSubView });
+      return () => {
+        navigation.setOptions({ headerShown: true });
+      };
     }, [navigation, chatOpen, selectedPatient, reasoningReport])
   );
 
@@ -264,21 +284,6 @@ export function PhysioPatientsScreen() {
       return;
     }
     setPatients((data as PhysioPatient[]) ?? []);
-
-    const { data: recentRows } = await supabase
-      .from("clinical_reports")
-      .select("id, created_at, body_area, status, patient_id")
-      .order("created_at", { ascending: false })
-      .limit(20);
-    setRecentReports(
-      (recentRows as {
-        id: string;
-        created_at: string;
-        body_area: string | null;
-        status: string;
-        patient_id: string;
-      }[]) ?? []
-    );
 
     const { data: reportRows } = await supabase
       .from("clinical_reports")
@@ -431,19 +436,34 @@ export function PhysioPatientsScreen() {
   }
 
   async function sendClinicalChat() {
-    const text = chatInput.trim() || (attachedUri ? photoOnlyCaption("es") : "");
-    if ((!text && !attachedUri) || chatLoading) return;
+    const pendingUri = attachedUri;
+    const pendingMime = attachedMime;
+    const text = chatInput.trim() || (pendingUri ? photoOnlyCaption("es") : "");
+    if ((!text && !pendingUri) || chatLoading) return;
+    const userMsgId = `${Date.now()}-u`;
     setChatInput("");
+    clearAttachment();
     setChatLoading(true);
+
+    const userMsg: ChatMessage = {
+      id: userMsgId,
+      role: "user",
+      content: text,
+      image_url: pendingUri ?? undefined,
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+
     try {
-      const imageUrl = await uploadOutgoingPhoto();
-      const userMsg: ChatMessage = {
-        id: `${Date.now()}-u`,
-        role: "user",
-        content: text,
-        image_url: imageUrl,
-      };
-      setChatMessages((prev) => [...prev, userMsg]);
+      const imageUrl = pendingUri
+        ? await uploadConsultPhotoFromUri(pendingUri, pendingMime)
+        : null;
+      if (imageUrl) {
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === userMsgId ? { ...m, image_url: imageUrl } : m
+          )
+        );
+      }
       const history = [...chatMessages, userMsg]
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.content }));
@@ -465,6 +485,7 @@ export function PhysioPatientsScreen() {
         { id: `${Date.now()}-a`, role: "assistant", content: answer },
       ]);
     } catch (err) {
+      setChatMessages((prev) => prev.filter((m) => m.id !== userMsgId));
       setError(err instanceof Error ? err.message : "Error en la consulta clínica.");
     } finally {
       setChatLoading(false);
@@ -498,9 +519,16 @@ export function PhysioPatientsScreen() {
         ) : (
           <>
             <ScrollView
+              ref={chatScrollRef}
               style={{ flex: 1 }}
               contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
               keyboardShouldPersistTaps="handled"
+              onContentSizeChange={() => {
+                if (stickChatToEndRef.current) scrollChatToEnd();
+              }}
+              onScrollBeginDrag={() => {
+                stickChatToEndRef.current = false;
+              }}
             >
               {chatMessages.map((m, msgIndex) => {
                 const prevUser =
@@ -640,6 +668,19 @@ export function PhysioPatientsScreen() {
           </Text>
         </View>
         <ScreenScrollView ref={detailScrollRef} contentContainerStyle={styles.container}>
+          <StaffPatientProfileEditor
+            patientId={selectedPatient.id}
+            onDisplayNameChange={(name) => {
+              setSelectedPatient((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      display_name: name || prev.display_name,
+                    }
+                  : prev
+              );
+            }}
+          />
           {reportsLoading ? (
             <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
           ) : reports.length === 0 ? (
@@ -764,56 +805,6 @@ export function PhysioPatientsScreen() {
           </View>
         ) : null}
 
-        {!loading && recentReports.length > 0 ? (
-          <View style={{ marginBottom: 8 }}>
-            <Text style={styles.listHeaderText}>Informes recientes</Text>
-            <Text style={[styles.userMeta, { marginBottom: 10 }]}>
-              Enviados a esta cuenta (también con solo el código).
-            </Text>
-            {recentReports.map((report) => {
-              const patient = patients.find((p) => p.id === report.patient_id);
-              const label =
-                patient?.display_name || patient?.email || "Paciente";
-              return (
-                <Pressable
-                  key={report.id}
-                  style={styles.userCard}
-                  onPress={() => {
-                    if (patient) void openPatient(patient);
-                    else {
-                      void openPatient({
-                        id: report.patient_id,
-                        email: label,
-                        display_name: label,
-                        created_at: report.created_at,
-                        last_sign_in_at: null,
-                        onboarding_completed: false,
-                      });
-                    }
-                  }}
-                >
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <View style={styles.userTitleRow}>
-                      <Text style={styles.userEmail} numberOfLines={1}>
-                        {label}
-                      </Text>
-                      {report.status === "new" ? (
-                        <View style={styles.newBadge}>
-                          <Text style={styles.newBadgeText}>1</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text style={styles.userMeta} numberOfLines={1}>
-                      {report.body_area || "Consulta"} ·{" "}
-                      {formatDate(report.created_at)}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : null}
-
         <View style={styles.listHeader}>
           <Text style={styles.listHeaderText}>
             {patients.length} paciente{patients.length === 1 ? "" : "s"}
@@ -864,7 +855,7 @@ export function PhysioPatientsScreen() {
           }}
           style={({ pressed }) => [
             styles.vinculacionBtn,
-            pressed && { backgroundColor: Colors.background },
+            pressed && { backgroundColor: Colors.primaryDark },
           ]}
           accessibilityRole="button"
           accessibilityState={{ expanded: vinculacionOpen }}
@@ -873,7 +864,7 @@ export function PhysioPatientsScreen() {
           <Ionicons
             name={vinculacionOpen ? "chevron-up" : "chevron-down"}
             size={18}
-            color={Colors.textSecondary}
+            color={Colors.white}
           />
         </Pressable>
 
@@ -1071,17 +1062,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.primary,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 0,
     paddingHorizontal: 18,
     paddingVertical: 16,
   },
   vinculacionBtnText: {
     fontSize: 16,
     fontWeight: "700",
-    color: Colors.text,
+    color: Colors.white,
   },
   codeMenuWrap: {
     position: "absolute",

@@ -326,6 +326,13 @@ export function FisioChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [physioIntro, setPhysioIntro] = useState(true);
   const [input, setInput] = useState("");
+  const [composerEpoch, setComposerEpoch] = useState(0);
+  const wipeComposer = useCallback(() => {
+    pendingVoiceTextRef.current = null;
+    hearingTextRef.current = "";
+    setInput("");
+    setComposerEpoch((n) => n + 1);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [revealingMessageId, setRevealingMessageId] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
@@ -370,6 +377,7 @@ export function FisioChatInterface() {
   const resumeConversationListening = useCallback(() => {
     conversationBusyRef.current = false;
     hearingTextRef.current = "";
+    wipeComposer();
     clearSilenceTimer();
     if (!conversationModeRef.current) return;
     window.setTimeout(() => {
@@ -377,7 +385,7 @@ export function FisioChatInterface() {
         startMicRef.current();
       }
     }, 500);
-  }, [clearSilenceTimer]);
+  }, [clearSilenceTimer, wipeComposer]);
 
   const {
     supported: sttSupported,
@@ -391,7 +399,7 @@ export function FisioChatInterface() {
     onHearing: (heard) => {
       if (!conversationModeRef.current || conversationBusyRef.current) return;
       hearingTextRef.current = heard;
-      setInput(heard);
+      // Keep the composer empty — live STT must not refill the text box.
       clearSilenceTimer();
       silenceTimerRef.current = window.setTimeout(() => {
         if (!conversationModeRef.current || conversationBusyRef.current) return;
@@ -400,8 +408,8 @@ export function FisioChatInterface() {
         conversationBusyRef.current = true;
         clearSilenceTimer();
         stopMicRef.current();
+        wipeComposer();
         pendingVoiceTextRef.current = text;
-        flushSync(() => setInput(text));
         sendVoiceTurnRef.current();
       }, SILENCE_MS);
     },
@@ -413,6 +421,7 @@ export function FisioChatInterface() {
   function toggleConversationMode() {
     clearSilenceTimer();
     hearingTextRef.current = "";
+    wipeComposer();
     if (conversationMode) {
       conversationModeRef.current = false;
       setConversationMode(false);
@@ -454,9 +463,12 @@ export function FisioChatInterface() {
     resumeConversationListening,
   ]);
 
-  function clearAttachment() {
+  function clearAttachment(options?: { revokePreview?: boolean }) {
+    const revoke = options?.revokePreview !== false;
     setAttachedFile(null);
-    if (attachedPreview?.startsWith("blob:")) URL.revokeObjectURL(attachedPreview);
+    if (revoke && attachedPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(attachedPreview);
+    }
     setAttachedPreview(null);
     if (photoInputRef.current) photoInputRef.current.value = "";
     if (cameraInputRef.current) cameraInputRef.current.value = "";
@@ -499,6 +511,23 @@ export function FisioChatInterface() {
     const el = messagesRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, []);
+
+  const scrollToBottomAfterPaint = useCallback(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    const run = (behavior: ScrollBehavior) => {
+      el.scrollTo({ top: el.scrollHeight, behavior });
+    };
+    run("auto");
+    requestAnimationFrame(() => {
+      run("auto");
+      requestAnimationFrame(() => {
+        run("smooth");
+        window.setTimeout(() => run("smooth"), 120);
+        window.setTimeout(() => run("auto"), 280);
+      });
+    });
   }, []);
 
   async function loadConversations() {
@@ -574,30 +603,34 @@ export function FisioChatInterface() {
 
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
+    const pendingFile = attachedFile;
+    const pendingPreview = attachedPreview;
     const text =
       (pendingVoiceTextRef.current ?? input).trim() ||
-      (attachedFile ? consultAttachmentCaption(attachedFile) : "");
+      (pendingFile ? consultAttachmentCaption(pendingFile) : "");
     pendingVoiceTextRef.current = null;
-    if ((!text && !attachedFile) || loading) {
+    if ((!text && !pendingFile) || loading) {
       if (conversationModeRef.current) resumeConversationListening();
       return;
     }
-    setInput("");
 
     const optimisticId = crypto.randomUUID();
     const optimisticUser: Message = {
       id: optimisticId,
       role: "user",
       content: text,
-      image_url: attachedPreview ?? undefined,
+      image_url: pendingPreview ?? undefined,
     };
     const base = messages.length === 0 ? [welcomeMessage()] : messages;
     const uiMessages: Message[] = [...base, optimisticUser];
     flushSync(() => {
+      setInput("");
+      clearAttachment({ revokePreview: false });
       setMessages(uiMessages);
       setLoading(true);
     });
-    requestAnimationFrame(() => scrollToBottom());
+    setComposerEpoch((n) => n + 1);
+    scrollToBottomAfterPaint();
 
     try {
       const {
@@ -605,7 +638,9 @@ export function FisioChatInterface() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sesión expirada.");
 
-      const attachmentPath = await uploadOutgoingPhoto();
+      const attachmentPath = pendingFile
+        ? await uploadConsultPhoto(pendingFile)
+        : null;
       const displayUrl = attachmentPath
         ? await consultPhotoAccessUrl(attachmentPath)
         : null;
@@ -617,6 +652,9 @@ export function FisioChatInterface() {
             m.id === optimisticId ? { ...m, image_url: displayUrl } : m
           )
         );
+      }
+      if (pendingPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingPreview);
       }
 
       let conversationId = activeId;
@@ -654,7 +692,14 @@ export function FisioChatInterface() {
 
       if (savedUser) {
         setMessages((prev) =>
-          prev.map((m) => (m.id === optimisticId ? (savedUser as Message) : m))
+          prev.map((m) =>
+            m.id === optimisticId
+              ? {
+                  ...(savedUser as Message),
+                  image_url: displayUrl ?? (savedUser as Message).image_url,
+                }
+              : m
+          )
         );
       }
 
@@ -694,6 +739,10 @@ export function FisioChatInterface() {
       setRevealingMessageId(assistantMsg.id);
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
+      if (pendingPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(pendingPreview);
+      }
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       alert(err instanceof Error ? err.message : "Error al consultar la IA.");
       if (conversationModeRef.current) resumeConversationListening();
     } finally {
@@ -720,6 +769,12 @@ export function FisioChatInterface() {
     }, 2800);
     return () => window.clearTimeout(t);
   }, [conversationMode, loading, revealingMessageId, resumeConversationListening]);
+
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "user") return;
+    scrollToBottomAfterPaint();
+  }, [messages, scrollToBottomAfterPaint]);
 
   const showChatInput = !physioIntro;
 
@@ -775,7 +830,7 @@ export function FisioChatInterface() {
       )}
 
       <aside
-        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200/80 sidebar-panel transition-all`}
+        className={`hidden md:flex ${desktopSidebarOpen ? "w-72" : "w-0"} shrink-0 overflow-hidden border-r border-slate-200/80 sidebar-panel`}
       >
         <div className="flex w-72 flex-col p-4">
           <button
@@ -927,6 +982,7 @@ export function FisioChatInterface() {
                               {(visibleText) => (
                                 <AssistantMessageWithSources
                                   content={visibleText}
+                                  forPhysio
                                   renderBody={(body) => (
                                     <div className="whitespace-pre-wrap break-words">
                                       {renderAssistantContent(
@@ -1006,7 +1062,7 @@ export function FisioChatInterface() {
                   )}
                   <button
                     type="button"
-                    onClick={clearAttachment}
+                    onClick={() => clearAttachment()}
                     disabled={loading}
                     className="text-xs font-semibold text-slate-500 hover:text-slate-800"
                   >
@@ -1034,8 +1090,13 @@ export function FisioChatInterface() {
                   </button>
                 ) : null}
                 <textarea
+                  key={`composer-${composerEpoch}`}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  name="aikinora-fisio-composer"
                   onFocus={(e) => {
                     const el = e.currentTarget;
                     window.setTimeout(() => {

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Colors } from "../lib/colors";
 import { deleteOwnAccountAndSignOut } from "../lib/delete-account";
-import { guestNameStorageKey } from "../lib/guest-account";
+import { guestNameStorageKey, isGuestDisplayNameSet } from "../lib/guest-account";
 import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { AuthBackBar } from "./AuthBackBar";
@@ -31,7 +31,7 @@ export function GuestNameGate({ onSaved, onExit }: Props) {
   async function handleSubmit() {
     Keyboard.dismiss();
     const displayName = name.trim().replace(/\s+/g, " ");
-    if (displayName.length < 2) {
+    if (!isGuestDisplayNameSet(displayName)) {
       setError(t.guest.nameRequired);
       return;
     }

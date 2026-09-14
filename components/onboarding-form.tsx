@@ -3,6 +3,11 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
+import {
+  emptyAddressValue,
+  type AddressValue,
+} from "@/lib/address-search";
 import {
   COMPETITIVE_LEVELS,
   CURRENT_SEASONS,
@@ -63,7 +68,7 @@ export function OnboardingForm() {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
-  const [city, setCity] = useState("");
+  const [location, setLocation] = useState<AddressValue>(emptyAddressValue());
 
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
@@ -130,7 +135,10 @@ export function OnboardingForm() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        city: city.trim() || null,
+        address: location.address.trim() || null,
+        city: location.city.trim() || null,
+        postal_code: location.postalCode.trim() || null,
+        country: location.country.trim() || null,
         ...sportProfilePayload(),
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
@@ -242,20 +250,11 @@ export function OnboardingForm() {
             />
           </div>
 
-          <div>
-            <label className={labelClass}>Ciudad (opcional)</label>
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="Ej: Madrid"
-              className={inputClass}
-            />
-            <p className="mt-1.5 text-xs text-slate-500">
-              Si la indicas, priorizamos clínicas de AIKinora en tu ciudad. Si no,
-              te recomendamos centros que encajen con tu lesión.
-            </p>
-          </div>
+          <AddressAutocomplete
+            value={location}
+            onChange={setLocation}
+            hint="Si la indicas, priorizamos clínicas de AIKinora cerca de ti. Busca la dirección completa (calle, ciudad, CP, país)."
+          />
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -320,31 +319,41 @@ export function OnboardingForm() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Sesiones / semana (opcional)</label>
-              <input
-                type="number"
-                min={0}
-                max={14}
-                value={sessionsPerWeek}
-                onChange={(e) => setSessionsPerWeek(e.target.value)}
-                placeholder="Ej: 4"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Horas / semana (opcional)</label>
-              <input
-                type="number"
-                min={0}
-                max={40}
-                step={0.5}
-                value={hoursPerWeek}
-                onChange={(e) => setHoursPerWeek(e.target.value)}
-                placeholder="Ej: 8"
-                className={inputClass}
-              />
+          <div>
+            <p className={labelClass}>
+              Entrenamiento semanal{" "}
+              <span className="font-normal text-slate-400">(opcional)</span>
+            </p>
+            <div className="grid grid-cols-2 items-end gap-3">
+              <div className="min-w-0">
+                <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                  Sesiones
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={14}
+                  value={sessionsPerWeek}
+                  onChange={(e) => setSessionsPerWeek(e.target.value)}
+                  placeholder="Ej. 4"
+                  className={inputClass}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className="mb-1.5 block text-xs font-medium text-slate-500">
+                  Horas
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={40}
+                  step={0.5}
+                  value={hoursPerWeek}
+                  onChange={(e) => setHoursPerWeek(e.target.value)}
+                  placeholder="Ej. 8"
+                  className={inputClass}
+                />
+              </div>
             </div>
           </div>
 

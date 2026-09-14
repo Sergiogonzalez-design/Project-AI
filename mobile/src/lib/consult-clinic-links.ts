@@ -1,4 +1,6 @@
-/** Parse AIKinora clinic paths from Physio replies (`/centro/{slug}` → profile button). */
+/** Parse AIKinora clinic paths and hospital Maps buttons from Physio replies. */
+
+import { googleMapsSearchUrl } from "./clinic-maps";
 
 const CENTRO_PATH_RE = /\/centro\/([a-z0-9][a-z0-9-]{0,80})/gi;
 
@@ -6,6 +8,12 @@ export type ConsultClinicLink = {
   slug: string;
   label: string;
   /** Optional city / address / equipment snippet (never the path). */
+  meta: string;
+};
+
+export type ConsultHospitalLink = {
+  label: string;
+  mapsUrl: string;
   meta: string;
 };
 
@@ -17,13 +25,88 @@ export function clinicRecommendIntro(locale: ConsultLocale = "es"): string {
     : "Physio te recomienda las siguientes clínicas:";
 }
 
+export function hospitalRecommendIntro(locale: ConsultLocale = "es"): string {
+  return locale === "en"
+    ? "Go to a hospital / ER near you:"
+    : "Ve a un hospital / urgencias cerca de ti:";
+}
+
 /** Section title emitted by the AI for registered clinics. */
 export function isClinicSectionHeadingLine(line: string): boolean {
   const t = line
     .trim()
     .replace(/\*/g, "")
     .replace(/^#{1,6}\s*/, "");
-  return /^(?:cl[ií]nicas en aikinora cerca de ti|clinics on aikinora near you)\b/i.test(t);
+  return /^(?:cl[ií]nicas en aikinora cerca de ti|clinics on aikinora near you)\b/i.test(
+    t
+  );
+}
+
+/** Section title for hospital / ER recommendations. */
+export function isHospitalSectionHeadingLine(line: string): boolean {
+  const t = line
+    .trim()
+    .replace(/\*/g, "")
+    .replace(/^#{1,6}\s*/, "");
+  return /^(?:hospitales?\s*\/?\s*urgencias cerca de ti|hospitals?\s*\/?\s*er near you)\b/i.test(
+    t
+  );
+}
+
+export function contentHasHospitalSection(content: string): boolean {
+  return /Hospitales\s*\/\s*Urgencias cerca de ti|Hospitals\s*\/\s*ER near you/i.test(
+    content
+  );
+}
+
+/**
+ * If a reply mixes hospital urgency with AIKinora clinics, keep hospitals only.
+ * Avoids contradicting “go to ER” with “visit this physio clinic”.
+ * `forceHospitalOnly`: also strip clinics when an earlier message in the chat
+ * already recommended hospitals (final resumen must not flip to clinics).
+ */
+export function reconcileDestinationSections(
+  content: string,
+  opts?: { forceHospitalOnly?: boolean }
+): string {
+  if (!opts?.forceHospitalOnly && !contentHasHospitalSection(content)) {
+    return content;
+  }
+  const lines = content.split("\n");
+  const out: string[] = [];
+  let skippingClinic = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (isClinicSectionHeadingLine(trimmed)) {
+      skippingClinic = true;
+      continue;
+    }
+    if (skippingClinic) {
+      if (
+        !trimmed ||
+        isHospitalSectionHeadingLine(trimmed) ||
+        /^(?:qué debes hacer ahora|what you should do now|fuentes|sources|resumen|summary|contactar|contact)\b/i.test(
+          trimmed.replace(/\*/g, "")
+        )
+      ) {
+        skippingClinic = false;
+        if (!trimmed || isClinicSectionHeadingLine(trimmed)) continue;
+      } else if (
+        lineHasClinicCentroLink(trimmed) ||
+        isClinicRecommendLine(trimmed) ||
+        /^(?:[-*•]\s+)?(?:\*\*)?\d+[.)]/i.test(trimmed)
+      ) {
+        continue;
+      } else if (/^#{1,6}\s+\S/.test(trimmed) || /^\*\*[^*].+\*\*$/.test(trimmed)) {
+        skippingClinic = false;
+      } else {
+        continue;
+      }
+    }
+    if (lineHasClinicCentroLink(trimmed)) continue;
+    out.push(line);
+  }
+  return out.join("\n");
 }
 
 /** True if the line points at an in-app clinic profile (not a hospital). */
@@ -52,9 +135,6 @@ export function isClinicRecommendLine(line: string): boolean {
   if (!body || body.includes("?")) return false;
   if (FUNCTIONAL_TEST_VERBS.test(body)) return false;
 
-  // Keyword only — do not treat bare numbered `|` lines as clinics
-  // (those are often tests or addresses). Real profile links already
-  // returned true via `/centro/{slug}` above.
   if (/\bcl[ií]n/i.test(body)) return true;
 
   return false;
@@ -90,4 +170,77 @@ export function parseClinicCentroFromLine(line: string): ConsultClinicLink | nul
  */
 export function parseClinicRecommendLine(line: string): ConsultClinicLink | null {
   return parseClinicCentroFromLine(line);
+}
+
+/**
+ * Parse a hospital / ER line into a Maps button.
+ * Preferred formats:
+ *   1. Hospital X | maps:urgencias Hospital X Madrid
+ *   1. Hospital X | https://www.google.com/maps/search/?api=1&query=…
+ * Fallback inside the hospital section: numbered name → Maps search for that name.
+ */
+export function parseHospitalRecommendLine(
+  line: string,
+  opts?: { inHospitalSection?: boolean; cityHint?: string | null }
+): ConsultHospitalLink | null {
+  if (lineHasClinicCentroLink(line)) return null;
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+
+  const body = stripListPrefix(trimmed);
+  if (!body || body.includes("?")) return null;
+  if (FUNCTIONAL_TEST_VERBS.test(body)) return null;
+
+  const parts = body
+    .split("|")
+    .map((p) => p.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  let label = (parts[0] ?? "")
+    .replace(/^[-•*]\s*/, "")
+    .replace(/^\d+[.)]\s*/, "")
+    .trim();
+  if (!label) return null;
+
+  const rest = parts.slice(1);
+  let mapsUrl = "";
+  const metaParts: string[] = [];
+  for (const p of rest) {
+    const mapsToken = /^maps:\s*(.+)$/i.exec(p);
+    if (mapsToken) {
+      mapsUrl = googleMapsSearchUrl(mapsToken[1].trim());
+      continue;
+    }
+    if (/^https?:\/\//i.test(p) && /maps\.google|google\.[^/]+\/maps|maps\.app\.goo/i.test(p)) {
+      mapsUrl = p;
+      continue;
+    }
+    if (/^https?:\/\//i.test(p)) {
+      mapsUrl = p;
+      continue;
+    }
+    metaParts.push(p);
+  }
+
+  const looksLikeHospital =
+    opts?.inHospitalSection ||
+    /\b(hospital|urgencias|emergency|er\b|112|samur|clinic[ao]?\s+universit)/i.test(
+      body
+    );
+
+  if (!looksLikeHospital) return null;
+  if (!/^(?:[-*•]\s+)?(?:\*\*)?\d+[.)]/i.test(trimmed) && !mapsUrl) {
+    return null;
+  }
+
+  if (!mapsUrl) {
+    const city = opts?.cityHint?.trim();
+    const query = city ? `${label} urgencias ${city}` : `${label} urgencias`;
+    mapsUrl = googleMapsSearchUrl(query);
+  }
+
+  return {
+    label,
+    mapsUrl,
+    meta: metaParts.join(" · "),
+  };
 }

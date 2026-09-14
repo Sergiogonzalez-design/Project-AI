@@ -41,21 +41,34 @@ function clientIp(req: Request): string {
   return lastHop || "unknown";
 }
 
+function looksLikeInviteCode(code: string): boolean {
+  const c = code.trim().toUpperCase().replace(/\s+/g, "");
+  if (c.length < 6 || c.length > 24) return false;
+  if (/[.:/@]/.test(c)) return false;
+  return /^[A-Z0-9]+$/.test(c);
+}
+
 function parsePastedInviteCode(raw: string | null | undefined): string {
   const text = (raw ?? "").trim();
   if (!text) return "";
   const fromQuery = /[?&#]code=([^&\s#]+)/i.exec(text);
   if (fromQuery) {
+    let extracted = "";
     try {
-      return decodeURIComponent(fromQuery[1].replace(/\+/g, "%20"))
+      extracted = decodeURIComponent(fromQuery[1].replace(/\+/g, "%20"))
         .trim()
         .toUpperCase()
         .replace(/\s+/g, "");
     } catch {
-      return fromQuery[1].trim().toUpperCase().replace(/\s+/g, "");
+      extracted = fromQuery[1].trim().toUpperCase().replace(/\s+/g, "");
     }
+    return looksLikeInviteCode(extracted) ? extracted : "";
   }
-  return text.trim().toUpperCase().replace(/\s+/g, "");
+  if (/^https?:\/\//i.test(text) || /[.@/]/.test(text)) {
+    return "";
+  }
+  const code = text.trim().toUpperCase().replace(/\s+/g, "");
+  return looksLikeInviteCode(code) ? code : "";
 }
 
 Deno.serve(async (req) => {
@@ -218,6 +231,8 @@ Deno.serve(async (req) => {
       is_admin: false,
       physio_id: recipientId,
       clinic_name: recipientClinic,
+      // Clear auto-filled guest.<uuid> from handle_new_user so the name gate runs.
+      display_name: null,
     });
 
     if (profileError) {
@@ -227,6 +242,11 @@ Deno.serve(async (req) => {
         { status: 500, headers: CORS }
       );
     }
+
+    await admin
+      .from("profiles")
+      .update({ display_name: null })
+      .eq("id", created.user.id);
 
     return Response.json(
       {

@@ -302,9 +302,6 @@ export function ProfileScreen() {
             />
             <Text style={styles.roleChipText}>{roleLabel}</Text>
           </View>
-          <View style={styles.planChip}>
-            <Text style={styles.planChipText}>{t.profile.freePlan}</Text>
-          </View>
         </View>
         <Pressable
           onPress={handleChangePhoto}

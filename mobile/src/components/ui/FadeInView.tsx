@@ -1,46 +1,25 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, type LayoutChangeEvent } from "react-native";
+import React from "react";
+import { View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
 
 /**
- * Lightweight mount animation (opacity + slight rise) used for chat bubbles
- * and other elements that should feel alive without pulling in a full
- * animation library. Uses only React Native's core Animated API.
+ * Stable wrapper for chat bubbles / list rows.
+ * Intentionally no opacity/translate mount animation — those made text and
+ * buttons slide on every remount when switching screens or phases.
  */
 export function FadeInView({
   children,
   style,
-  duration = 220,
+  duration: _duration = 0,
   onLayout,
 }: {
   children: React.ReactNode;
-  style?: object;
+  style?: StyleProp<ViewStyle>;
   duration?: number;
   onLayout?: (e: LayoutChangeEvent) => void;
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(6)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [duration, opacity, translateY]);
-
   return (
-    <Animated.View
-      onLayout={onLayout}
-      style={[style, { opacity, transform: [{ translateY }] }]}
-    >
+    <View onLayout={onLayout} style={style}>
       {children}
-    </Animated.View>
+    </View>
   );
 }

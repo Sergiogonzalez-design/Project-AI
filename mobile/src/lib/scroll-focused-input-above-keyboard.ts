@@ -1,4 +1,5 @@
-import { Dimensions, Platform, TextInput, type ScrollView } from "react-native";
+import { Dimensions, Platform, TextInput } from "react-native";
+import type { ScrollView } from "react-native";
 
 type Measureable = {
   measureInWindow?: (

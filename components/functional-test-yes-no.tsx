@@ -1,6 +1,5 @@
 "use client";
 
-import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import { chipClass } from "@/components/ui/chip-style";
 import {
   formatFunctionalTestAnswers,
@@ -8,10 +7,7 @@ import {
   type FunctionalTestItem,
 } from "@/lib/functional-test-answers";
 import { functionalTestProgressLabel } from "@/lib/functional-test-reveal";
-import {
-  resolveFunctionalTestMedia,
-  stripFunctionalMediaMarker,
-} from "@/lib/functional-test-media";
+import { stripFunctionalMediaMarker } from "@/lib/functional-test-media";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -42,7 +38,6 @@ export function FunctionalTestYesNo({
   const wasDisabledRef = useRef(Boolean(disabled));
   const onStaggerCompleteRef = useRef(onStaggerComplete);
   onStaggerCompleteRef.current = onStaggerComplete;
-  const shown = new Set<string>();
   const allRevealed = revealedCount >= tests.length;
   const complete = tests.every((t) => answers[t.n]);
   const yes = language === "en" ? "Yes" : "Sí";
@@ -88,13 +83,10 @@ export function FunctionalTestYesNo({
   return (
     <div className="functional-test-form mt-3">
       {showHint ? (
-        <p className="text-xs text-slate-500 questionnaire-question-enter">{hint}</p>
+        <p className="text-xs text-slate-500">{hint}</p>
       ) : null}
       {showHint && revealedCount > 0 && tests.length > 1 ? (
-        <div
-          className="mt-2 questionnaire-question-enter"
-          style={{ animationDelay: "40ms" }}
-        >
+        <div className="mt-2">
           <div className="mb-1 flex items-center justify-between gap-2">
             <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
               {functionalTestProgressLabel(revealedCount, tests.length, language)}
@@ -111,30 +103,22 @@ export function FunctionalTestYesNo({
             aria-valuemax={tests.length}
           >
             <div
-              className="h-full rounded-full bg-blue-500 transition-[width] duration-500 ease-out"
+              className="h-full rounded-full bg-blue-500"
               style={{ width: `${(revealedCount / tests.length) * 100}%` }}
             />
           </div>
         </div>
       ) : null}
       <div className="mt-3 space-y-4">
-        {visibleTests.map((test, index) => {
+        {visibleTests.map((test) => {
           const prompt = stripFunctionalMediaMarker(test.prompt);
-          const media = resolveFunctionalTestMedia({ prompt: test.prompt });
-          const showMedia = media && !shown.has(media.id) ? media : null;
-          if (showMedia) shown.add(showMedia.id);
           return (
-            <div
-              key={test.n}
-              className="questionnaire-question-enter"
-              style={{ animationDelay: `${Math.min(index, 6) * 32}ms` }}
-            >
+            <div key={test.n}>
               <p className="break-words text-sm leading-relaxed text-neutral-900">
                 <span className="block break-words font-bold text-blue-700">
                   {test.n}. {prompt}
                 </span>
               </p>
-              {showMedia ? <ClinicalTestMediaBlock test={showMedia} /> : null}
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
@@ -166,7 +150,7 @@ export function FunctionalTestYesNo({
             setSent(true);
             onSubmit(formatFunctionalTestAnswers(tests, answers, language));
           }}
-          className="btn-primary questionnaire-question-enter mt-4 w-full px-4 py-2.5 text-sm disabled:opacity-50"
+          className="btn-primary mt-4 w-full px-4 py-2.5 text-sm disabled:opacity-50"
         >
           {send}
         </button>

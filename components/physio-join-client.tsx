@@ -15,7 +15,9 @@ import { createClient } from "@/lib/supabase/client";
 export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [manualCode, setManualCode] = useState(initialCode);
+  const [manualCode, setManualCode] = useState(() =>
+    parsePastedInviteCode(initialCode)
+  );
   const started = useRef(false);
 
   useEffect(() => {

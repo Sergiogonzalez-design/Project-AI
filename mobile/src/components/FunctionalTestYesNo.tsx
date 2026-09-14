@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
-import { FadeInView } from "./ui/FadeInView";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { Colors } from "../lib/colors";
 import {
@@ -10,10 +8,7 @@ import {
   type FunctionalTestItem,
 } from "../lib/functional-test-answers";
 import { functionalTestProgressLabel } from "../lib/functional-test-reveal";
-import {
-  resolveFunctionalTestMedia,
-  stripFunctionalMediaMarker,
-} from "../lib/functional-test-media";
+import { stripFunctionalMediaMarker } from "../lib/functional-test-media";
 
 type Props = {
   tests: FunctionalTestItem[];
@@ -41,7 +36,6 @@ export function FunctionalTestYesNo({
   const [revealedCount, setRevealedCount] = useState(0);
   const onStaggerCompleteRef = useRef(onStaggerComplete);
   onStaggerCompleteRef.current = onStaggerComplete;
-  const shown = new Set<string>();
   const allRevealed = revealedCount >= tests.length;
   const complete = tests.every((t) => answers[t.n]);
   const yes = language === "en" ? "Yes" : "Sí";
@@ -78,13 +72,9 @@ export function FunctionalTestYesNo({
 
   return (
     <View style={styles.wrap}>
-      {showHint ? (
-        <FadeInView>
-          <Text style={styles.hint}>{hint}</Text>
-        </FadeInView>
-      ) : null}
+      {showHint ? <Text style={styles.hint}>{hint}</Text> : null}
       {showHint && revealedCount > 0 && tests.length > 1 ? (
-        <FadeInView style={styles.progressWrap}>
+        <View style={styles.progressWrap}>
           <View style={styles.progressRow}>
             <Text style={styles.progressLabel}>
               {functionalTestProgressLabel(revealedCount, tests.length, language)}
@@ -101,19 +91,15 @@ export function FunctionalTestYesNo({
               ]}
             />
           </View>
-        </FadeInView>
+        </View>
       ) : null}
       {visibleTests.map((test) => {
         const prompt = stripFunctionalMediaMarker(test.prompt);
-        const media = resolveFunctionalTestMedia({ prompt: test.prompt });
-        const showMedia = media && !shown.has(media.id) ? media : null;
-        if (showMedia) shown.add(media.id);
         return (
-          <FadeInView key={test.n} style={styles.item}>
+          <View key={test.n} style={styles.item}>
             <Text style={styles.prompt}>
               {test.n}. {prompt}
             </Text>
-            {showMedia ? <ClinicalTestMediaBlock test={showMedia} /> : null}
             <View style={styles.row}>
               <Pressable
                 disabled={disabled || sent}
@@ -130,23 +116,21 @@ export function FunctionalTestYesNo({
                 <Text style={chipTextStyle(answers[test.n] === "no")}>{no}</Text>
               </Pressable>
             </View>
-          </FadeInView>
+          </View>
         );
       })}
       {allRevealed && complete ? (
-        <FadeInView>
-          <Pressable
-            disabled={disabled || sent}
-            onPress={() => {
-              if (sent) return;
-              setSent(true);
-              onSubmit(formatFunctionalTestAnswers(tests, answers, language));
-            }}
-            style={[styles.send, (disabled || sent) && { opacity: 0.5 }]}
-          >
-            <Text style={styles.sendText}>{send}</Text>
-          </Pressable>
-        </FadeInView>
+        <Pressable
+          disabled={disabled || sent}
+          onPress={() => {
+            if (sent) return;
+            setSent(true);
+            onSubmit(formatFunctionalTestAnswers(tests, answers, language));
+          }}
+          style={[styles.send, (disabled || sent) && { opacity: 0.5 }]}
+        >
+          <Text style={styles.sendText}>{send}</Text>
+        </Pressable>
       ) : null}
     </View>
   );

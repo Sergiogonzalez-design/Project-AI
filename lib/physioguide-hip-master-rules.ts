@@ -26,8 +26,11 @@ PASO 3 — ENRUTAR POR LOCALIZACIÓN EXACTA (usar lo que marcó el paciente, no 
 | Profundo en cadera | Hip-related groin (FAI/labrum/OA/dysplasia/snapping interno) |
 | Lateral/trocánter | GTPS/lateral (bloque LATERAL abajo) |
 | Posterior/glúteo/isquion | Posterior (bloque POSTERIOR abajo) |
+| Muslo posterior mid-belly / pedrada isquios | Módulo ISQUIOTIBIALES (hamstring-injury) — no solo cadera |
 
 Si hay VARIAS localizaciones → evaluar cada rama y PERMITIR 2 entidades coexistentes (p. ej. GTPS + adductor, hip + pubic, lumbar + posterior). No forzar una sola causa.
+
+Si el paciente localiza **mitad del muslo / isquiotibiales / pedrada atrás del muslo**, prioriza el bloque **ISQUIOTIBIALES / HAMSTRING** (Askling 1/2, contracción+elongación, proximal vs mid) además del posterior de cadera.
 
 DOLOR FAMILIAR (transversal — preguntar si falta):
 «¿Es el mismo dolor que notas al caminar/correr/entrenar/dormir de lado?»

@@ -29,6 +29,8 @@ type Props = {
   bubbleBold: object;
   highlightPhrases?: string[];
   highlightStyle?: object;
+  forceHospitalOnly?: boolean;
+  cityHint?: string | null;
 };
 
 export function FunctionalTestChatBlock({
@@ -43,6 +45,8 @@ export function FunctionalTestChatBlock({
   bubbleBold,
   highlightPhrases,
   highlightStyle,
+  forceHospitalOnly = false,
+  cityHint = null,
 }: Props) {
   const [afterVisible, setAfterVisible] = useState(false);
   const testKey = parsed.tests.map((t) => t.prompt).join("|");
@@ -58,6 +62,9 @@ export function FunctionalTestChatBlock({
     highlightStyle,
     onClinicPress,
     language,
+    showClinicalTestMedia: false as const,
+    forceHospitalOnly,
+    cityHint,
   };
 
   if (isRevealing) {

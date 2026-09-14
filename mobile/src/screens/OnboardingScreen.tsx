@@ -14,6 +14,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthBackBar } from "../components/AuthBackBar";
+import { AddressAutocomplete } from "../components/AddressAutocomplete";
+import {
+  emptyAddressValue,
+  type AddressValue,
+} from "../lib/address-search";
 import {
   COMPETITIVE_LEVELS,
   CURRENT_SEASONS,
@@ -75,7 +80,7 @@ export function OnboardingScreen({ onComplete }: Props) {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
-  const [city, setCity] = useState("");
+  const [location, setLocation] = useState<AddressValue>(emptyAddressValue());
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
   const [competitiveLevel, setCompetitiveLevel] = useState("");
@@ -159,7 +164,10 @@ export function OnboardingScreen({ onComplete }: Props) {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        city: city.trim() || null,
+        address: location.address.trim() || null,
+        city: location.city.trim() || null,
+        postal_code: location.postalCode.trim() || null,
+        country: location.country.trim() || null,
         ...sportProfilePayload(),
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
@@ -240,16 +248,11 @@ export function OnboardingScreen({ onComplete }: Props) {
               <Chips options={DOMINANT_HAND_OPTIONS} value={dominantHand} onChange={setDominantHand} />
               <Text style={styles.label}>Pie dominante</Text>
               <Chips options={DOMINANT_FOOT_OPTIONS} value={dominantFoot} onChange={setDominantFoot} />
-              <Field
-                label="Ciudad (opcional)"
-                value={city}
-                onChangeText={setCity}
-                placeholder="Ej: Madrid"
+              <AddressAutocomplete
+                value={location}
+                onChange={setLocation}
+                hint="Si la indicas, priorizamos clínicas cerca de ti. Busca la dirección completa (calle, ciudad, CP, país)."
               />
-              <Text style={styles.hint}>
-                Si la indicas, priorizamos clínicas de tu ciudad. Si no, te
-                recomendamos centros que encajen con tu lesión.
-              </Text>
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <Pressable
                 style={styles.primaryBtn}
@@ -294,21 +297,28 @@ export function OnboardingScreen({ onComplete }: Props) {
                 value={competitiveLevel}
                 onChange={setCompetitiveLevel}
               />
+              <Text style={styles.label}>Entrenamiento semanal (opcional)</Text>
               <View style={styles.row}>
                 <View style={styles.half}>
-                  <Field
-                    label="Sesiones/sem (opcional)"
+                  <Text style={styles.subLabel}>Sesiones</Text>
+                  <TextInput
+                    style={styles.input}
                     value={sessionsPerWeek}
                     onChangeText={setSessionsPerWeek}
                     keyboardType="numeric"
+                    placeholder="Ej. 4"
+                    placeholderTextColor={Colors.textLight}
                   />
                 </View>
                 <View style={styles.half}>
-                  <Field
-                    label="Horas/sem (opcional)"
+                  <Text style={styles.subLabel}>Horas</Text>
+                  <TextInput
+                    style={styles.input}
                     value={hoursPerWeek}
                     onChangeText={setHoursPerWeek}
                     keyboardType="numeric"
+                    placeholder="Ej. 8"
+                    placeholderTextColor={Colors.textLight}
                   />
                 </View>
               </View>
@@ -397,6 +407,12 @@ const styles = StyleSheet.create({
   progressBar: { flex: 1, height: 4, borderRadius: 2, backgroundColor: Colors.border },
   progressActive: { backgroundColor: Colors.primary },
   label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginTop: 16, marginBottom: 8 },
+  subLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
   hint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
   input: {
     borderWidth: 1.5,

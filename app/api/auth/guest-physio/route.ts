@@ -181,6 +181,9 @@ export async function POST(request: NextRequest) {
       is_admin: false,
       physio_id: recipientId,
       clinic_name: recipientClinic,
+      // handle_new_user may auto-fill display_name from the guest email local-part;
+      // keep it null so Consulta previa always asks for the real patient name.
+      display_name: null,
     });
 
     if (profileError) {
@@ -190,6 +193,12 @@ export async function POST(request: NextRequest) {
         { status: 500, headers: CORS }
       );
     }
+
+    // Belt-and-suspenders: clear any trigger-filled placeholder name.
+    await adminClient
+      .from("profiles")
+      .update({ display_name: null })
+      .eq("id", created.user.id);
 
     return NextResponse.json(
       {

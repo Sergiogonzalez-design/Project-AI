@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { guestNameStorageKey } from "@/lib/guest-account";
+import { guestNameStorageKey, isGuestDisplayNameSet } from "@/lib/guest-account";
 import { signOutToLogin } from "@/lib/sign-out-client";
 
 type Props = {
@@ -18,7 +18,7 @@ export function GuestNameGate({ onSaved }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const displayName = name.trim().replace(/\s+/g, " ");
-    if (displayName.length < 2) {
+    if (!isGuestDisplayNameSet(displayName)) {
       setError("Escribe tu nombre para que tu fisioterapeuta sepa quién eres.");
       return;
     }

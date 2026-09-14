@@ -5,15 +5,17 @@ export type CitedSource = {
 
 export type CitedSourceOptions = {
   /**
-   * Physio informe view: include Physioguide / knowledge-base titles as
-   * clickable /conocimientos links (hidden from patient chat citations).
+   * Physio surfaces: same Physioguide titles, linked to /conocimientos.
+   * (Knowledge-base labels are linked for everyone now; this flag still
+   * allows plain internal titles without a URL.)
    */
   forPhysio?: boolean;
 };
 
 const HEADING_LINE =
-  /^(?:\*\*)?(Fuentes consultadas|Sources consulted)(?:\*\*)?$/i;
+  /^(?:#{1,6}\s+)?(?:\*\*)?(Fuentes consultadas|Sources consulted):?(?:\*\*)?$/i;
 const FUENTE_LINE = /^(?:[-•*]\s*)?(?:Fuente|Source)\s*:\s*(.+)$/i;
+const BRACKET_FUENTE_LINE = /^\[(?:Fuente|Source)\s*:\s*(.+)\]$/i;
 const HTTP_URL = /https?:\/\/[^\s<>"'\)\]]+/i;
 const DOI = /\b(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i;
 const JOSPT = /jospt\.(\d{4})\.(\d{4})/i;
@@ -116,7 +118,8 @@ export function resolveSourceHref(
   const http = HTTP_URL.exec(raw);
   if (http) return sanitizeHttpUrl(http[0]);
 
-  if (opts?.forPhysio && isKnowledgeBaseLabel(raw)) {
+  // Physioguide / product knowledge → in-app conocimientos search.
+  if (isKnowledgeBaseLabel(raw)) {
     return knowledgeBaseHref(displaySourceTitle(raw));
   }
 
@@ -160,6 +163,16 @@ export function toCitedSource(
   return { title, href: resolveSourceHref(raw, opts) };
 }
 
+/** Pull a source label from a Fuente:/Source: line (plain or [Fuente: …]). */
+export function parseFuenteLabel(line: string): string | null {
+  const trimmed = line.trim();
+  const plain = FUENTE_LINE.exec(trimmed);
+  if (plain?.[1]) return plain[1].trim();
+  const bracket = BRACKET_FUENTE_LINE.exec(trimmed);
+  if (bracket?.[1]) return bracket[1].trim();
+  return null;
+}
+
 function uniqueSources(
   labels: string[],
   opts?: CitedSourceOptions
@@ -170,9 +183,11 @@ function uniqueSources(
     const trimmed = label.trim();
     if (!trimmed || HEADING_LINE.test(trimmed.replace(/\*/g, ""))) continue;
     if (/^criterio cl[ií]nico general$/i.test(trimmed)) continue;
-    if (!opts?.forPhysio && isInternalSource(trimmed)) continue;
+    const kb = isKnowledgeBaseLabel(trimmed);
+    // Patients: skip bare internal labels, but keep Physioguide titles in the button.
+    if (!opts?.forPhysio && isInternalSource(trimmed) && !kb) continue;
     const source = toCitedSource(trimmed, opts);
-    if (!opts?.forPhysio && !source.href) continue;
+    if (!opts?.forPhysio && !source.href && !kb) continue;
     const key = (source.href ?? source.title).toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -210,9 +225,9 @@ export function extractCitedSources(
   const end = headingIndex === -1 ? lines.length : headingIndex;
 
   for (let i = 0; i < end; i++) {
-    const match = FUENTE_LINE.exec(lines[i].trim());
-    if (match) {
-      labels.push(match[1].trim());
+    const label = parseFuenteLabel(lines[i]);
+    if (label) {
+      labels.push(label);
       continue;
     }
     bodyLines.push(lines[i]);
@@ -222,9 +237,9 @@ export function extractCitedSources(
     for (let i = headingIndex + 1; i < lines.length; i++) {
       const trimmed = lines[i].trim();
       if (!trimmed) continue;
-      const match = FUENTE_LINE.exec(trimmed);
-      if (match) {
-        labels.push(match[1].trim());
+      const label = parseFuenteLabel(trimmed);
+      if (label) {
+        labels.push(label);
         continue;
       }
       labels.push(trimmed.replace(/^[-•*]\s+/, "").trim());
@@ -239,7 +254,7 @@ export function extractCitedSources(
 }
 
 export function isInlineFuenteLine(line: string): boolean {
-  return FUENTE_LINE.test(line.trim());
+  return parseFuenteLabel(line) != null;
 }
 
 /**

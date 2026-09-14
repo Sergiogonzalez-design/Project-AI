@@ -1,8 +1,6 @@
 # PHYSIOGUIDE AI — POSTERIOR HIP PAIN MODULE
 
-**Status:** ACTIVE (continúa tras Lateral hip pain)  
-**Next:** Traumatic hip & pelvis → Hip master integration  
-**Principles:** Ver `knowledge/PHYSIOGUIDE_MASTER_CLINICAL_DOCUMENT.md`
+**Cross-link:** Mid-belly / Askling strain → [`hamstring-injury.md`](./hamstring-injury.md). Este módulo prioriza **isquion / glúteo / deep gluteal**; el módulo de isquiotibiales cubre sprint mid-muslo con la misma rigurosidad.
 
 ---
 

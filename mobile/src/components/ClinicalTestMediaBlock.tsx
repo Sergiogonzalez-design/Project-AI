@@ -84,6 +84,8 @@ export function ClinicalTestMediaBlock({ test }: { test: ClinicalTestImage }) {
     );
   }
 
+  if (!test.src) return null;
+
   return (
     <View style={styles.imageWrap}>
       <Image

@@ -102,13 +102,67 @@ const ANKLE_FOOT_TREE: ClinicalReasoningTree = {
       "af_loc_plantar",
       "route-ankle-plantar",
       branch("af_plantar_cluster", "Planta / talón / primeros pasos"),
-      branch("af_referral_cluster", "Difuso / lumbar / otra zona"),
+      branch("af_leg_gate", "Difuso / pierna / lumbar / otra zona"),
       {
         title: "¿Dolor plantar o de talón (fascial)?",
         description:
-          "Planta, arco o primeros pasos matutinos → fasciopatía. Si lumbar/hormigueo domina → referido.",
+          "Planta, arco o primeros pasos matutinos → fasciopatía. Si espinilla/pantorrilla o lumbar → rama pierna/referido.",
         procedure: "Enrutado por localización.",
       }
+    ),
+    af_leg_gate: testNode(
+      "af_leg_gate",
+      "route-lower-leg",
+      branch("af_acs_screen", "Dolor desproporcionado / compartimento tenso / RF pierna"),
+      branch("af_lower_leg_cluster", "Espinilla / pantorrilla de carga sin RF aguda"),
+      {
+        title: "¿Dolor de pierna (espinilla/pantorrilla) o alarma compartimental?",
+        description:
+          "Dolor desproporcionado, compartimentos duros, dolor al estirar pasivo, parestesias → screen ACS (urgencias). Sin eso pero shin/pantorrilla → MTSS/CECS/strain (hipótesis).",
+        procedure: "Enrutado seguridad + localización pierna.",
+        evidenceNote:
+          "Nunca inventar umbrales de presión. ACS clínico → urgencias.",
+      }
+    ),
+    af_acs_screen: conclusionNode(
+      "af_acs_screen",
+      "Alarma compartimental / vascular — urgencias",
+      "Sospecha de síndrome compartimental agudo o vascular (TVP/disnea). No continuar con ejercicios ni tranquilizar MSK. Derivación urgente.",
+      [
+        {
+          name: "Síndrome compartimental agudo / urgencia",
+          probability: "alta",
+          rationale: "Dolor desproporcionado ± tensión ± estiramiento pasivo doloroso.",
+        },
+        {
+          name: "TVP / otra urgencia",
+          probability: "media",
+          rationale: "Hinchazón/pantorrilla + síntomas sistémicos.",
+        },
+      ]
+    ),
+    af_lower_leg_cluster: conclusionNode(
+      "af_lower_leg_cluster",
+      "Compatible con sobrecarga de pierna (MTSS / CECS / pantorrilla)",
+      "Espinilla medial (MTSS), dolor de esfuerzo que cede al parar (CECS hipótesis), o strain gemelo-sóleo. Diferencial estrés óseo y referido lumbar. Sin inventar grados ni mmHg.",
+      [
+        {
+          name: "MTSS / sobrecarga tibial",
+          probability: "alta",
+          rationale: "Cara medial + carga/correr.",
+        },
+        {
+          name: "CECS / strain pantorrilla / estrés",
+          probability: "media",
+          rationale: "Patrón de esfuerzo o pedrada local.",
+        },
+        {
+          name: "Referido lumbar / S1",
+          probability: "baja",
+          rationale: "Si lumbar/hormigueo asociado.",
+        },
+      ],
+      { nextNodeId: "af_referral_cluster" }
     ),
     af_lateral_cluster: conclusionNode(
       "af_lateral_cluster",
@@ -3294,6 +3348,9 @@ const HIP_TREE: ClinicalReasoningTree = {
     "log-roll": "hp_log_roll",
     stinchfield: "hp_stinchfield",
     "hip-scour": "hp_hip_scour",
+    "resisted-knee-flexion": "hp_hs_resisted_flexion",
+    "hamstring-stretch": "hp_hs_stretch",
+    "sitting-ischium": "hp_hs_proximal_gate",
   },
   nodes: {
     hp_master_entry: conclusionNode(
@@ -3524,18 +3581,234 @@ const HIP_TREE: ClinicalReasoningTree = {
       "hp_hamstring_local_gate",
       "route-hip-hamstring-local",
       branch(
-        "hp_posterior_hamstring",
+        "hp_hs_location",
         "Es el dolor de muslo / isquiotibiales del paciente"
       ),
       branch("hp_posterior_slr", "Hay ciática o dolor lumbar distinto"),
       {
         title: "¿El dolor que exploras es el del muslo / isquiotibiales?",
         description:
-          "Si duele donde el paciente señaló (muslo posterior, isquios, isquion), continúa como lesión/tendinopatía de isquiotibiales. Solo usa SLR/lumbar si hay un dolor tipo nervio o lumbar diferente de ese tirón.",
+          "Si duele donde el paciente señaló (muslo posterior, isquios, isquion), continúa la batería de isquiotibiales. Solo usa SLR/lumbar si hay un dolor tipo nervio o lumbar diferente de ese tirón.",
         procedure: "Enrutado por localización del paciente (no es un test de cadera).",
         evidenceNote:
           "Tirón isquiotibial ≠ ciática. No enrutar a Trendelenburg/GTPS si el dolor es el muslo que ya nombró.",
       }
+    ),
+    hp_hs_location: testNode(
+      "hp_hs_location",
+      "route-hip-hamstring-location",
+      branch("hp_hs_mechanism_acute", "Mitad del muslo / mid-belly o MTJ"),
+      branch("hp_hs_proximal_gate", "Cerca del isquion / glúteo (proximal)"),
+      {
+        title: "¿Dónde está el dolor principal en el muslo posterior?",
+        description:
+          "Mitad del muslo → lesión muscular típica (Askling tipo 1). Isquion / junto al glúteo → proximal (tendinopatía o stretch-type). Distal/corva → diferencial rodilla.",
+        procedure:
+          "Pide que señale con un dedo. Palpa con cuidado mid vs origen proximal vs distal.",
+        evidenceNote:
+          "Askling: sprint → mid/MTJ; stretch → más proximal. Localización guía el cluster, no confirma grado.",
+      }
+    ),
+    hp_hs_proximal_gate: testNode(
+      "hp_hs_proximal_gate",
+      "sitting-ischium",
+      branch("hp_hs_proximal_stretch", "Dolor al sentarse (silla dura) familiar"),
+      branch(
+        "hp_hs_resisted_flexion",
+        "Sentarse no reproduce — valora contracción / mid-belly"
+      )
+    ),
+    hp_hs_proximal_stretch: testNode(
+      "hp_hs_proximal_stretch",
+      "hamstring-stretch",
+      branch(
+        "hp_hs_concl_proximal_tendinopathy",
+        "Estiramiento reproduce dolor isquial familiar"
+      ),
+      branch(
+        "hp_hs_concl_proximal_unclear",
+        "Estiramiento no claro — diferencial deep gluteal"
+      )
+    ),
+    hp_hs_mechanism_acute: testNode(
+      "hp_hs_mechanism_acute",
+      "route-hip-hamstring-mechanism",
+      branch("hp_hs_resisted_flexion", "Sprint / pedrada / aceleración aguda"),
+      branch(
+        "hp_hs_resisted_flexion",
+        "Estiramiento extremo o insidioso (Askling tipo 2 / sobrecarga)"
+      ),
+      {
+        title: "¿El mecanismo fue sprint/pedrada aguda o estiramiento/insidioso?",
+        description:
+          "Sprint + pedrada mid-muslo → Askling tipo 1. Split/patada/estirón → tipo 2. Insidioso + isquion → tendinopatía. En ambos casos sigue con contracción + elongación (una sola vez cada una).",
+        procedure: "Historia del momento exacto; no inventar grado.",
+        evidenceNote:
+          "Askling tipo 1 vs 2 es cualitativo. Heiderscheit JOSPT: historia + contracción + elongación.",
+      }
+    ),
+    hp_hs_resisted_flexion: testNode(
+      "hp_hs_resisted_flexion",
+      "resisted-knee-flexion",
+      branch(
+        "hp_hs_stretch",
+        "Dolor familiar al flexionar contra resistencia → elongación"
+      ),
+      branch(
+        "hp_hs_stretch",
+        "Poco dolor a la contracción → aún así valora elongación una vez"
+      )
+    ),
+    hp_hs_stretch: testNode(
+      "hp_hs_stretch",
+      "hamstring-stretch",
+      branch(
+        "hp_hs_hematoma_gate",
+        "Elongación reproduce el tirón muscular familiar"
+      ),
+      branch(
+        "hp_hs_neural_or_unclear",
+        "Elongación no familiar / dudosa → cribado neural o patrón leve"
+      )
+    ),
+    hp_hs_hematoma_gate: testNode(
+      "hp_hs_hematoma_gate",
+      "route-hip-hamstring-hematoma",
+      branch(
+        "hp_hs_concl_acute_strain",
+        "Hay hematoma / hinchazón o no pudo seguir la actividad"
+      ),
+      branch(
+        "hp_hs_concl_acute_strain",
+        "Sin hematoma aún (puede ser diferido) — cluster historia+contracción+elongación"
+      ),
+      {
+        title: "¿Hay hematoma, hinchazón marcada o tuvo que parar la actividad?",
+        description:
+          "Hematoma puede aparecer horas/días después: su ausencia precoz no excluye lesión. Impotencia clara + deformidad → urgencia.",
+        procedure: "Inspección + historia de continuidad de la actividad.",
+        evidenceNote:
+          "Heiderscheit themes: severidad clínica orientativa; no inventar BAMIC/grado sin imagen.",
+      }
+    ),
+    hp_hs_neural_or_unclear: testNode(
+      "hp_hs_neural_or_unclear",
+      "slr-lasegue",
+      branch(
+        "hp_posterior_deep_gluteal",
+        "Reproduce ciática / dolor tipo nervio (no el tirón de isquios)"
+      ),
+      branch(
+        "hp_hs_concl_mild_or_unclear",
+        "Solo tirón local o SLR no neural — patrón isquio leve/incierto"
+      )
+    ),
+    hp_hs_concl_acute_strain: conclusionNode(
+      "hp_hs_concl_acute_strain",
+      "Compatible con lesión muscular de isquiotibiales",
+      "Historia de sprint/pedrada o carga aguda + dolor mid-posterior + contracción y/o elongación familiar. No asignar grado BAMIC sin correlación clínica ± imagen. No continuar a GTPS/cadera lateral.",
+      [
+        {
+          name: "Lesión muscular aguda de isquiotibiales (mid/MTJ)",
+          probability: "alta",
+          rationale: "Askling tipo 1 / Heiderscheit: mecanismo + contracción + elongación.",
+        },
+        {
+          name: "Lesión por estiramiento (Askling tipo 2)",
+          probability: "media",
+          rationale: "Si el mecanismo fue stretch extremo / más proximal.",
+        },
+        {
+          name: "Contusión",
+          probability: "baja",
+          rationale: "Solo si hubo trauma directo.",
+        },
+      ]
+    ),
+    hp_hs_concl_proximal_tendinopathy: conclusionNode(
+      "hp_hs_concl_proximal_tendinopathy",
+      "Compatible con tendinopatía proximal de isquiotibiales",
+      "Dolor isquion + sentarse en superficie dura + elongación familiar. No equivale a rotura. Diferenciar deep gluteal si predomina glúteo profundo + parestesia.",
+      [
+        {
+          name: "Tendinopatía isquiotibial proximal",
+          probability: "alta",
+          rationale: "Cluster isquion + sitting + stretch.",
+        },
+        {
+          name: "Lesión proximal aguda / stretch-type",
+          probability: "media",
+          rationale: "Si hubo tirón reciente proximal.",
+        },
+        {
+          name: "Deep gluteal / ciático",
+          probability: "baja",
+          rationale: "Si el patrón neural/glúteo profundo domina.",
+        },
+      ]
+    ),
+    hp_hs_concl_proximal_unclear: conclusionNode(
+      "hp_hs_concl_proximal_unclear",
+      "Patrón proximal poco claro — ampliar diferencial",
+      "Dolor cerca del isquion sin cluster completo de tendinopatía. Valorar deep gluteal, SI/lumbar y lesión proximal leve. Fin de batería isquio (no reinicia el árbol).",
+      [
+        {
+          name: "Tendinopatía proximal incompleta / leve",
+          probability: "media",
+          rationale: "Localización proximal sin todos los criterios.",
+        },
+        {
+          name: "Deep gluteal / irritación ciática",
+          probability: "media",
+          rationale: "Glúteo profundo + sentarse ± parestesia.",
+        },
+        {
+          name: "Referido lumbar / SI",
+          probability: "baja",
+          rationale: "Si hay dolor lumbar o FABER posterior.",
+        },
+      ]
+    ),
+    hp_hs_concl_mild_or_unclear: conclusionNode(
+      "hp_hs_concl_mild_or_unclear",
+      "Isquiotibial leve o patrón incompleto",
+      "Hay localización de muslo posterior pero el cluster contracción/elongación/historia no es completo. Reposo relativo + retest; no forzar grado ni imagen de entrada salvo red flags.",
+      [
+        {
+          name: "Lesión muscular leve / irritación isquiotibial",
+          probability: "media",
+          rationale: "Local + algún signo de carga, cluster incompleto.",
+        },
+        {
+          name: "Sobrecarga sin clara rotura fibrilar",
+          probability: "media",
+          rationale: "Síntomas sin pedrada ni déficit claro.",
+        },
+        {
+          name: "Referido / neural leve",
+          probability: "baja",
+          rationale: "Solo si aparecen síntomas lumbares o distales.",
+        },
+      ]
+    ),
+    // Legacy alias: older reports / links may still point here.
+    hp_posterior_hamstring: conclusionNode(
+      "hp_posterior_hamstring",
+      "Compatible con isquiotibial / muslo posterior",
+      "Enruta a la batería ampliada de isquiotibiales (localización → mecanismo → contracción → elongación).",
+      [
+        {
+          name: "Lesión muscular de isquiotibiales",
+          probability: "alta",
+          rationale: "Localización muslo posterior del paciente.",
+        },
+        {
+          name: "Tendinopatía isquiotibial proximal",
+          probability: "media",
+          rationale: "Si dolor isquion + sentarse.",
+        },
+      ],
+      { nextNodeId: "hp_hs_location" }
     ),
     hp_faber: testNode(
       "hp_faber",
@@ -3574,7 +3847,7 @@ const HIP_TREE: ClinicalReasoningTree = {
         "Reproduce ciática / dolor tipo nervio (no el tirón de isquios)"
       ),
       branch(
-        "hp_posterior_hamstring",
+        "hp_hs_location",
         "Solo tirón o dolor de isquiotibiales (el del paciente)"
       )
     ),
@@ -3597,28 +3870,6 @@ const HIP_TREE: ClinicalReasoningTree = {
           name: "Isquiotibial proximal",
           probability: "baja",
           rationale: "Si el patrón sigue siendo el muslo/isquion del paciente.",
-        },
-      ]
-    ),
-    hp_posterior_hamstring: conclusionNode(
-      "hp_posterior_hamstring",
-      "Compatible con isquiotibial / muslo posterior",
-      "El dolor está en la zona que el paciente nombró (muslo / isquiotibiales). No continuar hacia cadera lateral (Trendelenburg/GTPS) ni concluir lumbar si no hay un patrón ciático distinto.",
-      [
-        {
-          name: "Tendinopatía isquiotibial proximal",
-          probability: "alta",
-          rationale: "Dolor isquion / muslo posterior + sentarse o estirar isquio + carga.",
-        },
-        {
-          name: "Lesión muscular de isquiotibiales",
-          probability: "media",
-          rationale: "Si mecanismo sprint/chute reciente.",
-        },
-        {
-          name: "Deep gluteal / ciático",
-          probability: "baja",
-          rationale: "Solo si el dolor glúteo/neural predomina sobre el muslo.",
         },
       ]
     ),
@@ -3933,13 +4184,45 @@ const HEAD_TREE: ClinicalReasoningTree = {
       "hd_trauma_gate",
       "route-head-trauma",
       branch("hd_posttraumatic_cluster", "Trauma craneal/cervical reciente"),
-      branch("hd_cervical_gate", "Sin trauma reciente dominante"),
+      branch("hd_jaw_gate", "Sin trauma reciente dominante"),
       {
         title: "¿Trauma reciente de cabeza o cuello?",
         description:
-          "Golpe + cefalea nueva/empeorada (± vómitos/confusión) → rama postraumática/médica. Sin trauma → provocación cervical vs primaria.",
+          "Golpe + cefalea nueva/empeorada (± vómitos/confusión) → rama postraumática/médica. Sin trauma → mandíbula/ATM vs provocación cervical vs primaria.",
         procedure: "Enrutado clínico de trauma.",
       }
+    ),
+    hd_jaw_gate: testNode(
+      "hd_jaw_gate",
+      "route-head-tmj",
+      branch("hd_tmj_cluster", "Dolor mandíbula/ATM / chasquido / masticar"),
+      branch("hd_cervical_gate", "Sin patrón ATM dominante"),
+      {
+        title: "¿Dolor o chasquido de mandíbula / ATM?",
+        description:
+          "Dolor preauricular/mandibular, chasquido, bloqueo o dolor al masticar → rama TMD (hipótesis). Si no → cefalea cervicogénica vs primaria.",
+        procedure: "Enrutado clínico ATM/TMD (DC/TMD themes — sin confirmar).",
+        evidenceNote:
+          "No inventar Sn/Sp. Red flags dentales/óticos/cardíacos fuera de este árbol → médico.",
+      }
+    ),
+    hd_tmj_cluster: conclusionNode(
+      "hd_tmj_cluster",
+      "Compatible con patrón TMD / ATM (hipótesis)",
+      "Dolor mandibular/ATM ± chasquido/bloqueo/masticación. Miógeno vs artrógeno vs mixto = hipótesis (DC/TMD themes). Coexistencia cefalea/cervical posible. No es diagnóstico dental.",
+      [
+        {
+          name: "TMD miógeno / artrógeno / mixto",
+          probability: "alta",
+          rationale: "Síntomas articulares o musculares de mandíbula.",
+        },
+        {
+          name: "Dental / ótico / cefalea primaria",
+          probability: "media",
+          rationale: "Diferencial obligatorio si atípico o RF.",
+        },
+      ],
+      { nextNodeId: "hd_cervical_gate" }
     ),
     hd_cervical_gate: testNode(
       "hd_cervical_gate",

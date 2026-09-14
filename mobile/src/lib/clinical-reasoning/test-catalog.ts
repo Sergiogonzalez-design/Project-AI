@@ -315,6 +315,30 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     evidenceNote:
       "Cluster GTPS (Grimaldi & Fearon). Aislada ≠ rotura de glúteo.",
   },
+  "resisted-knee-flexion": {
+    id: "resisted-knee-flexion",
+    title: "Flexión de rodilla resistida (isquiotibiales)",
+    procedure:
+      "Paciente en prono o sedestación: flexiona la rodilla contra resistencia (talón hacia el glúteo). Registrar dolor familiar en muslo posterior (mid vs proximal).",
+    evidenceNote:
+      "Heiderscheit JOSPT hamstring themes: dolor a la contracción + elongación + historia → lesión muscular ↑. No inventar grado BAMIC. Un test aislado no confirma.",
+  },
+  "hamstring-stretch": {
+    id: "hamstring-stretch",
+    title: "Estiramiento de isquiotibiales (elongación)",
+    procedure:
+      "Elongación pasiva o activa del muslo posterior con rodilla extendida (SLR de elongación / toe-touch clínico). Registrar si reproduce el dolor muscular familiar vs un patrón neural distinto.",
+    evidenceNote:
+      "Askling / Heiderscheit: elongación familiar apoya lesión muscular. Distinguir de SLR neurológico (van der Windt): ciática familiar ≠ solo tirón isquio.",
+  },
+  "sitting-ischium": {
+    id: "sitting-ischium",
+    title: "Dolor al sentarse (isquion / proximal)",
+    procedure:
+      "Preguntar o reproducir sentarse en superficie dura. Positivo: dolor familiar en tuberosidad isquiática / origen proximal.",
+    evidenceNote:
+      "Cluster cualitativo de tendinopatía proximal (dolor isquion + sentarse duro + estirar). Nunca = rotura automática. Diferencial deep gluteal/ciático.",
+  },
   "log-roll": {
     id: "log-roll",
     title: "Log roll",

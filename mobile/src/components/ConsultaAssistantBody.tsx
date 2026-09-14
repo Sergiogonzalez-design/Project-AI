@@ -2,14 +2,18 @@ import React from "react";
 import { shouldShowClinicalTestImage } from "../lib/clinical-test-images";
 import {
   clinicRecommendIntro,
+  hospitalRecommendIntro,
   isClinicSectionHeadingLine,
+  isHospitalSectionHeadingLine,
   parseClinicRecommendLine,
+  parseHospitalRecommendLine,
+  reconcileDestinationSections,
   type ConsultLocale,
 } from "../lib/consult-clinic-links";
 import { parseReadaptExerciseFromLine } from "../lib/consult-readaptation";
 import { ReadaptationExerciseCard } from "./ReadaptationExerciseCard";
 import { stripVisibleMarkup } from "../lib/strip-visible-markup";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { Colors } from "../lib/colors";
 
@@ -120,6 +124,12 @@ type Props = {
   /** Opens Buscar → clinic profile for `/centro/{slug}` lines. Hospitals have no slug. */
   onClinicPress?: (slug: string) => void;
   language?: ConsultLocale;
+  /** Patient functional tests: never attach clinical demo videos. */
+  showClinicalTestMedia?: boolean;
+  /** City from profile — improves hospital Maps search fallback. */
+  cityHint?: string | null;
+  /** Strip clinic buttons if an earlier message already recommended hospital. */
+  forceHospitalOnly?: boolean;
 };
 
 /** Renders consulta assistant text with functional-test illustrations when matched. */
@@ -131,10 +141,16 @@ export function ConsultaAssistantBody({
   highlightStyle,
   onClinicPress,
   language = "es",
+  showClinicalTestMedia = false,
+  cityHint = null,
+  forceHospitalOnly = false,
 }: Props) {
   const shownTestIds = new Set<string>();
-  const lines = text.split("\n");
+  const reconciled = reconcileDestinationSections(text, { forceHospitalOnly });
+  const lines = reconciled.split("\n");
   let clinicIntroShown = false;
+  let hospitalIntroShown = false;
+  let inHospitalSection = false;
 
   return (
     <>
@@ -149,9 +165,69 @@ export function ConsultaAssistantBody({
           return null;
         }
 
-        if (isClinicSectionHeadingLine(trimmed)) {
+        if (isHospitalSectionHeadingLine(trimmed)) {
+          inHospitalSection = true;
+          hospitalIntroShown = false;
           clinicIntroShown = false;
           return null;
+        }
+
+        if (isClinicSectionHeadingLine(trimmed)) {
+          inHospitalSection = false;
+          clinicIntroShown = false;
+          return null;
+        }
+
+        const hospitalLink = parseHospitalRecommendLine(trimmed, {
+          inHospitalSection,
+          cityHint,
+        });
+        if (hospitalLink) {
+          const showIntro = !hospitalIntroShown;
+          if (showIntro) hospitalIntroShown = true;
+          return (
+            <View key={li} style={li > 0 ? styles.lineGap : undefined}>
+              {showIntro ? (
+                <Text style={[style, styles.clinicIntro]}>
+                  {hospitalRecommendIntro(language)}
+                </Text>
+              ) : null}
+              <Pressable
+                onPress={() => {
+                  void Linking.openURL(hospitalLink.mapsUrl);
+                }}
+                style={({ pressed }) => [
+                  styles.hospitalBtn,
+                  showIntro ? styles.clinicBtnAfterIntro : undefined,
+                  pressed ? styles.hospitalBtnPressed : null,
+                ]}
+                accessibilityRole="link"
+                accessibilityLabel={`${hospitalLink.label}. Abrir en Maps`}
+              >
+                <Text style={styles.hospitalBtnTitle}>{hospitalLink.label}</Text>
+                <Text style={styles.hospitalBtnMeta}>
+                  {hospitalLink.meta ||
+                    (language === "en"
+                      ? "Open in Maps / browser"
+                      : "Abrir en Maps / Internet")}
+                </Text>
+              </Pressable>
+            </View>
+          );
+        }
+
+        if (
+          inHospitalSection &&
+          trimmed &&
+          !/^(?:[-*•]\s+)?(?:\*\*)?\d+[.)]/i.test(trimmed)
+        ) {
+          if (
+            /^(?:qué debes|what you should|fuentes|sources|contactar|contact|resumen)\b/i.test(
+              trimmed.replace(/\*/g, "")
+            )
+          ) {
+            inHospitalSection = false;
+          }
         }
 
         const clinicLink = parseClinicRecommendLine(trimmed);
@@ -212,11 +288,13 @@ export function ConsultaAssistantBody({
                 ? stripMarkdownStars(trimmed)
                 : null;
 
-        const testImage = shouldShowClinicalTestImage({
-          numberedText,
-          headingText,
-          wholeBoldText: wholeBoldMatch?.[1] ?? null,
-        });
+        const testImage = showClinicalTestMedia
+          ? shouldShowClinicalTestImage({
+              numberedText,
+              headingText,
+              wholeBoldText: wholeBoldMatch?.[1] ?? null,
+            })
+          : null;
         const showImage =
           testImage && !shownTestIds.has(testImage.id) ? testImage : null;
         if (showImage) shownTestIds.add(showImage.id);
@@ -307,6 +385,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: "#1d4ed8",
+    opacity: 0.85,
+  },
+  hospitalBtn: {
+    alignSelf: "stretch",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#fecdd3",
+    backgroundColor: "#fff1f2",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  hospitalBtnPressed: { opacity: 0.88, backgroundColor: "#ffe4e6" },
+  hospitalBtnTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#9f1239",
+  },
+  hospitalBtnMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#9f1239",
     opacity: 0.85,
   },
 });

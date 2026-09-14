@@ -70,10 +70,13 @@ export function PhysioClinicInfoCard({ clinic }: Props) {
             </View>
           )}
           <View style={styles.logoMeta}>
-            <Text style={styles.kicker}>Tu clínica</Text>
-            <Text style={styles.name}>{clinic.name}</Text>
+            <Text style={styles.name} numberOfLines={2}>
+              {clinic.name}
+            </Text>
             {clinic.tagline ? (
-              <Text style={styles.tagline}>{clinic.tagline}</Text>
+              <Text style={styles.tagline} numberOfLines={2}>
+                {clinic.tagline}
+              </Text>
             ) : null}
           </View>
         </View>
@@ -142,22 +145,33 @@ const styles = StyleSheet.create({
   },
   cover: {
     width: "100%",
-    aspectRatio: 2.4,
-    minHeight: 132,
-    maxHeight: 200,
+    height: 148,
     backgroundColor: Colors.primary,
   },
   coverImg: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     width: "100%",
     height: "100%",
   },
   coverShade: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(15,23,42,0.18)",
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(15,23,42,0.12)",
   },
-  body: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 6, gap: 6 },
-  logoRow: { flexDirection: "row", gap: 12, alignItems: "flex-end", marginTop: -36 },
+  body: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 0, gap: 6 },
+  logoRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-end",
+    marginTop: -28,
+  },
   logo: {
     width: 64,
     height: 64,
@@ -169,14 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   logoLetter: { color: "#fff", fontWeight: "800", fontSize: 20 },
-  logoMeta: { flex: 1, paddingBottom: 2 },
-  kicker: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Colors.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
+  logoMeta: { flex: 1, paddingBottom: 4, minWidth: 0 },
   name: { fontSize: 18, fontWeight: "800", color: Colors.text },
   tagline: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
   description: {

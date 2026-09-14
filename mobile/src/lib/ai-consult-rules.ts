@@ -11,6 +11,7 @@ import { AI_HIP_GROIN_DOHA_RULES } from "./physioguide-hip-groin-rules";
 import { AI_HIP_LATERAL_PAIN_RULES } from "./physioguide-hip-lateral-rules";
 import { AI_HIP_MASTER_INTEGRATION_RULES } from "./physioguide-hip-master-rules";
 import { AI_HIP_POSTERIOR_PAIN_RULES } from "./physioguide-hip-posterior-rules";
+import { AI_HAMSTRING_INJURY_RULES } from "./physioguide-hamstring-rules";
 import { AI_HIP_TRAUMATIC_RULES } from "./physioguide-hip-traumatic-rules";
 import { AI_SHOULDER_ANTERIOR_PAIN_RULES } from "./physioguide-shoulder-anterior-rules";
 import { AI_SHOULDER_INSTABILITY_TRAUMA_RULES } from "./physioguide-shoulder-instability-trauma-rules";
@@ -30,8 +31,8 @@ import { AI_ELBOW_WRIST_NEURAL_RULES } from "./physioguide-elbow-wrist-neural-ru
 import { AI_WRIST_DEQUERVAIN_RULES } from "./physioguide-wrist-dequervain-rules";
 import { AI_WRIST_TRAUMA_SCAPHOID_RULES } from "./physioguide-wrist-trauma-scaphoid-rules";
 import { AI_ELBOW_DISTAL_BICEPS_RULES } from "./physioguide-elbow-distal-biceps-rules";
-import { AI_ELBOW_DISTAL_TRICEPS_RULES } from "./physioguide-elbow-distal-triceps-rules";
 import { AI_ELBOW_OSTEOARTHRITIS_RULES } from "./physioguide-elbow-osteoarthritis-rules";
+import { AI_ELBOW_DISTAL_TRICEPS_RULES } from "./physioguide-elbow-distal-triceps-rules";
 import { AI_ELBOW_PLRI_RULES } from "./physioguide-elbow-plri-rules";
 import { AI_ELBOW_RADIAL_TUNNEL_RULES } from "./physioguide-elbow-radial-tunnel-rules";
 import { AI_ELBOW_UCL_MEDIAL_RULES } from "./physioguide-elbow-ucl-medial-rules";
@@ -52,6 +53,9 @@ import { AI_THORACIC_SPINE_PAIN_RULES } from "./physioguide-thoracic-spine-pain-
 import { AI_GLOBAL_CROSS_REGION_RULES } from "./physioguide-global-cross-region-rules";
 import { AI_FINGER_DIGITAL_PAIN_RULES } from "./physioguide-finger-digital-pain-rules";
 import { AI_HEAD_HEADACHE_MASTER_RULES } from "./physioguide-head-headache-master-rules";
+import { AI_TMJ_TMD_RULES } from "./physioguide-tmj-tmd-rules";
+import { AI_LOWER_LEG_COMPARTMENT_RULES } from "./physioguide-lower-leg-compartment-rules";
+import { AI_PELVIC_FLOOR_PGPAIN_RULES } from "./physioguide-pelvic-floor-pgpain-rules";
 import { AI_HYPOTHESIS_EXPLORATION_RULES } from "./physioguide-hypothesis-mode-rules";
 import { AI_MTRP_FRAMEWORK_RULES } from "./physioguide-mtrp-framework-rules";
 import { AI_SHOULDER_LATERAL_REFERRED_RULES } from "./physioguide-shoulder-lateral-referred-rules";
@@ -73,6 +77,9 @@ import { AI_READAPTATION_RULES } from "./physioguide-readaptation-rules";
 import {
   AI_POST_SURGERY_ACL_RULES,
   AI_POST_SURGERY_ANKLE_RULES,
+  AI_POST_SURGERY_ARTHROPLASTY_RULES,
+  AI_POST_SURGERY_LUMBAR_RULES,
+  AI_POST_SURGERY_MENISCUS_RULES,
   AI_POST_SURGERY_ROTATOR_CUFF_RULES,
   AI_POST_SURGERY_SCREENS_MASTER_RULES,
 } from "./physioguide-post-surgery-screens-rules";
@@ -145,6 +152,13 @@ DESTINO CORRECTO (CRÍTICO — error frecuente a evitar):
 - Sobrecarga / esfuerzo / dolor mecánico de espalda, cuello, hombro, etc. sin banderas rojas → fisioterapeuta / clínicas AIKinora (no urgencias).
 - Intensidad 4/10 sin déficit neurológico ni trauma grave → NO es urgencia hospitalaria.
 - Reserva hospital para cauda, trauma grave, déficit neurológico serio, dolor insoportable, infección sistémica, o PRIORIDAD ALTA explícita en el contexto.
+
+COHERENCIA DE DESTINO (CRÍTICO — no contradigas al paciente):
+- En UNA misma consulta el destino es UNO: hospital/urgencias O clínicas AIKinora — NUNCA ambos en el mismo mensaje.
+- NUNCA digas hospital/urgencias en la interpretación intermedia (p. ej. muñeca tras hombro) y luego clínicas en el resumen final, ni al revés.
+- Si ya recomendaste **Hospitales / Urgencias cerca de ti** en un mensaje anterior de ESTE chat → el resumen final y el resto DEBEN mantener hospital; PROHIBIDO añadir **Clínicas en AIKinora cerca de ti**.
+- Si NO hay PRIORIDAD ALTA real → PROHIBIDO «ve a urgencias / hospital» «por precaución» en interpretaciones parciales; usa fisio/clínicas de forma coherente hasta el final.
+- Multi-región (p. ej. hombro + muñeca): el destino lo marca la zona MÁS urgente. Si ninguna es PRIORIDAD ALTA real → clínicas para todo el caso; si una lo es → solo hospital en toda la respuesta (también en el resumen final).
 
 PASO 3 — SI NO ES URGENTE → PRUEBAS FUNCIONALES (OBLIGATORIO — DIFERENCIACIÓN KINORA):
 - Solo si PASO 2 NO aplica. Si hay PRIORIDAD ALTA / hospital, salta este paso por completo.
@@ -244,7 +258,9 @@ SECCIONES — NO MEZCLAR (CRÍTICO — error frecuente):
 - **Pruebas funcionales** = SOLO movimientos/provocaciones que el paciente hace YA y responde Sí/No (¿duele al…?, ¿puedes…?). NUNCA hielo, reposo, elevación, medicación, hospital ni consejos de tratamiento.
 - **Qué debes hacer ahora** = el siguiente paso concreto y priorizado (fisio, pruebas, imagen, o urgencias SOLO si PRIORIDAD ALTA real). Si PRIORIDAD ALTA → HOSPITAL / URGENCIAS YA aquí. Si NO → NO digas hospital «por precaución» en casos leves/mecánicos.
 - Si el caso ES urgente / PRIORIDAD ALTA: omite **Pruebas funcionales** y omite **Clínicas en AIKinora cerca de ti**. Orden: Resumen → Estructuras → Posibles lesiones → Qué hacer mientras tanto (solo medidas seguras de camino a urgencias) → Pruebas de imagen recomendadas → Qué debes hacer ahora (hospital) → **Hospitales / Urgencias cerca de ti** → Contactar fisio (opcional) → Fuentes.
-- Con ciudad en el perfil: nombra 2–3 hospitales/urgencias conocidos de esa ciudad. Sin ciudad: hospital más cercano + Maps («urgencias cerca de mí») / 112 — no inventes hospitales de una ciudad desconocida.
+- Con ciudad en el perfil: nombra 2–3 hospitales/urgencias conocidos de esa ciudad en formato botón:
+  1. Nombre del hospital | maps:urgencias Nombre Ciudad
+  Sin ciudad: 1. Urgencias del hospital más cercano | maps:urgencias cerca de mí / 112 — no inventes hospitales de una ciudad desconocida.
 
 ORDEN POR PROBABILIDAD (OBLIGATORIO):
 - En **Estructuras que podrían estar afectadas**: lista con guiones, de MAYOR a MENOR probabilidad según el caso (la más probable primero).
@@ -289,6 +305,8 @@ ${AI_HIP_TRAUMATIC_RULES}
 ${AI_HIP_LATERAL_PAIN_RULES}
 
 ${AI_HIP_POSTERIOR_PAIN_RULES}
+
+${AI_HAMSTRING_INJURY_RULES}
 
 ${AI_KNEE_MASTER_INTEGRATION_RULES}
 
@@ -386,6 +404,12 @@ ${AI_FINGER_DIGITAL_PAIN_RULES}
 
 ${AI_HEAD_HEADACHE_MASTER_RULES}
 
+${AI_TMJ_TMD_RULES}
+
+${AI_LOWER_LEG_COMPARTMENT_RULES}
+
+${AI_PELVIC_FLOOR_PGPAIN_RULES}
+
 ${AI_HYPOTHESIS_EXPLORATION_RULES}
 
 ${AI_CLARITY_NO_OVERDIAGNOSIS_RULES}
@@ -395,6 +419,12 @@ ${AI_PERSISTENCE_REEVALUATION_RULES}
 ${AI_POST_SURGERY_SCREENS_MASTER_RULES}
 
 ${AI_POST_SURGERY_ACL_RULES}
+
+${AI_POST_SURGERY_MENISCUS_RULES}
+
+${AI_POST_SURGERY_ARTHROPLASTY_RULES}
+
+${AI_POST_SURGERY_LUMBAR_RULES}
 
 ${AI_POST_SURGERY_ROTATOR_CUFF_RULES}
 

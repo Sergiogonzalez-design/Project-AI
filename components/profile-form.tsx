@@ -266,9 +266,6 @@ export function ProfileForm() {
               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
                 {roleLabel}
               </span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                Plan gratuito
-              </span>
             </div>
             <button
               type="button"

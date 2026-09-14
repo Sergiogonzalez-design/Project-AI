@@ -22,7 +22,7 @@ import { DismissKeyboard } from "./DismissKeyboard";
 import { Colors } from "../lib/colors";
 import { WEB_APP_URL } from "../lib/admin-api";
 import { useI18n } from "../lib/i18n";
-import { parsePastedInviteCode } from "../lib/physio-invite";
+import { looksLikeInviteCode, parsePastedInviteCode } from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
 
 type Props = {
@@ -42,7 +42,8 @@ function translateAuthError(message: string, t: ReturnType<typeof useI18n>["t"])
 
 function codeFromUrl(url: string | null): string {
   if (!url) return "";
-  return parsePastedInviteCode(url);
+  const code = parsePastedInviteCode(url);
+  return looksLikeInviteCode(code) ? code : "";
 }
 
 export function LoginScreen({ onSwitch, onForgot }: Props) {

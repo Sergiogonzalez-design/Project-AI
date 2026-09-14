@@ -8,6 +8,7 @@ import { isThighOrHamstringComplaint } from "../detect-body-part";
 import type {
   ClinicalReasoningNode,
   ClinicalReasoningTree,
+  ClinicalTestNode,
   ReasoningSession,
   ReasoningSessionStep,
 } from "./types";
@@ -121,6 +122,75 @@ export function getNode(
   return tree.nodes[nodeId] ?? null;
 }
 
+function isPhysicalTestNode(
+  node: ClinicalReasoningNode | null | undefined
+): node is ClinicalTestNode {
+  return Boolean(
+    node &&
+      node.type === "test" &&
+      node.testId &&
+      !node.testId.startsWith("route-")
+  );
+}
+
+/** Prior Positivo/Negativo for each physical special-test id already answered. */
+export function answeredPhysicalResults(
+  session: ReasoningSession,
+  tree: ClinicalReasoningTree
+): Map<string, "positive" | "negative"> {
+  const map = new Map<string, "positive" | "negative">();
+  for (const step of session.steps) {
+    if (!step.result) continue;
+    const node = tree.nodes[step.nodeId];
+    if (!isPhysicalTestNode(node)) continue;
+    map.set(node.testId, step.result);
+  }
+  return map;
+}
+
+/**
+ * Resolve the next node after an answer. If the destination (or chain) repeats a
+ * physical testId already answered in this session, auto-follow using that prior
+ * result so the same video/maneuver is never shown twice.
+ */
+export function resolveNextNodeId(
+  tree: ClinicalReasoningTree,
+  session: ReasoningSession,
+  fromNodeId: string,
+  result: "positive" | "negative"
+): string | null {
+  const from = tree.nodes[fromNodeId];
+  if (!from || from.type !== "test") return null;
+
+  const answered = answeredPhysicalResults(session, tree);
+  if (isPhysicalTestNode(from)) {
+    answered.set(from.testId, result);
+  }
+
+  let nextId: string | null =
+    result === "positive" ? from.positive.nextId : from.negative.nextId;
+  if (!nextId || !tree.nodes[nextId]) return null;
+
+  const guard = new Set<string>([fromNodeId]);
+  while (nextId && tree.nodes[nextId]) {
+    if (guard.has(nextId)) return nextId;
+    guard.add(nextId);
+
+    const node: ClinicalReasoningNode = tree.nodes[nextId]!;
+    if (node.type !== "test" || !isPhysicalTestNode(node)) break;
+
+    const prior = answered.get(node.testId);
+    if (!prior) break;
+
+    const skipTo: string =
+      prior === "positive" ? node.positive.nextId : node.negative.nextId;
+    if (!skipTo || !tree.nodes[skipTo] || skipTo === nextId) break;
+    nextId = skipTo;
+  }
+
+  return nextId && tree.nodes[nextId] ? nextId : null;
+}
+
 export function applyAnswer(
   tree: ClinicalReasoningTree,
   currentNodeId: string,
@@ -142,6 +212,34 @@ export function advanceFromConclusion(
   return tree.nodes[node.nextNodeId] ? node.nextNodeId : null;
 }
 
+/**
+ * Advance after Continuar on a conclusion, skipping physical tests already done.
+ */
+export function resolveContinueNodeId(
+  tree: ClinicalReasoningTree,
+  session: ReasoningSession,
+  conclusionNodeId: string
+): string | null {
+  let nextId = advanceFromConclusion(tree, conclusionNodeId);
+  if (!nextId) return null;
+
+  const answered = answeredPhysicalResults(session, tree);
+  const guard = new Set<string>([conclusionNodeId]);
+  while (nextId && tree.nodes[nextId]) {
+    if (guard.has(nextId)) return nextId;
+    guard.add(nextId);
+    const node: ClinicalReasoningNode = tree.nodes[nextId]!;
+    if (node.type !== "test" || !isPhysicalTestNode(node)) break;
+    const prior = answered.get(node.testId);
+    if (!prior) break;
+    const skipTo: string =
+      prior === "positive" ? node.positive.nextId : node.negative.nextId;
+    if (!skipTo || !tree.nodes[skipTo] || skipTo === nextId) break;
+    nextId = skipTo;
+  }
+  return nextId && tree.nodes[nextId] ? nextId : null;
+}
+
 export function pushStep(
   session: ReasoningSession,
   nodeId: string,
@@ -159,14 +257,41 @@ export function pushStep(
   };
 }
 
+/** Record Positivo/Negativo on the answered node, then move to the next node. */
+export function recordAnswerAndAdvance(
+  session: ReasoningSession,
+  answeredNodeId: string,
+  result: "positive" | "negative",
+  nextNodeId: string
+): ReasoningSession {
+  const now = new Date().toISOString();
+  const steps = [...session.steps];
+  const last = steps[steps.length - 1];
+  if (last?.nodeId === answeredNodeId) {
+    steps[steps.length - 1] = { ...last, result, at: now };
+  } else {
+    steps.push({ nodeId: answeredNodeId, result, at: now });
+  }
+  steps.push({ nodeId: nextNodeId, at: new Date().toISOString() });
+  return {
+    ...session,
+    currentNodeId: nextNodeId,
+    steps,
+  };
+}
+
 export function goBack(session: ReasoningSession): ReasoningSession | null {
   if (session.steps.length <= 1) return null;
   const nextSteps = session.steps.slice(0, -1);
   const prev = nextSteps[nextSteps.length - 1];
+  // Clear result on the restored node so it can be answered again.
+  const cleaned = nextSteps.map((s, i) =>
+    i === nextSteps.length - 1 ? { nodeId: s.nodeId, at: s.at } : s
+  );
   return {
     ...session,
     currentNodeId: prev.nodeId,
-    steps: nextSteps,
+    steps: cleaned,
   };
 }
 

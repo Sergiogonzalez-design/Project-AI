@@ -3,27 +3,21 @@
 import { Children, isValidElement, type ReactNode } from "react";
 
 type Props = {
-  /** Changes when the section changes so entrances re-run. */
+  /** Changes when the section changes so the list remounts cleanly. */
   sectionKey: string | number;
   children: ReactNode;
 };
 
 /**
- * Staggers questionnaire questions so a section doesn't dump all fields at once.
+ * Renders questionnaire questions without staggered slide-in animations.
  */
 export function QuestionnaireQuestionList({ sectionKey, children }: Props) {
   const items = Children.toArray(children).filter(isValidElement);
 
   return (
-    <div key={sectionKey} className="questionnaire-question-list">
+    <div key={sectionKey} className="questionnaire-question-list space-y-0">
       {items.map((child, index) => (
-        <div
-          key={child.key ?? index}
-          className="questionnaire-question-enter"
-          style={{ animationDelay: `${Math.min(index, 8) * 48}ms` }}
-        >
-          {child}
-        </div>
+        <div key={child.key ?? index}>{child}</div>
       ))}
     </div>
   );

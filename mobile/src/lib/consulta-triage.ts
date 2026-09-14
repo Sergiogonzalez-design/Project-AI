@@ -880,7 +880,7 @@ export function refineTriageBodyPart(
     return {
       action: "respond",
       intent: "general",
-      answer: triage.answer ?? null,
+      answer: triage.answer ?? undefined,
     };
   }
 

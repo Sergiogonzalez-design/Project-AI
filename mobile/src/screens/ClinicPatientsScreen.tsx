@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { PhysioReportView } from "../components/PhysioReportView";
+import { StaffPatientProfileEditor } from "../components/StaffPatientProfileEditor";
 import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
@@ -158,6 +159,16 @@ export function ClinicPatientsScreen() {
         </Pressable>
         <Text style={styles.title}>{label}</Text>
         <Text style={styles.sub}>{hub.patientReports}</Text>
+        <StaffPatientProfileEditor
+          patientId={selectedPatient.id}
+          onDisplayNameChange={(name) => {
+            setSelectedPatient((prev) =>
+              prev
+                ? { ...prev, display_name: name || prev.display_name }
+                : prev
+            );
+          }}
+        />
         {reportsLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
         ) : reports.length === 0 ? (

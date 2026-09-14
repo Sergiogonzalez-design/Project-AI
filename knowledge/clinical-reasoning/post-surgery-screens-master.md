@@ -2,12 +2,15 @@
 
 **Capa:** Razonamiento (post-op)  
 **Status:** ACTIVE (2026-09)  
-**Alcance:** Reconstrucción LCA, reparación de manguito, cirugía tobillo (Broström / ORIF / ligamentaria común)  
-**Companions:** [`post-surgery-acl.md`](./post-surgery-acl.md), [`post-surgery-rotator-cuff.md`](./post-surgery-rotator-cuff.md), [`post-surgery-ankle.md`](./post-surgery-ankle.md), [`../evidence/post-surgery-rts-criteria.md`](../evidence/post-surgery-rts-criteria.md), [`persistence-reevaluation.md`](./persistence-reevaluation.md), readaptación (`../evidence/readaptation-master.md`)
+**Alcance:** Reconstrucción LCA, cirugía meniscal (reparación / meniscectomía), artroplastia cadera/rodilla (THA/TKA), cirugía lumbar (descompresión / fusión / microdiscectomía), reparación de manguito, cirugía tobillo (Broström / ORIF / ligamentaria común)  
+**Companions:** [`post-surgery-acl.md`](./post-surgery-acl.md), [`post-surgery-meniscus.md`](./post-surgery-meniscus.md), [`post-surgery-hip-knee-arthroplasty.md`](./post-surgery-hip-knee-arthroplasty.md), [`post-surgery-lumbar.md`](./post-surgery-lumbar.md), [`post-surgery-rotator-cuff.md`](./post-surgery-rotator-cuff.md), [`post-surgery-ankle.md`](./post-surgery-ankle.md), [`../evidence/post-surgery-rts-criteria.md`](../evidence/post-surgery-rts-criteria.md), [`persistence-reevaluation.md`](./persistence-reevaluation.md), readaptación (`../evidence/readaptation-master.md`)
 
 **Evidence anchors (temas, no protocolos universales):**  
 - JOSPT knee ligament CPG (Logerstedt 2017) — rehab + PRO + RTS themes.  
 - BJSM ACL rehab consensus (van Melick 2016) — fases por **criterios**, no solo tiempo.  
+- Protocolos clínicos menisco (reparación vs meniscectomía) — proteger sutura según cirujano; no plazos universales.  
+- Rehab tras THA/TKA — movilidad precoz temática; precauciones de cadera **por abordaje**, no universales absolutas.  
+- Post-op lumbar (descompresión / fusión / microdiscectomía) — marcha y restricciones según protocolo; no «semanas de fusión» como alta.  
 - JOSPT early active movement after cuff repair (Littlewood / related 2021 meta) — early vs delayed mixto; respetar tamaño/reparación.  
 - Broström / lateral ankle repair clinical protocols (criteria-based RTS; series RTP).  
 - Nunca inventar Sn/Sp ni «apto al mes X» como verdad única.
@@ -29,8 +32,8 @@ Esto **no** es un plan post-op personalizado ni un alta deportiva.
 
 ## ACTIVADORES
 
-- «Me operaron», «reconstrucción LCA / ACL», «plastia», «manguito / rotator cuff repair», «Broström», «osteosíntesis tobillo», «ORIF», «me pusieron placas», «semana X de postoperatorio».  
-- Preguntas: «¿puedo correr?», «¿cuándo vuelvo al fútbol?», «¿puedo quitar el cabestrillo?», «¿está fallando la cirugía?»
+- «Me operaron», «reconstrucción LCA / ACL», «plastia», «menisco / me cosieron el menisco / meniscectomía / artroscopia de rodilla», «prótesis de cadera / rodilla», «THA / TKA / PTR», «fusión lumbar / tornillos», «microdiscectomía / me operaron de una hernia», «descompresión lumbar», «manguito / rotator cuff repair», «Broström», «osteosíntesis tobillo», «ORIF», «me pusieron placas», «semana X de postoperatorio».  
+- Preguntas: «¿puedo correr?», «¿cuándo vuelvo al fútbol?», «¿puedo quitar el cabestrillo?», «¿puedo conducir?», «¿puedo agacharme / levantar?», «¿está fallando la cirugía / la prótesis?»
 
 ---
 
@@ -88,6 +91,9 @@ Esto **no** es un plan post-op personalizado ni un alta deportiva.
 | Cirugía / relato | Módulo |
 |------------------|--------|
 | LCA / ACL reconstrucción o plastia | [`post-surgery-acl.md`](./post-surgery-acl.md) |
+| Menisco (reparación / meniscectomía / artroscopia meniscal) | [`post-surgery-meniscus.md`](./post-surgery-meniscus.md) |
+| Prótesis cadera o rodilla (THA / TKA / PTR) | [`post-surgery-hip-knee-arthroplasty.md`](./post-surgery-hip-knee-arthroplasty.md) |
+| Cirugía lumbar (descompresión / fusión / microdiscectomía) | [`post-surgery-lumbar.md`](./post-surgery-lumbar.md) |
 | Manguito / cuff repair / «me cosieron el hombro» | [`post-surgery-rotator-cuff.md`](./post-surgery-rotator-cuff.md) |
 | Tobillo operado (ligamentos / Broström / fractura ORIF) | [`post-surgery-ankle.md`](./post-surgery-ankle.md) |
 | Otra cirugía | Reglas globales + no inventar; remitir a protocolo / presencial |

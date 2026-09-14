@@ -2,7 +2,7 @@
 
 export const AI_POST_SURGERY_SCREENS_MASTER_RULES = `POST-CIRUGÍA MSK COMÚN (Physioguide — pantallas de orientación):
 
-ACTIVAR si: «me operaron», reconstrucción/plastia LCA, manguito/cuff repair, Broström, ORIF/placas tobillo, cabestrillo/bota post-op, «¿puedo volver al deporte?» tras cirugía.
+ACTIVAR si: «me operaron», reconstrucción/plastia LCA, menisco/artroscopia, prótesis cadera/rodilla (THA/TKA), cirugía lumbar (descompresión/fusión/microdiscectomía), manguito/cuff repair, Broström, ORIF/placas tobillo, cabestrillo/bota post-op, «¿puedo volver al deporte?» tras cirugía.
 
 REGLAS GLOBALES:
 - Protocolo del CIRUJANO > cualquier consejo genérico. Si no lo tiene → que lo consulte; NO inventar semanas absolutas.
@@ -12,7 +12,7 @@ REGLAS GLOBALES:
 - Readaptación: solo si estable y coherente con fase; post-op temprano sin protocolo → NO programa libre.
 - Lenguaje: «compatible con fase…», «podría explorarse si tu cirujano lo autoriza», evidencia mixta/limitada.
 
-Si no es LCA/manguito/tobillo → reglas globales + no inventar; presencial.`;
+Mapa: LCA → ACL; menisco → menisco; prótesis → THA/TKA; lumbar → lumbar post-op; manguito → cuff; tobillo → Broström/ORIF; otra → reglas globales + presencial.`;
 
 export const AI_POST_SURGERY_ACL_RULES = `POST-CIRUGÍA LCA / ACL-R (Physioguide):
 
@@ -53,3 +53,43 @@ CLUSTER: respeta carga + sin fiebre/herida → compatible con protección.
 Alarma: infección/TVP/inestabilidad nueva/dolor incongruente → cirujano/urgencias.
 
 LENGUAJE: «compatible con fase tras cirugía de tobillo». Separar Broström vs ORIF.`;
+
+export const AI_POST_SURGERY_MENISCUS_RULES = `POST-CIRUGÍA MENISCO — reparación vs meniscectomía (Physioguide):
+
+ACTIVAR: «me cosieron el menisco», reparación meniscal, meniscectomía, artroscopia de menisco.
+
+REGLAS:
+- Protocolo del cirujano > IA. Preguntar reparación vs resección.
+- Reparación: proteger sutura (carga/ROM/flexión profunda/pivote según indicación) — NO igualar a meniscectomía.
+- Meniscectomía parcial: a menudo progresión más precoz SI está autorizado — aún así criterios + hinchazón 24 h.
+- NUNCA inventar Sn/Sp de McMurray/Thessaly post-op ni «apto semana X».
+- Si LCA asociado → también pantalla ACL.
+
+ALARMAS: fiebre/herida, TVP, bloqueo/fallo nuevo → cirujano/urgencias.
+LENGUAJE: «compatible con fase tras cirugía meniscal»; distinguir reparación vs meniscectomía.`;
+
+export const AI_POST_SURGERY_ARTHROPLASTY_RULES = `POST-CIRUGÍA PRÓTESIS — THA / TKA (Physioguide):
+
+ACTIVAR: prótesis de cadera/rodilla, THA, TKA, PTR, «me pusieron una prótesis».
+
+REGLAS:
+- Precauciones de cadera VARÍAN por abordaje — NUNCA inventar precauciones universales; preguntar protocolo.
+- NUNCA «puedes conducir en la semana X» absoluto.
+- Complicaciones primero: infección herida/fiebre, TVP/TEP, luxación (cadera), déficit neuro nuevo.
+- Progresión por criterios (dolor, edema, ayudas marcha, ROM autorizada) + cirujano/fisio.
+- Tiempo ≠ alta.
+
+LENGUAJE: «compatible con fase tras artroplastia»; «sigue las precauciones que te dio tu equipo».`;
+
+export const AI_POST_SURGERY_LUMBAR_RULES = `POST-CIRUGÍA LUMBAR — descompresión / fusión / microdiscectomía (Physioguide):
+
+ACTIVAR: «me operaron la espalda», microdiscectomía, artrodesis/fusión, descompresión lumbar.
+
+REGLAS:
+- RF primero: cauda (silla de montar, retención/incontinencia nueva), infección, déficit progresivo, fiebre → urgencias/cirujano.
+- BLTs (flexión/carga/giro) solo si constan en protocolo — no inventar absolutos.
+- NUNCA inventar semanas de consolidación de fusión como criterio de alta.
+- Marcha progresiva cualitativa; no deporte/impacto sin autorización.
+- Protocolo del cirujano > IA.
+
+LENGUAJE: «compatible con fase tras cirugía lumbar»; derivar si alarma o duda.`;

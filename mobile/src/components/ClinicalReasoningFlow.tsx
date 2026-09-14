@@ -15,14 +15,15 @@ import { isThighOrHamstringComplaint } from "../lib/detect-body-part";
 import { ClinicalTestMediaBlock } from "./ClinicalTestMediaBlock";
 import { CLINICAL_TEST_IMAGES } from "../lib/clinical-test-images";
 import {
-  advanceFromConclusion,
-  applyAnswer,
   countCompletedManiobras,
   createSession,
   getNode,
   getTreeForSession,
   goBack,
   pushStep,
+  recordAnswerAndAdvance,
+  resolveContinueNodeId,
+  resolveNextNodeId,
   type ReasoningSession,
 } from "../lib/clinical-reasoning";
 import type {
@@ -240,9 +241,11 @@ export function ClinicalReasoningFlow({
   const handleAnswer = useCallback(
     (result: "positive" | "negative") => {
       if (!session || !tree || !currentNode || currentNode.type !== "test") return;
-      const nextId = applyAnswer(tree, currentNode.id, result);
+      const nextId = resolveNextNodeId(tree, session, currentNode.id, result);
       if (!nextId) return;
-      setSession(pushStep(session, nextId, result));
+      setSession(
+        recordAnswerAndAdvance(session, currentNode.id, result, nextId)
+      );
     },
     [session, tree, currentNode]
   );
@@ -250,7 +253,7 @@ export function ClinicalReasoningFlow({
   const handleContinue = useCallback(() => {
     if (!session || !tree || !currentNode || currentNode.type !== "conclusion")
       return;
-    const nextId = advanceFromConclusion(tree, currentNode.id);
+    const nextId = resolveContinueNodeId(tree, session, currentNode.id);
     if (!nextId) return;
     setSession(pushStep(session, nextId));
   }, [session, tree, currentNode]);
@@ -309,7 +312,11 @@ export function ClinicalReasoningFlow({
 
         <View style={styles.card}>
           {currentNode.type === "test" ? (
-            <TestCard node={currentNode} onAnswer={handleAnswer} />
+            <TestCard
+              key={currentNode.id}
+              node={currentNode}
+              onAnswer={handleAnswer}
+            />
           ) : (
             <ConclusionCard
               node={currentNode}

@@ -1015,6 +1015,69 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "lasègue cruzado",
     ],
   },
+  {
+    id: "cmc-lever",
+    title: "CMC lever (rizartrosis)",
+    src: `${CLINICAL_TEST_CDN}/cmc-grind.webp`,
+    aliases: [
+      "cmc lever",
+      "lever cmc",
+      "palanca cmc",
+      "test lever",
+      "cmc lever test",
+    ],
+  },
+  {
+    id: "lt-ballottement",
+    title: "Ballottement LT / Reagan",
+    src: `${CLINICAL_TEST_CDN}/watson-scaphoid-shift.webp`,
+    aliases: [
+      "ballottement lt",
+      "lt ballottement",
+      "reagan",
+      "reagan test",
+      "kleinman shear",
+      "lt shear",
+      "ballottement lunotriquetral",
+    ],
+  },
+  {
+    id: "hamstring-stretch",
+    title: "Estiramiento de isquiotibiales",
+    src: `${CLINICAL_TEST_CDN}/slr-lasegue.webp`,
+    aliases: [
+      "estiramiento de isquiotibiales",
+      "estiramiento isquiotibiales",
+      "hamstring stretch",
+      "elongacion isquiotibiales",
+      "elongación isquiotibiales",
+    ],
+  },
+  {
+    id: "resisted-knee-flexion",
+    title: "Flexión de rodilla resistida (isquiotibiales)",
+    src: `${CLINICAL_TEST_CDN}/active-slr.webp`,
+    aliases: [
+      "flexion de rodilla resistida",
+      "flexión de rodilla resistida",
+      "flexion rodilla resistida",
+      "resisted knee flexion",
+      "isquiotibiales resistidos",
+    ],
+  },
+  {
+    id: "sitting-ischium",
+    title: "Dolor al sentarse (isquion / proximal)",
+    src: `${CLINICAL_TEST_CDN}/active-slr.webp`,
+    aliases: [
+      "dolor al sentarse",
+      "sitting ischium",
+      "dolor isquion",
+      "tuberosidad isquiatica",
+      "tuberosidad isquiática",
+      "proximal hamstring sitting",
+    ],
+  },
 ] as const;
 
 /** Prefer longer aliases first so "cajon anterior del tobillo" beats "cajon anterior". */
@@ -1045,6 +1108,9 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "ober-test",
       "patellar-apprehension",
       "dial-test",
+      "resisted-knee-flexion",
+      "hamstring-stretch",
+      "sitting-ischium",
     ],
   },
   {
@@ -1124,6 +1190,8 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "fovea-sign",
       "piano-key",
       "cmc-grind",
+      "cmc-lever",
+      "lt-ballottement",
       "thumb-ucl-stress",
       "froment",
       "jersey-finger",

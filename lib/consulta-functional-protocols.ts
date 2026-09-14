@@ -239,7 +239,7 @@ export const QUAD_PROTOCOL: FunctionalProtocol = {
   ifNegativeUltrasoundPersistentPain: NEGATIVE_US_PERSISTENT_PAIN_NOTE,
 };
 
-/** Hamstring / isquiotibiales — history + tests (user-supplied). */
+/** Hamstring / isquiotibiales — Askling/Heiderscheit-informed history + Sí/No battery. */
 export const HAMSTRING_PROTOCOL: FunctionalProtocol = {
   id: "hamstring",
   match:
@@ -248,33 +248,61 @@ export const HAMSTRING_PROTOCOL: FunctionalProtocol = {
     es: "Valoración funcional — Isquiotibiales (hamstring)",
     en: "Functional assessment — Hamstrings",
   },
+  urgentRedFlagNote: {
+    es:
+      "URGENTE: adolescente con chasquido en el isquion + imposibilidad clara de apoyar o deformidad marcada → valoración médica / imagen urgente (sospecha de avulsión). No uses solo el ciclo de reposo 24–36 h.",
+    en:
+      "URGENT: adolescent with a pop at the sit bone + clear inability to bear weight or marked deformity → urgent medical / imaging assessment (avulsion concern). Do not rely only on the 24–36 h rest cycle.",
+  },
   historyItems: [
     {
       id: "hx_running_pedrada",
       question: {
-        es: "¿Ibas corriendo y/o notaste una “pedrada” (golpe brusco en el muslo posterior)?",
-        en: "Were you running and/or did you feel a sudden “stone-hit” sensation in the back of the thigh?",
+        es: "¿Ibas corriendo o acelerando y notaste una “pedrada” o tirón brusco en la parte de atrás del muslo?",
+        en: "Were you running or accelerating and felt a sudden “stone-hit” or pull in the back of the thigh?",
+      },
+    },
+    {
+      id: "hx_stretch_mechanism",
+      question: {
+        es: "¿Ocurrió al estirar mucho la pierna (zancada larga, split, patada alta o tackle)?",
+        en: "Did it happen when stretching the leg a lot (long stride, split, high kick, or tackle)?",
       },
     },
     {
       id: "hx_hand_back",
       question: {
-        es: "¿Te llevaste la mano hacia atrás cuando lo notaste?",
+        es: "¿Te llevaste la mano hacia atrás del muslo cuando lo notaste?",
         en: "Did you reach your hand toward the back of the thigh when you felt it?",
       },
     },
     {
       id: "hx_keep_running",
+      positiveWhen: "no",
       question: {
-        es: "¿Pudiste seguir corriendo después?",
-        en: "Were you able to keep running afterward?",
+        es: "¿Pudiste seguir corriendo o jugando después del tirón?",
+        en: "Were you able to keep running or playing after the pull?",
       },
     },
     {
       id: "hx_deadlift_heavy",
       question: {
-        es: "¿Estabas haciendo peso muerto con mucho peso?",
-        en: "Were you doing a heavy deadlift?",
+        es: "¿Estabas haciendo peso muerto u otro gesto de hingear la cadera con mucho peso?",
+        en: "Were you doing a heavy deadlift or another hip-hinge lift?",
+      },
+    },
+    {
+      id: "hx_location_mid",
+      question: {
+        es: "¿El dolor principal está en la mitad de la parte de atrás del muslo (no junto al glúteo)?",
+        en: "Is the main pain in the middle of the back of the thigh (not right next to the buttock)?",
+      },
+    },
+    {
+      id: "hx_location_proximal",
+      question: {
+        es: "¿El dolor principal está cerca del glúteo o del hueso al sentarte (isquion)?",
+        en: "Is the main pain near the buttock or the sit bone?",
       },
     },
   ],
@@ -282,8 +310,8 @@ export const HAMSTRING_PROTOCOL: FunctionalProtocol = {
     {
       id: "test_knee_flexion",
       question: {
-        es: "¿Duele al flexionar la rodilla (llevar el talón hacia el glúteo)?",
-        en: "Does it hurt when flexing the knee (heel toward the buttock)?",
+        es: "¿Duele al flexionar la rodilla llevando el talón hacia el glúteo?",
+        en: "Does it hurt when bending the knee (heel toward the buttock)?",
       },
     },
     {
@@ -294,35 +322,63 @@ export const HAMSTRING_PROTOCOL: FunctionalProtocol = {
       },
     },
     {
-      id: "pain_nprs",
+      id: "test_sitting_hard",
       question: {
-        es: "¿El dolor es fuerte (más de 4 sobre 10)?",
-        en: "Is the pain strong (more than 4 out of 10)?",
+        es: "¿Duele al sentarte en una silla dura o mucho rato?",
+        en: "Does it hurt when sitting on a hard chair or for a long time?",
+      },
+    },
+    {
+      id: "test_walk_stairs",
+      question: {
+        es: "¿Duele al caminar o al subir escaleras?",
+        en: "Does it hurt when walking or climbing stairs?",
+      },
+    },
+    {
+      id: "test_hematoma",
+      question: {
+        es: "¿Hay hematoma (moratón) o hinchazón visible en el muslo?",
+        en: "Is there a visible bruise (hematoma) or swelling on the thigh?",
+      },
+    },
+    {
+      id: "test_jog_accelerate",
+      question: {
+        es: "Si es seguro: ¿empeora al trotar suave o al intentar acelerar?",
+        en: "If safe: does it worsen when jogging lightly or trying to accelerate?",
+      },
+    },
+    {
+      id: "test_neural_screen_hs",
+      question: {
+        es: "¿Tienes dolor de espalda u hormigueo que baja por debajo de la rodilla?",
+        en: "Do you have back pain or tingling that goes below the knee?",
       },
     },
     {
       id: "test_nordic_curl",
       question: {
-        es: "¿Duele al hacer curl nórdico (o el gesto de curl nórdico, aunque sea suave)?",
-        en: "Does it hurt when doing a Nordic curl (or a gentle Nordic-curl motion)?",
+        es: "Si el dolor es leve y es seguro: ¿duele al hacer el gesto suave de curl nórdico?",
+        en: "If pain is mild and it is safe: does a gentle Nordic-curl motion hurt?",
       },
     },
   ],
-  suspectThreshold: 0.5,
+  suspectThreshold: 0.4,
   restHoursMin: 24,
   restHoursMax: 36,
   retestNotifyHours: 36,
   restProtocolNote: {
     es:
-      "Protocolo establecido: 24–36 h de reposo relativo (evitar sprint, estiramientos agresivos y peso muerto pesado). Luego repetir exactamente los mismos tests (flexión, punta de pies, dolor 1–10, curl nórdico).",
+      "Protocolo: 24–36 h de reposo relativo (evitar sprint, estiramientos agresivos, peso muerto pesado y Nordic forzado). Luego repetir exactamente los mismos tests Sí/No (flexión, puntas, sentarse, caminar/escaleras, hematoma, trote si seguro, cribado neural).",
     en:
-      "Established protocol: 24–36 h of relative rest (avoid sprinting, aggressive stretching, and heavy deadlifts). Then repeat exactly the same tests (knee flexion, toe touch, pain 1–10, Nordic curl).",
+      "Protocol: 24–36 h relative rest (avoid sprinting, aggressive stretching, heavy deadlifts, and forced Nordics). Then repeat exactly the same yes/no tests (knee flexion, toe touch, sitting, walk/stairs, bruise, jog if safe, neural screen).",
   },
   ifRetestStillPositive: {
     es:
-      "Si al repetir los tests (tras ~36 h) sigue doliendo, recomendar ecografía (ultrasonido) de isquiotibiales.",
+      "Si al repetir los tests (tras ~36 h) sigue doliendo: ecografía (US) de isquiotibiales. Si una eco ya fue «normal» y el dolor sigue igual días después: segunda eco en otro centro o RMN.",
     en:
-      "If on retest (after ~36 h) it still hurts, recommend an ultrasound of the hamstrings.",
+      "If on retest (after ~36 h) it still hurts: ultrasound (US) of the hamstrings. If an ultrasound was already “normal” and pain is unchanged days later: a second US elsewhere or an MRI.",
   },
   ifNegativeUltrasoundPersistentPain: NEGATIVE_US_PERSISTENT_PAIN_NOTE,
 };

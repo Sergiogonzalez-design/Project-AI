@@ -75,6 +75,7 @@ export function AppTabs({
       />
     ),
     tabBarStyle: { display: "none" as const },
+    animation: "none" as const,
   };
 
   return (

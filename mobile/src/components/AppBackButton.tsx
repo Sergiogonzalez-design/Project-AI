@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import React from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Colors } from "../lib/colors";
 import type { TabParamList } from "../navigation/AppTabs";
 
@@ -34,7 +34,7 @@ export function AppBackButton({ onPress }: Props) {
   const landingRoute = getLandingRoute(navigation);
 
   if (!onPress && route.name === landingRoute) {
-    return null;
+    return <View style={styles.btn} pointerEvents="none" accessibilityElementsHidden />;
   }
 
   function handlePress() {

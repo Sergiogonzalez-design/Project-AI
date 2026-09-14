@@ -25,7 +25,9 @@ export function LoginForm({
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [inviteCode, setInviteCode] = useState(initialCode);
+  const [inviteCode, setInviteCode] = useState(() =>
+    parsePastedInviteCode(initialCode)
+  );
   const [error, setError] = useState<string | null>(null);
   const [guestError, setGuestError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -194,13 +196,17 @@ export function LoginForm({
         </label>
         <input
           id="guest-code"
+          name="physio-invite-code"
           value={inviteCode}
           onChange={(e) => setInviteCode(parsePastedInviteCode(e.target.value))}
           placeholder={copy.guestCodePlaceholder}
           autoCapitalize="characters"
           autoCorrect="off"
           spellCheck={false}
-          autoComplete="off"
+          autoComplete="one-time-code"
+          inputMode="text"
+          data-lpignore="true"
+          data-1p-ignore="true"
           disabled={busy}
           className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono text-sm tracking-widest text-slate-900 uppercase placeholder:tracking-normal placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
         />

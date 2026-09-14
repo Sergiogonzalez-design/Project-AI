@@ -275,7 +275,7 @@ export default async function SobreNosotrosPage() {
             {STEPS.map((s, idx) => (
               <div
                 key={s.title}
-                className="relative rounded-3xl border border-slate-200 bg-slate-50/80 p-7 transition hover:-translate-y-1 hover:border-blue-200 hover:bg-white hover:shadow-[var(--shadow-elevated)]"
+                className="relative rounded-3xl border border-slate-200 bg-slate-100 p-7 transition hover:-translate-y-1 hover:border-blue-200 hover:bg-slate-100 hover:shadow-[var(--shadow-elevated)]"
               >
                 <div className="mb-5 flex items-center justify-between">
                   <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[var(--shadow-primary)]">
@@ -323,33 +323,15 @@ export default async function SobreNosotrosPage() {
             {BENEFITS.map((b) => (
               <article
                 key={b.title}
-                className={`group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[var(--shadow-elevated)] ${
-                  b.wide ? "sm:col-span-2 lg:col-span-2 lg:bg-slate-950 lg:text-white" : ""
+                className={`group rounded-3xl border border-slate-200 bg-slate-100 p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[var(--shadow-elevated)] ${
+                  b.wide ? "sm:col-span-2 lg:col-span-2" : ""
                 }`}
               >
-                <div
-                  className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${
-                    b.wide
-                      ? "bg-blue-500 text-white"
-                      : "bg-blue-50 text-blue-700"
-                  }`}
-                >
+                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                   <b.Icon className="h-5 w-5" strokeWidth={1.8} />
                 </div>
-                <h3
-                  className={`text-base font-bold ${
-                    b.wide ? "text-white" : "text-slate-900"
-                  }`}
-                >
-                  {b.title}
-                </h3>
-                <p
-                  className={`mt-2 text-sm leading-relaxed ${
-                    b.wide ? "text-slate-300" : "text-slate-500"
-                  }`}
-                >
-                  {b.desc}
-                </p>
+                <h3 className="text-base font-bold text-slate-900">{b.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-500">{b.desc}</p>
               </article>
             ))}
           </div>
@@ -357,7 +339,7 @@ export default async function SobreNosotrosPage() {
       </section>
 
       <section className="bg-amber-50 px-4 py-6 sm:px-6">
-        <div className="mx-auto flex max-w-4xl items-start gap-3 rounded-2xl border border-amber-200 bg-white/70 px-5 py-4 text-sm text-amber-900 sm:items-center">
+        <div className="mx-auto flex max-w-4xl items-start gap-3 rounded-2xl border border-amber-200 bg-slate-100 px-5 py-4 text-sm text-amber-900 sm:items-center">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 sm:mt-0" />
           <p>
             AIKinora proporciona orientación informativa, no diagnósticos
@@ -380,7 +362,7 @@ export default async function SobreNosotrosPage() {
           </div>
 
           {news.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-8 py-16 text-center">
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-100 px-8 py-16 text-center">
               <Newspaper className="mx-auto mb-3 h-10 w-10 text-slate-300" strokeWidth={1.5} />
               <p className="text-sm text-slate-500">
                 Próximamente publicaremos novedades y artículos del equipo.
@@ -432,7 +414,7 @@ export default async function SobreNosotrosPage() {
                   <Link
                     key={post.id}
                     href={`/sobre-nosotros/noticia/${post.id}`}
-                    className="flex gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-white hover:shadow-sm"
+                    className="flex gap-4 rounded-2xl border border-slate-200 bg-slate-100 p-4 transition hover:border-blue-200 hover:bg-slate-100 hover:shadow-sm"
                   >
                     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-200">
                       {post.image_url ? (
@@ -508,7 +490,7 @@ export default async function SobreNosotrosPage() {
             {TEAM.map((member) => (
               <article
                 key={member.name}
-                className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm"
+                className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-100 p-8 shadow-sm"
               >
                 <div
                   className={`absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${member.accent} opacity-20 blur-2xl`}
@@ -550,7 +532,7 @@ export default async function SobreNosotrosPage() {
             {VALUES.map((v) => (
               <article
                 key={v.title}
-                className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-left transition hover:border-blue-200 hover:bg-white hover:shadow-[var(--shadow-elevated)]"
+                className="rounded-3xl border border-slate-200 bg-slate-100 p-6 text-left transition hover:border-blue-200 hover:bg-slate-100 hover:shadow-[var(--shadow-elevated)]"
               >
                 <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
                   <v.Icon className="h-5 w-5" strokeWidth={1.8} />

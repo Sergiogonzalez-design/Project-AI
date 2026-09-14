@@ -66,6 +66,9 @@ export function AboutUsScreen() {
       navigation.setOptions({
         headerShown: !selectedNews && !showLegal,
       });
+      return () => {
+        navigation.setOptions({ headerShown: true });
+      };
     }, [navigation, selectedNews, showLegal])
   );
 
@@ -257,36 +260,20 @@ export function AboutUsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.hero}>
-        <View style={styles.heroBlobA} />
-        <View style={styles.heroBlobB} />
-        <View style={styles.heroEyebrow}>
-          <Ionicons name="sparkles" size={12} color={Colors.white} />
-          <Text style={styles.heroEyebrowText}>{t.about.heroEyebrow}</Text>
-        </View>
-        <View style={styles.heroLogoWrap}>
-          <Image
-            source={require("../../assets/logo.png")}
-            style={styles.heroLogo}
-            accessibilityLabel={brandName(locale)}
-          />
-        </View>
+        <Image
+          source={require("../../assets/logo.png")}
+          style={styles.heroLogo}
+          accessibilityLabel={brandName(locale)}
+        />
         <Text style={styles.heroTitle}>{brandName(locale)}</Text>
         <Text style={styles.heroHeadline}>{t.about.heroHeadline}</Text>
         <Text style={styles.heroSub}>{t.about.tagline}</Text>
-        <View style={styles.heroStats}>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatText}>{t.about.statAlways}</Text>
-          </View>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatText}>{t.about.statPrivate}</Text>
-          </View>
-        </View>
         <Pressable
           style={({ pressed }) => [styles.heroCta, pressed && { opacity: 0.9 }]}
           onPress={() => navigateToPrimaryWorkspace(navigation)}
         >
           <Text style={styles.heroCtaText}>{startCtaLabel}</Text>
-          <Ionicons name="arrow-forward" size={16} color={Colors.primary} />
+          <Ionicons name="arrow-forward" size={16} color={Colors.white} />
         </Pressable>
       </View>
 
@@ -399,7 +386,6 @@ export function AboutUsScreen() {
           role={t.about.davidRole}
           bio={t.about.davidBio}
           credentials={davidCredentials}
-          gradient="blue"
         />
         <TeamCard
           initials="SG"
@@ -407,19 +393,20 @@ export function AboutUsScreen() {
           role={t.about.sergioRole}
           bio={t.about.sergioBio}
           credentials={sergioCredentials}
-          gradient="cyan"
         />
       </View>
 
       <Text style={styles.sectionTitle}>{t.about.valuesTitle}</Text>
-      <View style={styles.valuesGrid}>
+      <View style={styles.valuesList}>
         {values.map((v) => (
-          <View key={v.title} style={styles.valueCard}>
+          <View key={v.title} style={styles.valueRow}>
             <View style={styles.valueIcon}>
               <Ionicons name={v.icon} size={18} color={Colors.primary} />
             </View>
-            <Text style={styles.valueTitle}>{v.title}</Text>
-            <Text style={styles.valueDesc}>{v.desc}</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.valueTitle}>{v.title}</Text>
+              <Text style={styles.valueDesc}>{v.desc}</Text>
+            </View>
           </View>
         ))}
       </View>
@@ -531,30 +518,17 @@ function TeamCard({
   role,
   bio,
   credentials,
-  gradient,
 }: {
   initials: string;
   name: string;
   role: string;
   bio: string;
   credentials: string[];
-  gradient: "blue" | "cyan";
 }) {
   return (
     <View style={styles.teamCard}>
-      <View
-        style={[
-          styles.teamAccent,
-          gradient === "cyan" ? styles.teamAccentCyan : styles.teamAccentBlue,
-        ]}
-      />
       <View style={styles.teamHeader}>
-        <View
-          style={[
-            styles.teamAvatar,
-            gradient === "cyan" ? styles.teamAvatarCyan : styles.teamAvatarBlue,
-          ]}
-        >
+        <View style={styles.teamAvatar}>
           <Text style={styles.teamInitials}>{initials}</Text>
         </View>
         <View style={{ flex: 1 }}>
@@ -578,138 +552,77 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   container: { flexGrow: 1, padding: 20, paddingBottom: 48 },
   hero: {
-    overflow: "hidden",
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: 20,
     marginTop: 4,
-    backgroundColor: "#0F172A",
-    borderRadius: 28,
-    paddingVertical: 32,
-    paddingHorizontal: 22,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
   },
-  heroBlobA: {
-    position: "absolute",
-    top: -50,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "rgba(37,99,235,0.45)",
-  },
-  heroBlobB: {
-    position: "absolute",
-    bottom: -60,
-    left: -50,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "rgba(34,211,238,0.18)",
-  },
-  heroEyebrow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 16,
-  },
-  heroEyebrowText: {
-    color: "#DBEAFE",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  heroLogoWrap: {
-    backgroundColor: Colors.white,
-    borderRadius: 22,
-    padding: 12,
-    marginBottom: 14,
-  },
-  heroLogo: { width: 72, height: 72, resizeMode: "contain" },
+  heroLogo: { width: 64, height: 64, resizeMode: "contain", marginBottom: 12 },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
-    color: Colors.white,
-    letterSpacing: -0.8,
+    color: Colors.text,
+    letterSpacing: -0.5,
     textAlign: "center",
   },
   heroHeadline: {
     marginTop: 8,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#BFDBFE",
+    color: Colors.text,
     textAlign: "center",
-    letterSpacing: -0.3,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   heroSub: {
     fontSize: 13,
-    color: "#94A3B8",
-    marginTop: 10,
+    color: Colors.textSecondary,
+    marginTop: 8,
     textAlign: "center",
-    lineHeight: 20,
-  },
-  heroStats: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 16,
-  },
-  heroStat: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  heroStatText: {
-    color: Colors.white,
-    fontSize: 11,
-    fontWeight: "700",
+    lineHeight: 19,
   },
   heroCta: {
-    marginTop: 18,
+    marginTop: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: Colors.white,
-    borderRadius: 16,
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
   heroCtaText: {
-    color: Colors.primary,
+    color: Colors.white,
     fontSize: 14,
     fontWeight: "800",
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: Colors.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
     marginTop: 18,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   sectionEyebrow: {
-    marginTop: 20,
-    marginBottom: -8,
+    marginTop: 16,
+    marginBottom: -6,
     fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.4,
+    fontWeight: "700",
+    letterSpacing: 0.8,
     textTransform: "uppercase",
-    color: Colors.primary,
+    color: Colors.textSecondary,
   },
   sectionTitleCentered: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "800",
-    color: Colors.white,
-    letterSpacing: -0.4,
-    marginBottom: 12,
+    color: Colors.text,
+    letterSpacing: -0.3,
+    marginBottom: 10,
     textAlign: "center",
   },
   timeline: { marginBottom: 8 },
@@ -719,40 +632,41 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primarySoft,
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
     alignItems: "center",
     justifyContent: "center",
   },
-  timelineNum: { color: Colors.white, fontSize: 12, fontWeight: "800" },
+  timelineNum: { color: Colors.primary, fontSize: 12, fontWeight: "800" },
   timelineLine: {
     flex: 1,
     width: 2,
     marginVertical: 4,
-    backgroundColor: Colors.borderStrong,
+    backgroundColor: Colors.border,
   },
   timelineCard: {
     flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 16,
     marginBottom: 12,
   },
   howIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: Colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
   },
   howTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
     color: Colors.text,
-    letterSpacing: -0.2,
     marginBottom: 6,
   },
   howBody: {
@@ -762,37 +676,31 @@ const styles = StyleSheet.create({
   },
   ctaBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingVertical: 15,
+    borderRadius: 14,
+    paddingVertical: 14,
     paddingHorizontal: 18,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 8,
-    marginBottom: 18,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
+    marginBottom: 16,
   },
   ctaBtnPressed: { backgroundColor: Colors.primaryDark },
   ctaBtnText: {
     color: Colors.white,
     fontSize: 15,
     fontWeight: "700",
-    letterSpacing: -0.2,
   },
   disclaimer: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    backgroundColor: "#FEF3C7",
+    backgroundColor: Colors.warningSoft,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#FDE68A",
     padding: 14,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   disclaimerText: {
     flex: 1,
@@ -802,18 +710,17 @@ const styles = StyleSheet.create({
   },
   emptyNews: {
     alignItems: "center",
-    backgroundColor: Colors.white,
-    borderRadius: 22,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
     borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: Colors.borderStrong,
-    padding: 28,
+    borderColor: Colors.border,
+    padding: 24,
     marginBottom: 8,
   },
   emptyNewsIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: Colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
@@ -829,16 +736,16 @@ const styles = StyleSheet.create({
   newsCarousel: { paddingHorizontal: 20, paddingRight: 20, gap: 12 },
   newsCard: {
     width: 260,
-    backgroundColor: Colors.white,
-    borderRadius: 22,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: "hidden",
   },
   newsCover: {
     width: "100%",
-    height: 132,
-    backgroundColor: Colors.primarySoft,
+    height: 120,
+    backgroundColor: Colors.background,
   },
   newsCoverEmpty: {
     alignItems: "center",
@@ -848,16 +755,15 @@ const styles = StyleSheet.create({
   newsDate: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.primary,
+    color: Colors.textSecondary,
     marginBottom: 4,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   newsTitle: {
     fontSize: 15,
-    fontWeight: "800",
+    fontWeight: "700",
     color: Colors.text,
-    letterSpacing: -0.2,
     marginBottom: 8,
   },
   newsRead: {
@@ -882,16 +788,16 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 180,
     maxHeight: 420,
-    borderRadius: 20,
+    borderRadius: 16,
     marginBottom: 18,
-    backgroundColor: Colors.primarySoft,
+    backgroundColor: Colors.background,
   },
   detailHeroEmpty: {
     width: "100%",
     height: 180,
-    borderRadius: 20,
+    borderRadius: 16,
     marginBottom: 18,
-    backgroundColor: Colors.primarySoft,
+    backgroundColor: Colors.background,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -909,10 +815,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   detailTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "800",
     color: Colors.text,
-    letterSpacing: -0.5,
     marginBottom: 12,
   },
   detailBody: {
@@ -921,72 +826,59 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   missionBox: {
-    backgroundColor: "#0F172A",
-    borderRadius: 24,
-    padding: 22,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 20,
     marginBottom: 8,
-    overflow: "hidden",
   },
   missionQuoteMark: {
     position: "absolute",
-    top: -8,
+    top: 4,
     left: 12,
-    fontSize: 84,
-    color: "rgba(255,255,255,0.08)",
+    fontSize: 64,
+    color: Colors.border,
     fontWeight: "800",
   },
   missionBody: {
     fontSize: 14,
     lineHeight: 22,
-    color: "#CBD5E1",
+    color: Colors.textSecondary,
     textAlign: "center",
   },
-  teamList: { gap: 14, marginBottom: 8 },
+  teamList: { gap: 12, marginBottom: 8 },
   teamCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 22,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 18,
-    overflow: "hidden",
+    padding: 16,
   },
-  teamAccent: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: 5,
-  },
-  teamAccentBlue: { backgroundColor: Colors.primary },
-  teamAccentCyan: { backgroundColor: "#0891B2" },
   teamHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   teamAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: Colors.primarySoft,
   },
-  teamAvatarBlue: { backgroundColor: Colors.primary },
-  teamAvatarCyan: { backgroundColor: "#0891B2" },
   teamInitials: {
-    color: Colors.white,
-    fontSize: 18,
+    color: Colors.primary,
+    fontSize: 15,
     fontWeight: "800",
   },
   teamName: {
     fontSize: 16,
     fontWeight: "800",
     color: Colors.text,
-    letterSpacing: -0.3,
   },
   teamRole: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: 12,
-    fontWeight: "700",
-    color: Colors.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    fontWeight: "600",
+    color: Colors.textSecondary,
   },
   teamBio: {
     marginTop: 12,
@@ -997,44 +889,41 @@ const styles = StyleSheet.create({
   credList: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 6 },
   credChip: {
     borderRadius: 999,
-    backgroundColor: Colors.primarySoft,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  credText: { fontSize: 11, fontWeight: "600", color: Colors.primaryDark },
-  valuesGrid: {
+  credText: { fontSize: 11, fontWeight: "600", color: Colors.textSecondary },
+  valuesList: { gap: 10, marginBottom: 8 },
+  valueRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 8,
-  },
-  valueCard: {
-    width: "48%",
-    flexGrow: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 20,
+    alignItems: "flex-start",
+    gap: 12,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 16,
+    padding: 14,
   },
   valueIcon: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: Colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
   },
   valueTitle: {
-    fontSize: 13,
-    fontWeight: "800",
+    fontSize: 14,
+    fontWeight: "700",
     color: Colors.text,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   valueDesc: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 18,
     color: Colors.textSecondary,
   },
   legalBox: {
@@ -1051,8 +940,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: Colors.white,
-    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 14,
@@ -1072,32 +961,33 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   contactBox: {
-    borderRadius: 24,
+    borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.white,
+    backgroundColor: "#F1F5F9",
   },
   contactHeader: {
-    backgroundColor: "#0F172A",
-    padding: 22,
+    backgroundColor: "#E2E8F0",
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    padding: 18,
   },
   contactTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
-    color: Colors.white,
-    letterSpacing: -0.4,
-    marginBottom: 8,
+    color: Colors.text,
+    marginBottom: 6,
   },
   contactBody: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#94A3B8",
+    fontSize: 13,
+    lineHeight: 19,
+    color: Colors.textSecondary,
   },
   contactForm: {
     width: "100%",
     alignItems: "stretch",
-    padding: 18,
+    padding: 16,
   },
   contactLabel: {
     fontSize: 13,

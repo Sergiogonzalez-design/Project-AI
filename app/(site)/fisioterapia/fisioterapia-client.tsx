@@ -5,7 +5,7 @@ import { GuestNameGate } from "@/components/guest-name-gate";
 import { NavBackButton } from "@/components/nav-back-button";
 import { PhysioCodeGate } from "@/components/physio-code-gate";
 import { createClient } from "@/lib/supabase/client";
-import { guestNameStorageKey, isGuestUser } from "@/lib/guest-account";
+import { guestNameStorageKey, isGuestUser, isGuestDisplayNameSet } from "@/lib/guest-account";
 import { useEffect, useState } from "react";
 
 type LinkedPhysio = {
@@ -17,21 +17,14 @@ type LinkedPhysio = {
 /** Avoid a loading flash every time the user switches Consulta ↔ Fisioterapia. */
 let linkedPhysioCache: LinkedPhysio | null | undefined;
 
-function hasNamedThisGuest(userId: string): boolean {
-  try {
-    return sessionStorage.getItem(guestNameStorageKey(userId)) === "1";
-  } catch {
-    return false;
-  }
-}
-
 export function FisioterapiaClient() {
   const [linked, setLinked] = useState<LinkedPhysio | null>(() =>
     linkedPhysioCache?.physio_id ? linkedPhysioCache : null
   );
   const [guestMode, setGuestMode] = useState(false);
   const [needsName, setNeedsName] = useState(false);
-  const [ready, setReady] = useState(Boolean(linkedPhysioCache?.physio_id));
+  // Always resolve auth + guest name before showing chat (avoids skipping the name gate).
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,24 +57,24 @@ export function FisioterapiaClient() {
         linkedPhysioCache = next;
 
         if (guest) {
-          if (hasNamedThisGuest(user.id)) {
-            setNeedsName(false);
-          } else {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("display_name")
-              .eq("id", user.id)
-              .maybeSingle();
-            const named = ((profile?.display_name as string | null) ?? "").trim().length >= 2;
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          const named = isGuestDisplayNameSet(
+            (profile?.display_name as string | null) ?? null
+          );
+          try {
             if (named) {
-              try {
-                sessionStorage.setItem(guestNameStorageKey(user.id), "1");
-              } catch {
-                // ignore
-              }
+              sessionStorage.setItem(guestNameStorageKey(user.id), "1");
+            } else {
+              sessionStorage.removeItem(guestNameStorageKey(user.id));
             }
-            if (!cancelled) setNeedsName(!named);
+          } catch {
+            // ignore private-mode storage errors
           }
+          if (!cancelled) setNeedsName(!named);
         }
 
         if (!cancelled) {

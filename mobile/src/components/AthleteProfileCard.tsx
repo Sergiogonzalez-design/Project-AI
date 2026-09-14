@@ -11,6 +11,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { AddressAutocomplete } from "./AddressAutocomplete";
+import {
+  emptyAddressValue,
+  formatAddressLabel,
+  type AddressValue,
+} from "../lib/address-search";
 import {
   COMPETITIVE_LEVELS,
   CURRENT_SEASONS,
@@ -31,7 +37,10 @@ type ProfileData = {
   weight_kg: number | null;
   dominant_hand: string | null;
   dominant_foot: string | null;
+  address: string | null;
   city: string | null;
+  postal_code: string | null;
+  country: string | null;
   primary_sport: string | null;
   sport_position: string | null;
   competitive_level: string | null;
@@ -65,7 +74,7 @@ export function AthleteProfileCard() {
   const [weightKg, setWeightKg] = useState("");
   const [dominantHand, setDominantHand] = useState("");
   const [dominantFoot, setDominantFoot] = useState("");
-  const [city, setCity] = useState("");
+  const [location, setLocation] = useState<AddressValue>(emptyAddressValue());
   const [primarySport, setPrimarySport] = useState("");
   const [sportPosition, setSportPosition] = useState("");
   const [competitiveLevel, setCompetitiveLevel] = useState("");
@@ -81,7 +90,16 @@ export function AthleteProfileCard() {
     setWeightKg(data.weight_kg?.toString() ?? "");
     setDominantHand(data.dominant_hand ?? "");
     setDominantFoot(data.dominant_foot ?? "");
-    setCity(data.city ?? "");
+    const loc = {
+      address: data.address ?? "",
+      city: data.city ?? "",
+      postalCode: data.postal_code ?? "",
+      country: data.country ?? "",
+    };
+    setLocation({
+      ...loc,
+      query: formatAddressLabel(loc),
+    });
     setPrimarySport(data.primary_sport ?? "");
     setSportPosition(data.sport_position ?? "");
     setCompetitiveLevel(data.competitive_level ?? "");
@@ -99,7 +117,7 @@ export function AthleteProfileCard() {
       const { data } = await supabase
         .from("profiles")
         .select(
-          "age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, city, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
+          "age, sex, height_cm, weight_kg, dominant_hand, dominant_foot, address, city, postal_code, country, primary_sport, sport_position, competitive_level, sessions_per_week, hours_per_week, current_season, performance_goals"
         )
         .eq("id", user.id)
         .single();
@@ -148,7 +166,10 @@ export function AthleteProfileCard() {
         weight_kg: Number(weightKg),
         dominant_hand: dominantHand,
         dominant_foot: dominantFoot,
-        city: city.trim() || null,
+        address: location.address.trim() || null,
+        city: location.city.trim() || null,
+        postal_code: location.postalCode.trim() || null,
+        country: location.country.trim() || null,
         primary_sport: primarySport.trim()
           ? normalizeSportsInput(primarySport)
           : null,
@@ -246,7 +267,15 @@ export function AthleteProfileCard() {
             />
             <Row label="Mano" value={profile?.dominant_hand} />
             <Row label="Pie" value={profile?.dominant_foot} />
-            <Row label="Ciudad" value={profile?.city} />
+            <Row
+              label="Dirección"
+              value={formatAddressLabel({
+                address: profile?.address,
+                city: profile?.city,
+                postalCode: profile?.postal_code,
+                country: profile?.country,
+              })}
+            />
             <Row label="Deporte" value={profile?.primary_sport} />
             {sportHasPosition(profile?.primary_sport ?? "") && (
               <Row label="Posición" value={profile?.sport_position} />
@@ -306,13 +335,7 @@ export function AthleteProfileCard() {
           <ChipPicker options={DOMINANT_HAND_OPTIONS} value={dominantHand} onSelect={setDominantHand} />
           <Text style={styles.fieldLabel}>Pie dominante</Text>
           <ChipPicker options={DOMINANT_FOOT_OPTIONS} value={dominantFoot} onSelect={setDominantFoot} />
-          <Text style={styles.fieldLabel}>Ciudad (opcional)</Text>
-          <TextInput
-            style={styles.input}
-            value={city}
-            onChangeText={setCity}
-            placeholder="Ej: Madrid"
-          />
+          <AddressAutocomplete value={location} onChange={setLocation} />
           <Text style={styles.fieldLabel}>¿Qué deporte practicas? (opcional)</Text>
           <TextInput
             style={styles.input}
@@ -333,10 +356,30 @@ export function AthleteProfileCard() {
           )}
           <Text style={styles.fieldLabel}>Nivel (opcional)</Text>
           <ChipPicker options={COMPETITIVE_LEVELS} value={competitiveLevel} onSelect={setCompetitiveLevel} />
-          <Text style={styles.fieldLabel}>Sesiones / Horas por semana (opcional)</Text>
+          <Text style={styles.fieldLabel}>Entrenamiento semanal (opcional)</Text>
           <View style={styles.twoCol}>
-            <TextInput style={[styles.input, styles.halfInput]} value={sessionsPerWeek} onChangeText={setSessionsPerWeek} keyboardType="numeric" />
-            <TextInput style={[styles.input, styles.halfInput]} value={hoursPerWeek} onChangeText={setHoursPerWeek} keyboardType="numeric" />
+            <View style={styles.halfField}>
+              <Text style={styles.subLabel}>Sesiones</Text>
+              <TextInput
+                style={styles.input}
+                value={sessionsPerWeek}
+                onChangeText={setSessionsPerWeek}
+                keyboardType="numeric"
+                placeholder="Ej. 4"
+                placeholderTextColor={Colors.textSecondary}
+              />
+            </View>
+            <View style={styles.halfField}>
+              <Text style={styles.subLabel}>Horas</Text>
+              <TextInput
+                style={styles.input}
+                value={hoursPerWeek}
+                onChangeText={setHoursPerWeek}
+                keyboardType="numeric"
+                placeholder="Ej. 8"
+                placeholderTextColor={Colors.textSecondary}
+              />
+            </View>
           </View>
           <Text style={styles.fieldLabel}>Temporada (opcional)</Text>
           <ChipPicker options={CURRENT_SEASONS} value={currentSeason} onSelect={setCurrentSeason} />
@@ -393,12 +436,19 @@ const styles = StyleSheet.create({
   modalContent: { flexGrow: 1, padding: 20, paddingBottom: 48 },
   modalTitle: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 20 },
   fieldLabel: { fontSize: 13, fontWeight: "600", color: Colors.text, marginTop: 14, marginBottom: 6 },
+  subLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
   hint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
   input: {
     borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: Colors.text, backgroundColor: Colors.surface,
   },
-  twoCol: { flexDirection: "row", gap: 10 },
+  twoCol: { flexDirection: "row", gap: 10, alignItems: "flex-end" },
+  halfField: { flex: 1, minWidth: 0 },
   halfInput: { flex: 1 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: Colors.surface },

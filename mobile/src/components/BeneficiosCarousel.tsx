@@ -19,7 +19,7 @@ const BENEFIT_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
 ];
 
 const ROTATION_MS = 10000;
-const CARD_HEIGHT = 260;
+const CARD_HEIGHT = 200;
 
 export function BeneficiosCarousel() {
   const { t, locale } = useI18n();
@@ -120,9 +120,8 @@ export function BeneficiosCarousel() {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{t.about.benefits}</Text>
       <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
-        <View style={styles.cardGlow} />
         <View style={styles.iconWrap}>
-          <Ionicons name={benefit.icon} size={32} color={Colors.white} />
+          <Ionicons name={benefit.icon} size={22} color={Colors.primary} />
         </View>
         <Text style={styles.cardTitle} numberOfLines={2}>
           {benefit.title}
@@ -188,41 +187,34 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   card: {
-    backgroundColor: "#0F172A",
-    borderRadius: 22,
-    padding: 24,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 20,
     height: CARD_HEIGHT,
     overflow: "hidden",
   },
-  cardGlow: {
-    position: "absolute",
-    top: -40,
-    right: -30,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "rgba(37,99,235,0.45)",
-  },
   iconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    marginBottom: 14,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
-    color: Colors.white,
-    marginBottom: 10,
-    lineHeight: 24,
+    color: Colors.text,
+    marginBottom: 8,
+    lineHeight: 22,
   },
   cardBody: {
-    fontSize: 15,
-    color: "#BFDBFE",
-    lineHeight: 22,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
   },
   controls: {
     flexDirection: "row",
@@ -235,7 +227,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.white,
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: "center",

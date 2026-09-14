@@ -79,11 +79,15 @@ No rellenar cifras inventadas. Usar cualitativo + cita:
 | Tema | Mensaje | Fuente ancla |
 |------|---------|--------------|
 | Spurling aislado | Suele ser más específico que sensible; − no excluye | Tong/Haig; Wainner; revisiones Spurling |
-| Canadian C-Spine | Regla validada de imagen tras trauma; seguir protocolo local | Stiell JAMA 2001 |
+| Canadian C-Spine | Regla validada de imagen tras trauma cervical; seguir protocolo local — no inventar umbrales aquí | Stiell et al. *JAMA* 2001 |
+| Ottawa Knee | Regla validada de imagen tras trauma de rodilla; alta sensibilidad reportada en validaciones — citar paper, no inventar % de memoria | Stiell et al. (Ottawa Knee Rules); metas posteriores |
 | Menisco McMurray/Thessaly | Precisión aislada mixta/limitada | Hegedus; Solomon JAMA RCE |
 | FADIR | No confirma FAI; morfología ≠ dolor | Warwick Agreement; Reiman |
 | Laslett SI | Composite limitado; no confirma SIJ | Hancock; Laslett |
 | MTrP palpación | Fiabilidad limitada | Tough 2007; Lucas 2009 |
+| DC/TMD | Criterios clínicos de clasificación — no Sn/Sp inventados en chat | Schiffman et al. DC/TMD |
+| ACS / CECS | ACS = urgencia clínica; CECS = hipótesis de esfuerzo — **nunca** umbrales mmHg inventados | Temas clínicos compartimentales |
+| PGP / ASLR | Carga pélvica cualitativa (embarazo/postparto) | Mens; European PGP guidelines |
 
 ---
 

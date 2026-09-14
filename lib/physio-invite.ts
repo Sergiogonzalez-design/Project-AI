@@ -16,19 +16,38 @@ export function normalizeInviteCode(raw: string | null | undefined): string {
   return (raw ?? "").trim().toUpperCase().replace(/\s+/g, "");
 }
 
+/** True for a real invite token — not a URL, host, or email leftover. */
+export function looksLikeInviteCode(code: string | null | undefined): boolean {
+  const c = normalizeInviteCode(code);
+  if (c.length < 6 || c.length > 24) return false;
+  // Reject URL/domain fragments (e.g. HTTPS://AIKINORA.COM, GUESTS.AIKINORA.APP)
+  if (/[.:/@]/.test(c)) return false;
+  if (!/^[A-Z0-9]+$/.test(c)) return false;
+  return true;
+}
+
 /** Accept a raw code or a pasted invite URL (`/unirse?code=…` or `/login?code=…`). */
 export function parsePastedInviteCode(raw: string | null | undefined): string {
   const text = (raw ?? "").trim();
   if (!text) return "";
   const fromQuery = /[?&#]code=([^&\s#]+)/i.exec(text);
   if (fromQuery) {
+    let extracted = "";
     try {
-      return normalizeInviteCode(decodeURIComponent(fromQuery[1].replace(/\+/g, "%20")));
+      extracted = normalizeInviteCode(
+        decodeURIComponent(fromQuery[1].replace(/\+/g, "%20"))
+      );
     } catch {
-      return normalizeInviteCode(fromQuery[1]);
+      extracted = normalizeInviteCode(fromQuery[1]);
     }
+    return looksLikeInviteCode(extracted) ? extracted : "";
   }
-  return normalizeInviteCode(text);
+  // Never treat a bare URL/domain/email as an invite code.
+  if (/^https?:\/\//i.test(text) || /[.@/]/.test(text)) {
+    return "";
+  }
+  const code = normalizeInviteCode(text);
+  return looksLikeInviteCode(code) ? code : "";
 }
 
 /** Pull an invite code from `?code=` or from a `next` path like `/fisioterapia?code=…`. */
@@ -36,15 +55,19 @@ export function extractInviteCodeFromSearch(opts: {
   code?: string | null;
   next?: string | null;
 }): string {
-  const direct = normalizeInviteCode(opts.code);
-  if (direct.length >= 6) return direct;
+  const direct = parsePastedInviteCode(opts.code);
+  if (looksLikeInviteCode(direct)) return direct;
   const next = opts.next ?? "";
   const match = /[?&]code=([^&]+)/i.exec(next);
   if (!match) return "";
   try {
-    return normalizeInviteCode(decodeURIComponent(match[1].replace(/\+/g, "%20")));
+    const fromNext = parsePastedInviteCode(
+      decodeURIComponent(match[1].replace(/\+/g, "%20"))
+    );
+    return looksLikeInviteCode(fromNext) ? fromNext : "";
   } catch {
-    return normalizeInviteCode(match[1]);
+    const fromNext = parsePastedInviteCode(match[1]);
+    return looksLikeInviteCode(fromNext) ? fromNext : "";
   }
 }
 

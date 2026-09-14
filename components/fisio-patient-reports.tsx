@@ -7,6 +7,7 @@ import {
   PhysioPatientOrientationView,
   PhysioReportView,
 } from "@/components/physio-report-view";
+import { StaffPatientProfileEditor } from "@/components/staff-patient-profile-editor";
 import { createClient } from "@/lib/supabase/client";
 
 type ClinicalReport = {
@@ -42,6 +43,11 @@ export function FisioPatientReports({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [liveLabel, setLiveLabel] = useState<string | null>(patientLabel);
+
+  useEffect(() => {
+    setLiveLabel(patientLabel);
+  }, [patientLabel]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,13 +134,18 @@ export function FisioPatientReports({
       </Link>
 
       <h1 className="mt-3 text-2xl font-semibold tracking-tight text-neutral-900">
-        {patientLabel || "Informes del paciente"}
+        {liveLabel || "Informes del paciente"}
       </h1>
       <p className="mt-2 text-sm text-neutral-600">
         Informes clínicos generados automáticamente por AIKinora tras cada
         consulta de este paciente con la IA, para orientarte antes de la cita.
       </p>
       <AiOrientationDisclaimer className="mt-2" />
+
+      <StaffPatientProfileEditor
+        patientId={patientId}
+        onDisplayNameChange={(name) => setLiveLabel(name || patientLabel)}
+      />
 
       {error && (
         <div className="mt-6 rounded-xl bg-red-50 px-5 py-4 text-sm text-red-800">
@@ -190,7 +201,7 @@ export function FisioPatientReports({
                         patientId,
                         reportId: report.id,
                         bodyArea: report.body_area,
-                        patientName: patientLabel,
+                        patientName: liveLabel,
                       }}
                     />
 

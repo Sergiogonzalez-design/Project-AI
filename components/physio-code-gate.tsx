@@ -31,12 +31,18 @@ export function PhysioCodeGate({
 }: Props) {
   const { locale } = useUiLocaleOptional();
   const en = locale === "en";
-  const [code, setCode] = useState(() =>
-    (initialCode ?? "").trim().toUpperCase().replace(/\s+/g, "")
-  );
+  const [code, setCode] = useState(() => parsePastedInviteCode(initialCode));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const autoSubmitted = useRef(false);
+
+  // Keep the box empty unless we have a real invite token (block URL/domain autofill).
+  useEffect(() => {
+    setCode((prev) => {
+      const cleaned = parsePastedInviteCode(prev);
+      return cleaned === prev ? prev : cleaned;
+    });
+  }, []);
 
   async function linkWithCode(rawCode: string) {
     setError(null);
@@ -86,7 +92,7 @@ export function PhysioCodeGate({
 
   useEffect(() => {
     if (!autoSubmit || autoSubmitted.current) return;
-    const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+    const normalized = parsePastedInviteCode(code);
     if (normalized.length < 6) return;
     autoSubmitted.current = true;
     void linkWithCode(normalized);
@@ -142,12 +148,17 @@ export function PhysioCodeGate({
           {en ? "Code" : "Código"}
         </label>
         <input
+          name="physio-invite-code"
           value={code}
           onChange={(e) => setCode(parsePastedInviteCode(e.target.value))}
           placeholder="Ej. K7M2P9QX"
           autoCapitalize="characters"
           autoCorrect="off"
           spellCheck={false}
+          autoComplete="one-time-code"
+          inputMode="text"
+          data-lpignore="true"
+          data-1p-ignore="true"
           className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono text-sm tracking-widest text-slate-900 uppercase placeholder:tracking-normal placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           required
         />

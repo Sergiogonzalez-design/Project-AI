@@ -6,6 +6,8 @@ import { extractCitedSources, type CitedSource } from "@/lib/source-links";
 type Props = {
   content: string;
   renderBody: (body: string) => React.ReactNode;
+  /** Clinician chat / informe: keep plain internal titles without a URL. */
+  forPhysio?: boolean;
 };
 
 function SourceItem({ source }: { source: CitedSource }) {
@@ -26,10 +28,14 @@ function SourceItem({ source }: { source: CitedSource }) {
 }
 
 /** Renders assistant text with a collapsible sources button instead of an inline list. */
-export function AssistantMessageWithSources({ content, renderBody }: Props) {
+export function AssistantMessageWithSources({
+  content,
+  renderBody,
+  forPhysio,
+}: Props) {
   const { body, sources, heading } = useMemo(
-    () => extractCitedSources(content),
-    [content]
+    () => extractCitedSources(content, { forPhysio }),
+    [content, forPhysio]
   );
   const [open, setOpen] = useState(false);
 

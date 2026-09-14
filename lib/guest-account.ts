@@ -22,3 +22,23 @@ export function isGuestUser(
 export function guestNameStorageKey(userId: string): string {
   return `aikinora-guest-named:${userId}`;
 }
+
+/**
+ * True when the guest has entered a real name (not the auto-filled
+ * `guest.<uuid>` local-part from handle_new_user / email).
+ */
+export function isGuestDisplayNameSet(name?: string | null): boolean {
+  const n = (name ?? "").trim().replace(/\s+/g, " ");
+  if (n.length < 2) return false;
+  if (/^guest(?:\.|$)/i.test(n)) return false;
+  if (n.includes("@")) return false;
+  // UUID-like auto names
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      n
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
