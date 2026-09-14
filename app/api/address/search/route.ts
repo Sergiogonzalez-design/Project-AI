@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   formatAddressLabel,
+  parsePhotonResponse,
   type AddressSuggestion,
 } from "@/lib/address-search";
 import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
@@ -8,6 +9,7 @@ import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 export const runtime = "nodejs";
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
+const PHOTON_URL = "https://photon.komoot.io/api/";
 
 type NominatimAddress = {
   road?: string;
@@ -76,6 +78,66 @@ function suggestionFromNominatim(row: NominatimResult): AddressSuggestion | null
   };
 }
 
+async function searchNominatim(q: string): Promise<AddressSuggestion[]> {
+  const url = new URL(NOMINATIM_URL);
+  url.searchParams.set("q", q);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("limit", "7");
+  url.searchParams.set("accept-language", "es");
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "AIKinora/1.0 (address autocomplete; https://aikinora.app)",
+      },
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as NominatimResult[];
+    const seen = new Set<string>();
+    const suggestions: AddressSuggestion[] = [];
+    for (const row of Array.isArray(json) ? json : []) {
+      const parsed = suggestionFromNominatim(row);
+      if (!parsed || seen.has(parsed.label)) continue;
+      seen.add(parsed.label);
+      suggestions.push(parsed);
+    }
+    return suggestions;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function searchPhoton(q: string): Promise<AddressSuggestion[]> {
+  const url = new URL(PHOTON_URL);
+  url.searchParams.set("q", q);
+  url.searchParams.set("limit", "7");
+  url.searchParams.set("lang", "es");
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    return parsePhotonResponse(await res.json());
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") ?? "").trim();
@@ -98,46 +160,18 @@ export async function GET(request: Request) {
     );
   }
 
-  const url = new URL(NOMINATIM_URL);
-  url.searchParams.set("q", q);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("addressdetails", "1");
-  url.searchParams.set("limit", "7");
-  url.searchParams.set("accept-language", "es");
-
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8_000);
-    const res = await fetch(url.toString(), {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "AIKinora/1.0 (address autocomplete; https://aikinora.app)",
-      },
-      signal: controller.signal,
-      cache: "no-store",
-    });
-    clearTimeout(timer);
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "Address search failed" },
-        { status: 502 }
-      );
-    }
-    const json = (await res.json()) as NominatimResult[];
-    const seen = new Set<string>();
-    const suggestions: AddressSuggestion[] = [];
-    for (const row of Array.isArray(json) ? json : []) {
-      const parsed = suggestionFromNominatim(row);
-      if (!parsed || seen.has(parsed.label)) continue;
-      seen.add(parsed.label);
-      suggestions.push(parsed);
-    }
-    return NextResponse.json({ suggestions });
-  } catch {
-    return NextResponse.json(
-      { error: "Address search unavailable" },
-      { status: 502 }
-    );
+  const nominatim = await searchNominatim(q);
+  if (nominatim.length > 0) {
+    return NextResponse.json({ suggestions: nominatim });
   }
+
+  const photon = await searchPhoton(q);
+  if (photon.length > 0) {
+    return NextResponse.json({ suggestions: photon });
+  }
+
+  return NextResponse.json(
+    { error: "Address search unavailable" },
+    { status: 502 }
+  );
 }

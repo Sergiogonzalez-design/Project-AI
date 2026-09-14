@@ -21,6 +21,7 @@ type Props = {
   onChange: (next: AddressValue) => void;
   disabled?: boolean;
   hint?: string;
+  onFieldFocus?: () => void;
 };
 
 export function AddressAutocomplete({
@@ -28,6 +29,7 @@ export function AddressAutocomplete({
   onChange,
   disabled,
   hint,
+  onFieldFocus,
 }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -95,6 +97,7 @@ export function AddressAutocomplete({
         value={value.query}
         editable={!disabled}
         onChangeText={(query) => onChange({ ...value, query })}
+        onFocus={onFieldFocus}
         placeholder="Busca como en Maps: calle, ciudad, CP, país…"
         placeholderTextColor={Colors.textLight}
         autoCorrect={false}
@@ -138,6 +141,7 @@ export function AddressAutocomplete({
             value={value.address}
             editable={!disabled}
             onChangeText={(address) => onChange({ ...value, address })}
+            onFocus={onFieldFocus}
             autoCorrect={false}
             textContentType="streetAddressLine1"
           />
@@ -147,6 +151,7 @@ export function AddressAutocomplete({
             value={value.city}
             editable={!disabled}
             onChangeText={(city) => onChange({ ...value, city })}
+            onFocus={onFieldFocus}
             autoCorrect={false}
             textContentType="addressCity"
           />
@@ -156,6 +161,7 @@ export function AddressAutocomplete({
             value={value.postalCode}
             editable={!disabled}
             onChangeText={(postalCode) => onChange({ ...value, postalCode })}
+            onFocus={onFieldFocus}
             autoCorrect={false}
             keyboardType="numbers-and-punctuation"
             textContentType="postalCode"
@@ -166,6 +172,7 @@ export function AddressAutocomplete({
             value={value.country}
             editable={!disabled}
             onChangeText={(country) => onChange({ ...value, country })}
+            onFocus={onFieldFocus}
             autoCorrect={false}
             textContentType="countryName"
           />

@@ -14,12 +14,16 @@ export function useKeyboardOverlap() {
     if (!vv) return;
 
     const update = () => {
-      const next = Math.max(
-        0,
-        Math.round(window.innerHeight - vv.height - vv.offsetTop)
+      // Prefer visualViewport bottom vs the taller of layout metrics.
+      // On iOS Safari, `100dvh` shells often stay tall while `vv.height` shrinks,
+      // so `innerHeight - vv.height` alone can wrongly report 0 overlap.
+      const vvBottom = vv.offsetTop + vv.height;
+      const layoutBottom = Math.max(
+        window.innerHeight,
+        document.documentElement?.clientHeight ?? 0
       );
+      const next = Math.max(0, Math.round(layoutBottom - vvBottom));
       setOverlap(next);
-      // Do not window.scrollTo — patient chat owns an inner scroller; fighting it causes jitter.
     };
 
     update();

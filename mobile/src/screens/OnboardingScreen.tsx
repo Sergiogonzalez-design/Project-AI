@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -28,6 +28,8 @@ import {
   SEX_OPTIONS,
   normalizeSportsInput,
 } from "../lib/profile-options";
+import { useKeyboardHeight } from "../hooks/useKeyboardHeight";
+import { scrollFocusedInputAboveKeyboard } from "../lib/scroll-focused-input-above-keyboard";
 import { sportHasPosition } from "../lib/sport-has-position";
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
@@ -72,6 +74,19 @@ export function OnboardingScreen({ onComplete }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const keyboardHeight = useKeyboardHeight();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffsetY = useRef(0);
+
+  const ensureFocusedVisible = () => {
+    setTimeout(() => {
+      scrollFocusedInputAboveKeyboard(
+        scrollRef.current,
+        scrollOffsetY.current,
+        keyboardHeight
+      );
+    }, 80);
+  };
 
   const [fullName, setFullName] = useState("");
   const [age, setAge] = useState("");
@@ -193,21 +208,37 @@ export function OnboardingScreen({ onComplete }: Props) {
     }
   }
 
+  useEffect(() => {
+    if (keyboardHeight <= 0) return;
+    ensureFocusedVisible();
+  }, [keyboardHeight]);
+
   return (
     <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
       <AuthBackBar onPress={handleBack} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           style={styles.flex}
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            keyboardHeight > 0
+              ? { paddingBottom: Math.max(64, keyboardHeight + 48) }
+              : null,
+          ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator
           bounces
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+          onScroll={(e) => {
+            scrollOffsetY.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           onScrollBeginDrag={Keyboard.dismiss}
         >
           <Image source={require("../../assets/logo.png")} style={styles.logo} />
@@ -251,6 +282,7 @@ export function OnboardingScreen({ onComplete }: Props) {
               <AddressAutocomplete
                 value={location}
                 onChange={setLocation}
+                onFieldFocus={ensureFocusedVisible}
                 hint="Si la indicas, priorizamos clínicas cerca de ti. Busca la dirección completa (calle, ciudad, CP, país)."
               />
               {error ? <Text style={styles.error}>{error}</Text> : null}

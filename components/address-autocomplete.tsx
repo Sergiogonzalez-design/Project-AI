@@ -105,6 +105,12 @@ export function AddressAutocomplete({
           onFocus={() => {
             if (blurTimer.current) clearTimeout(blurTimer.current);
             if (suggestions.length > 0) setOpen(true);
+            // Keep the field above the mobile keyboard / Safari chrome.
+            requestAnimationFrame(() => {
+              document
+                .getElementById(`${listId}-query`)
+                ?.scrollIntoView({ block: "center", behavior: "smooth" });
+            });
           }}
           onBlur={() => {
             blurTimer.current = setTimeout(() => setOpen(false), 160);

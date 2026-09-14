@@ -5000,6 +5000,12 @@ export function ChatInterface({
                 autoCapitalize="off"
                 spellCheck={false}
                 name="aikinora-consulta-composer"
+                onFocus={(e) => {
+                  const el = e.currentTarget;
+                  window.setTimeout(() => {
+                    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                  }, 50);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

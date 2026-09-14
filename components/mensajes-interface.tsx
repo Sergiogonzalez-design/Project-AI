@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { stripVisibleMarkup } from "@/lib/strip-visible-markup";
 import { THERAPIST } from "@/lib/therapist";
+import { useKeyboardOverlap } from "@/hooks/use-keyboard-overlap";
 
 type TherapistMessage = {
   id: string;
@@ -22,6 +23,7 @@ function formatTime(iso: string) {
 export function MensajesInterface() {
   const supabase = createClient();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const keyboardOverlap = useKeyboardOverlap();
 
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<TherapistMessage[]>([]);
@@ -273,7 +275,15 @@ export function MensajesInterface() {
           </div>
 
           {/* Composer */}
-          <div className="border-t border-blue-100 p-3 sm:p-4">
+          <div
+            className="border-t border-blue-100 p-3 sm:p-4"
+            style={{
+              paddingBottom:
+                keyboardOverlap > 0
+                  ? keyboardOverlap + 12
+                  : undefined,
+            }}
+          >
             <div className="flex items-end gap-2">
               <textarea
                 value={input}

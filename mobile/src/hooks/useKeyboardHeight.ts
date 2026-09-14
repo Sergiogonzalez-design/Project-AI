@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AppState, Keyboard, Platform, type KeyboardEvent } from "react-native";
+import { Keyboard, Platform, type KeyboardEvent } from "react-native";
 
 function overlapFromEvent(e: KeyboardEvent) {
   return Math.max(0, Math.round(e.endCoordinates?.height ?? 0));
@@ -44,12 +44,8 @@ export function useKeyboardHeight() {
     };
   }, []);
 
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") setHeight(0);
-    });
-    return () => sub.remove();
-  }, []);
+  // Do not clear height on AppState "active" — that zeros inset while the
+  // keyboard is still open after returning from background briefly.
 
   return height;
 }

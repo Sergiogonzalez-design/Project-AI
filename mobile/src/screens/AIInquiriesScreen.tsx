@@ -4063,7 +4063,9 @@ export function AIInquiriesScreen({
           style={{ flex: 1 }}
           contentContainerStyle={[
             styles.messageList,
-            keyboardHeight > 0 ? { paddingBottom: Math.max(24, keyboardHeight * 0.35) } : null,
+            keyboardHeight > 0
+              ? { paddingBottom: Math.max(48, keyboardHeight + 24) }
+              : null,
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
