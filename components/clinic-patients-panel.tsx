@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClinicTeamPanel } from "@/components/clinic-team-panel";
 import { clinicHubCopy } from "@/lib/clinic-hub-copy";
+import { staffPatientLabel, staffVisibleEmail } from "@/lib/guest-account";
 import { buildPhysioInviteUrl } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 import { useUiLocaleOptional } from "@/lib/ui-locale";
 
 type ClinicPatient = {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string | null;
   created_at: string;
   last_sign_in_at: string | null;
@@ -338,7 +339,9 @@ export function ClinicPatientsPanel() {
                 {recentReports.map((report) => {
                   const patient = patients.find((p) => p.id === report.patient_id);
                   const label =
-                    patient?.display_name || patient?.email || copy.tabPatients;
+                    patient?.display_name ||
+                    staffVisibleEmail(patient?.email) ||
+                    copy.tabPatients;
                   const when = new Date(report.created_at).toLocaleString(
                     locale === "en" ? "en-GB" : "es-ES",
                     {
@@ -402,7 +405,11 @@ export function ClinicPatientsPanel() {
             ) : (
               <ul className="mt-4 divide-y divide-neutral-100">
                 {patients.map((patient) => {
-                  const label = patient.display_name || patient.email;
+                  const label = staffPatientLabel({
+                    displayName: patient.display_name,
+                    email: patient.email,
+                  });
+                  const visibleEmail = staffVisibleEmail(patient.email);
                   const unread = unreadByPatient[patient.id] ?? 0;
                   return (
                     <li key={patient.id}>
@@ -422,9 +429,11 @@ export function ClinicPatientsPanel() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-0.5 truncate text-xs text-neutral-500">
-                            {patient.email}
-                          </p>
+                          {visibleEmail ? (
+                            <p className="mt-0.5 truncate text-xs text-neutral-500">
+                              {visibleEmail}
+                            </p>
+                          ) : null}
                           <p className="mt-0.5 truncate text-xs text-blue-700">
                             {patient.physio_name
                               ? copy.physioLabel.replace(

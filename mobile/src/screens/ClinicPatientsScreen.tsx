@@ -15,6 +15,7 @@ import { PhysioReportView } from "../components/PhysioReportView";
 import { StaffPatientProfileEditor } from "../components/StaffPatientProfileEditor";
 import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
+import { staffPatientLabel, staffVisibleEmail } from "../lib/guest-account";
 import { useI18n } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import type { TabParamList } from "../navigation/AppTabs";
@@ -28,7 +29,7 @@ function buildClinicPatientInviteUrl(code: string): string {
 
 type ClinicPatient = {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string | null;
   created_at: string;
   physio_id?: string | null;
@@ -148,7 +149,10 @@ export function ClinicPatientsScreen() {
       : hub.patientsCountPlural.replace("{n}", String(patients.length));
 
   if (selectedPatient) {
-    const label = selectedPatient.display_name || selectedPatient.email;
+    const label = staffPatientLabel({
+      displayName: selectedPatient.display_name,
+      email: selectedPatient.email,
+    });
     return (
       <ScrollView contentContainerStyle={styles.wrap}>
         <Pressable
@@ -308,9 +312,14 @@ export function ClinicPatientsScreen() {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.patientName}>
-                    {p.display_name || p.email}
+                    {staffPatientLabel({
+                      displayName: p.display_name,
+                      email: p.email,
+                    })}
                   </Text>
-                  <Text style={styles.meta}>{p.email}</Text>
+                  {staffVisibleEmail(p.email) ? (
+                    <Text style={styles.meta}>{staffVisibleEmail(p.email)}</Text>
+                  ) : null}
                   <Text style={styles.physioMeta}>
                     {p.physio_name
                       ? hub.physioLabel.replace("{name}", p.physio_name)

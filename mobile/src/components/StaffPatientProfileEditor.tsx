@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../lib/colors";
+import { staffVisibleEmail } from "../lib/guest-account";
 import { SEX_OPTIONS } from "../lib/profile-options";
 import { supabase } from "../lib/supabase";
 
@@ -50,7 +51,7 @@ function rowFromRpc(raw: unknown): StaffPatientProfile | null {
   const r = row as Record<string, unknown>;
   return {
     id: String(r.id),
-    email: (r.email as string | null) ?? null,
+    email: staffVisibleEmail((r.email as string | null) ?? null),
     display_name: (r.display_name as string | null) ?? null,
     age: r.age == null ? null : Number(r.age),
     sex: (r.sex as string | null) ?? null,

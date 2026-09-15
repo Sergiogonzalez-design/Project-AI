@@ -7,11 +7,12 @@ import {
   type PhysioClinicSummary,
 } from "@/components/physio-clinic-info-card";
 import { buildPhysioInviteUrl } from "@/lib/physio-invite";
+import { staffPatientLabel } from "@/lib/guest-account";
 import { createClient } from "@/lib/supabase/client";
 
 type PhysioPatient = {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string | null;
   created_at: string;
   last_sign_in_at: string | null;
@@ -285,7 +286,10 @@ export default function FisioPatientsPage() {
           <ul className="mt-4 divide-y divide-neutral-100">
             {patients.map((patient) => {
               const unread = unreadByPatient[patient.id] ?? 0;
-              const label = patient.display_name || patient.email;
+              const label = staffPatientLabel({
+                displayName: patient.display_name,
+                email: patient.email,
+              });
               return (
                 <li key={patient.id}>
                   <Link

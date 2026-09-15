@@ -6,6 +6,29 @@ export function isGuestEmail(email?: string | null): boolean {
   return (email ?? "").toLowerCase().endsWith(`@${GUEST_EMAIL_DOMAIN}`);
 }
 
+/**
+ * Email shown to physio/clinic staff. Guest auth uses a synthetic address
+ * (`guest.<uuid>@guests.aikinora.app`) that must stay blank in the UI.
+ */
+export function staffVisibleEmail(email?: string | null): string | null {
+  const e = (email ?? "").trim();
+  if (!e || isGuestEmail(e)) return null;
+  return e;
+}
+
+/** Display name for a patient in staff lists (never the synthetic guest email). */
+export function staffPatientLabel(opts: {
+  displayName?: string | null;
+  email?: string | null;
+  fallback?: string;
+}): string {
+  const name = (opts.displayName ?? "").trim();
+  if (name) return name;
+  const email = staffVisibleEmail(opts.email);
+  if (email) return email;
+  return opts.fallback ?? "Paciente invitado";
+}
+
 function metadataIsGuest(appMetadata: unknown): boolean {
   if (!appMetadata || typeof appMetadata !== "object") return false;
   return (appMetadata as { is_guest?: unknown }).is_guest === true;

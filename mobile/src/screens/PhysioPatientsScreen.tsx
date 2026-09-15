@@ -40,6 +40,7 @@ import { Colors } from "../lib/colors";
 import { pickIllustratedTestsForPruebasQuery } from "../lib/clinical-test-images";
 import { copyToClipboard } from "../lib/copy-to-clipboard";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
+import { staffPatientLabel } from "../lib/guest-account";
 import { supabase } from "../lib/supabase";
 import { screenHeaderBarPadding } from "../lib/screen-header-insets";
 import type { TabParamList } from "../navigation/AppTabs";
@@ -50,7 +51,7 @@ import {
 
 type PhysioPatient = {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string | null;
   created_at: string;
   last_sign_in_at: string | null;
@@ -644,7 +645,10 @@ export function PhysioPatientsScreen() {
         bodyArea={reasoningReport.body_area}
         physioReport={reasoningReport.physio_report}
         patientName={
-          selectedPatient.display_name || selectedPatient.email || null
+          staffPatientLabel({
+            displayName: selectedPatient.display_name,
+            email: selectedPatient.email,
+          })
         }
         onClose={() => setReasoningReport(null)}
       />
@@ -664,7 +668,10 @@ export function PhysioPatientsScreen() {
             <Ionicons name="arrow-back" size={22} color={Colors.text} />
           </Pressable>
           <Text style={styles.detailTitle} numberOfLines={1}>
-            {selectedPatient.display_name || selectedPatient.email}
+            {staffPatientLabel({
+              displayName: selectedPatient.display_name,
+              email: selectedPatient.email,
+            })}
           </Text>
         </View>
         <ScreenScrollView ref={detailScrollRef} contentContainerStyle={styles.container}>
@@ -833,7 +840,10 @@ export function PhysioPatientsScreen() {
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={styles.userTitleRow}>
                     <Text style={styles.userEmail} numberOfLines={1}>
-                      {patient.display_name || patient.email}
+                      {staffPatientLabel({
+                        displayName: patient.display_name,
+                        email: patient.email,
+                      })}
                     </Text>
                     {unread > 0 && (
                       <View style={styles.newBadge}>
