@@ -4337,7 +4337,9 @@ export function ChatInterface({
   ]);
 
   const chatBusy = loading || Boolean(revealingMessageId);
-  const questionnaireSubmitLabel = linkedPhysio
+  // Consulta previa = Fisioterapia after linking a physio (incl. guest invite flow).
+  const isConsultaPrevia = Boolean(linkedPhysio) || guestMode;
+  const questionnaireSubmitLabel = isConsultaPrevia
     ? consultLanguage === "en"
       ? "Send"
       : "Enviar"

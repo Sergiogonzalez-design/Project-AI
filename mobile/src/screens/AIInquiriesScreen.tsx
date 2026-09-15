@@ -4150,7 +4150,8 @@ export function AIInquiriesScreen({
   }
 
   if (phase === "questionnaire") {
-    const questionnaireSubmitLabel = linkedPhysio
+    const isConsultaPrevia = Boolean(linkedPhysio) || Boolean(guestMode);
+    const questionnaireSubmitLabel = isConsultaPrevia
       ? locale === "en"
         ? "Send"
         : "Enviar"
