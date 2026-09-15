@@ -235,8 +235,18 @@ export function ClinicTeamPanel({
         </div>
 
         {created ? (
-          <div className="mt-4 rounded-xl bg-blue-50 px-3 py-3 text-sm">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-900">
+          <div className="relative mt-4 rounded-xl bg-blue-50 px-3 py-3 text-sm">
+            <button
+              type="button"
+              className="absolute right-2 top-2 rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-bold text-blue-800 hover:bg-blue-100"
+              onClick={() => {
+                setCreated(null);
+                setCopied(null);
+              }}
+            >
+              Ocultar
+            </button>
+            <p className="pr-20 text-xs font-bold uppercase tracking-wide text-blue-900">
               Código de alta
             </p>
             <p className="mt-1 font-mono text-2xl font-extrabold tracking-[0.2em] text-slate-900">

@@ -238,7 +238,21 @@ export function ClinicTeamPanel({ embedded = false }: { embedded?: boolean }) {
 
       {created ? (
         <View style={styles.inviteCard}>
-          <Text style={styles.inviteTitle}>{hub.inviteCodeTitle}</Text>
+          <View style={styles.inviteCardHead}>
+            <Text style={[styles.inviteTitle, styles.inviteTitleFlex]}>
+              {hub.inviteCodeTitle}
+            </Text>
+            <Pressable
+              style={styles.hideBtn}
+              onPress={() => {
+                setCreated(null);
+                setCopied(null);
+              }}
+              hitSlop={8}
+            >
+              <Text style={styles.hideBtnText}>{hub.hideInvite}</Text>
+            </Pressable>
+          </View>
           <Text style={styles.code}>{created.code}</Text>
           <Pressable onPress={() => void copyText("code", created.code)}>
             <Text style={styles.copyLink}>
@@ -394,7 +408,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF6FF",
     padding: 14,
   },
+  inviteCardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   inviteTitle: { fontSize: 12, fontWeight: "700", color: "#1E3A8A", textTransform: "uppercase" },
+  inviteTitleFlex: { flex: 1, paddingRight: 8 },
+  hideBtn: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    backgroundColor: "#fff",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  hideBtnText: { fontSize: 12, fontWeight: "700", color: "#1E3A8A" },
   code: {
     marginTop: 6,
     fontSize: 28,

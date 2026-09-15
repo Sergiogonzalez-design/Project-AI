@@ -1,0 +1,31 @@
+---
+description: Always ship UI/behavior changes on web and mobile together, fitted to each screen size
+alwaysApply: true
+---
+
+# Web + mobile parity
+
+When changing product UI or user-facing behavior, **update both platforms in the same task** unless the user explicitly says web-only or mobile-only.
+
+## Platforms
+
+| Surface | Typical paths |
+|---|---|
+| Web (Next.js) | `app/`, `components/`, `lib/` |
+| Mobile (Expo) | `mobile/src/screens/`, `mobile/src/components/`, `mobile/src/lib/` |
+
+Mirror shared logic under both `lib/` and `mobile/src/lib/` when the feature exists on both (invite flows, clinical tests, consulta adaptive, clinic hub, reports, etc.).
+
+## Screen size
+
+- Do **not** copy desktop layouts onto mobile.
+- Mobile: touch targets, safe areas, ScrollView nesting rules, compact headers, no hover-only actions.
+- Web: keep existing desktop/tablet patterns; still check narrow viewports when the change is layout-heavy.
+- Same **behavior and labels**; different **layout/spacing** as needed for each screen.
+
+## Checklist before finishing
+
+1. Web change done
+2. Matching mobile change done (or confirmed N/A)
+3. Shared constants/helpers synced if duplicated
+4. i18n keys updated on mobile when copy changes
