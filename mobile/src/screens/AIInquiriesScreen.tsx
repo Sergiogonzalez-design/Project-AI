@@ -242,6 +242,7 @@ import {
   triageMessage,
   wantsFunctionalTestsNow,
   wantsToContinueToNextQuestionnaire,
+  bodyAreaLabelFromText,
   type AdaptiveQuestionnairePart,
 } from "../lib/consulta-triage";
 import {
@@ -280,8 +281,13 @@ import {
   buildPhysioLinkedIntroGreeting,
   buildPhysioLinkedPostQuestionnaireMessage,
   buildPhysioLinkedWelcome,
+  fisioterapiaConversationTitle,
   physioDisplayName,
 } from "../lib/physio-linked-welcome";
+import {
+  capitalizeConversationTitle,
+  formatConsultaConversationTitle,
+} from "../lib/conversation-title";
 import { refreshSmartReminders } from "../lib/smart-reminders";
 import { supabase } from "../lib/supabase";
 import { FadeInView } from "../components/ui/FadeInView";
@@ -494,11 +500,6 @@ function BoldText({ text, style, boldStyle, highlightPhrases, highlightStyle }: 
 
 function welcomeMessage(content: string = WELCOME_MESSAGE_ES): Message {
   return { id: WELCOME_ID, role: "assistant", content };
-}
-
-function titleFromText(text: string): string {
-  const short = text.trim().slice(0, 40);
-  return short.length < text.trim().length ? `${short}…` : short;
 }
 
 function shouldAnimateAssistantMessage(msg: Message, revealingMessageId: string | null) {
@@ -1059,8 +1060,21 @@ export function AIInquiriesScreen({
         .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
         .order("created_at", { ascending: false })
         .limit(linkedPhysio ? 30 : 10);
-      const list = (data as Conversation[]) ?? [];
+      const rawList = (data as Conversation[]) ?? [];
+      const list = rawList.map((c) => ({
+        ...c,
+        title: capitalizeConversationTitle(c.title),
+      }));
       setConversations(list);
+      for (const c of list) {
+        const original = rawList.find((row) => row.id === c.id);
+        if (original && original.title !== c.title) {
+          void supabase
+            .from("conversations")
+            .update({ title: c.title })
+            .eq("id", c.id);
+        }
+      }
 
       if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
         const preferred =
@@ -1083,8 +1097,15 @@ export function AIInquiriesScreen({
   }
 
   async function loadConversation(id: string, title: string) {
+    const displayTitle = capitalizeConversationTitle(title);
     setActiveId(id);
-    setActiveTitle(title);
+    setActiveTitle(displayTitle);
+    if (displayTitle !== title) {
+      void supabase.from("conversations").update({ title: displayTitle }).eq("id", id);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, title: displayTitle } : c))
+      );
+    }
     setOpeningConversation(true);
     setHistoryOpen(false);
     setPhysioIntro(false);
@@ -1169,6 +1190,26 @@ export function AIInquiriesScreen({
       }
 
       setMessages(msgs);
+
+      if (linkedPhysio) {
+        const userBlob = msgs
+          .filter((m) => m.role === "user")
+          .map((m) => m.content)
+          .join("\n");
+        const area = bodyAreaLabelFromText(userBlob);
+        if (area && area !== "Consulta general") {
+          await applyFisioterapiaTitle(area, id);
+        } else if (
+          !/ - /.test(title) ||
+          title.includes("…") ||
+          title.startsWith("Hola")
+        ) {
+          await applyFisioterapiaTitle(
+            locale === "en" ? "consultation" : "consulta",
+            id
+          );
+        }
+      }
     } catch (err) {
       console.error("No se pudo abrir la consulta:", err);
       setMessages([]);
@@ -1530,6 +1571,45 @@ export function AIInquiriesScreen({
     return url;
   }
 
+  function conversationTitleFromText(text: string): string {
+    if (linkedPhysio) {
+      const area = bodyAreaLabelFromText(text);
+      const injury =
+        area && area !== "Consulta general"
+          ? area
+          : locale === "en"
+            ? "consultation"
+            : "consulta";
+      return fisioterapiaConversationTitle(
+        injury,
+        linkedPhysio.physio_name,
+        locale === "en" ? "en" : "es"
+      );
+    }
+    const short = text.trim().slice(0, 40);
+    const base = short.length < text.trim().length ? `${short}…` : short;
+    return capitalizeConversationTitle(base);
+  }
+
+  async function applyFisioterapiaTitle(
+    injuryLabel: string,
+    conversationId: string | null = activeId
+  ) {
+    if (!linkedPhysio) return;
+    const title = fisioterapiaConversationTitle(
+      injuryLabel,
+      linkedPhysio.physio_name,
+      locale === "en" ? "en" : "es"
+    );
+    setActiveTitle(title);
+    if (conversationId) {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === conversationId ? { ...c, title } : c))
+      );
+      void supabase.from("conversations").update({ title }).eq("id", conversationId);
+    }
+  }
+
   async function respondToInitialMessage(
     text: string,
     triage: Awaited<ReturnType<typeof triageMessage>>,
@@ -1555,7 +1635,7 @@ export function AIInquiriesScreen({
       );
     }
 
-    const title = titleFromText(text);
+    const title = conversationTitleFromText(text);
     const { data: conv, error: convErr } = await supabase
       .from("conversations")
       .insert({
@@ -1794,6 +1874,10 @@ export function AIInquiriesScreen({
       },
     ]);
     setPhase("questionnaire");
+    if (linkedPhysio) {
+      const injury = patientFacingPartLabel(part, contextText, language);
+      void applyFisioterapiaTitle(injury, activeId);
+    }
     setTimeout(() => questionnaireScrollRef.current?.scrollToEnd({ animated: true }), 100);
   }
 
@@ -2740,9 +2824,17 @@ export function AIInquiriesScreen({
                 : "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
             );
           }
-          const title = `${areaLabel} — ${new Date().toLocaleDateString(
-            locale === "en" ? "en-US" : "es-ES"
-          )}`;
+          const title = linkedPhysio
+            ? fisioterapiaConversationTitle(
+                areaLabel,
+                linkedPhysio.physio_name,
+                locale === "en" ? "en" : "es"
+              )
+            : formatConsultaConversationTitle(
+                areaLabel,
+                new Date(),
+                locale === "en" ? "en-US" : "es-ES"
+              );
           const { data: conv, error: convErr } = await supabase
             .from("conversations")
             .insert({
@@ -2772,6 +2864,9 @@ export function AIInquiriesScreen({
           setActiveId(conv.id);
           setActiveTitle(title);
           setConversations((prev) => [conv as Conversation, ...prev].slice(0, 10));
+          setFisioNewConsultDraft(false);
+        } else if (conversationId) {
+          await applyFisioterapiaTitle(areaLabel, conversationId);
         }
         if (!conversationId) {
           throw new Error(
@@ -2957,9 +3052,11 @@ export function AIInquiriesScreen({
         return;
       }
 
-      const title = `${areaLabel} — ${new Date().toLocaleDateString(
+      const title = formatConsultaConversationTitle(
+        areaLabel,
+        new Date(),
         locale === "en" ? "en-US" : "es-ES"
-      )}`;
+      );
       const { data: conv, error: convErr } = await supabase
         .from("conversations")
         .insert({

@@ -143,7 +143,7 @@ export const ROM_LIMIT_CAUSE_OPTIONS = [
   "Por falta de fuerza",
 ] as const;
 
-export const INSTABILITY_PREVIOUS_OPTIONS = ["Una vez", "Varias veces"] as const;
+export const INSTABILITY_PREVIOUS_OPTIONS = ["No", "Una vez", "Varias veces"] as const;
 
 export type ElbowAdaptiveAnswers = {
   // Red flags

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { NavBackButton } from "@/components/nav-back-button";
 import {
@@ -47,7 +48,8 @@ export function ClinicPublicProfile({
   const supabase = createClient();
   const [tab, setTab] = useState<PageTab>(posts.length > 0 ? "novedades" : "sobre");
   const [saved, setSaved] = useState(false);
-  const [canSave, setCanSave] = useState(false);
+  /** null = auth still resolving — keep Guardar slot reserved to avoid layout jump */
+  const [canSave, setCanSave] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [shareHint, setShareHint] = useState<string | null>(null);
   const hoursDisplay = displayClinicHoursText(clinic.hours);
@@ -57,14 +59,22 @@ export function ClinicPublicProfile({
   const specialties = parseClinicSpecialties(clinic.specialties);
 
   useEffect(() => {
+    let cancelled = false;
     void supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
+      if (cancelled) return;
+      if (!data.user) {
+        setCanSave(false);
+        return;
+      }
       setCanSave(true);
       const { data: fav } = await supabase.rpc("clinic_is_favorited", {
         p_clinic_id: clinic.id,
       });
-      setSaved(Boolean(fav));
+      if (!cancelled) setSaved(Boolean(fav));
     });
+    return () => {
+      cancelled = true;
+    };
   }, [clinic.id, supabase]);
 
   const query = clinicMapsQuery({
@@ -204,17 +214,25 @@ export function ClinicPublicProfile({
           ) : null}
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            {canSave ? (
+            {canSave === false ? (
+              <Link
+                href="/login"
+                className="inline-flex h-10 min-w-[6.5rem] items-center justify-center rounded-full px-5 text-sm font-bold text-white shadow-sm"
+                style={{ background: accent }}
+              >
+                Guardar
+              </Link>
+            ) : (
               <button
                 type="button"
                 onClick={() => void toggleSave()}
-                disabled={saving}
-                className="inline-flex h-10 items-center rounded-full px-5 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+                disabled={saving || canSave === null}
+                className="inline-flex h-10 min-w-[6.5rem] items-center justify-center rounded-full px-5 text-sm font-bold text-white shadow-sm disabled:opacity-60"
                 style={{ background: accent }}
               >
                 {saved ? "Guardada" : "Guardar"}
               </button>
-            ) : null}
+            )}
             {clinic.phone ? (
               <a href={clinicTelHref(clinic.phone)} className={ghost}>
                 Llamar
@@ -279,11 +297,15 @@ export function ClinicPublicProfile({
               Compartir
             </button>
           </div>
-          {shareHint ? (
-            <p className="mt-2 text-xs font-semibold text-emerald-700">{shareHint}</p>
-          ) : null}
+          <p className="mt-2 min-h-4 text-xs font-semibold text-emerald-700">
+            {shareHint ?? "\u00a0"}
+          </p>
 
-          <div className="mt-6 flex gap-1 border-b border-slate-200">
+          <div
+            className="mt-4 grid grid-cols-3 gap-1 border-b border-slate-200"
+            role="tablist"
+            aria-label="Secciones del perfil"
+          >
             {(
               [
                 ["novedades", "Novedades"],
@@ -294,23 +316,24 @@ export function ClinicPublicProfile({
               <button
                 key={id}
                 type="button"
+                role="tab"
+                aria-selected={tab === id}
                 onClick={() => setTab(id)}
-                className={`relative px-4 py-2.5 text-sm font-semibold transition ${
+                className={`relative inline-flex h-11 items-center justify-center border-0 bg-transparent px-2 text-sm font-semibold leading-none ${
                   tab === id ? "text-slate-950" : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 {label}
-                {tab === id ? (
-                  <span
-                    className="absolute inset-x-3 -bottom-px h-0.5 rounded-full"
-                    style={{ background: accent }}
-                  />
-                ) : null}
+                <span
+                  className="absolute inset-x-3 bottom-0 h-0.5 rounded-full"
+                  style={{ background: tab === id ? accent : "transparent" }}
+                  aria-hidden
+                />
               </button>
             ))}
           </div>
 
-          <div className="pt-5">
+          <div className="min-h-[12rem] pt-5">
             {tab === "novedades" ? (
               posts.length === 0 ? (
                 <p className="text-sm text-slate-500">

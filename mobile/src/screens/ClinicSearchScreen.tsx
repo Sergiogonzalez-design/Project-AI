@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -87,8 +87,18 @@ export function ClinicSearchScreen() {
   const [favorites, setFavorites] = useState<ClinicSearchCard[]>([]);
   const [feed, setFeed] = useState<ClinicFeedPost[]>([]);
   const [slug, setSlug] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState({
+    explorar: false,
+    guardadas: false,
+    novedades: false,
+  });
+  const exploreReq = useRef(0);
+  const favoritesReq = useRef(0);
+  const feedReq = useRef(0);
+  const filtersRef = useRef({ name: "", specialty: "", city: "" });
+  filtersRef.current = { name, specialty, city };
+  const skipTabReload = useRef(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,42 +108,61 @@ export function ClinicSearchScreen() {
   );
 
   const loadExplore = useCallback(async () => {
-    setLoading(true);
+    const id = ++exploreReq.current;
+    const { name: n, specialty: s, city: c } = filtersRef.current;
     setError(null);
     const { data, error: err } = await supabase.rpc("clinic_search", {
-      p_name: name.trim(),
-      p_specialty: specialty.trim(),
-      p_city: city.trim(),
+      p_name: n.trim(),
+      p_specialty: s.trim(),
+      p_city: c.trim(),
     });
+    if (id !== exploreReq.current) return;
     if (err) setError(err.message);
     else setResults((data as ClinicSearchCard[]) ?? []);
-    setLoading(false);
-  }, [city, name, specialty]);
+    setReady((prev) => ({ ...prev, explorar: true }));
+  }, []);
 
   const loadFavorites = useCallback(async () => {
-    setLoading(true);
+    const id = ++favoritesReq.current;
     setError(null);
     const { data, error: err } = await supabase.rpc("clinic_list_favorites");
+    if (id !== favoritesReq.current) return;
     if (err) setError(err.message);
     else setFavorites((data as ClinicSearchCard[]) ?? []);
-    setLoading(false);
+    setReady((prev) => ({ ...prev, guardadas: true }));
   }, []);
 
   const loadFeed = useCallback(async () => {
-    setLoading(true);
+    const id = ++feedReq.current;
     setError(null);
     const { data, error: err } = await supabase.rpc("clinic_feed_posts");
+    if (id !== feedReq.current) return;
     if (err) setError(err.message);
     else setFeed((data as ClinicFeedPost[]) ?? []);
-    setLoading(false);
+    setReady((prev) => ({ ...prev, novedades: true }));
   }, []);
 
   useEffect(() => {
+    void loadExplore();
+    void loadFavorites();
+    void loadFeed();
+  }, [loadExplore, loadFavorites, loadFeed]);
+
+  useEffect(() => {
     if (slug) return;
+    if (skipTabReload.current) {
+      skipTabReload.current = false;
+      return;
+    }
     if (tab === "explorar") void loadExplore();
     else if (tab === "guardadas") void loadFavorites();
     else void loadFeed();
   }, [tab, slug, loadExplore, loadFavorites, loadFeed]);
+
+  function runSearch() {
+    setTab("explorar");
+    void loadExplore();
+  }
 
   if (slug) {
     return (
@@ -174,31 +203,29 @@ export function ClinicSearchScreen() {
         ))}
       </View>
 
-      {tab === "explorar" ? (
-        <View style={styles.searchRow}>
-          <ExploreSearchField
-            value={name}
-            onChangeText={setName}
-            placeholder="Nombre"
-            onSearch={() => void loadExplore()}
-          />
-          <ExploreSearchField
-            value={specialty}
-            onChangeText={setSpecialty}
-            placeholder="Especialidad"
-            onSearch={() => void loadExplore()}
-          />
-          <ExploreSearchField
-            value={city}
-            onChangeText={setCity}
-            placeholder="Ciudad"
-            onSearch={() => void loadExplore()}
-          />
-        </View>
-      ) : null}
+      <View style={styles.searchRow}>
+        <ExploreSearchField
+          value={name}
+          onChangeText={setName}
+          placeholder="Nombre"
+          onSearch={runSearch}
+        />
+        <ExploreSearchField
+          value={specialty}
+          onChangeText={setSpecialty}
+          placeholder="Especialidad"
+          onSearch={runSearch}
+        />
+        <ExploreSearchField
+          value={city}
+          onChangeText={setCity}
+          placeholder="Ciudad"
+          onSearch={runSearch}
+        />
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {loading ? (
+      {!ready[tab] ? (
         <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
       ) : tab === "novedades" ? (
         feed.length === 0 ? (
@@ -532,27 +559,48 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   title: { fontSize: 22, fontWeight: "700", color: Colors.text, marginTop: 4 },
-  tabs: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14, marginBottom: 12 },
+  tabs: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 14,
+    marginBottom: 12,
+  },
   tab: {
+    flex: 1,
+    height: 40,
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   tabOn: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  tabText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
+  tabText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    lineHeight: 16,
+    textAlign: "center",
+  },
   tabTextOn: { color: "#fff" },
   searchRow: { gap: 8, marginBottom: 12 },
-  searchFieldRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  searchFieldRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 48,
+  },
   searchInput: {
     flex: 1,
+    height: 48,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 0,
     fontSize: 15,
     color: Colors.text,
     backgroundColor: Colors.surface,
@@ -560,8 +608,8 @@ const styles = StyleSheet.create({
   searchFieldBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     alignItems: "center",
     justifyContent: "center",
   },

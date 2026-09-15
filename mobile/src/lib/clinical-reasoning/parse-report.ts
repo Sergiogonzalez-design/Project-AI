@@ -26,7 +26,10 @@ function normalizeText(text: string): string {
 }
 
 /** Extract numbered / bulleted maneuver lines from physio report markdown. */
-export function extractManiobrasFromReport(content: string): ParsedManiobraLine[] {
+export function extractManiobrasFromReport(
+  content: string,
+  opts?: { bodyArea?: string | null }
+): ParsedManiobraLine[] {
   const parts = content.split(/\n(?=\*\*[^*]+\*\*)/);
   let maniobrasBody = "";
 
@@ -56,7 +59,9 @@ export function extractManiobrasFromReport(content: string): ParsedManiobraLine[
       .trim();
     if (!cleaned) continue;
 
-    const image = findClinicalTestImage(cleaned);
+    const image = findClinicalTestImage(cleaned, {
+      bodyArea: opts?.bodyArea,
+    });
     parsed.push({
       line: cleaned,
       testId: image?.id ?? null,
@@ -88,6 +93,7 @@ export function resolveBodyPartFromArea(area: string | null): BodyPartId | null 
   }
 
   const detected = detectBodyPartsFromText(area).filter((id) => {
+    // Never trust ankle_foot when the label is clearly thigh/hamstring
     if (id === "ankle_foot" && isThighOrHamstringComplaint(area)) return false;
     return true;
   });

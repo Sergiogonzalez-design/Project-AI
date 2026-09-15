@@ -79,13 +79,13 @@ export function ContactInquiryForm({ variant = "glass" }: ContactInquiryFormProp
   }
 
   const wrap = card
-    ? "rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-[var(--shadow-elevated)] sm:p-8"
+    ? "rounded-2xl border border-slate-200 bg-[#F1F5F9] p-6 text-left sm:p-8"
     : "rounded-2xl border border-white/20 bg-white/10 px-5 py-6 text-left backdrop-blur-sm sm:px-6";
   const title = card ? "text-slate-900" : "text-white";
   const body = card ? "text-slate-500" : "text-blue-50";
   const label = card ? "text-slate-700" : "text-white";
   const input = card
-    ? "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+    ? "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
     : "w-full rounded-xl border border-white/25 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-white/40";
   const errorClass = card ? "text-red-600" : "text-red-100";
   const submit = card

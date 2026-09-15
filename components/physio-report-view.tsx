@@ -168,7 +168,10 @@ function renderInline(text: string, opts?: { boldYesNo?: boolean }) {
   });
 }
 
-function matchPruebaLine(line: string): ClinicalTestImage | null {
+function matchPruebaLine(
+  line: string,
+  bodyArea?: string | null
+): ClinicalTestImage | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
   const plain = stripVisibleMarkup(trimmed).replace(/^\*\s+/, "• ").trim();
@@ -177,23 +180,27 @@ function matchPruebaLine(line: string): ClinicalTestImage | null {
   const matched = shouldShowClinicalTestImage({
     numberedText,
     wholeBoldText: wholeBoldMatch?.[1] ?? null,
+    bodyArea,
   });
   if (matched) return matched;
   // Bullet / dash recommendations in the report (e.g. "• Test de Lachman").
   if (/^[-•*]\s+\S/.test(plain) && plain.length <= 160) {
-    return findClinicalTestImage(plain);
+    return findClinicalTestImage(plain, { bodyArea });
   }
   return null;
 }
 
 /** Line-by-line pruebas with demo video under each matched maneuver. */
-function renderPruebasWithVideos(body: string): ReactNode {
+function renderPruebasWithVideos(
+  body: string,
+  bodyArea?: string | null
+): ReactNode {
   const shown = new Set<string>();
   const lines = body.split("\n");
   return (
     <div className="space-y-3">
       {lines.map((line, i) => {
-        const matched = matchPruebaLine(line);
+        const matched = matchPruebaLine(line, bodyArea);
         const show =
           matched && !shown.has(matched.id) ? matched : null;
         if (show) shown.add(show.id);
@@ -359,7 +366,12 @@ export function PhysioReportView({
             {section.title}
           </h4>
           {section.title === "Pruebas/maniobras a realizar en la cita" ? (
-            <div className="mt-1.5">{renderPruebasWithVideos(section.body)}</div>
+            <div className="mt-1.5">
+              {renderPruebasWithVideos(
+                section.body,
+                clinicalReasoningLink?.bodyArea
+              )}
+            </div>
           ) : (
             <div className="mt-1.5 whitespace-pre-wrap">
               {renderInline(section.body, {

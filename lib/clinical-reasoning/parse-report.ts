@@ -26,7 +26,10 @@ function normalizeText(text: string): string {
 }
 
 /** Extract numbered / bulleted maneuver lines from physio report markdown. */
-export function extractManiobrasFromReport(content: string): ParsedManiobraLine[] {
+export function extractManiobrasFromReport(
+  content: string,
+  opts?: { bodyArea?: string | null }
+): ParsedManiobraLine[] {
   const parts = content.split(/\n(?=\*\*[^*]+\*\*)/);
   let maniobrasBody = "";
 
@@ -56,7 +59,9 @@ export function extractManiobrasFromReport(content: string): ParsedManiobraLine[
       .trim();
     if (!cleaned) continue;
 
-    const image = findClinicalTestImage(cleaned);
+    const image = findClinicalTestImage(cleaned, {
+      bodyArea: opts?.bodyArea,
+    });
     parsed.push({
       line: cleaned,
       testId: image?.id ?? null,

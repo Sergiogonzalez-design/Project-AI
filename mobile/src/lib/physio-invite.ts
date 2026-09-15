@@ -32,6 +32,8 @@ export function parsePastedInviteCode(raw: string | null | undefined): string {
   if (/^https?:\/\//i.test(text) || /[.@/]/.test(text)) {
     return "";
   }
-  const code = normalizeInviteCode(text);
-  return looksLikeInviteCode(code) ? code : "";
+  // Live typing: keep alphanumeric partials so the input is not wiped before 6 chars.
+  const code = normalizeInviteCode(text).replace(/[^A-Z0-9]/g, "");
+  if (!code) return "";
+  return code.slice(0, 24);
 }

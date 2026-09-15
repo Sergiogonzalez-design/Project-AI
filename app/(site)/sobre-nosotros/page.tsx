@@ -38,7 +38,6 @@ const TEAM = [
       "Especialista en rehabilitación deportiva",
       "Prevención y readaptación de lesiones",
     ],
-    accent: "from-blue-600 to-indigo-500",
   },
   {
     name: "Sergio Gonzalez Fernandez",
@@ -50,7 +49,6 @@ const TEAM = [
       "Especialista en tecnología aplicada a la salud",
       "Herramientas de IA para orientación clínica",
     ],
-    accent: "from-cyan-500 to-blue-500",
   },
 ];
 
@@ -124,6 +122,9 @@ const VALUES = [
   },
 ];
 
+const box =
+  "rounded-2xl border border-slate-200 bg-[#F1F5F9]";
+
 function formatNewsDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", {
     day: "numeric",
@@ -152,93 +153,53 @@ export default async function SobreNosotrosPage() {
   const rest = news.slice(1);
 
   return (
-    <div className="flex flex-col">
-      <section className="relative isolate overflow-hidden bg-slate-950 text-white">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-40 -top-24 h-[34rem] w-[34rem] rounded-full bg-blue-600/35 blur-3xl" />
-          <div className="absolute -right-24 top-20 h-[28rem] w-[28rem] rounded-full bg-cyan-400/20 blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-              backgroundSize: "28px 28px",
-            }}
-          />
-        </div>
-        <svg
-          className="pointer-events-none absolute -right-8 top-10 hidden h-[420px] w-[180px] text-white/10 lg:block"
-          viewBox="0 0 80 240"
-          fill="none"
-          aria-hidden
-        >
-          <path
-            d="M40 8v224M28 48c8 6 16 6 24 0M24 96c10 8 22 8 32 0M26 144c9 7 19 7 28 0M30 192c7 5 13 5 20 0"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-        </svg>
-
-        <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24 lg:py-28">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-100">
-                <Sparkles className="h-3.5 w-3.5" />
-                Fisioterapia + inteligencia artificial
-              </p>
-              <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-6xl sm:leading-[1.05]">
-                Entiende tu lesión
-                <span className="mt-1 block bg-gradient-to-r from-blue-200 via-white to-cyan-200 bg-clip-text text-transparent">
-                  antes de la visita.
-                </span>
-              </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg">
-                Orientación inteligente en fisioterapia y medicina deportiva.
-                Clara, inmediata y pensada para que llegues mejor preparado a tu
-                entrenador atlético.
-              </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/consulta"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 shadow-lg transition hover:bg-blue-50"
-                >
-                  Iniciar consulta
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="#equipo"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
-                >
-                  Conoce al equipo
-                </a>
-              </div>
+    <div className="flex flex-col bg-white text-slate-900">
+      <section className="bg-white px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className={`${box} px-6 py-10 text-center sm:px-10 sm:py-12`}>
+            <div className="mx-auto inline-flex rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+              <Image
+                src="/logo-icon.png"
+                alt="AIKinora"
+                width={72}
+                height={72}
+                className="h-[64px] w-[64px] object-contain sm:h-[72px] sm:w-[72px]"
+                priority
+              />
             </div>
-
-            <div className="relative mx-auto w-full max-w-sm">
-              <div className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-br from-blue-400/30 to-cyan-300/10 blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 p-8 text-center shadow-2xl backdrop-blur-md">
-                <div className="mx-auto inline-flex rounded-3xl bg-white p-4 shadow-xl">
-                  <Image
-                    src="/logo-icon.png"
-                    alt="AIKinora"
-                    width={120}
-                    height={120}
-                    className="h-[96px] w-[96px] object-contain sm:h-[120px] sm:w-[120px]"
-                    priority
-                  />
-                </div>
-                <p className="mt-6 text-2xl font-bold tracking-tight">AIKinora</p>
-                <p className="mt-2 text-sm leading-relaxed text-blue-100">
-                  Primera orientación musculoesquelética, disponible cuando la
-                  necesitas.
-                </p>
-              </div>
+            <p className="mt-5 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+              AIKinora
+            </p>
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-700">
+              <Sparkles className="h-3.5 w-3.5" />
+              Fisioterapia + inteligencia artificial
+            </p>
+            <h1 className="mt-5 text-2xl font-bold tracking-tight text-slate-950 sm:text-4xl sm:leading-tight">
+              Entiende tu lesión antes de la visita.
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base">
+              Orientación inteligente en fisioterapia y medicina deportiva.
+              Clara, inmediata y pensada para que llegues mejor preparado a tu
+              entrenador atlético.
+            </p>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/consulta"
+                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+              >
+                Iniciar consulta
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href="#equipo"
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+              >
+                Conoce al equipo
+              </a>
             </div>
           </div>
 
-          <dl className="mt-16 grid grid-cols-1 gap-4 border-t border-white/10 pt-8 sm:grid-cols-3">
+          <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
               { label: "Disponible 24/7", hint: "Consulta cuando te encaje" },
               { label: "Protocolos clínicos", hint: "Base Physioguide actualizada" },
@@ -246,20 +207,23 @@ export default async function SobreNosotrosPage() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+                className={`${box} flex items-start gap-3 px-5 py-4 text-left`}
               >
-                <dt className="text-sm font-bold text-white">{item.label}</dt>
-                <dd className="mt-1 text-xs text-slate-300">{item.hint}</dd>
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                <div>
+                  <dt className="text-sm font-bold text-slate-900">{item.label}</dt>
+                  <dd className="mt-1 text-xs text-slate-500">{item.hint}</dd>
+                </div>
               </div>
             ))}
           </dl>
         </div>
       </section>
 
-      <section className="relative bg-white px-4 py-16 sm:px-6 sm:py-20">
+      <section className="bg-white px-4 pb-14 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
               El proceso
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -270,31 +234,27 @@ export default async function SobreNosotrosPage() {
             </p>
           </div>
 
-          <div className="relative mt-12 grid gap-6 lg:grid-cols-3">
-            <div className="pointer-events-none absolute left-[16%] right-[16%] top-10 hidden h-px bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 lg:block" />
+          <div className="mt-10 grid gap-4 lg:grid-cols-3">
             {STEPS.map((s, idx) => (
-              <div
-                key={s.title}
-                className="relative rounded-3xl border border-slate-200 bg-slate-100 p-7 transition hover:-translate-y-1 hover:border-blue-200 hover:bg-slate-100 hover:shadow-[var(--shadow-elevated)]"
-              >
-                <div className="mb-5 flex items-center justify-between">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[var(--shadow-primary)]">
-                    <s.Icon className="h-6 w-6" strokeWidth={1.8} />
+              <div key={s.title} className={`${box} p-6`}>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                    <s.Icon className="h-5 w-5" strokeWidth={1.8} />
                   </div>
-                  <span className="font-mono text-3xl font-bold text-slate-200">
-                    0{idx + 1}
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xs font-extrabold text-blue-700">
+                    {idx + 1}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">{s.title}</h3>
+                <h3 className="text-base font-bold text-slate-900">{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">{s.desc}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-12 text-center">
+          <div className="mt-8 text-center">
             <Link
               href="/consulta"
-              className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-8 py-3.5 text-sm font-bold text-white shadow-[var(--shadow-primary)] transition hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-8 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
             >
               Iniciar consulta
               <ArrowRight className="h-4 w-4" />
@@ -303,11 +263,11 @@ export default async function SobreNosotrosPage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 px-4 py-16 sm:px-6 sm:py-20">
+      <section className="bg-white px-4 pb-14 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 Por qué AIKinora
               </p>
               <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
@@ -319,15 +279,13 @@ export default async function SobreNosotrosPage() {
               esperar y cuándo acudir a un profesional.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {BENEFITS.map((b) => (
               <article
                 key={b.title}
-                className={`group rounded-3xl border border-slate-200 bg-slate-100 p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[var(--shadow-elevated)] ${
-                  b.wide ? "sm:col-span-2 lg:col-span-2" : ""
-                }`}
+                className={`${box} p-5 ${b.wide ? "sm:col-span-2 lg:col-span-2" : ""}`}
               >
-                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
                   <b.Icon className="h-5 w-5" strokeWidth={1.8} />
                 </div>
                 <h3 className="text-base font-bold text-slate-900">{b.title}</h3>
@@ -338,44 +296,44 @@ export default async function SobreNosotrosPage() {
         </div>
       </section>
 
-      <section className="bg-amber-50 px-4 py-6 sm:px-6">
-        <div className="mx-auto flex max-w-4xl items-start gap-3 rounded-2xl border border-amber-200 bg-slate-100 px-5 py-4 text-sm text-amber-900 sm:items-center">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 sm:mt-0" />
-          <p>
-            AIKinora proporciona orientación informativa, no diagnósticos
-            médicos. Ante síntomas graves acude a urgencias o a tu médico.
-          </p>
+      <section className="bg-white px-4 pb-10 sm:px-6">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-[#FFFBEB] px-5 py-4 text-sm text-amber-900 sm:items-center">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 sm:mt-0" />
+            <p>
+              AIKinora proporciona orientación informativa, no diagnósticos
+              médicos. Ante síntomas graves acude a urgencias o a tu médico.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="bg-white px-4 py-16 sm:px-6 sm:py-20">
+      <section className="bg-white px-4 pb-14 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
-                Actualidad
-              </p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-                Últimas noticias
-              </h2>
-            </div>
+          <div className="mb-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Actualidad
+            </p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              Últimas noticias
+            </h2>
           </div>
 
           {news.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-100 px-8 py-16 text-center">
+            <div className={`${box} border-dashed px-8 py-14 text-center`}>
               <Newspaper className="mx-auto mb-3 h-10 w-10 text-slate-300" strokeWidth={1.5} />
               <p className="text-sm text-slate-500">
                 Próximamente publicaremos novedades y artículos del equipo.
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
               {featured ? (
                 <Link
                   href={`/sobre-nosotros/noticia/${featured.id}`}
-                  className="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-elevated)]"
+                  className={`${box} group overflow-hidden transition hover:border-blue-200`}
                 >
-                  <div className="relative h-56 overflow-hidden bg-slate-800 sm:h-72">
+                  <div className="relative h-52 overflow-hidden bg-white sm:h-64">
                     {featured.image_url ? (
                       <Image
                         src={featured.image_url}
@@ -387,36 +345,35 @@ export default async function SobreNosotrosPage() {
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
-                        <Newspaper className="h-12 w-12 text-slate-500" />
+                        <Newspaper className="h-12 w-12 text-slate-300" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
                   </div>
-                  <div className="p-7">
-                    <time className="text-xs font-semibold uppercase tracking-wider text-blue-300">
+                  <div className="p-6">
+                    <time className="text-xs font-semibold uppercase tracking-wider text-blue-600">
                       {formatNewsDate(featured.published_at)}
                     </time>
-                    <h3 className="mt-2 text-2xl font-bold leading-snug">
+                    <h3 className="mt-2 text-2xl font-bold leading-snug text-slate-900">
                       {featured.title}
                     </h3>
-                    <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-300">
+                    <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-500">
                       {featured.body}
                     </p>
-                    <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-blue-200">
+                    <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
                       Leer artículo
                       <ArrowRight className="h-4 w-4" />
                     </span>
                   </div>
                 </Link>
               ) : null}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 {rest.map((post) => (
                   <Link
                     key={post.id}
                     href={`/sobre-nosotros/noticia/${post.id}`}
-                    className="flex gap-4 rounded-2xl border border-slate-200 bg-slate-100 p-4 transition hover:border-blue-200 hover:bg-slate-100 hover:shadow-sm"
+                    className={`${box} flex gap-4 p-4 transition hover:border-blue-200`}
                   >
-                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-200">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
                       {post.image_url ? (
                         <Image
                           src={post.image_url}
@@ -451,67 +408,62 @@ export default async function SobreNosotrosPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-slate-950 px-4 py-16 text-white sm:px-6 sm:py-20">
-        <div className="pointer-events-none absolute -left-20 top-0 h-72 w-72 rounded-full bg-blue-600/25 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
-              Propósito
-            </p>
-            <h2 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-              Nuestra misión
-            </h2>
-          </div>
-          <blockquote className="relative text-lg leading-relaxed text-slate-300 sm:text-xl">
-            <span className="absolute -left-3 -top-8 font-serif text-8xl text-white/10">
+      <section className="bg-white px-4 pb-14 sm:px-6">
+        <div className="mx-auto max-w-4xl">
+          <div className={`${box} relative px-6 py-10 text-center sm:px-10`}>
+            <span className="pointer-events-none absolute left-5 top-1 font-serif text-7xl leading-none text-slate-200">
               “
             </span>
-            AIKinora nació con la idea de que cualquier persona debería poder
-            recibir una primera orientación de calidad sobre sus síntomas
-            musculoesqueléticos, sin importar dónde se encuentre o qué hora sea.
-            Combinamos la experiencia clínica de profesionales con el poder de
-            la inteligencia artificial para ofrecerte información clara, precisa
-            y segura.
-          </blockquote>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Propósito
+            </p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              Nuestra misión
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base">
+              AIKinora nació con la idea de que cualquier persona debería poder
+              recibir una primera orientación de calidad sobre sus síntomas
+              musculoesqueléticos, sin importar dónde se encuentre o qué hora sea.
+              Combinamos la experiencia clínica de profesionales con el poder de
+              la inteligencia artificial para ofrecerte información clara, precisa
+              y segura.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section id="equipo" className="bg-slate-50 px-4 py-16 sm:px-6 sm:py-20">
+      <section id="equipo" className="bg-white px-4 pb-14 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
+          <div className="mx-auto mb-8 max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
               Quiénes somos
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
               El equipo
             </h2>
           </div>
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             {TEAM.map((member) => (
-              <article
-                key={member.name}
-                className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-100 p-8 shadow-sm"
-              >
-                <div
-                  className={`absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${member.accent} opacity-20 blur-2xl`}
-                />
-                <div
-                  className={`relative mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br ${member.accent} text-2xl font-bold text-white shadow-lg`}
-                >
-                  {member.initials}
+              <article key={member.name} className={`${box} p-6 sm:p-7`}>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-lg font-extrabold text-blue-700">
+                    {member.initials}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">{member.name}</h3>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-500">
+                      {member.role}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900">{member.name}</h3>
-                <p className="mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
-                  {member.role}
-                </p>
                 <p className="mt-4 text-sm leading-relaxed text-slate-500">
                   {member.bio}
                 </p>
-                <ul className="mt-6 flex flex-wrap gap-2">
+                <ul className="mt-5 flex flex-wrap gap-2">
                   {member.credentials.map((c) => (
                     <li
                       key={c}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
                     >
                       {c}
                     </li>
@@ -523,18 +475,15 @@ export default async function SobreNosotrosPage() {
         </div>
       </section>
 
-      <section className="bg-white px-4 py-16 sm:px-6 sm:py-20">
+      <section className="bg-white px-4 pb-14 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-10 text-center text-3xl font-bold tracking-tight text-slate-900">
+          <h2 className="mb-8 text-center text-3xl font-bold tracking-tight text-slate-900">
             Nuestros valores
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {VALUES.map((v) => (
-              <article
-                key={v.title}
-                className="rounded-3xl border border-slate-200 bg-slate-100 p-6 text-left transition hover:border-blue-200 hover:bg-slate-100 hover:shadow-[var(--shadow-elevated)]"
-              >
-                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white">
+              <article key={v.title} className={`${box} p-5`}>
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
                   <v.Icon className="h-5 w-5" strokeWidth={1.8} />
                 </div>
                 <h3 className="text-base font-bold text-slate-900">{v.title}</h3>
@@ -545,22 +494,21 @@ export default async function SobreNosotrosPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-slate-950 px-4 py-16 sm:px-6 sm:py-20">
-        <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-blue-600/30 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-start gap-10 lg:grid-cols-2">
-          <div className="pt-2 text-white">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-300">
+      <section className="bg-white px-4 pb-16 sm:px-6">
+        <div className="mx-auto grid max-w-6xl items-start gap-6 lg:grid-cols-2">
+          <div className={`${box} p-6 sm:p-8`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
               Conversemos
             </p>
-            <h2 className="mt-3 text-4xl font-bold tracking-tight">
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
               ¿Quieres contactarnos?
             </h2>
-            <p className="mt-4 max-w-md text-slate-300">
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-500">
               Si eres profesional y quieres colaborar, o simplemente tienes una
               pregunta, escríbenos. Leemos cada mensaje.
             </p>
-            <div className="mt-8 flex items-center gap-3 text-sm text-slate-400">
-              <ShieldCheck className="h-5 w-5 text-blue-300" />
+            <div className="mt-6 flex items-center gap-3 text-sm text-slate-500">
+              <ShieldCheck className="h-5 w-5 text-blue-600" />
               Tus datos se usan solo para responderte.
             </div>
           </div>

@@ -2956,14 +2956,15 @@ VÍDEOS (CRÍTICO — fuerza del producto):
 REGLA DE ZONA (CRÍTICO — error grave si se incumple):
 - Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, lumbar/espalda, etc.).
 - En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, pruebas funcionales, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
-- PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
+- PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro; dolor de codo/UCL → NUNCA Test de Lachman (eso es RODILLA / LCA).
 - Signo de Tinel y Phalen (sin «tarsal») del catálogo son de MUÑECA/MANO. Para pie/túnel tarsiano numerar **Tinel tarsal** (grupo Tobillo / pie), NUNCA «Signo de Tinel» de muñeca.
+- Codo medial / UCL / lanzadores: numerar **Moving valgus stress (UCL)** y/o **Milking maneuver (UCL)**. PROHIBIDO numerar «Test de Lachman» o «Lachman de codo» (no hay vídeo de Lachman de codo; Lachman del catálogo es solo rodilla).
 - Si una maniobra útil no está en el grupo de esa zona, menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
 
 Catálogo por zona:
 **Rodilla**
-  - Test de Lachman
+  - Test de Lachman (rodilla / LCA)
   - Cajón anterior (rodilla)
   - Pivot Shift
   - Test de McMurray
@@ -3038,8 +3039,14 @@ Catálogo por zona:
 **Codo**
   - Test de Cozen
   - Test de Mill
+  - Test de Maudsley
+  - Hook test (bíceps distal)
+  - Biceps squeeze (bíceps distal)
+  - Milking maneuver (UCL)
+  - Moving valgus stress (UCL)
   - Flexión de muñeca resistida (medial)
   - Test de flexión de codo (cubital)
+  - Chair push-up / chair sign (PLRI)
 **Columna lumbar / espalda**
   - SLR / Lasègue
   - SLR cruzado (well-leg)
@@ -3050,7 +3057,7 @@ Catálogo por zona:
   - Distracción SI
   - Compresión SI
   - Active SLR
-- Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
+- Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman (rodilla / LCA)**: …").
 - Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.
 - Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;
 

@@ -53,8 +53,13 @@ import {
   buildPhysioLinkedIntroGreeting,
   buildPhysioLinkedPostQuestionnaireMessage,
   buildPhysioLinkedWelcome,
+  fisioterapiaConversationTitle,
   physioDisplayName,
 } from "@/lib/physio-linked-welcome";
+import {
+  capitalizeConversationTitle,
+  formatConsultaConversationTitle,
+} from "@/lib/conversation-title";
 import { PhysioReportCompleteCard } from "@/components/physio-report-complete-card";
 import { VoiceConversationButton } from "@/components/voice-conversation-button";
 import { VoiceSpeakButton } from "@/components/voice-speak-button";
@@ -1351,8 +1356,21 @@ export function ChatInterface({
         .eq("kind", linkedPhysio ? "fisioterapia" : "consulta")
         .order("created_at", { ascending: false })
         .limit(linkedPhysio ? 30 : 10);
-      const list = (data as Conversation[]) ?? [];
+      const list = ((data as Conversation[]) ?? []).map((c) => ({
+        ...c,
+        title: capitalizeConversationTitle(c.title),
+      }));
       setConversations(list);
+      // Persist capitalization for older lowercase titles (e.g. "glúteo — …").
+      for (const c of list) {
+        const original = (data as Conversation[] | null)?.find((row) => row.id === c.id);
+        if (original && original.title !== c.title) {
+          void supabase
+            .from("conversations")
+            .update({ title: c.title })
+            .eq("id", c.id);
+        }
+      }
 
       // Fisioterapia: open latest assigned chat before revealing the UI (avoids intro /
       // empty-chat / typing-indicator flashes when switching from Consulta).
@@ -1378,8 +1396,15 @@ export function ChatInterface({
   }
 
   async function loadConversation(id: string, title: string) {
+    const displayTitle = capitalizeConversationTitle(title);
     setActiveId(id);
-    setActiveTitle(title);
+    setActiveTitle(displayTitle);
+    if (displayTitle !== title) {
+      void supabase.from("conversations").update({ title: displayTitle }).eq("id", id);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, title: displayTitle } : c))
+      );
+    }
     setOpeningConversation(true);
     setMobileSidebarOpen(false);
     setPhysioIntro(false);
@@ -1475,6 +1500,26 @@ export function ChatInterface({
       }
 
       setMessages(msgs);
+
+      if (linkedPhysio) {
+        const userBlob = msgs
+          .filter((m) => m.role === "user")
+          .map((m) => m.content)
+          .join("\n");
+        const area = bodyAreaLabelFromText(userBlob);
+        if (area && area !== "Consulta general") {
+          await applyFisioterapiaTitle(area, id);
+        } else if (
+          !/ - /.test(title) ||
+          title.includes("…") ||
+          title.startsWith("Hola")
+        ) {
+          await applyFisioterapiaTitle(
+            consultLanguage === "en" ? "consultation" : "consulta",
+            id
+          );
+        }
+      }
     } catch (err) {
       console.error("No se pudo abrir la consulta:", err);
       setMessages([]);
@@ -1797,6 +1842,10 @@ export function ChatInterface({
       },
     ]);
     setPhase("questionnaire");
+    if (linkedPhysio) {
+      const injury = patientFacingPartLabel(part, contextText, consultLanguage);
+      void applyFisioterapiaTitle(injury, activeId);
+    }
     window.setTimeout(() => scrollQuestionnaireToTop(), 80);
     window.setTimeout(() => scrollQuestionnaireToTop(), 320);
   }
@@ -2241,8 +2290,42 @@ export function ChatInterface({
   }
 
   function conversationTitleFromText(text: string): string {
+    if (linkedPhysio) {
+      const area = bodyAreaLabelFromText(text);
+      const injury =
+        area && area !== "Consulta general"
+          ? area
+          : consultLanguage === "en"
+            ? "consultation"
+            : "consulta";
+      return fisioterapiaConversationTitle(
+        injury,
+        linkedPhysio.physio_name,
+        consultLanguage
+      );
+    }
     const short = text.trim().slice(0, 40);
-    return short.length < text.trim().length ? `${short}…` : short;
+    const base = short.length < text.trim().length ? `${short}…` : short;
+    return capitalizeConversationTitle(base);
+  }
+
+  async function applyFisioterapiaTitle(
+    injuryLabel: string,
+    conversationId: string | null = activeId
+  ) {
+    if (!linkedPhysio) return;
+    const title = fisioterapiaConversationTitle(
+      injuryLabel,
+      linkedPhysio.physio_name,
+      consultLanguage
+    );
+    setActiveTitle(title);
+    if (conversationId) {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === conversationId ? { ...c, title } : c))
+      );
+      void supabase.from("conversations").update({ title }).eq("id", conversationId);
+    }
   }
 
   function buildSymptomContext(): string {
@@ -2830,7 +2913,13 @@ export function ChatInterface({
               "En Fisioterapia no se pueden abrir chats nuevos. Continúa una consulta existente o usa la pestaña Consulta."
             );
           }
-          const title = `${areaLabel} — ${new Date().toLocaleDateString("es-ES")}`;
+          const title = linkedPhysio
+            ? fisioterapiaConversationTitle(
+                areaLabel,
+                linkedPhysio.physio_name,
+                consultLanguage
+              )
+            : formatConsultaConversationTitle(areaLabel);
           const { data: conv, error: convErr } = await supabase
             .from("conversations")
             .insert({
@@ -2860,6 +2949,9 @@ export function ChatInterface({
         };
 
         const conv = await ensureConversationId();
+        if (!conv.isNew && linkedPhysio) {
+          await applyFisioterapiaTitle(areaLabel, conv.id);
+        }
 
         await supabase.from("consultas").insert({
           body_area: areaLabel,
@@ -3049,7 +3141,7 @@ export function ChatInterface({
         return;
       }
 
-      const title = `${areaLabel} — ${new Date().toLocaleDateString("es-ES")}`;
+      const title = formatConsultaConversationTitle(areaLabel);
       const { data: conv, error: convErr } = await supabase
         .from("conversations")
         .insert({

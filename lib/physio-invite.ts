@@ -40,14 +40,17 @@ export function parsePastedInviteCode(raw: string | null | undefined): string {
     } catch {
       extracted = normalizeInviteCode(fromQuery[1]);
     }
+    // Full URL paste: only keep a complete invite token.
     return looksLikeInviteCode(extracted) ? extracted : "";
   }
   // Never treat a bare URL/domain/email as an invite code.
   if (/^https?:\/\//i.test(text) || /[.@/]/.test(text)) {
     return "";
   }
-  const code = normalizeInviteCode(text);
-  return looksLikeInviteCode(code) ? code : "";
+  // Live typing: keep alphanumeric partials so the input is not wiped before 6 chars.
+  const code = normalizeInviteCode(text).replace(/[^A-Z0-9]/g, "");
+  if (!code) return "";
+  return code.slice(0, 24);
 }
 
 /** Pull an invite code from `?code=` or from a `next` path like `/fisioterapia?code=…`. */

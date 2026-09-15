@@ -1,6 +1,6 @@
 import {
-  getReadaptExerciseById,
   getReadaptExercisesForRegion,
+  resolveReadaptExercise,
   resolveReadaptRegionFromText,
   READAPTATION_EXERCISES,
 } from "@/lib/readaptation-exercise-catalog";
@@ -24,20 +24,20 @@ export function parseReadaptExerciseFromLine(
   const match = READAPT_ID_RE.exec(line);
   if (!match) return null;
   const id = match[1].toLowerCase();
-  const ex = getReadaptExerciseById(id);
   const withoutId = line.replace(READAPT_ID_RE, " ").replace(/\s+/g, " ").trim();
   const parts = withoutId
     .split("|")
     .map((p) => p.replace(/\s+/g, " ").trim())
     .filter(Boolean);
-  let label = (parts[0] ?? ex?.nameEs ?? id)
+  let label = (parts[0] ?? "")
     .replace(/^[-•*]\s*/, "")
     .replace(/^\d+[.)]\s*/, "")
     .replace(/[:\-–—]\s*$/, "")
     .trim();
+  const ex = resolveReadaptExercise(id, label);
   if (!label) label = ex?.nameEs ?? id;
   const meta = parts.slice(1).join(" · ").trim();
-  return { id, label, meta };
+  return { id: ex?.id ?? id, label, meta };
 }
 
 export function lineHasReadaptExerciseId(line: string): boolean {

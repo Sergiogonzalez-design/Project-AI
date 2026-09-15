@@ -27,9 +27,15 @@ function normalizeForMatch(text: string): string {
 export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "lachman",
-    title: "Test de Lachman",
+    title: "Test de Lachman (rodilla / LCA)",
     src: `${CLINICAL_TEST_CDN}/lachman.webp`,
-    aliases: ["lachman", "test de lachman"],
+    aliases: [
+      "lachman rodilla",
+      "lachman lca",
+      "lachman acl",
+      "test de lachman",
+      "lachman",
+    ],
   },
   {
     id: "anterior-drawer-knee",
@@ -438,6 +444,12 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "valgus movil",
       "valgus móvil",
       "test de valgus móvil",
+      "lachman de codo",
+      "lachman codo",
+      "elbow lachman",
+      "modified lachman elbow",
+      "test de lachman codo",
+      "lachman ucl",
     ],
   },
   {
@@ -647,10 +659,16 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     title: "Estrés en valgo (LCM)",
     src: `${CLINICAL_TEST_CDN}/valgus-stress-mcl.webp`,
     aliases: [
+      "estres en valgo lcm",
+      "estrés en valgo lcm",
+      "estres en valgo (lcm)",
+      "estrés en valgo (lcm)",
       "estres en valgo",
       "estrés en valgo",
       "ligamento colateral medial",
-      "valgus stress",
+      "valgus stress mcl",
+      "valgus stress knee",
+      "mcl stress",
     ],
   },
   {
@@ -1262,14 +1280,15 @@ VÍDEOS (CRÍTICO — fuerza del producto):
 REGLA DE ZONA (CRÍTICO — error grave si se incumple):
 - Identifica la ZONA LESIONADA del caso (pie/tobillo, rodilla, hombro, muñeca, lumbar/espalda, etc.).
 - En listas numeradas (**Pruebas específicas**, exploración, maniobras a realizar, pruebas funcionales, etc.) SOLO puedes numerar tests del GRUPO de ESA zona.
-- PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro.
+- PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro; dolor de codo/UCL → NUNCA Test de Lachman (eso es RODILLA / LCA).
 - Signo de Tinel y Phalen (sin «tarsal») del catálogo son de MUÑECA/MANO. Para pie/túnel tarsiano numerar **Tinel tarsal** (grupo Tobillo / pie), NUNCA «Signo de Tinel» de muñeca.
+- Codo medial / UCL / lanzadores: numerar **Moving valgus stress (UCL)** y/o **Milking maneuver (UCL)**. PROHIBIDO numerar «Test de Lachman» o «Lachman de codo» (no hay vídeo de Lachman de codo; Lachman del catálogo es solo rodilla).
 - Si una maniobra útil no está en el grupo de esa zona, menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
 
 Catálogo por zona:
 ${groups}
-- Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman**: …").
+- Usa exactamente el nombre canónico de la lista en la línea numerada (p. ej. "1. **Test de Lachman (rodilla / LCA)**: …").
 - Elige las más relevantes para la zona/hipótesis; no inventes maniobras fuera del catálogo.
 - Si necesitas otra maniobra no listada, menciónala en prosa SIN numerarla (así no queda una fila sin imagen).`;
 }
@@ -1444,15 +1463,78 @@ export function pickIllustratedTestsForPruebasQuery(
  * Find the best matching clinical-test illustration for a line of assistant text.
  * Returns null when nothing matches, or when several different tests are named
  * in the same line (e.g. welcome text listing Neer, Hawkins, Lachman…).
+ *
+ * Optional `bodyArea` / `regionHint` blocks cross-region false positives
+ * (e.g. elbow UCL “Lachman” must never attach the knee Lachman video).
  */
-export function findClinicalTestImage(line: string): ClinicalTestImage | null {
+export function findClinicalTestImage(
+  line: string,
+  opts?: { bodyArea?: string | null; regionHint?: string | null }
+): ClinicalTestImage | null {
   const normalized = normalizeForMatch(line);
   if (!normalized) return null;
+
+  const context = normalizeForMatch(
+    [opts?.bodyArea, opts?.regionHint].filter(Boolean).join(" ")
+  );
+  const haystack = `${normalized} ${context}`.trim();
+
+  const byId = (id: string) =>
+    CLINICAL_TEST_IMAGES.find((t) => t.id === id) ?? null;
+
+  const kneeIds = new Set(
+    CLINICAL_TEST_REGION_GROUPS.find((g) => g.label === "Rodilla")?.ids ?? []
+  );
+
+  const thumbCue =
+    /\b(pulgar|thumb|mcp|esquiador|gamekeeper|skier)\b/.test(haystack);
+  const kneeCue =
+    /\b(rodilla|knee|lca|acl|lcp|pcl|menisc|rotul|patell)\b/.test(haystack);
+  const elbowCue =
+    /\b(codo|elbow|epicondil|lanzador|thrower|milking|moving valgus|plri|chair push|chair sign|biceps distal|hook test)\b/.test(
+      haystack
+    ) ||
+    (/\b(ucl|ligamento colateral cubital|colateral cubital)\b/.test(haystack) &&
+      !thumbCue);
 
   const ankleCue =
     normalized.includes("tobillo") ||
     normalized.includes("ankle") ||
-    normalized.includes("atfl");
+    normalized.includes("atfl") ||
+    context.includes("tobillo") ||
+    context.includes("ankle");
+
+  // Elbow / UCL “Lachman” is a clinical nickname — never the knee Lachman clip.
+  if (
+    normalized.includes("lachman") &&
+    elbowCue &&
+    !kneeCue &&
+    !thumbCue
+  ) {
+    return byId("moving-valgus");
+  }
+
+  // Elbow valgo/UCL lines must not attach knee MCL valgus stress.
+  if (
+    elbowCue &&
+    !kneeCue &&
+    !thumbCue &&
+    (normalized.includes("valgus") ||
+      normalized.includes("valgo") ||
+      normalized.includes("ucl") ||
+      normalized.includes("colateral cubital"))
+  ) {
+    if (normalized.includes("milking")) return byId("milking-maneuver");
+    if (
+      normalized.includes("valgus") ||
+      normalized.includes("valgo") ||
+      normalized.includes("lachman") ||
+      normalized.includes("ucl") ||
+      normalized.includes("colateral cubital")
+    ) {
+      return byId("moving-valgus");
+    }
+  }
 
   // Posterior drawer is knee/LCP — never treat it as lumbar.
   if (
@@ -1461,9 +1543,7 @@ export function findClinicalTestImage(line: string): ClinicalTestImage | null {
       normalized.includes("posterior drawer") ||
       normalized.includes("posterior sag"))
   ) {
-    return (
-      CLINICAL_TEST_IMAGES.find((t) => t.id === "posterior-drawer-pcl") ?? null
-    );
+    return byId("posterior-drawer-pcl");
   }
 
   // Prefer ankle drawer when the line mentions ankle/tobillo together with drawer.
@@ -1471,19 +1551,18 @@ export function findClinicalTestImage(line: string): ClinicalTestImage | null {
     ankleCue &&
     (normalized.includes("cajon") || normalized.includes("drawer"))
   ) {
-    return (
-      CLINICAL_TEST_IMAGES.find((t) => t.id === "anterior-drawer-ankle") ?? null
-    );
+    return byId("anterior-drawer-ankle");
   }
 
   // Prefer knee drawer when rodilla/knee + cajon without ankle cues.
   if (
-    (normalized.includes("rodilla") || normalized.includes("knee")) &&
+    (normalized.includes("rodilla") ||
+      normalized.includes("knee") ||
+      context.includes("rodilla") ||
+      context.includes("knee")) &&
     (normalized.includes("cajon") || normalized.includes("drawer"))
   ) {
-    return (
-      CLINICAL_TEST_IMAGES.find((t) => t.id === "anterior-drawer-knee") ?? null
-    );
+    return byId("anterior-drawer-knee");
   }
 
   const hits: ClinicalTestImage[] = [];
@@ -1496,10 +1575,18 @@ export function findClinicalTestImage(line: string): ClinicalTestImage | null {
   if (hits.length !== 1) return null;
   const hit = hits[0];
 
+  // Hard region gate: elbow context must never show a knee-only video.
+  if (elbowCue && !kneeCue && kneeIds.has(hit.id)) {
+    if (hit.id === "lachman" || hit.id === "valgus-stress-mcl") {
+      return byId("moving-valgus");
+    }
+    return null;
+  }
+
   // Wrist Tinel/Phalen illustrations must not attach when the line is about foot/ankle.
   const footAnkleCue =
     /\b(pie|plantar|dorso|tobillo|tarsiano|tarsal|ankle|foot|morton|aquiles|achilles|atfl)\b/.test(
-      normalized
+      haystack
     );
   if (footAnkleCue && (hit.id === "tinel" || hit.id === "phalen")) {
     return null;
@@ -1516,14 +1603,18 @@ export function shouldShowClinicalTestImage(opts: {
   numberedText: string | null;
   headingText?: string | null;
   wholeBoldText?: string | null;
+  bodyArea?: string | null;
+  regionHint?: string | null;
 }): ClinicalTestImage | null {
-  const { numberedText, headingText, wholeBoldText } = opts;
-  if (numberedText) return findClinicalTestImage(numberedText);
+  const { numberedText, headingText, wholeBoldText, bodyArea, regionHint } =
+    opts;
+  const matchOpts = { bodyArea, regionHint };
+  if (numberedText) return findClinicalTestImage(numberedText, matchOpts);
   // Whole-line titles like **Test de Lachman** — not long prose headings.
   const title = wholeBoldText ?? headingText;
   if (!title) return null;
   const plain = title.replace(/\*\*/g, "").trim();
   // Skip long section titles / multi-clause sentences.
   if (plain.length > 80 || (plain.match(/,/g) ?? []).length >= 2) return null;
-  return findClinicalTestImage(plain);
+  return findClinicalTestImage(plain, matchOpts);
 }

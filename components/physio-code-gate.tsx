@@ -35,6 +35,7 @@ export function PhysioCodeGate({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const autoSubmitted = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Keep the box empty unless we have a real invite token (block URL/domain autofill).
   useEffect(() => {
@@ -42,6 +43,12 @@ export function PhysioCodeGate({
       const cleaned = parsePastedInviteCode(prev);
       return cleaned === prev ? prev : cleaned;
     });
+  }, []);
+
+  useEffect(() => {
+    // Modal / embedded: focus the field so typing works immediately.
+    const t = window.setTimeout(() => inputRef.current?.focus(), 50);
+    return () => window.clearTimeout(t);
   }, []);
 
   async function linkWithCode(rawCode: string) {
@@ -148,15 +155,18 @@ export function PhysioCodeGate({
           {en ? "Code" : "Código"}
         </label>
         <input
+          ref={inputRef}
           name="physio-invite-code"
           value={code}
           onChange={(e) => setCode(parsePastedInviteCode(e.target.value))}
+          onKeyDown={(e) => e.stopPropagation()}
           placeholder="Ej. K7M2P9QX"
           autoCapitalize="characters"
           autoCorrect="off"
           spellCheck={false}
           autoComplete="one-time-code"
           inputMode="text"
+          autoFocus
           data-lpignore="true"
           data-1p-ignore="true"
           className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 font-mono text-sm tracking-widest text-slate-900 uppercase placeholder:tracking-normal placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"

@@ -27,7 +27,9 @@ export function hasClinicalReasoningForReport(opts: {
   if (!bodyPart) return false;
   const tree = getTreeForBodyPart(bodyPart);
   if (!tree) return false;
-  return extractManiobrasFromReport(opts.physioReport).length > 0;
+  return extractManiobrasFromReport(opts.physioReport, {
+    bodyArea: opts.bodyArea,
+  }).length > 0;
 }
 
 export function resolveEntryNodeId(
@@ -50,7 +52,7 @@ export function resolveEntryNodeId(
     return tree.entryNodeId;
   }
 
-  const maniobras = extractManiobrasFromReport(physioReport);
+  const maniobras = extractManiobrasFromReport(physioReport, { bodyArea });
 
   // Espalda/lumbar: prefer the full multi-test battery (SLR→…→Schober), never a leaf-only jump.
   if (tree.bodyPart === "back") {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { getReadaptExerciseById } from "../lib/readaptation-exercise-catalog";
+import { resolveReadaptExercise } from "../lib/readaptation-exercise-catalog";
 import { READAPT_PHASE_LABELS } from "../lib/readaptation-types";
 import type { ConsultReadaptExerciseLink } from "../lib/consult-readaptation";
 
@@ -11,7 +11,7 @@ type Props = {
 
 export function ReadaptationExerciseCard({ link, language = "es" }: Props) {
   const [open, setOpen] = useState(false);
-  const ex = getReadaptExerciseById(link.id);
+  const ex = resolveReadaptExercise(link.id, link.label);
   const phaseLabel = ex
     ? language === "en"
       ? READAPT_PHASE_LABELS[ex.phase].en

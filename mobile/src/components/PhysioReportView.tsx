@@ -169,7 +169,10 @@ function InlineMarkdown({
   );
 }
 
-function matchPruebaLine(line: string): ClinicalTestImage | null {
+function matchPruebaLine(
+  line: string,
+  bodyArea?: string | null
+): ClinicalTestImage | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
   const plain = stripVisibleMarkup(trimmed).replace(/^\*\s+/, "• ").trim();
@@ -178,20 +181,27 @@ function matchPruebaLine(line: string): ClinicalTestImage | null {
   const matched = shouldShowClinicalTestImage({
     numberedText,
     wholeBoldText: wholeBoldMatch?.[1] ?? null,
+    bodyArea,
   });
   if (matched) return matched;
   if (/^[-•*]\s+\S/.test(plain) && plain.length <= 160) {
-    return findClinicalTestImage(plain);
+    return findClinicalTestImage(plain, { bodyArea });
   }
   return null;
 }
 
-function PruebasWithVideos({ body }: { body: string }) {
+function PruebasWithVideos({
+  body,
+  bodyArea,
+}: {
+  body: string;
+  bodyArea?: string | null;
+}) {
   const shown = new Set<string>();
   return (
     <View style={styles.pruebasWrap}>
       {body.split("\n").map((line, i) => {
-        const matched = matchPruebaLine(line);
+        const matched = matchPruebaLine(line, bodyArea);
         const show = matched && !shown.has(matched.id) ? matched : null;
         if (show) shown.add(show.id);
         if (!line.trim() && !show) {
@@ -310,7 +320,7 @@ export function PhysioReportView({
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
           {section.title === "Pruebas/maniobras a realizar en la cita" ? (
-            <PruebasWithVideos body={section.body} />
+            <PruebasWithVideos body={section.body} bodyArea={bodyArea} />
           ) : (
             <InlineMarkdown
               text={section.body}

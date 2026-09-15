@@ -7,6 +7,7 @@ import {
   t,
   type AppLocale,
 } from "@/lib/consulta-functional-protocols";
+import { capitalizeFirstLetter } from "@/lib/conversation-title";
 import {
   FUNCTIONAL_TEST_QUESTIONS,
   resolveFunctionalRegion,
@@ -31,6 +32,35 @@ export function physioDisplayName(
   const trimmed = physioName?.trim();
   if (trimmed && trimmed.length > 0) return trimmed;
   return language === "en" ? "your physiotherapist" : "tu fisioterapeuta";
+}
+
+/** First name only — e.g. "Sergio Gonzalez" → "Sergio". */
+export function physioFirstName(
+  physioName: string | null | undefined,
+  language: AppLocale = "es"
+): string {
+  const full = physioDisplayName(physioName, language);
+  if (
+    full === "tu fisioterapeuta" ||
+    full === "your physiotherapist"
+  ) {
+    return full;
+  }
+  return full.split(/\s+/)[0] ?? full;
+}
+
+/**
+ * Fisioterapia chat title: "Tobillo - Sergio".
+ * Injury label keeps a capital first letter.
+ */
+export function fisioterapiaConversationTitle(
+  injuryLabel: string,
+  physioName: string | null | undefined,
+  language: AppLocale = "es"
+): string {
+  const fallback = language === "en" ? "Consultation" : "Consulta";
+  const injury = capitalizeFirstLetter(injuryLabel.trim() || fallback);
+  return `${injury} - ${physioFirstName(physioName, language)}`;
 }
 
 /** Short greeting on the Physio intro screen before chat. */

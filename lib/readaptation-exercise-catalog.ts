@@ -672,9 +672,9 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
     targetMuscles: "Glúteo mayor, isquios, estabilizadores lumbares",
     equipment: "Colchoneta",
     instructionsEs:
-      "Supino, rodillas flexionadas. Eleva cadera apretando glúteos sin arquear excesivamente la lumbar. Baja con control.",
+      "1) Acuéstate boca arriba con las rodillas flexionadas y los pies apoyados a la anchura de la cadera, cerca de los glúteos. 2) Brazos a lo largo del cuerpo o cruzados sobre el pecho. 3) Empuja con los talones, aprieta glúteos y eleva la pelvis hasta alinear rodillas–cadera–hombros sin arquear la lumbar. 4) Mantén 1–2 s arriba y baja con control vértebra a vértebra. Respira con calma; no aguantes la respiración.",
     instructionsEn:
-      "Supine, knees bent. Lift hips squeezing glutes without excessive lumbar arch. Lower with control.",
+      "1) Lie on your back with knees bent and feet hip-width, close to your glutes. 2) Arms by your sides or across your chest. 3) Drive through your heels, squeeze your glutes, and lift the pelvis until knees–hips–shoulders align without arching the low back. 4) Hold 1–2 s at the top, then lower with control. Breathe steadily; do not hold your breath.",
     dosageEs: "3 × 12–15, RPE 5–6/10.",
     dosageEn: "3 × 12–15, RPE 5–6/10.",
     progressionEs: "Unilateral o banda en rodillas.",
@@ -687,7 +687,7 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
       "Activación glútea en lumbalgia y control pélvico (Cochrane exercise themes; temas clínicos).",
     evidenceEn:
       "Glute activation in low back pain and pelvic control (Cochrane exercise themes; clinical themes).",
-    aliases: ["puente", "bridge", "glute bridge lumbar"],
+    aliases: ["puente", "bridge", "glute bridge lumbar", "puente de glúteos"],
   },
   {
     id: "lumbar_hip_hinge_dowel",
@@ -802,9 +802,9 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
     targetMuscles: "Glúteo medio, estabilizadores cadera",
     equipment: "Colchoneta, banda opcional",
     instructionsEs:
-      "Decúbito lateral, rodillas flexionadas. Abre rodilla superior sin rotar pelvis. Controla el cierre.",
+      "1) Acuéstate de lado con la cabeza apoyada (brazo o cojín). Caderas y rodillas flexionadas ~45–90°, pies juntos. 2) Mantén la pelvis quieta (no dejes que el tronco se abra hacia atrás). 3) Abre la rodilla superior como una almeja sin separar los talones. 4) Sube solo hasta notar el glúteo lateral; baja con control. Opcional: banda elástica ligera sobre las rodillas.",
     instructionsEn:
-      "Side lying, knees bent. Open top knee without rotating pelvis. Control closing.",
+      "1) Lie on your side with your head supported. Hips and knees bent ~45–90°, feet together. 2) Keep the pelvis still (do not let the trunk roll backward). 3) Open the top knee like a clamshell without separating the heels. 4) Lift until you feel the side glute; lower with control. Optional: light band above the knees.",
     dosageEs: "3 × 15 por lado, banda ligera opcional.",
     dosageEn: "3 × 15 per side, optional light band.",
     progressionEs: "Banda más resistiva o posición side plank.",
@@ -817,7 +817,7 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
       "Activación glúteo medio en lumbopelvic pain y rodilla (Powers et al.; temas clínicos).",
     evidenceEn:
       "Glute medius activation in lumbopelvic and knee pain (Powers et al.; clinical themes).",
-    aliases: ["clamshell", "almeja", "glúteo medio lateral"],
+    aliases: ["clamshell", "almeja", "glúteo medio lateral", "clam shell"],
   },
   {
     id: "lumbar_dead_bug",
@@ -828,9 +828,9 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
     targetMuscles: "Transverso, recto abdominal, control lumbopélvico",
     equipment: "Colchoneta",
     instructionsEs:
-      "Supino, brazos al techo, caderas y rodillas 90°. Baja brazo y pierna contrarios manteniendo lumbar estable. Alterna.",
+      "1) Acuéstate boca arriba. Lleva brazos al techo y flexiona caderas y rodillas a 90° (posición de mesa). 2) Presiona suavemente la lumbar hacia el suelo (neutral, sin aplastar en exceso). 3) Extiende lentamente un brazo hacia atrás y la pierna contraria hacia delante, sin arquear la espalda ni elevar las costillas. 4) Vuelve al centro y alterna. Si la lumbar se despega, reduce el rango.",
     instructionsEn:
-      "Supine, arms up, hips and knees 90°. Lower opposite arm and leg keeping lumbar stable. Alternate.",
+      "1) Lie on your back. Arms toward the ceiling, hips and knees at 90° (tabletop). 2) Gently press the low back toward the floor (neutral, not forced flat). 3) Slowly reach one arm overhead and the opposite leg forward without arching the back or flaring the ribs. 4) Return to center and alternate. If the low back lifts, reduce the range.",
     dosageEs: "3 × 8–10 por lado, movimiento lento.",
     dosageEn: "3 × 8–10 per side, slow movement.",
     progressionEs: "Extensión completa o banda en pies.",
@@ -843,7 +843,7 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
       "Ejercicios de anti-extensión en programas de core (Escamilla et al.; temas clínicos).",
     evidenceEn:
       "Anti-extension core exercises in clinical programs (Escamilla et al.; clinical themes).",
-    aliases: ["dead bug", "bicho muerto", "core supino"],
+    aliases: ["dead bug", "bicho muerto", "core supino", "deadbug"],
   },
   {
     id: "lumbar_pallof_press",
@@ -908,9 +908,9 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
     targetMuscles: "Glúteo mayor, isquiotibiales",
     equipment: "Colchoneta",
     instructionsEs:
-      "Supino, empuja talones al suelo y eleva cadera contrayendo glúteos. Evita compensar con lumbar.",
+      "1) Acuéstate boca arriba, rodillas flexionadas, pies apoyados a la anchura de cadera. 2) Empuja talones al suelo y eleva la pelvis apretando glúteos hasta alinear tronco y muslos. 3) Evita arquear la lumbar o empujar solo con la espalda. 4) Mantén 1–2 s arriba y baja despacio. Si duele la zona glútea de forma aguda, reduce la altura.",
     instructionsEn:
-      "Supine, drive heels into floor and lift hips squeezing glutes. Avoid compensating with lumbar spine.",
+      "1) Lie on your back, knees bent, feet hip-width. 2) Drive heels into the floor and lift the pelvis squeezing the glutes until trunk and thighs align. 3) Avoid arching the low back or pushing only with the spine. 4) Hold 1–2 s at the top and lower slowly. If the glute area is acutely painful, reduce the height.",
     dosageEs: "3 × 12–15, pausa 2 s arriba.",
     dosageEn: "3 × 12–15, 2 s pause at top.",
     progressionEs: "Puente monopodal o banda.",
@@ -934,9 +934,9 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
     targetMuscles: "Glúteo medio",
     equipment: "Colchoneta, banda opcional",
     instructionsEs:
-      "De lado, pierna superior recta. Eleva la pierna hacia el techo sin inclinar pelvis hacia atrás.",
+      "1) Acuéstate de lado con la pierna de abajo ligeramente flexionada para estabilidad y la superior estirada (alineada con el tronco). 2) Apoya la cabeza y mantén la pelvis apilada (no dejes que la cadera superior caiga hacia delante ni hacia atrás). 3) Eleva la pierna superior hacia el techo unos 30–45° sin rotar el pie hacia fuera en exceso. 4) Baja con control hasta casi tocar la pierna de abajo, sin relajar del todo. Opcional: banda ligera en muslos. Si aparece dolor lateral agudo en el trocánter, reduce el rango o cambia a clamshell.",
     instructionsEn:
-      "Side lying, top leg straight. Lift leg toward ceiling without rolling pelvis backward.",
+      "1) Lie on your side with the bottom leg slightly bent for stability and the top leg straight (in line with the trunk). 2) Support your head and keep the pelvis stacked (do not let the top hip roll forward or back). 3) Lift the top leg toward the ceiling about 30–45° without excessive outward foot turn. 4) Lower with control until almost touching the bottom leg, without fully relaxing. Optional: light band around the thighs. If sharp lateral trochanter pain appears, reduce range or switch to a clamshell.",
     dosageEs: "3 × 15 por lado, RPE 5–6/10.",
     dosageEn: "3 × 15 per side, RPE 5–6/10.",
     progressionEs: "Banda o holds de 3 s arriba.",
@@ -949,7 +949,15 @@ export const READAPTATION_EXERCISES: readonly ReadaptExercise[] = [
       "Glúteo medio en síndrome patelofemoral y cadera (Powers et al.; temas JOSPT).",
     evidenceEn:
       "Glute medius in patellofemoral and hip syndromes (Powers et al.; JOSPT themes).",
-    aliases: ["abducción cadera", "hip abduction", "glúteo medio", "sidelying abduction"],
+    aliases: [
+      "abducción cadera",
+      "abduccion cadera",
+      "hip abduction",
+      "glúteo medio",
+      "sidelying abduction",
+      "abducción cadera en decúbito lateral",
+      "abduccion cadera en decubito lateral",
+    ],
   },
   {
     id: "hip_hitch",
@@ -1701,8 +1709,66 @@ const REGION_KEYWORDS: { region: ReadaptRegion | "general"; patterns: RegExp[] }
   },
 ];
 
+/** Common AI / shorthand IDs that should resolve to catalog entries. */
+const EXERCISE_ID_ALIASES: Record<string, string> = {
+  hip_abduction: "hip_sidelying_abduction",
+  hip_abd: "hip_sidelying_abduction",
+  abduccion_cadera: "hip_sidelying_abduction",
+  hip_side_lying_abduction: "hip_sidelying_abduction",
+  glute_bridge: "lumbar_bridge",
+  puente_gluteos: "lumbar_bridge",
+  clamshell: "lumbar_clamshell",
+  almeja: "lumbar_clamshell",
+  dead_bug: "lumbar_dead_bug",
+  deadbug: "lumbar_dead_bug",
+};
+
+function normalizeLookupText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function getReadaptExerciseById(id: string): ReadaptExercise | undefined {
-  return EXERCISE_BY_ID.get(id);
+  const key = id.trim().toLowerCase();
+  const direct = EXERCISE_BY_ID.get(key);
+  if (direct) return direct;
+  const aliased = EXERCISE_ID_ALIASES[key];
+  return aliased ? EXERCISE_BY_ID.get(aliased) : undefined;
+}
+
+/** Resolve by catalog id, known aliases, or exercise name / alias text. */
+export function resolveReadaptExercise(
+  id: string,
+  labelHint = "",
+): ReadaptExercise | undefined {
+  const byId = getReadaptExerciseById(id);
+  if (byId) return byId;
+
+  const needle = normalizeLookupText(`${id} ${labelHint}`);
+  if (!needle) return undefined;
+
+  let best: ReadaptExercise | undefined;
+  let bestScore = 0;
+  for (const ex of READAPTATION_EXERCISES) {
+    const names = [ex.id, ex.nameEs, ex.nameEn, ...ex.aliases].map(normalizeLookupText);
+    for (const n of names) {
+      if (!n) continue;
+      let score = 0;
+      if (needle === n) score = 100;
+      else if (needle.includes(n)) score = Math.min(90, n.length);
+      else if (n.includes(needle)) score = Math.min(80, needle.length);
+      if (score > bestScore) {
+        bestScore = score;
+        best = ex;
+      }
+    }
+  }
+  return bestScore >= 8 ? best : undefined;
 }
 
 export function getReadaptExercisesForRegion(
