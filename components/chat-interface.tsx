@@ -4337,6 +4337,13 @@ export function ChatInterface({
   ]);
 
   const chatBusy = loading || Boolean(revealingMessageId);
+  const questionnaireSubmitLabel = linkedPhysio
+    ? consultLanguage === "en"
+      ? "Send"
+      : "Enviar"
+    : consultLanguage === "en"
+      ? "Get AI guidance"
+      : "Obtener orientación de la IA";
   return (
     <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-[var(--background)]">
       {mobileSidebarOpen && (
@@ -4750,7 +4757,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4772,7 +4779,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4794,7 +4801,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4816,7 +4823,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4838,7 +4845,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4860,7 +4867,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4882,7 +4889,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4909,7 +4916,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4931,7 +4938,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4958,7 +4965,7 @@ export function ChatInterface({
                         disabled={chatBusy}
                         className="btn-primary mt-4 w-full"
                       >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                     )}
                   </>
@@ -4974,7 +4981,7 @@ export function ChatInterface({
                       disabled={chatBusy}
                       className="btn-primary w-full"
                     >
-                        {consultLanguage === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                        {questionnaireSubmitLabel}
                       </button>
                   </>
                 )}

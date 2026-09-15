@@ -4150,6 +4150,13 @@ export function AIInquiriesScreen({
   }
 
   if (phase === "questionnaire") {
+    const questionnaireSubmitLabel = linkedPhysio
+      ? locale === "en"
+        ? "Send"
+        : "Enviar"
+      : locale === "en"
+        ? "Get AI guidance"
+        : "Obtener orientación de la IA";
     return (
       <View style={{ flex: 1, backgroundColor: Colors.background, paddingBottom: composerInset }}>
         {renderTopBar()}
@@ -4253,7 +4260,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4275,7 +4282,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4297,7 +4304,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4319,7 +4326,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4341,7 +4348,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4363,7 +4370,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4385,7 +4392,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4412,7 +4419,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4434,7 +4441,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4461,7 +4468,7 @@ export function AIInquiriesScreen({
                     onPress={handleQuestionnaireSubmit}
                   >
                     <Text style={styles.submitBtnText}>
-                      {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                      {questionnaireSubmitLabel}
                     </Text>
                   </Pressable>
                 )}
@@ -4479,7 +4486,7 @@ export function AIInquiriesScreen({
                   onPress={handleQuestionnaireSubmit}
                 >
                   <Text style={styles.submitBtnText}>
-                    {locale === "en" ? "Get AI guidance" : "Obtener orientación de la IA"}
+                    {questionnaireSubmitLabel}
                   </Text>
                 </Pressable>
               </>

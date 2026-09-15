@@ -572,7 +572,8 @@ export const LOWER_LEG_QUESTIONS: LowerLegQuestionDef[] = [
       "¿Es el mismo dolor que notas al caminar, torcer el tobillo, ponerte de puntillas o al dar los primeros pasos por la mañana?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "inicio",

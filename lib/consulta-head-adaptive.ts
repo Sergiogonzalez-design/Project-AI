@@ -241,7 +241,8 @@ export const HEAD_QUESTIONS: HeadQuestionDef[] = [
       "¿Es el mismo dolor de cabeza que notas ahora, al mover el cuello, con la luz o en tu patrón habitual?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "tipo_dolor",

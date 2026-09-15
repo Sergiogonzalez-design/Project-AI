@@ -434,7 +434,8 @@ export const BACK_QUESTIONS: BackQuestionDef[] = [
       "¿Es el mismo dolor que notas al agacharte, arquearte, estar sentado, o cuando baja por la pierna?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "inicio",

@@ -315,19 +315,20 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
     label: "2. ¿Es el mismo dolor que notas al agarrar, usar el pulgar, flexionar la muñeca o al despertar con hormigueo?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   { id: "inicio", section: "core", label: "3. ¿Cómo empezó el problema?", type: "single", options: WRIST_ONSET_OPTIONS, required: true },
   { id: "comienzo", section: "core", label: "4. ¿Cuándo comenzó?", type: "single", options: WRIST_BEGIN_OPTIONS, required: true },
   { id: "intensidad_dolor", section: "core", label: "5. Intensidad de dolor actual", type: "slider", required: true, min: 0, max: 10 },
-  { id: "calidad_dolor", section: "core", label: "6. ¿Cómo es el dolor?", type: "multi", options: WRIST_PAIN_QUALITY_OPTIONS, required: true },
+  { id: "calidad_dolor", section: "core", label: "6. ¿Cómo es el dolor?", type: "multi", options: WRIST_PAIN_QUALITY_OPTIONS, required: false, showIf: () => false },
   { id: "movimientos_agravantes", section: "core", label: "7. ¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: WRIST_AGGRAVATING_MOVEMENTS, required: true },
   { id: "limitacion_funcional", section: "core", label: "8. ¿Qué te cuesta hacer? (puedes marcar varias)", type: "multi", options: WRIST_FUNCTIONAL_LIMIT, required: true },
   { id: "sintomas_asociados", section: "core", label: "9. ¿Qué más notas?", type: "multi", options: WRIST_ASSOCIATED_SYMPTOMS, required: true },
   { id: "irradiacion", section: "core", label: "10. ¿El dolor se extiende a otra zona?", type: "single", options: WRIST_RADIATION, required: true },
   { id: "episodio_previo", section: "core", label: "11. ¿Te ha pasado antes?", type: "single", options: WRIST_PREVIOUS_EPISODE, required: true },
 
-  // No preguntamos deporte: pedimos actividad tipo + detalle (dinámico)
+  // Activity detail only when onset is vague (avoids re-asking after fall/weights/repetitive)
   {
     id: "actividad_tipo",
     section: "core",
@@ -335,6 +336,10 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
     type: "single",
     options: ["Pesas / gimnasio", "Deporte", "Escalada", "Trabajo de oficina (teclado/ratón)", "Otra"] as const,
     required: true,
+    showIf: (a) =>
+      a.inicio === "Empezó poco a poco, sin causa clara" ||
+      a.inicio === "No lo sé" ||
+      a.inicio === "Tras entrenamiento",
   },
   {
     id: "actividad_detalle",
@@ -342,6 +347,11 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
     label: "13. Detalla la actividad",
     type: "text",
     required: true,
+    showIf: (a) =>
+      a.inicio === "Empezó poco a poco, sin causa clara" ||
+      a.inicio === "No lo sé" ||
+      a.inicio === "Tras entrenamiento" ||
+      Boolean(a.actividad_tipo),
   },
 
   // Fall branch
@@ -354,7 +364,7 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
 
   // Weights
   { id: "pesas_ejercicio", section: "weights", label: "¿Qué ejercicio estabas haciendo?", type: "text", required: true, showIf: (a) => a.inicio === "Tras levantar pesas" || a.actividad_tipo === "Pesas / gimnasio" },
-  { id: "pesas_peso", section: "weights", label: "Peso aproximado (si lo recuerdas)", type: "text", required: true, showIf: (a) => a.inicio === "Tras levantar pesas" || a.actividad_tipo === "Pesas / gimnasio" },
+  { id: "pesas_peso", section: "weights", label: "Peso aproximado (si lo recuerdas)", type: "text", required: false, showIf: () => false },
   { id: "pesas_momento", section: "weights", label: "¿Durante el levantamiento o después?", type: "single", options: WEIGHTS_TIMING, required: true, showIf: (a) => a.inicio === "Tras levantar pesas" || a.actividad_tipo === "Pesas / gimnasio" },
   { id: "pesas_pop", section: "weights", label: "¿Notaste un pop?", type: "single", options: YES_NO, required: true, showIf: (a) => a.inicio === "Tras levantar pesas" || a.actividad_tipo === "Pesas / gimnasio" },
 
@@ -372,8 +382,8 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
 
   // Thumb side
   { id: "pulgar_pinza_agrava", section: "thumb_side", label: "¿Pinzar o agarrar lo empeora?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
-  { id: "pulgar_cargar_agrava", section: "thumb_side", label: "¿Cargar peso (niños/bolsas) lo empeora?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
-  { id: "pulgar_mover_reproduce", section: "thumb_side", label: "¿Mover el pulgar reproduce el dolor?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
+  { id: "pulgar_cargar_agrava", section: "thumb_side", label: "¿Cargar peso (niños/bolsas) lo empeora?", type: "single", options: YES_NO, required: false, showIf: () => false },
+  { id: "pulgar_mover_reproduce", section: "thumb_side", label: "¿Mover el pulgar reproduce el dolor?", type: "single", options: YES_NO, required: false, showIf: () => false },
   { id: "pulgar_what", section: "thumb_side", label: "¿Duele el borde del pulgar de la muñeca si doblas la muñeca hacia la palma y apartas el pulgar hacia fuera?", type: "single", options: YES_NO, required: true, showIf: (a) => hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar") },
   { id: "pulgar_rigidez_matutina", section: "thumb_side", label: "¿Notas rigidez o crujido al mover el pulgar, especialmente por la mañana?", type: "single", options: YES_NO, required: true, showIf: (a) => (hasAnyLocation(a, "Lado del pulgar") || hasAnyLocation(a, "Base del pulgar")) && shouldShowSleepDependentQuestion("pulgar_rigidez_matutina", a.comienzo, a.inicio) },
 
@@ -385,13 +395,13 @@ export const WRIST_QUESTIONS: WristQuestionDef[] = [
 
   // Clicking / locking
   { id: "bloqueo_atasca", section: "clicking_locking", label: "¿Se queda atascada la muñeca o algún movimiento?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Chasquidos") || hasSymptom(a, "Bloqueo") || hasSymptom(a, "Sensación de que algo se mueve dentro") },
-  { id: "click_duele", section: "clicking_locking", label: "¿El chasquido es doloroso?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Chasquidos") || hasSymptom(a, "Bloqueo") || hasSymptom(a, "Sensación de que algo se mueve dentro") },
-  { id: "click_siente_desplaza", section: "clicking_locking", label: "¿Sientes que algo se desplaza dentro?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Chasquidos") || hasSymptom(a, "Bloqueo") || hasSymptom(a, "Sensación de que algo se mueve dentro") },
+  { id: "click_duele", section: "clicking_locking", label: "¿El chasquido es doloroso?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Chasquidos") },
+  { id: "click_siente_desplaza", section: "clicking_locking", label: "¿Sientes que algo se desplaza dentro?", type: "single", options: YES_NO, required: false, showIf: () => false },
 
   // Weakness
-  { id: "debilidad_por_dolor", section: "weakness", label: "¿La debilidad parece ser por dolor?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Debilidad") },
+  { id: "debilidad_por_dolor", section: "weakness", label: "¿La debilidad parece ser por dolor?", type: "single", options: YES_NO, required: false, showIf: () => false },
   { id: "debilidad_agarre", section: "weakness", label: "¿Notas el agarre más débil de lo normal?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Debilidad") },
-  { id: "debilidad_se_caen_objetos", section: "weakness", label: "¿Se te caen objetos?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Debilidad") },
+  { id: "debilidad_se_caen_objetos", section: "weakness", label: "¿Se te caen objetos?", type: "single", options: YES_NO, required: false, showIf: () => false },
 ];
 
 export function detectWristRedFlags(answers: WristAdaptiveAnswers): {

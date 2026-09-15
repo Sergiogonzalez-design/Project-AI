@@ -452,7 +452,8 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
       "¿El dolor que describes es el mismo que notas al caminar, correr, entrenar o en tu actividad habitual?",
     type: "single",
     options: ["Sí, es el mismo", "No, es distinto o solo duele en ciertos gestos", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   
   {
@@ -677,8 +678,8 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     label: "¿Qué tipo de carga utilizabas?",
     type: "single",
     options: TRAINING_LOAD_OPTIONS,
-    required: true,
-    showIf: (a) => a.mecanismo.includes("Entrenamiento o ejercicio"),
+    required: false,
+    showIf: () => false,
   },
 
   // Repetitive / running branch
@@ -785,8 +786,8 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
       "¿Notas dolor u hormigueo en el glúteo al sentarte, sobre todo en silla dura?",
     type: "single",
     options: YES_NO,
-    required: true,
-    showIf: hasPosteriorSection,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "posterior_palpacion_isquion",
@@ -814,8 +815,8 @@ export const HIP_QUESTIONS: HipQuestionDef[] = [
     label: "¿Empeora al correr rápido, sprintar o chutar?",
     type: "single",
     options: YES_NO,
-    required: true,
-    showIf: hasPosteriorSection,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "posterior_slr",

@@ -342,10 +342,7 @@ function isTwist(a: KneeAdaptiveAnswers): boolean {
 }
 
 function isRepetitiveOrProgressive(a: KneeAdaptiveAnswers): boolean {
-  return (
-    a.mecanismo.includes("Movimiento repetitivo") ||
-    a.mecanismo.includes("Empezó poco a poco, sin causa clara")
-  );
+  return a.mecanismo.includes("Movimiento repetitivo");
 }
 
 function hasNeuro(a: KneeAdaptiveAnswers): boolean {
@@ -391,17 +388,11 @@ function hasAnteriorPfpSection(a: KneeAdaptiveAnswers): boolean {
 }
 
 function hasMedialSection(a: KneeAdaptiveAnswers): boolean {
-  return (
-    a.localizacion_rodilla.includes("Cara interna (lado de dentro)") ||
-    a.localizacion_rodilla.includes("Donde se juntan los huesos (línea de la articulación)")
-  );
+  return a.localizacion_rodilla.includes("Cara interna (lado de dentro)");
 }
 
 function hasLateralSection(a: KneeAdaptiveAnswers): boolean {
-  return (
-    a.localizacion_rodilla.includes("Cara externa (lado de fuera)") ||
-    a.localizacion_rodilla.includes("Donde se juntan los huesos (línea de la articulación)")
-  );
+  return a.localizacion_rodilla.includes("Cara externa (lado de fuera)");
 }
 
 function hasAclSection(a: KneeAdaptiveAnswers): boolean {
@@ -519,7 +510,8 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
       "¿El dolor que describes es el mismo que notas al bajar escaleras, agacharte, correr o saltar?",
     type: "single",
     options: ["Sí, es el mismo", "No, es distinto o solo duele en ciertos gestos", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   
   {
@@ -626,8 +618,8 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     label: "¿Duele después de estar sentado mucho rato (al levantarte)?",
     type: "single",
     options: YES_NO,
-    required: true,
-    showIf: hasAnteriorPfpSection,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "anterior_saltar",
@@ -635,8 +627,8 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     label: "¿Duele al saltar, aterrizar o correr con impulso?",
     type: "single",
     options: YES_NO,
-    required: true,
-    showIf: hasAnteriorPfpSection,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "anterior_palpacion_tendon",
@@ -912,8 +904,8 @@ export const KNEE_QUESTIONS: KneeQuestionDef[] = [
     label: "¿Qué tipo de carga utilizabas?",
     type: "single",
     options: TRAINING_LOAD_OPTIONS,
-    required: true,
-    showIf: (a) => a.mecanismo.includes("Entrenamiento o ejercicio"),
+    required: false,
+    showIf: () => false,
   },
 
   // Repetitive / progressive branch

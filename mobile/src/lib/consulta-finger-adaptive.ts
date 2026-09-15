@@ -331,7 +331,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
       "¿Es el mismo dolor u hormigueo que notas al agarrar, pellizcar, usar el móvil o al despertar de noche?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "cuando_empezo",
@@ -372,7 +373,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "¿Cómo describirías el dolor? (puedes elegir varios)",
     type: "multi",
     options: FINGER_PAIN_NATURE,
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "hinchazon",
@@ -429,7 +431,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "¿Duele al agarrar objetos (botella, taza, bolsas)?",
     type: "single",
     options: YES_NO,
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "dolor_pinza",
@@ -437,7 +440,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "¿Duele al pellizcar entre pulgar y dedo?",
     type: "single",
     options: YES_NO,
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "movimientos_empeoran",
@@ -470,7 +474,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "¿Sientes rigidez en el dedo?",
     type: "single",
     options: FINGER_STIFFNESS,
-    required: true,
+    required: false,
+    showIf: () => false,
   },
 
   {
@@ -487,7 +492,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "¿Practicas habitualmente alguno de estos deportes?",
     type: "multi",
     options: FINGER_SPORTS,
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "limitaciones_funcionales",
@@ -495,7 +501,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "¿Qué actividades se te hacen difíciles?",
     type: "multi",
     options: FINGER_FUNCTIONAL_LIMITS,
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "entumecimiento",
@@ -512,7 +519,8 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     label: "Autoevaluación — ¿Puedes hacer un puño cerrando todos los dedos?",
     type: "single",
     options: FINGER_SELF_TEST,
-    required: true,
+    required: false,
+    showIf: () => false,
   },  {
     id: "test_pinza_papel",
     section: "self_tests",
@@ -527,6 +535,14 @@ export const FINGER_QUESTIONS: FingerQuestionDef[] = [
     type: "single",
     options: FINGER_SELF_TEST,
     required: true,
+    showIf: (a) =>
+      [
+        "Caída",
+        "Dedo doblado hacia atrás",
+        "Dedo golpeado por balón",
+        "Lesión por torsión",
+        "Corte o herida",
+      ].includes(a.como_empezo),
   },
 ];
 

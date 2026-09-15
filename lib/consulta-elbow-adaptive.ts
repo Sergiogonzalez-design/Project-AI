@@ -440,12 +440,13 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
     label: "¿Es el mismo dolor que notas al agarrar, usar el ratón, girar un pomo o al despertar con hormigueo?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
-  { id: "inicio", section: "core", label: "¿Cómo apareció el dolor?", type: "single", options: ONSET_FORM_OPTIONS, required: true },
-  { id: "mecanismo", section: "core", label: "¿Cómo empezó el problema?", type: "single", options: MECHANISM_OPTIONS, required: true },
+  { id: "inicio", section: "core", label: "¿Apareció de golpe o poco a poco?", type: "single", options: ONSET_FORM_OPTIONS, required: true },
+  { id: "mecanismo", section: "core", label: "¿Qué pudo provocarlo?", type: "single", options: MECHANISM_OPTIONS, required: true },
   { id: "intensidad_dolor", section: "core", label: "Intensidad actual del dolor (1–10)", type: "slider", required: true },
-  { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: true },
+  { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: false, showIf: () => false },
   { id: "movimientos_agravantes", section: "core", label: "¿Qué movimientos lo empeoran? (puedes marcar varias)", type: "multi", options: AGGRAVATING_MOVEMENT_OPTIONS, required: true },
   { id: "limitacion_funcional", section: "core", label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)", type: "multi", options: FUNCTIONAL_LIMIT_OPTIONS, required: true },
   { id: "sintomas_asociados", section: "core", label: "¿Qué otros síntomas notas?", type: "multi", options: ASSOCIATED_SYMPTOM_OPTIONS, required: true },
@@ -492,13 +493,13 @@ export const ELBOW_QUESTIONS: ElbowQuestionDef[] = [
   { id: "hormigueo_flexion", section: "tingling", label: "¿Empieza o empeora al doblar el codo?", type: "single", options: YES_NO, required: true, showIf: hasTingling },
   { id: "hormigueo_presion_palma", section: "tingling", label: "¿Empeora el hormigueo al apoyar la palma (manillar, peso sobre la muñeca)?", type: "single", options: YES_NO, required: true, showIf: (a) => hasTingling(a) && (a.hormigueo_dedos.includes("Meñique") || a.hormigueo_dedos.includes("Anular")) },
 
-  // Locking
-  { id: "bloqueo_atascado", section: "locking", label: "¿El codo se queda atascado?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Bloqueo") },
+  // Locking (symptom chip already selected — skip re-asking "does it lock")
+  { id: "bloqueo_atascado", section: "locking", label: "¿El codo se queda atascado?", type: "single", options: YES_NO, required: false, showIf: () => false },
   { id: "bloqueo_desbloqueo", section: "locking", label: "¿Puedes desbloquearlo tú solo?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Bloqueo") },
   { id: "bloqueo_chasquido", section: "locking", label: "¿Hace chasquido antes de desbloquearse?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Bloqueo") },
 
-  // Instability
-  { id: "inestabilidad_cede", section: "instability", label: "¿Sientes que el codo cede o falla?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Inestabilidad") },
+  // Instability (symptom chip already selected — skip re-asking "does it give way")
+  { id: "inestabilidad_cede", section: "instability", label: "¿Sientes que el codo cede o falla?", type: "single", options: YES_NO, required: false, showIf: () => false },
   { id: "inestabilidad_antes", section: "instability", label: "¿Ha pasado antes?", type: "single", options: INSTABILITY_PREVIOUS_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Inestabilidad") },
   { id: "inestabilidad_posicion", section: "instability", label: "¿Ocurre al empujarte para levantarte de una silla o del suelo con la palma hacia arriba?", type: "single", options: YES_NO, required: true, showIf: (a) => hasSymptom(a, "Inestabilidad") },
 

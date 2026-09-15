@@ -477,13 +477,14 @@ export const SHOULDER_QUESTIONS: ShoulderQuestionDef[] = [
     label: "¿Es el mismo dolor que notas al elevar el brazo, dormir de ese lado, lanzar o cruzar el brazo por delante?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   { id: "inicio", section: "core", label: "¿Cómo fue el inicio?", type: "single", options: ONSET_FORM_OPTIONS, required: true },
   { id: "mecanismo", section: "core", label: "¿Qué pudo provocarlo? (puedes marcar varias)", type: "multi", options: MECHANISM_OPTIONS, required: true },
   { id: "mecanismo_otro", section: "core", label: "Cuéntanos qué pasó o cómo empezó", type: "text", required: true, showIf: (a) => a.mecanismo.includes("Otro") },
   { id: "intensidad_dolor", section: "core", label: "Intensidad del dolor (1–10)", type: "slider", required: true },
-  { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: true },
+  { id: "tipo_dolor", section: "core", label: "¿Cómo describirías el dolor?", type: "multi", options: PAIN_TYPE_OPTIONS, required: false, showIf: () => false },
   { id: "limitacion_funcional", section: "core", label: "¿Cuánto te limita en tu día a día? (puedes marcar varias)", type: "multi", options: FUNCTIONAL_LIMIT_OPTIONS, required: true },
   { id: "irradiacion", section: "core", label: "¿El dolor se extiende hacia el brazo?", type: "single", options: YES_NO, required: true },
   { id: "irradiacion_detalle", section: "core", label: "¿Hasta dónde llega ese dolor?", type: "text", required: true, showIf: (a) => a.irradiacion === "Sí" },
@@ -529,7 +530,7 @@ export const SHOULDER_QUESTIONS: ShoulderQuestionDef[] = [
 
   // Instability branch
   { id: "inestabilidad_salido", section: "instability", label: "¿El hombro se ha salido de sitio alguna vez?", type: "single", options: INSTABILITY_HISTORY_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
-  { id: "inestabilidad_desplaza", section: "instability", label: "¿Sientes que el hombro se desplaza o da inseguridad?", type: "single", options: INSTABILITY_FEELING_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
+  { id: "inestabilidad_desplaza", section: "instability", label: "¿Sientes que el hombro se desplaza o da inseguridad?", type: "single", options: INSTABILITY_FEELING_OPTIONS, required: false, showIf: () => false },
   { id: "inestabilidad_direccion", section: "instability", label: "¿Hacia qué dirección notas que se desplaza el hombro?", type: "single", options: INSTABILITY_DIRECTION_OPTIONS, required: true, showIf: (a) => hasSymptom(a, "Sensación de inestabilidad") },
 
   // History

@@ -378,7 +378,8 @@ export const NECK_QUESTIONS: NeckQuestionDef[] = [
       "¿Es el mismo dolor que notas al girar/inclinar la cabeza, mirar al techo o cuando el síntoma baja al brazo?",
     type: "single",
     options: ["Sí, es el mismo", "No, es otra molestia", "No estoy seguro"],
-    required: true,
+    required: false,
+    showIf: () => false,
   },
   {
     id: "inicio",
