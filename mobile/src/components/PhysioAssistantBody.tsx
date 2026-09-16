@@ -59,11 +59,14 @@ export function PhysioAssistantBody({ text, fallbackTests = [] }: Props) {
   const shownTestIds = new Set<string>();
   let currentRegionIds: readonly string[] | null = null;
   const nodes: React.ReactNode[] = [];
+  const lockToSingle =
+    fallbackTests.length === 1 ? fallbackTests[0] : null;
 
   function pushLeftovers(
     regionIds: readonly string[] | null,
     keyPrefix: string
   ) {
+    if (lockToSingle) return;
     leftoverIllustratedTests(fallbackTests, shownTestIds, regionIds).forEach(
       (t) => {
         shownTestIds.add(t.id);
@@ -125,15 +128,25 @@ export function PhysioAssistantBody({ text, fallbackTests = [] }: Props) {
     ) {
       showTest = null;
     }
-    if (showTest) shownTestIds.add(showTest.id);
-    if (!showTest && numberedText && currentRegionIds) {
+    if (lockToSingle) {
+      if (showTest && showTest.id !== lockToSingle.id) {
+        showTest = null;
+      }
+      if (
+        !showTest &&
+        !shownTestIds.has(lockToSingle.id) &&
+        (numberedText || headingText || wholeBoldMatch)
+      ) {
+        showTest = lockToSingle;
+      }
+    } else if (!showTest && numberedText && currentRegionIds) {
       showTest = nextIllustratedFallbackTest(
         fallbackTests,
         shownTestIds,
         currentRegionIds
       );
-      if (showTest) shownTestIds.add(showTest.id);
     }
+    if (showTest) shownTestIds.add(showTest.id);
 
     const mediaBlock = showTest ? (
       <ClinicalTestMediaBlock test={showTest} />
@@ -230,10 +243,15 @@ export function PhysioAssistantBody({ text, fallbackTests = [] }: Props) {
   });
 
   pushLeftovers(currentRegionIds, "end-region");
-  leftoverIllustratedTests(fallbackTests, shownTestIds, null).forEach((t) => {
-    shownTestIds.add(t.id);
-    nodes.push(leftoverMedia(t, `end-all-${t.id}`));
-  });
+  if (lockToSingle && !shownTestIds.has(lockToSingle.id)) {
+    shownTestIds.add(lockToSingle.id);
+    nodes.push(leftoverMedia(lockToSingle, `single-${lockToSingle.id}`));
+  } else if (!lockToSingle) {
+    leftoverIllustratedTests(fallbackTests, shownTestIds, null).forEach((t) => {
+      shownTestIds.add(t.id);
+      nodes.push(leftoverMedia(t, `end-all-${t.id}`));
+    });
+  }
 
   return <View>{nodes}</View>;
 }

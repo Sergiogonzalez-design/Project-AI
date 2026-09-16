@@ -283,6 +283,8 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
             onChangeText={setPassword}
             editable={!loading}
             {...authPasswordProps}
+            showPasswordLabel={t.auth.showPassword}
+            hidePasswordLabel={t.auth.hidePassword}
             ref={passwordRef}
             onSubmitEditing={() => confirmRef.current?.focus()}
           />
@@ -296,6 +298,8 @@ export function SignupScreen({ onSwitch, onSignedUp }: Props) {
             onChangeText={setConfirm}
             editable={!loading}
             {...authPasswordProps}
+            showPasswordLabel={t.auth.showPassword}
+            hidePasswordLabel={t.auth.hidePassword}
             ref={confirmRef}
             onSubmitEditing={handleSignup}
           />

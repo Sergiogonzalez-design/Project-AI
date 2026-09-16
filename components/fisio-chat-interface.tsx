@@ -118,12 +118,16 @@ function renderAssistantContent(
   const shownTestIds = new Set<string>();
   let currentRegionIds: readonly string[] | null = null;
   const nodes: ReactNode[] = [];
+  /** When the physio named one maneuver, only that video may appear. */
+  const lockToSingle =
+    fallbackTests.length === 1 ? fallbackTests[0] : null;
 
   function mediaFor(test: ClinicalTestImage) {
     return <ClinicalTestMediaBlock test={test} />;
   }
 
   function pushLeftovers(regionIds: readonly string[] | null, keyPrefix: string) {
+    if (lockToSingle) return;
     const leftover = leftoverIllustratedTests(
       fallbackTests,
       shownTestIds,
@@ -196,15 +200,26 @@ function renderAssistantContent(
     ) {
       showImage = null;
     }
-    if (showImage) shownTestIds.add(showImage.id);
-    if (!showImage && numberedText && currentRegionIds) {
+    if (lockToSingle) {
+      // Named single-test ask: never attach a different maneuver's video.
+      if (showImage && showImage.id !== lockToSingle.id) {
+        showImage = null;
+      }
+      if (
+        !showImage &&
+        !shownTestIds.has(lockToSingle.id) &&
+        (numberedText || headingText || wholeBoldMatch)
+      ) {
+        showImage = lockToSingle;
+      }
+    } else if (!showImage && numberedText && currentRegionIds) {
       showImage = nextIllustratedFallbackTest(
         fallbackTests,
         shownTestIds,
         currentRegionIds
       );
-      if (showImage) shownTestIds.add(showImage.id);
     }
+    if (showImage) shownTestIds.add(showImage.id);
 
     const mediaBlock = showImage ? mediaFor(showImage) : null;
 
@@ -299,17 +314,29 @@ function renderAssistantContent(
   });
 
   pushLeftovers(currentRegionIds, "end-region");
-  leftoverIllustratedTests(fallbackTests, shownTestIds, null).forEach((t) => {
-    shownTestIds.add(t.id);
+  if (lockToSingle && !shownTestIds.has(lockToSingle.id)) {
+    shownTestIds.add(lockToSingle.id);
     nodes.push(
-      <div key={`end-all-${t.id}`} className="mt-3">
+      <div key={`single-${lockToSingle.id}`} className="mt-3">
         <p className="text-neutral-900">
-          <strong className="font-bold text-blue-700">{t.title}</strong>
+          <strong className="font-bold text-blue-700">{lockToSingle.title}</strong>
         </p>
-        {mediaFor(t)}
+        {mediaFor(lockToSingle)}
       </div>
     );
-  });
+  } else if (!lockToSingle) {
+    leftoverIllustratedTests(fallbackTests, shownTestIds, null).forEach((t) => {
+      shownTestIds.add(t.id);
+      nodes.push(
+        <div key={`end-all-${t.id}`} className="mt-3">
+          <p className="text-neutral-900">
+            <strong className="font-bold text-blue-700">{t.title}</strong>
+          </p>
+          {mediaFor(t)}
+        </div>
+      );
+    });
+  }
 
   return nodes;
 }

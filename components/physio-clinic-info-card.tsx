@@ -43,7 +43,7 @@ export function PhysioClinicInfoCard({ clinic }: { clinic: PhysioClinicSummary }
         size="md"
       />
       <div className="relative px-5 pb-5">
-        <div className="-mt-8 flex items-end gap-3 sm:-mt-10">
+        <div className="-mt-8 w-fit sm:-mt-10">
           {clinic.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -59,14 +59,14 @@ export function PhysioClinicInfoCard({ clinic }: { clinic: PhysioClinicSummary }
               {clinic.name.slice(0, 1).toUpperCase()}
             </div>
           )}
-          <div className="min-w-0 pb-1">
-            <h2 className="truncate text-lg font-bold text-neutral-900 sm:text-xl">
-              {clinic.name}
-            </h2>
-            {clinic.tagline ? (
-              <p className="text-sm text-slate-500">{clinic.tagline}</p>
-            ) : null}
-          </div>
+        </div>
+        <div className="mt-3 min-w-0">
+          <h2 className="text-lg font-bold text-neutral-900 sm:text-xl">
+            {clinic.name}
+          </h2>
+          {clinic.tagline ? (
+            <p className="mt-0.5 text-sm text-slate-500">{clinic.tagline}</p>
+          ) : null}
         </div>
 
         {clinic.description ? (

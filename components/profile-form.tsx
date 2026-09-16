@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { signOutToLogin } from "@/lib/sign-out-client";
 import { useUiLocale, type UiLocale } from "@/lib/ui-locale";
 import { Camera, Check, Loader2, Mail, Shield, User } from "lucide-react";
+import { PasswordInput } from "@/components/password-input";
 import { useEffect, useRef, useState } from "react";
 
 const SUPABASE_URL = "https://klxlzzgrymkexvuelzex.supabase.co";
@@ -372,18 +373,18 @@ export function ProfileForm() {
 
               {showPasswordFields && (
                 <div className="mt-4 space-y-4">
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Nueva contraseña (mín. 6 caracteres)"
+                    autoComplete="new-password"
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                   />
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirmar contraseña"
+                    autoComplete="new-password"
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                   />
                 </div>

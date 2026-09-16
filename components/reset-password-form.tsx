@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { PasswordInput } from "@/components/password-input";
 import { authUiCopy } from "@/lib/auth-ui-copy";
 import { signOutToLogin } from "@/lib/sign-out-client";
 import { createClient } from "@/lib/supabase/client";
@@ -117,27 +118,29 @@ export function ResetPasswordForm() {
           <label className="mb-1.5 block text-sm font-semibold text-slate-700">
             {copy.newPassword}
           </label>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             required
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={saving}
+            showLabel={copy.showPassword}
+            hideLabel={copy.hidePassword}
             className="mb-4 w-full rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
           <label className="mb-1.5 block text-sm font-semibold text-slate-700">
             {copy.confirmPassword}
           </label>
-          <input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             required
             minLength={6}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             disabled={saving}
+            showLabel={copy.showPassword}
+            hideLabel={copy.hidePassword}
             className="mb-4 w-full rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
           {error ? (

@@ -276,7 +276,6 @@ import { screenHeaderTopInset } from "../lib/screen-header-insets";
 import { useI18n } from "../lib/i18n";
 import { getNotificationsEnabled } from "../lib/notifications";
 import {
-  buildPhysioLinkedCompletionMessage,
   buildPhysioLinkedFunctionalTestsPrompt,
   buildPhysioLinkedIntroGreeting,
   buildPhysioLinkedPostQuestionnaireMessage,
@@ -2957,26 +2956,7 @@ export function AIInquiriesScreen({
             const sent = await maybeGenerateAndSendPhysioReport(reportParams);
             pendingPhysioReportRef.current = null;
             if (sent) {
-              const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
-                guest: guestMode,
-                language: locale,
-              });
-              const { data: thanksMsg } = await supabase
-                .from("messages")
-                .insert({
-                  conversation_id: conversationId,
-                  role: "assistant",
-                  content: thanks,
-                })
-                .select("id, role, content")
-                .single();
-              if (thanksMsg) {
-                beginAssistantReveal(
-                  (thanksMsg as Message).id,
-                  (thanksMsg as Message).content
-                );
-                setMessages((prev) => [...prev, thanksMsg as Message]);
-              }
+              // Complete card owns thank-you copy — skip chat bubble (avoids double UI + jitter).
               setPhysioReportSentBanner(true);
               setPhase("complete");
             } else {
@@ -3547,23 +3527,7 @@ export function AIInquiriesScreen({
           patientSummary: pendingPhysio.patientSummary + functionalBlock,
         });
 
-        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
-          guest: guestMode,
-          language: locale,
-        });
-        const { data: aiMsg } = await supabase
-          .from("messages")
-          .insert({
-            conversation_id: activeId,
-            role: "assistant",
-            content: thanks,
-          })
-          .select("id, role, content")
-          .single();
-        if (aiMsg) {
-          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
-          setMessages((prev) => [...prev, aiMsg as Message]);
-        }
+        // Complete card owns thank-you copy — skip chat bubble (avoids double UI + jitter).
         if (sent) setPhysioReportSentBanner(true);
         setPhase("complete");
         return;
@@ -4684,6 +4648,15 @@ export function AIInquiriesScreen({
           scrollEventThrottle={16}
         >
           {messages.map((msg, msgIndex) => {
+            if (
+              linkedPhysio &&
+              phase === "complete" &&
+              msg.role === "assistant" &&
+              ((msg.content ?? "").trimStart().startsWith("¡Gracias por tu tiempo!") ||
+                (msg.content ?? "").trimStart().startsWith("Thanks for your time!"))
+            ) {
+              return null;
+            }
             const forceHospitalOnly =
               msg.role === "assistant" &&
               messages
@@ -4782,15 +4755,10 @@ export function AIInquiriesScreen({
                           renderBody={(body) => {
                             const pendingFunctionalForm =
                               awaitingFunctionalTests?.messageId === msg.id;
-                            // Prefer full message for complete tests while streaming,
-                            // but always strip Fuentes so they only appear in the button.
+                            // Always parse the full message for Sí/No forms so the
+                            // structure never flips mid-reveal (layout jump).
                             const parseSource = pendingFunctionalForm
-                              ? body.includes("Pruebas funcionales") ||
-                                body.includes("Functional tests") ||
-                                body.includes("Preguntas / pruebas") ||
-                                body.includes("Questions / tests")
-                                ? body
-                                : msg.content
+                              ? msg.content
                               : body;
                             const parsedRaw = splitFunctionalTests(parseSource);
                             const parsed = parsedRaw
@@ -4827,8 +4795,9 @@ export function AIInquiriesScreen({
                                 <FunctionalTestChatBlock
                                   parsed={parsed}
                                   language={locale}
-                                  disabled={chatBusy}
+                                  disabled={chatBusy || isRevealing}
                                   isRevealing={isRevealing}
+                                  visibleText={visibleText}
                                   onSubmit={(text) =>
                                     sendVoiceTurnRef.current(text)
                                   }

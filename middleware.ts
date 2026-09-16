@@ -119,6 +119,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname === "/unirse" ||
+    pathname.startsWith("/unirse/") ||
     pathname === "/forgot-password" ||
     pathname === "/privacidad" ||
     pathname === "/terminos" ||
@@ -127,6 +128,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/buscar/") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/api/whatsapp/") ||
     pathname === "/api/supabase-health" ||
     pathname.startsWith("/api/address/") ||
     pathname.startsWith("/api/admin/");

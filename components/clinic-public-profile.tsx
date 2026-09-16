@@ -155,48 +155,46 @@ export function ClinicPublicProfile({
       </div>
 
       <div className="mx-auto w-full max-w-4xl px-4 sm:px-6">
-        <div className="-mt-12 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:-mt-16 sm:p-7">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div
-              className="relative -mt-16 h-24 w-24 shrink-0 overflow-hidden rounded-[22px] border-4 border-white shadow-lg sm:-mt-20 sm:h-28 sm:w-28"
-              style={{ background: soft }}
-            >
-              {clinic.logo_url ? (
-                <Image
-                  src={clinic.logo_url}
-                  alt=""
-                  fill
-                  sizes="112px"
-                  className="object-cover"
-                />
-              ) : (
-                <div
-                  className="flex h-full w-full items-center justify-center text-3xl font-bold text-white"
-                  style={{ background: accent }}
-                >
-                  {clinic.name.slice(0, 1).toUpperCase()}
-                </div>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-[1.65rem] font-semibold tracking-tight text-slate-950 sm:text-3xl">
-                  {clinic.name}
-                </h1>
-                <span
-                  className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"
-                  style={{ background: accent }}
-                >
-                  Clínica
-                </span>
+        <div className="-mt-12 rounded-[28px] border border-white/70 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:-mt-16 sm:p-7">
+          <div
+            className="relative -mt-16 h-24 w-24 shrink-0 overflow-hidden rounded-[22px] border-4 border-white shadow-lg sm:-mt-20 sm:h-28 sm:w-28"
+            style={{ background: soft }}
+          >
+            {clinic.logo_url ? (
+              <Image
+                src={clinic.logo_url}
+                alt=""
+                fill
+                sizes="112px"
+                className="object-cover"
+              />
+            ) : (
+              <div
+                className="flex h-full w-full items-center justify-center text-3xl font-bold text-white"
+                style={{ background: accent }}
+              >
+                {clinic.name.slice(0, 1).toUpperCase()}
               </div>
-              {clinic.tagline ? (
-                <p className="mt-1 text-sm text-slate-600 sm:text-[15px]">{clinic.tagline}</p>
-              ) : null}
-              <p className="mt-1 text-sm text-slate-500">
-                {[clinic.city, clinic.address].filter(Boolean).join(" · ")}
-              </p>
+            )}
+          </div>
+          <div className="mt-4 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[1.65rem] font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                {clinic.name}
+              </h1>
+              <span
+                className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"
+                style={{ background: accent }}
+              >
+                Clínica
+              </span>
             </div>
+            {clinic.tagline ? (
+              <p className="mt-1 text-sm text-slate-600 sm:text-[15px]">{clinic.tagline}</p>
+            ) : null}
+            <p className="mt-1 text-sm text-slate-500">
+              {[clinic.city, clinic.address].filter(Boolean).join(" · ")}
+            </p>
           </div>
 
           {specialties.length > 0 ? (

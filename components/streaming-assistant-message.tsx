@@ -12,6 +12,8 @@ type RevealCompleteMeta = { interrupted: boolean };
 type Props = {
   content: string;
   animate: boolean;
+  /** Show full text at once and fire onRevealComplete (avoids layout jitter). */
+  completeImmediately?: boolean;
   onRevealComplete?: (meta?: RevealCompleteMeta) => void;
   onRevealTick?: () => void;
   children: (visibleText: string, isRevealing: boolean) => React.ReactNode;
@@ -25,22 +27,38 @@ function prefersReducedMotion(): boolean {
 export function StreamingAssistantMessage({
   content,
   animate,
+  completeImmediately = false,
   onRevealComplete,
   onRevealTick,
   children,
 }: Props) {
   const chunks = useMemo(() => buildRevealChunks(content), [content]);
   const [visibleCount, setVisibleCount] = useState(
-    animate && !prefersReducedMotion() ? 0 : chunks.length
+    animate && !completeImmediately && !prefersReducedMotion()
+      ? 0
+      : chunks.length
   );
   const onRevealCompleteRef = useRef(onRevealComplete);
   const onRevealTickRef = useRef(onRevealTick);
   const wasAnimatingRef = useRef(false);
+  const instantCompleteRef = useRef(false);
 
   useEffect(() => {
     onRevealCompleteRef.current = onRevealComplete;
     onRevealTickRef.current = onRevealTick;
   });
+
+  useEffect(() => {
+    if (!completeImmediately) {
+      instantCompleteRef.current = false;
+      return;
+    }
+    if (instantCompleteRef.current) return;
+    instantCompleteRef.current = true;
+    wasAnimatingRef.current = false;
+    setVisibleCount(chunks.length);
+    onRevealCompleteRef.current?.({ interrupted: false });
+  }, [completeImmediately, chunks.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +79,7 @@ export function StreamingAssistantMessage({
     };
 
     // Historical / non-active bubbles: show full text without firing complete.
-    if (!animate) {
+    if (!animate || completeImmediately) {
       wasAnimatingRef.current = false;
       setVisibleCount(chunks.length);
       return clear;
@@ -111,10 +129,11 @@ export function StreamingAssistantMessage({
         finish(true);
       }
     };
-  }, [animate, content, chunks.length]);
+  }, [animate, completeImmediately, content, chunks.length]);
 
   const visibleText = visibleTextFromChunks(content, chunks, visibleCount);
-  const isRevealing = animate && visibleCount < chunks.length;
+  const isRevealing =
+    animate && !completeImmediately && visibleCount < chunks.length;
 
   return (
     <div className={isRevealing ? "assistant-message-revealing" : undefined}>

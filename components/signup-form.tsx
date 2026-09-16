@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { PasswordInput } from "@/components/password-input";
 import { createClient } from "@/lib/supabase/client";
 import { isGuestUser } from "@/lib/guest-account";
 
@@ -255,8 +256,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
 
       <div className="mb-4 flex flex-col gap-1.5">
         <label className="text-sm font-semibold text-slate-700">Contraseña</label>
-        <input
-          type="password"
+        <PasswordInput
           name="password"
           autoComplete="new-password"
           required
@@ -270,8 +270,7 @@ export function SignupForm({ clinicInviteToken }: Props) {
 
       <div className="mb-5 flex flex-col gap-1.5">
         <label className="text-sm font-semibold text-slate-700">Confirmar contraseña</label>
-        <input
-          type="password"
+        <PasswordInput
           name="confirm-password"
           autoComplete="new-password"
           required

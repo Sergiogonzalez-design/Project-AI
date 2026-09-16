@@ -5,7 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClinicTeamPanel } from "@/components/clinic-team-panel";
 import { clinicHubCopy } from "@/lib/clinic-hub-copy";
 import { staffPatientLabel, staffVisibleEmail } from "@/lib/guest-account";
-import { buildPhysioInviteUrl } from "@/lib/physio-invite";
+import {
+  buildPhysioInviteUrl,
+  buildPhysioWhatsAppInviteUrl,
+} from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 import { useUiLocaleOptional } from "@/lib/ui-locale";
 
@@ -46,13 +49,16 @@ export function ClinicPatientsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
   const [vinculacionOpen, setVinculacionOpen] = useState(true);
   const [tab, setTab] = useState<"pacientes" | "fisios">("pacientes");
   const codeMenuRef = useRef<HTMLDivElement>(null);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
+  const whatsappInviteLink = inviteCode
+    ? buildPhysioWhatsAppInviteUrl(inviteCode)
+    : null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -148,35 +154,42 @@ export function ClinicPatientsPanel() {
     setCopied(null);
   }
 
-  async function copyText(kind: "code" | "link", value: string) {
+  async function copyText(kind: "code" | "link" | "wa", value: string) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(kind);
       setTimeout(() => setCopied(null), 2000);
     } catch {
       setError(
-        kind === "link"
-          ? "No se pudo copiar el enlace."
-          : "No se pudo copiar el código."
+        kind === "code"
+          ? "No se pudo copiar el código."
+          : "No se pudo copiar el enlace."
       );
     }
   }
 
-  async function shareLink() {
-    if (!inviteLink || !inviteCode) return;
+  async function shareLink(kind: "web" | "wa" = "web") {
+    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
+    if (!url || !inviteCode) return;
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({
-          title: "AIKinora — vinculación con tu clínica",
-          text: `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):`,
-          url: inviteLink,
+          title:
+            kind === "wa"
+              ? "AIKinora — consulta previa por WhatsApp"
+              : "AIKinora — vinculación con tu clínica",
+          text:
+            kind === "wa"
+              ? `Abre este enlace para la consulta previa por WhatsApp (código ${inviteCode}):`
+              : `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):`,
+          url,
         });
         return;
       } catch {
         // Fall through
       }
     }
-    await copyText("link", inviteLink);
+    await copyText(kind === "wa" ? "wa" : "link", url);
   }
 
   return (
@@ -300,11 +313,37 @@ export function ClinicPatientsPanel() {
                               type="button"
                               className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
                               onClick={() => {
-                                void shareLink();
+                                void shareLink("web");
                                 setCodeMenuOpen(false);
                               }}
                             >
                               {copy.shareLink}
+                            </button>
+                          </>
+                        ) : null}
+                        {whatsappInviteLink ? (
+                          <>
+                            <button
+                              type="button"
+                              className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                              onClick={() => {
+                                void copyText("wa", whatsappInviteLink);
+                                setCodeMenuOpen(false);
+                              }}
+                            >
+                              {copied === "wa"
+                                ? copy.whatsappCopied
+                                : copy.copyWhatsApp}
+                            </button>
+                            <button
+                              type="button"
+                              className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                              onClick={() => {
+                                void shareLink("wa");
+                                setCodeMenuOpen(false);
+                              }}
+                            >
+                              {copy.shareWhatsApp}
                             </button>
                           </>
                         ) : null}
@@ -325,6 +364,11 @@ export function ClinicPatientsPanel() {
                 </div>
                 {inviteLink ? (
                   <p className="break-all text-xs text-neutral-500">{inviteLink}</p>
+                ) : null}
+                {whatsappInviteLink ? (
+                  <p className="break-all text-xs text-emerald-700">
+                    {whatsappInviteLink}
+                  </p>
                 ) : null}
               </div>
             ) : null}

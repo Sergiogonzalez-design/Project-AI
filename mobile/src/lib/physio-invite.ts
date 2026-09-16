@@ -1,3 +1,5 @@
+import { WEB_APP_URL } from "./admin-api";
+
 export function normalizeInviteCode(raw: string | null | undefined): string {
   return (raw ?? "").trim().toUpperCase().replace(/\s+/g, "");
 }
@@ -36,4 +38,42 @@ export function parsePastedInviteCode(raw: string | null | undefined): string {
   const code = normalizeInviteCode(text).replace(/[^A-Z0-9]/g, "");
   if (!code) return "";
   return code.slice(0, 24);
+}
+
+export function buildPhysioInviteUrl(code: string): string {
+  const base = WEB_APP_URL.replace(/\/$/, "");
+  const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+  return `${base}/unirse?code=${encodeURIComponent(normalized)}`;
+}
+
+export function buildPhysioWhatsAppInviteUrl(code: string): string {
+  const base = WEB_APP_URL.replace(/\/$/, "");
+  const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+  return `${base}/unirse/whatsapp?code=${encodeURIComponent(normalized)}`;
+}
+
+export function whatsappBusinessE164Digits(
+  raw?: string | null
+): string | null {
+  const digits = (
+    raw ??
+    process.env.EXPO_PUBLIC_WHATSAPP_BUSINESS_E164 ??
+    ""
+  ).replace(/\D/g, "");
+  return digits.length >= 8 ? digits : null;
+}
+
+export function buildWhatsAppPrefillMessage(code: string): string {
+  const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+  return `Hola, quiero hacer la consulta previa. Código: ${normalized}`;
+}
+
+export function buildWhatsAppDeepLink(
+  code: string,
+  phoneE164?: string | null
+): string | null {
+  const phone = whatsappBusinessE164Digits(phoneE164);
+  if (!phone) return null;
+  const text = buildWhatsAppPrefillMessage(code);
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }

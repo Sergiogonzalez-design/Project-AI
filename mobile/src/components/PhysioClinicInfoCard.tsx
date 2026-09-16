@@ -69,17 +69,15 @@ export function PhysioClinicInfoCard({ clinic }: Props) {
               </Text>
             </View>
           )}
-          <View style={styles.logoMeta}>
-            <Text style={styles.name} numberOfLines={2}>
-              {clinic.name}
-            </Text>
-            {clinic.tagline ? (
-              <Text style={styles.tagline} numberOfLines={2}>
-                {clinic.tagline}
-              </Text>
-            ) : null}
-          </View>
         </View>
+        <Text style={styles.name} numberOfLines={2}>
+          {clinic.name}
+        </Text>
+        {clinic.tagline ? (
+          <Text style={styles.tagline} numberOfLines={2}>
+            {clinic.tagline}
+          </Text>
+        ) : null}
 
         {clinic.description ? (
           <Text style={styles.description}>{clinic.description}</Text>
@@ -168,7 +166,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 0, gap: 6 },
   logoRow: {
     flexDirection: "row",
-    gap: 12,
     alignItems: "flex-end",
     marginTop: -28,
   },
@@ -183,8 +180,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   logoLetter: { color: "#fff", fontWeight: "800", fontSize: 20 },
-  logoMeta: { flex: 1, paddingBottom: 4, minWidth: 0 },
-  name: { fontSize: 18, fontWeight: "800", color: Colors.text },
+  name: { marginTop: 10, fontSize: 18, fontWeight: "800", color: Colors.text },
   tagline: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
   description: {
     marginTop: 8,

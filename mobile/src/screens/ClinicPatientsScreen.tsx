@@ -13,19 +13,16 @@ import {
 } from "react-native";
 import { PhysioReportView } from "../components/PhysioReportView";
 import { StaffPatientProfileEditor } from "../components/StaffPatientProfileEditor";
-import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { staffPatientLabel, staffVisibleEmail } from "../lib/guest-account";
 import { useI18n } from "../lib/i18n";
+import {
+  buildPhysioInviteUrl,
+  buildPhysioWhatsAppInviteUrl,
+} from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
 import type { TabParamList } from "../navigation/AppTabs";
 import { ClinicTeamPanel } from "./ClinicTeamScreen";
-
-function buildClinicPatientInviteUrl(code: string): string {
-  const base = WEB_APP_URL.replace(/\/$/, "");
-  const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
-  return `${base}/unirse?code=${encodeURIComponent(normalized)}`;
-}
 
 type ClinicPatient = {
   id: string;
@@ -60,10 +57,13 @@ export function ClinicPatientsScreen() {
   const [loading, setLoading] = useState(true);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
 
-  const inviteLink = inviteCode ? buildClinicPatientInviteUrl(inviteCode) : null;
+  const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
+  const whatsappInviteLink = inviteCode
+    ? buildPhysioWhatsAppInviteUrl(inviteCode)
+    : null;
 
   useEffect(() => {
     if (route.params?.tab === "fisios" || route.params?.tab === "pacientes") {
@@ -128,18 +128,21 @@ export function ClinicPatientsScreen() {
     setInviteCode((data as string) ?? null);
   }
 
-  async function copy(kind: "code" | "link", value: string) {
+  async function copy(kind: "code" | "link" | "wa", value: string) {
     await Clipboard.setStringAsync(value);
     setCopied(kind);
     setTimeout(() => setCopied(null), 2000);
   }
 
-  async function shareInvite() {
-    if (!inviteLink || !inviteCode) return;
+  async function shareInvite(kind: "web" | "wa" = "web") {
+    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
+    if (!url || !inviteCode) return;
+    const template =
+      kind === "wa" ? hub.shareWhatsAppMessage : hub.shareInviteMessage;
     await Share.share({
-      message: hub.shareInviteMessage
+      message: template
         .replace("{code}", inviteCode)
-        .replace("{link}", inviteLink),
+        .replace("{link}", url),
     });
   }
 
@@ -254,13 +257,24 @@ export function ClinicPatientsScreen() {
             <View style={styles.row}>
               <Pressable
                 style={styles.btn}
-                disabled={!inviteCode}
-                onPress={() => inviteCode && void copy("code", inviteCode)}
+                disabled={!whatsappInviteLink}
+                onPress={() =>
+                  whatsappInviteLink && void copy("wa", whatsappInviteLink)
+                }
               >
                 <Text style={styles.btnText}>
-                  {copied === "code" ? hub.copied : hub.copyCode}
+                  {copied === "wa" ? hub.copied : hub.copyWhatsApp}
                 </Text>
               </Pressable>
+              <Pressable
+                style={styles.btnSecondary}
+                disabled={!whatsappInviteLink}
+                onPress={() => void shareInvite("wa")}
+              >
+                <Text style={styles.btnSecondaryText}>{hub.shareWhatsApp}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.row}>
               <Pressable
                 style={styles.btn}
                 disabled={!inviteLink}
@@ -270,13 +284,22 @@ export function ClinicPatientsScreen() {
                   {copied === "link" ? hub.copied : hub.copyLink}
                 </Text>
               </Pressable>
+              <Pressable
+                style={styles.btnSecondary}
+                onPress={() => void shareInvite("web")}
+              >
+                <Text style={styles.btnSecondaryText}>{hub.share}</Text>
+              </Pressable>
             </View>
             <View style={styles.row}>
               <Pressable
-                style={styles.btnSecondary}
-                onPress={() => void shareInvite()}
+                style={styles.btn}
+                disabled={!inviteCode}
+                onPress={() => inviteCode && void copy("code", inviteCode)}
               >
-                <Text style={styles.btnSecondaryText}>{hub.share}</Text>
+                <Text style={styles.btnText}>
+                  {copied === "code" ? hub.copied : hub.copyCode}
+                </Text>
               </Pressable>
               <Pressable
                 style={styles.btnSecondary}

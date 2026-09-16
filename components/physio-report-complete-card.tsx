@@ -22,7 +22,7 @@ export function PhysioReportCompleteCard({
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-8 sm:px-6">
-      <div className="rounded-3xl border border-emerald-200/80 bg-gradient-to-b from-emerald-50 to-white p-8 text-center shadow-[var(--shadow-elevated)]">
+      <div className="rounded-3xl border border-emerald-200/80 bg-gradient-to-b from-emerald-50 to-white p-8 text-center shadow-[var(--shadow-elevated)] [contain:layout]">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md shadow-emerald-600/25">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path

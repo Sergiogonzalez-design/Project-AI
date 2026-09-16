@@ -212,6 +212,8 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
             onChangeText={setPassword}
             editable={!busy}
             {...authPasswordProps}
+            showPasswordLabel={t.auth.showPassword}
+            hidePasswordLabel={t.auth.hidePassword}
             ref={passwordRef}
             onSubmitEditing={handleLogin}
           />

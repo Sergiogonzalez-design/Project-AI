@@ -4,6 +4,7 @@ import { FunctionalTestYesNo } from "@/components/functional-test-yes-no";
 import type { ConsultLocale } from "@/lib/consult-clinic-links";
 import {
   functionalTestPreparingLabel,
+  functionalTestProgressiveBefore,
   functionalTestRevealPreview,
 } from "@/lib/functional-test-reveal";
 import type { FunctionalTestItem } from "@/lib/functional-test-answers";
@@ -21,6 +22,8 @@ type Props = {
   language: ConsultLocale;
   disabled?: boolean;
   isRevealing: boolean;
+  /** Prefix of the full assistant message while revealing (optional). */
+  visibleText?: string;
   onSubmit: (text: string) => void;
   onScrollTick?: () => void;
   renderMarkdown: (text: string) => ReactNode;
@@ -31,6 +34,7 @@ export function FunctionalTestChatBlock({
   language,
   disabled,
   isRevealing,
+  visibleText,
   onSubmit,
   onScrollTick,
   renderMarkdown,
@@ -43,21 +47,25 @@ export function FunctionalTestChatBlock({
   }, [testKey]);
 
   if (isRevealing) {
-    const preview = functionalTestRevealPreview(parsed);
+    const progressive = functionalTestProgressiveBefore(
+      parsed.before,
+      visibleText ?? ""
+    );
+    const preview =
+      progressive ||
+      (parsed.heading ? functionalTestRevealPreview({ before: "", heading: parsed.heading }) : "");
     return (
-      <div className="whitespace-pre-wrap break-words">
-        {preview ? renderMarkdown(preview) : null}
-        {parsed.heading ? (
-          <p className="mt-2 text-xs text-slate-400 animate-pulse">
-            {functionalTestPreparingLabel(language)}
-          </p>
-        ) : null}
+      <div className="whitespace-pre-wrap break-words [contain:layout]">
+        {progressive ? renderMarkdown(progressive) : preview ? renderMarkdown(preview) : null}
+        <p className="mt-2 text-xs text-slate-400">
+          {functionalTestPreparingLabel(language)}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="whitespace-pre-wrap break-words">
+    <div className="whitespace-pre-wrap break-words [contain:layout]">
       {parsed.before ? renderMarkdown(parsed.before) : null}
       {parsed.heading ? (
         <p className={parsed.before ? "mt-3" : undefined}>

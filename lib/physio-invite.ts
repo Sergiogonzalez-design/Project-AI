@@ -12,6 +12,46 @@ export function buildPhysioInviteUrl(code: string, origin?: string): string {
   return `${base}/unirse?code=${encodeURIComponent(normalized)}`;
 }
 
+/** Branded redirect that opens WhatsApp with the invite code prefilled. */
+export function buildPhysioWhatsAppInviteUrl(
+  code: string,
+  origin?: string
+): string {
+  const base =
+    (origin?.replace(/\/$/, "") ||
+      (typeof window !== "undefined" ? window.location.origin : "")) ||
+    "https://project-ai-swart.vercel.app";
+  const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+  return `${base}/unirse/whatsapp?code=${encodeURIComponent(normalized)}`;
+}
+
+/** Digits-only E.164 without leading +. Empty if unset/invalid. */
+export function whatsappBusinessE164Digits(
+  raw?: string | null
+): string | null {
+  const digits = (raw ?? process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_E164 ?? "")
+    .replace(/\D/g, "");
+  return digits.length >= 8 ? digits : null;
+}
+
+export function buildWhatsAppPrefillMessage(code: string): string {
+  const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+  return `Hola, quiero hacer la consulta previa. Código: ${normalized}`;
+}
+
+/**
+ * Direct wa.me deep link. Returns null when the business number env is missing.
+ */
+export function buildWhatsAppDeepLink(
+  code: string,
+  phoneE164?: string | null
+): string | null {
+  const phone = whatsappBusinessE164Digits(phoneE164);
+  if (!phone) return null;
+  const text = buildWhatsAppPrefillMessage(code);
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
 export function normalizeInviteCode(raw: string | null | undefined): string {
   return (raw ?? "").trim().toUpperCase().replace(/\s+/g, "");
 }
@@ -51,6 +91,28 @@ export function parsePastedInviteCode(raw: string | null | undefined): string {
   const code = normalizeInviteCode(text).replace(/[^A-Z0-9]/g, "");
   if (!code) return "";
   return code.slice(0, 24);
+}
+
+/** Pull invite code from WhatsApp prefill text or free-form message. */
+export function extractInviteCodeFromWhatsAppText(
+  text: string | null | undefined
+): string {
+  const raw = (text ?? "").trim();
+  if (!raw) return "";
+  const labeled =
+    /c[oó]digo\s*[:\-]?\s*([A-Z0-9]{6,24})/i.exec(raw) ||
+    /\bcode\s*[:\-]?\s*([A-Z0-9]{6,24})/i.exec(raw);
+  if (labeled) {
+    const c = normalizeInviteCode(labeled[1]);
+    if (looksLikeInviteCode(c)) return c;
+  }
+  const pasted = parsePastedInviteCode(raw);
+  if (looksLikeInviteCode(pasted)) return pasted;
+  const tokens = raw.toUpperCase().match(/\b[A-Z0-9]{6,24}\b/g) ?? [];
+  for (const t of tokens) {
+    if (looksLikeInviteCode(t)) return t;
+  }
+  return "";
 }
 
 /** Pull an invite code from `?code=` or from a `next` path like `/fisioterapia?code=…`. */

@@ -48,7 +48,6 @@ import { ScrollToBottomButton } from "@/components/scroll-to-bottom-button";
 import { StreamingAssistantMessage } from "@/components/streaming-assistant-message";
 import { TrustPanel } from "@/components/ui/trust-panel";
 import {
-  buildPhysioLinkedCompletionMessage,
   buildPhysioLinkedFunctionalTestsPrompt,
   buildPhysioLinkedIntroGreeting,
   buildPhysioLinkedPostQuestionnaireMessage,
@@ -717,6 +716,24 @@ function isLongAssistantReply(content: string) {
   return content.length >= 480 || lines.length >= 8;
 }
 
+function messageHasFunctionalTestsSection(content: string) {
+  return (
+    /pruebas funcionales/i.test(content) ||
+    /functional tests/i.test(content) ||
+    /preguntas\s*\/\s*pruebas/i.test(content) ||
+    /questions\s*\/\s*tests/i.test(content)
+  );
+}
+
+/** Completion card already shows this — hide duplicate chat bubbles. */
+function isPhysioCompletionThanksMessage(content: string) {
+  const t = content.trimStart();
+  return (
+    t.startsWith("¡Gracias por tu tiempo!") ||
+    t.startsWith("Thanks for your time!")
+  );
+}
+
 type ChatInterfaceProps = {
   /** When set (Fisioterapia flow), welcome copy names the linked physio and explains the report. */
   linkedPhysio?: LinkedPhysioInfo | null;
@@ -1211,7 +1228,11 @@ export function ChatInterface({
       revealQueueRef.current.push({ id, content });
       return;
     }
-    pinRevealToStartRef.current = isLongAssistantReply(content);
+    // Functional-test asks + completion thanks render instantly (no pin/scroll fight).
+    const instant =
+      messageHasFunctionalTestsSection(content) ||
+      isPhysioCompletionThanksMessage(content);
+    pinRevealToStartRef.current = !instant && isLongAssistantReply(content);
     revealingMessageIdRef.current = id;
     setRevealingMessageId(id);
   }, []);
@@ -1221,7 +1242,10 @@ export function ChatInterface({
       if (revealingMessageIdRef.current !== msgId) return;
       const next = revealQueueRef.current.shift();
       if (next) {
-        pinRevealToStartRef.current = isLongAssistantReply(next.content);
+        const instant =
+          messageHasFunctionalTestsSection(next.content) ||
+          isPhysioCompletionThanksMessage(next.content);
+        pinRevealToStartRef.current = !instant && isLongAssistantReply(next.content);
         revealingMessageIdRef.current = next.id;
         setRevealingMessageId(next.id);
       } else {
@@ -1288,6 +1312,12 @@ export function ChatInterface({
     stickChatToEndRef.current = true;
     scrollToBottom("auto");
   }, [revealingMessageId, scrollToMessageStart, scrollToBottom]);
+
+  useEffect(() => {
+    if (phase !== "complete") return;
+    stickChatToEndRef.current = true;
+    scrollToBottomAfterPaint();
+  }, [phase, scrollToBottomAfterPaint]);
 
   useEffect(() => {
     const last = messages[messages.length - 1];
@@ -3056,23 +3086,7 @@ export function ChatInterface({
         markPartEvaluated(questionnairePart);
         setCaseImageUrl(null);
         if (!awaitingTests && !pendingPhysioReportRef.current) {
-          const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
-            guest: guestMode,
-            language: consultLanguage,
-          });
-          const { data: thanksMsg } = await supabase
-            .from("messages")
-            .insert({
-              conversation_id: conv.id,
-              role: "assistant",
-              content: thanks,
-            })
-            .select("id, role, content, created_at")
-            .single();
-          if (thanksMsg) {
-            beginAssistantReveal((thanksMsg as Message).id, (thanksMsg as Message).content);
-            setMessages((prev) => [...prev, thanksMsg as Message]);
-          }
+          // PhysioReportCompleteCard covers the thank-you UI — no chat bubble (avoids double text + scroll jitter).
           setPhysioReportSentBanner(true);
           setPhase("complete");
         } else {
@@ -3656,23 +3670,7 @@ export function ChatInterface({
           );
         }
 
-        const thanks = buildPhysioLinkedCompletionMessage(linkedPhysio.physio_name, {
-          guest: guestMode,
-          language: consultLanguage,
-        });
-        const { data: aiMsg } = await supabase
-          .from("messages")
-          .insert({
-            conversation_id: activeId,
-            role: "assistant",
-            content: thanks,
-          })
-          .select("id, role, content, created_at")
-          .single();
-        if (aiMsg) {
-          beginAssistantReveal((aiMsg as Message).id, (aiMsg as Message).content);
-          setMessages((prev) => [...prev, aiMsg as Message]);
-        }
+        // Card owns the thank-you copy — skip assistant bubble to avoid layout jumps.
         if (sent) setPhysioReportSentBanner(true);
         setPhase("complete");
         return;
@@ -4514,6 +4512,14 @@ export function ChatInterface({
             }
           >
             {messages.map((msg, msgIndex) => {
+              if (
+                linkedPhysio &&
+                phase === "complete" &&
+                msg.role === "assistant" &&
+                isPhysioCompletionThanksMessage(msg.content ?? "")
+              ) {
+                return null;
+              }
               const time = formatTime(msg.created_at, consultLanguage);
               const forceHospitalOnly =
                 msg.role === "assistant" &&
@@ -4528,6 +4534,12 @@ export function ChatInterface({
                 showClinicalTestMedia: false as const,
                 forceHospitalOnly,
               };
+              const pendingFunctionalForm =
+                awaitingFunctionalTests?.messageId === msg.id;
+              const instantFunctionalReveal =
+                pendingFunctionalForm ||
+                (msg.role === "assistant" &&
+                  messageHasFunctionalTestsSection(msg.content ?? ""));
               return (
                 <div
                   key={msg.id}
@@ -4584,25 +4596,24 @@ export function ChatInterface({
                         <StreamingAssistantMessage
                           content={msg.content}
                           animate={shouldAnimateAssistantMessage(msg, revealingMessageId)}
+                          completeImmediately={
+                            shouldAnimateAssistantMessage(msg, revealingMessageId) &&
+                            instantFunctionalReveal
+                          }
                           onRevealComplete={() => finishAssistantReveal(msg.id)}
-                          onRevealTick={followRevealScroll}
+                          onRevealTick={
+                            instantFunctionalReveal ? undefined : followRevealScroll
+                          }
                         >
                           {(visibleText, isRevealing) => (
                             <>
                               <AssistantMessageWithSources
                                 content={visibleText}
                                 renderBody={(body) => {
-                                  const pendingFunctionalForm =
-                                    awaitingFunctionalTests?.messageId === msg.id;
-                                  // Prefer full message for complete tests while streaming,
-                                  // but always strip Fuentes so they only appear in the button.
+                                  // Always parse the full message for Sí/No forms so the
+                                  // structure never flips mid-reveal (layout jump).
                                   const parseSource = pendingFunctionalForm
-                                    ? body.includes("Pruebas funcionales") ||
-                                      body.includes("Functional tests") ||
-                                      body.includes("Preguntas / pruebas") ||
-                                      body.includes("Questions / tests")
-                                      ? body
-                                      : msg.content
+                                    ? msg.content
                                     : body;
                                   const parsedRaw = splitFunctionalTests(parseSource);
                                   const parsed = parsedRaw
@@ -4637,8 +4648,9 @@ export function ChatInterface({
                                       <FunctionalTestChatBlock
                                         parsed={parsed}
                                         language={consultLanguage}
-                                        disabled={loading || Boolean(revealingMessageId)}
+                                        disabled={loading || isRevealing}
                                         isRevealing={isRevealing}
+                                        visibleText={visibleText}
                                         onSubmit={(text) =>
                                           sendVoiceTurnRef.current(text)
                                         }

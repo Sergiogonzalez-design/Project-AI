@@ -156,7 +156,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "anterior-drawer-ankle",
     title: "Cajón anterior (tobillo)",
-    src: `${CLINICAL_TEST_CDN}/anterior-drawer-ankle.webp`,
+    src: `${CLINICAL_TEST_CDN}/anterior-drawer-ankle.webp?v=20260916drawer`,
     aliases: [
       "cajon anterior del tobillo",
       "cajón anterior del tobillo",
@@ -1418,6 +1418,38 @@ export function illustratedTestsForPruebasQuery(
   return [];
 }
 
+/**
+ * True when the physio wants a zone battery / catalog list — not one named maneuver.
+ * Singular «prueba del cajón anterior…» → false; «pruebas del tobillo» → true.
+ */
+export function asksForZoneTestBattery(userText: string): boolean {
+  const n = normalizeForMatch(userText);
+  if (!n) return false;
+  if (isAllClinicalPruebasRequest(userText)) return true;
+  if (
+    /\b(todas|varios|varias|bater[ií]a|lista completa|cat[aá]logo)\b/.test(n)
+  ) {
+    return true;
+  }
+  if (
+    /\b(cu[aá]les|qu[eé])\s+(son\s+)?(las\s+)?(pruebas|tests|maniobras)\b/.test(
+      n
+    )
+  ) {
+    return true;
+  }
+  // Plural zone request: "pruebas del tobillo", "tests de rodilla", …
+  if (
+    /\b(pruebas|tests|maniobras)\s+(del?|de la|de el|de)\s+\w+/.test(n) ||
+    /\b(pruebas|tests|maniobras)\s+(funcionales\s+)?(de|del|para)\b/.test(n)
+  ) {
+    return true;
+  }
+  const m = /\b(\d{1,2})\b/.exec(userText);
+  if (m && Number(m[1]) >= 2) return true;
+  return false;
+}
+
 export function nextIllustratedFallbackTest(
   fallbackTests: ClinicalTestImage[],
   shownIds: Set<string>,
@@ -1437,6 +1469,8 @@ export function leftoverIllustratedTests(
   regionIds: readonly string[] | null
 ): ClinicalTestImage[] {
   if (fallbackTests.length === 0) return [];
+  // Single named-test asks must not dump the rest of the zone catalog.
+  if (fallbackTests.length === 1) return [];
   const pool = regionIds
     ? fallbackTests.filter((t) => regionIds.includes(t.id))
     : fallbackTests;
@@ -1444,15 +1478,27 @@ export function leftoverIllustratedTests(
 }
 
 /**
- * Pick how many catalog tests to surface for a pruebas request (honours “dime 2”).
- * Without an explicit number — or with “todas” — return the full zone (or catalog).
+ * Pick catalog tests to surface for a pruebas request.
+ * Named single maneuver (e.g. «cajón anterior del tobillo») → only that test.
+ * Zone battery / «todas» / «dime 3» → zone list (honours count).
  */
 export function pickIllustratedTestsForPruebasQuery(
   userText: string
 ): ClinicalTestImage[] {
+  if (!isClinicalPruebasListRequest(userText)) return [];
+
+  if (isAllClinicalPruebasRequest(userText)) {
+    const all = illustratedTestsForPruebasQuery(userText);
+    return all.length > 0 ? all : allIllustratedClinicalTests();
+  }
+
+  const named = findClinicalTestImage(userText);
+  if (named && !asksForZoneTestBattery(userText)) {
+    return [named];
+  }
+
   const all = illustratedTestsForPruebasQuery(userText);
-  if (all.length === 0) return [];
-  if (isAllClinicalPruebasRequest(userText)) return all;
+  if (all.length === 0) return named ? [named] : [];
   const m = /\b(\d{1,2})\b/.exec(userText);
   if (!m) return all;
   const n = Math.min(Math.max(Number(m[1]), 1), all.length);

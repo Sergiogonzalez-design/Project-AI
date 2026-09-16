@@ -5,6 +5,7 @@ import { FunctionalTestYesNo } from "./FunctionalTestYesNo";
 import type { ConsultLocale } from "../lib/consult-clinic-links";
 import {
   functionalTestPreparingLabel,
+  functionalTestProgressiveBefore,
   functionalTestRevealPreview,
 } from "../lib/functional-test-reveal";
 import type { FunctionalTestItem } from "../lib/functional-test-answers";
@@ -22,6 +23,7 @@ type Props = {
   language: ConsultLocale;
   disabled?: boolean;
   isRevealing: boolean;
+  visibleText?: string;
   onSubmit: (text: string) => void;
   onScrollTick?: () => void;
   onClinicPress?: (slug: string) => void;
@@ -38,6 +40,7 @@ export function FunctionalTestChatBlock({
   language,
   disabled,
   isRevealing,
+  visibleText,
   onSubmit,
   onScrollTick,
   onClinicPress,
@@ -68,13 +71,25 @@ export function FunctionalTestChatBlock({
   };
 
   if (isRevealing) {
-    const preview = functionalTestRevealPreview(parsed);
+    const progressive = functionalTestProgressiveBefore(
+      parsed.before,
+      visibleText ?? ""
+    );
+    const preview =
+      progressive ||
+      (parsed.heading
+        ? functionalTestRevealPreview({ before: "", heading: parsed.heading })
+        : "");
     return (
       <View>
-        {preview ? <ConsultaAssistantBody text={preview} {...bodyProps} /> : null}
-        {parsed.heading ? (
-          <Text style={styles.preparing}>{functionalTestPreparingLabel(language)}</Text>
+        {progressive ? (
+          <ConsultaAssistantBody text={progressive} {...bodyProps} />
+        ) : preview ? (
+          <ConsultaAssistantBody text={preview} {...bodyProps} />
         ) : null}
+        <Text style={styles.preparing}>
+          {functionalTestPreparingLabel(language)}
+        </Text>
       </View>
     );
   }
@@ -85,7 +100,13 @@ export function FunctionalTestChatBlock({
         <ConsultaAssistantBody text={parsed.before} {...bodyProps} />
       ) : null}
       {parsed.heading ? (
-        <Text style={[bubbleText, bubbleBold, parsed.before ? styles.headingGap : undefined]}>
+        <Text
+          style={[
+            bubbleText,
+            bubbleBold,
+            parsed.before ? styles.headingGap : undefined,
+          ]}
+        >
           {parsed.heading}
         </Text>
       ) : null}

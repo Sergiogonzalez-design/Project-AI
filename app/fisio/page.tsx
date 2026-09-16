@@ -6,7 +6,7 @@ import {
   PhysioClinicInfoCard,
   type PhysioClinicSummary,
 } from "@/components/physio-clinic-info-card";
-import { buildPhysioInviteUrl } from "@/lib/physio-invite";
+import { buildPhysioInviteUrl, buildPhysioWhatsAppInviteUrl } from "@/lib/physio-invite";
 import { staffPatientLabel } from "@/lib/guest-account";
 import { createClient } from "@/lib/supabase/client";
 
@@ -26,7 +26,7 @@ export default function FisioPatientsPage() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
   const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
@@ -38,6 +38,9 @@ export default function FisioPatientsPage() {
   const codeMenuRef = useRef<HTMLDivElement>(null);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
+  const whatsappInviteLink = inviteCode
+    ? buildPhysioWhatsAppInviteUrl(inviteCode)
+    : null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -180,35 +183,42 @@ export default function FisioPatientsPage() {
     setCopied(null);
   }
 
-  async function copyText(kind: "code" | "link", value: string) {
+  async function copyText(kind: "code" | "link" | "wa", value: string) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(kind);
       setTimeout(() => setCopied(null), 2000);
     } catch {
       setError(
-        kind === "link"
-          ? "No se pudo copiar el enlace."
-          : "No se pudo copiar el código."
+        kind === "code"
+          ? "No se pudo copiar el código."
+          : "No se pudo copiar el enlace."
       );
     }
   }
 
-  async function shareLink() {
-    if (!inviteLink || !inviteCode) return;
+  async function shareLink(kind: "web" | "wa" = "web") {
+    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
+    if (!url || !inviteCode) return;
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({
-          title: "AIKinora — vinculación con tu fisioterapeuta",
-          text: `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):`,
-          url: inviteLink,
+          title:
+            kind === "wa"
+              ? "AIKinora — consulta previa por WhatsApp"
+              : "AIKinora — vinculación con tu fisioterapeuta",
+          text:
+            kind === "wa"
+              ? `Abre este enlace para hacer la consulta previa por WhatsApp (código ${inviteCode}):`
+              : `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):`,
+          url,
         });
         return;
       } catch {
         // Fall through to clipboard if share is cancelled/unavailable.
       }
     }
-    await copyText("link", inviteLink);
+    await copyText(kind === "wa" ? "wa" : "link", url);
   }
 
   return (
@@ -373,11 +383,25 @@ export default function FisioPatientsPage() {
                     disabled={!inviteLink}
                     onClick={() => {
                       setCodeMenuOpen(false);
-                      void shareLink();
+                      void shareLink("web");
                     }}
                     className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
                   >
-                    {copied === "link" ? "Enlace copiado" : "Copiar / compartir enlace"}
+                    {copied === "link" ? "Enlace web copiado" : "Copiar / compartir enlace web"}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={!whatsappInviteLink}
+                    onClick={() => {
+                      setCodeMenuOpen(false);
+                      void shareLink("wa");
+                    }}
+                    className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {copied === "wa"
+                      ? "Enlace WhatsApp copiado"
+                      : "Copiar / compartir enlace WhatsApp"}
                   </button>
                   <button
                     type="button"
@@ -399,7 +423,8 @@ export default function FisioPatientsPage() {
               Tu código de vinculación
             </h2>
             <p className="mt-1 text-sm text-neutral-600">
-              El paciente lo introduce una vez en AIKinora, o abre el enlace directo.
+              Comparte el código, el enlace web o el enlace de WhatsApp. Misma
+              consulta previa; el informe llega a tu panel.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.2em] text-blue-800">
@@ -424,7 +449,21 @@ export default function FisioPatientsPage() {
                   onClick={() => void copyText("link", inviteLink)}
                   className="shrink-0 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
                 >
-                  {copied === "link" ? "Copiado" : "Copiar enlace"}
+                  {copied === "link" ? "Copiado" : "Copiar enlace web"}
+                </button>
+              </div>
+            ) : null}
+            {whatsappInviteLink ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <p className="min-w-0 flex-1 break-all rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 font-mono text-xs leading-relaxed text-emerald-800">
+                  {whatsappInviteLink}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void copyText("wa", whatsappInviteLink)}
+                  className="shrink-0 rounded-xl border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                >
+                  {copied === "wa" ? "Copiado" : "Copiar WhatsApp"}
                 </button>
               </div>
             ) : null}

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { PasswordInput } from "@/components/password-input";
 import { authUiCopy } from "@/lib/auth-ui-copy";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
@@ -143,11 +144,17 @@ export function LoginForm({
 
         <div className="mb-5 flex flex-col gap-1.5">
           <label className="text-sm font-semibold text-slate-700">{copy.password}</label>
-          <input
-            type="password" name="password" autoComplete="current-password" required minLength={6}
-            value={password} onChange={(e) => setPassword(e.target.value)}
+          <PasswordInput
+            name="password"
+            autoComplete="current-password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             disabled={busy}
-            className="rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            showLabel={copy.showPassword}
+            hideLabel={copy.hidePassword}
+            className="w-full rounded-xl border border-blue-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
           />
         </div>
 

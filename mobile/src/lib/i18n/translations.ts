@@ -120,6 +120,8 @@ export const translations = {
       signupSubtitle: "Crea tu cuenta",
       email: "Correo electrónico",
       password: "Contraseña",
+      showPassword: "Mostrar contraseña",
+      hidePassword: "Ocultar contraseña",
       login: "Entrar",
       signup: "Crear cuenta",
       noAccount: "¿No tienes cuenta? ",
@@ -330,11 +332,13 @@ export const translations = {
         "Vincula pacientes y consulta los informes que envían a la clínica.",
       linkingTitle: "Vinculación",
       linkingHint:
-        "Comparte el código o el enlace. El paciente completa la consulta y el informe llega aquí.",
+        "Comparte el WhatsApp, el enlace web o el código. Misma consulta previa; el informe llega aquí.",
       copyCode: "Copiar código",
-      copyLink: "Copiar enlace",
+      copyLink: "Copiar enlace web",
+      copyWhatsApp: "Copiar WhatsApp",
       copied: "Copiado",
-      share: "Compartir",
+      share: "Compartir web",
+      shareWhatsApp: "Compartir WhatsApp",
       newCode: "Nuevo código",
       refresh: "Actualizar",
       patientsCount: "{n} paciente",
@@ -348,6 +352,8 @@ export const translations = {
       closePatient: "Cerrar",
       shareInviteMessage:
         "Usa este enlace para vincularte en AIKinora (código {code}): {link}",
+      shareWhatsAppMessage:
+        "Abre este enlace para la consulta previa por WhatsApp (código {code}): {link}",
       physiosLead:
         "Genera un código o enlace para que un fisioterapeuta cree su cuenta. El código funciona al registrarse (Crear cuenta → Fisio).",
       emailOptional: "Correo del fisioterapeuta (opcional)",
@@ -507,6 +513,8 @@ export const translations = {
       signupSubtitle: "Create your account",
       email: "Email",
       password: "Password",
+      showPassword: "Show password",
+      hidePassword: "Hide password",
       login: "Sign in",
       signup: "Create account",
       noAccount: "Don't have an account? ",
@@ -717,11 +725,13 @@ export const translations = {
         "Link patients and review the reports they send to the clinic.",
       linkingTitle: "Linking",
       linkingHint:
-        "Share the code or link. The patient completes the consult and the report arrives here.",
+        "Share the WhatsApp link, web link, or code. Same pre-visit consult; the report arrives here.",
       copyCode: "Copy code",
-      copyLink: "Copy link",
+      copyLink: "Copy web link",
+      copyWhatsApp: "Copy WhatsApp",
       copied: "Copied",
-      share: "Share",
+      share: "Share web",
+      shareWhatsApp: "Share WhatsApp",
       newCode: "New code",
       refresh: "Refresh",
       patientsCount: "{n} patient",
@@ -735,6 +745,8 @@ export const translations = {
       closePatient: "Close",
       shareInviteMessage:
         "Use this link to connect in AIKinora (code {code}): {link}",
+      shareWhatsAppMessage:
+        "Open this link for the pre-visit consult on WhatsApp (code {code}): {link}",
       physiosLead:
         "Generate a code or link so a physiotherapist can create their account. The code works at signup (Create account → Physio).",
       emailOptional: "Physiotherapist email (optional)",

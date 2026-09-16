@@ -40,3 +40,24 @@ export function functionalTestRevealPreview(parsed: {
   if (parsed.heading?.trim()) parts.push(`**${parsed.heading}**`);
   return parts.join("\n\n");
 }
+
+/**
+ * Progressive intro only — never re-parse partial test lists mid-reveal.
+ * `visibleText` is a prefix of the full assistant message.
+ */
+export function functionalTestProgressiveBefore(
+  fullBefore: string,
+  visibleText: string
+): string {
+  const before = (fullBefore ?? "").trim();
+  if (!before) return "";
+  const visible = visibleText ?? "";
+  if (!visible.trim()) return "";
+  if (visible.length >= before.length) return before;
+  // Prefer a clean prefix of the before block when visible is still inside it.
+  if (before.startsWith(visible.trimEnd()) || visible.includes(before.slice(0, Math.min(24, before.length)))) {
+    const cut = Math.min(visible.length, before.length);
+    return before.slice(0, cut).trimEnd();
+  }
+  return before.slice(0, Math.min(visible.length, before.length)).trimEnd();
+}

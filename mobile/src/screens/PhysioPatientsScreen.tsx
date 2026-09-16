@@ -35,12 +35,15 @@ import {
   composerBottomInset,
   useKeyboardHeight,
 } from "../hooks/useKeyboardHeight";
-import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { pickIllustratedTestsForPruebasQuery } from "../lib/clinical-test-images";
 import { copyToClipboard } from "../lib/copy-to-clipboard";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
 import { staffPatientLabel } from "../lib/guest-account";
+import {
+  buildPhysioInviteUrl,
+  buildPhysioWhatsAppInviteUrl,
+} from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
 import { screenHeaderBarPadding } from "../lib/screen-header-insets";
 import type { TabParamList } from "../navigation/AppTabs";
@@ -98,7 +101,7 @@ export function PhysioPatientsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
   const [codeMenuOpen, setCodeMenuOpen] = useState(false);
   const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
@@ -107,8 +110,9 @@ export function PhysioPatientsScreen() {
   const [claimCode, setClaimCode] = useState("");
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
-  const inviteLink = inviteCode
-    ? `${WEB_APP_URL}/unirse?code=${encodeURIComponent(inviteCode)}`
+  const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
+  const whatsappInviteLink = inviteCode
+    ? buildPhysioWhatsAppInviteUrl(inviteCode)
     : null;
 
   const [selectedPatient, setSelectedPatient] = useState<PhysioPatient | null>(null);
@@ -342,7 +346,7 @@ export function PhysioPatientsScreen() {
     setCopied(null);
   }
 
-  async function copyText(kind: "code" | "link", value: string) {
+  async function copyText(kind: "code" | "link" | "wa", value: string) {
     setError(null);
     setCodeMenuOpen(false);
     const ok = await copyToClipboard(value);
@@ -352,9 +356,9 @@ export function PhysioPatientsScreen() {
         return;
       } catch {
         setError(
-          kind === "link"
-            ? "No se pudo copiar el enlace."
-            : "No se pudo copiar el código."
+          kind === "code"
+            ? "No se pudo copiar el código."
+            : "No se pudo copiar el enlace."
         );
         return;
       }
@@ -363,23 +367,33 @@ export function PhysioPatientsScreen() {
     setTimeout(() => setCopied(null), 2000);
   }
 
-  async function shareLink() {
-    if (!inviteLink || !inviteCode) return;
+  async function shareLink(kind: "web" | "wa" = "web") {
+    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
+    if (!url || !inviteCode) return;
     setCodeMenuOpen(false);
     try {
       await Share.share(
         Platform.OS === "ios"
           ? {
-              url: inviteLink,
-              message: `Usa este enlace para vincularte en AIKinora (código ${inviteCode})`,
+              url,
+              message:
+                kind === "wa"
+                  ? `Abre este enlace para la consulta previa por WhatsApp (código ${inviteCode})`
+                  : `Usa este enlace para vincularte en AIKinora (código ${inviteCode})`,
             }
           : {
-              title: "AIKinora — vinculación con tu fisioterapeuta",
-              message: `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):\n${inviteLink}`,
+              title:
+                kind === "wa"
+                  ? "AIKinora — consulta previa por WhatsApp"
+                  : "AIKinora — vinculación con tu fisioterapeuta",
+              message:
+                kind === "wa"
+                  ? `Abre este enlace para la consulta previa por WhatsApp (código ${inviteCode}):\n${url}`
+                  : `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):\n${url}`,
             }
       );
     } catch {
-      await copyText("link", inviteLink);
+      await copyText(kind === "wa" ? "wa" : "link", url);
     }
   }
 
@@ -900,10 +914,28 @@ export function PhysioPatientsScreen() {
               {codeMenuOpen ? (
                 <View style={styles.codeMenu}>
                   <Pressable
+                    disabled={!whatsappInviteLink}
+                    onPress={() => {
+                      setCodeMenuOpen(false);
+                      void shareLink("wa");
+                    }}
+                    style={({ pressed }) => [
+                      styles.codeMenuItem,
+                      pressed && { backgroundColor: Colors.background },
+                      !whatsappInviteLink && { opacity: 0.5 },
+                    ]}
+                  >
+                    <Text style={styles.codeMenuItemText}>
+                      {copied === "wa"
+                        ? "Enlace WhatsApp copiado"
+                        : "Copiar / compartir enlace WhatsApp"}
+                    </Text>
+                  </Pressable>
+                  <Pressable
                     disabled={!inviteLink}
                     onPress={() => {
                       setCodeMenuOpen(false);
-                      void shareLink();
+                      void shareLink("web");
                     }}
                     style={({ pressed }) => [
                       styles.codeMenuItem,
@@ -912,7 +944,9 @@ export function PhysioPatientsScreen() {
                     ]}
                   >
                     <Text style={styles.codeMenuItemText}>
-                      {copied === "link" ? "Enlace copiado" : "Copiar / compartir enlace"}
+                      {copied === "link"
+                        ? "Enlace web copiado"
+                        : "Copiar / compartir enlace web"}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -937,8 +971,53 @@ export function PhysioPatientsScreen() {
 
             <Text style={styles.cardTitle}>Tu código de vinculación</Text>
             <Text style={styles.cardSubtitle}>
-              El paciente lo introduce una vez en AIKinora, o abre el enlace directo.
+              Comparte el WhatsApp, el enlace web o el código. Misma consulta
+              previa; el informe llega a tu panel.
             </Text>
+
+            {whatsappInviteLink ? (
+              <>
+                <View style={[styles.linkBox, { borderColor: "#A7F3D0", backgroundColor: "#ECFDF5" }]}>
+                  <Text style={[styles.linkText, { color: "#065F46" }]} selectable>
+                    {whatsappInviteLink}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => void copyText("wa", whatsappInviteLink)}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.copyBtn,
+                    pressed && { backgroundColor: Colors.background },
+                  ]}
+                >
+                  <Text style={styles.copyBtnText}>
+                    {copied === "wa" ? "Copiado" : "Copiar WhatsApp"}
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
+
+            {inviteLink ? (
+              <>
+                <View style={styles.linkBox}>
+                  <Text style={styles.linkText} selectable>
+                    {inviteLink}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => void copyText("link", inviteLink)}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.copyBtn,
+                    pressed && { backgroundColor: Colors.background },
+                  ]}
+                >
+                  <Text style={styles.copyBtnText}>
+                    {copied === "link" ? "Copiado" : "Copiar enlace web"}
+                  </Text>
+                </Pressable>
+              </>
+            ) : null}
 
             <View style={styles.codeBox}>
               <Text style={styles.codeDisplay}>
@@ -959,28 +1038,6 @@ export function PhysioPatientsScreen() {
                 {copied === "code" ? "Copiado" : "Copiar código"}
               </Text>
             </Pressable>
-
-            {inviteLink ? (
-              <>
-                <View style={styles.linkBox}>
-                  <Text style={styles.linkText} selectable>
-                    {inviteLink}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => void copyText("link", inviteLink)}
-                  hitSlop={8}
-                  style={({ pressed }) => [
-                    styles.copyBtn,
-                    pressed && { backgroundColor: Colors.background },
-                  ]}
-                >
-                  <Text style={styles.copyBtnText}>
-                    {copied === "link" ? "Copiado" : "Copiar enlace"}
-                  </Text>
-                </Pressable>
-              </>
-            ) : null}
 
             <Text style={styles.cardFoot}>
               Si regeneras el código, los pacientes ya vinculados siguen vinculados;
