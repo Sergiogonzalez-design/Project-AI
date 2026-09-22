@@ -3,6 +3,11 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "@/lib/consulta-timing";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "@/lib/consulta-compact";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
@@ -128,6 +133,7 @@ export const FINGER_AGGRAVATING = [
 export const FINGER_SELF_TEST = ["Sí", "Casi", "No", "No lo he probado"] as const;
 
 export type FingerAdaptiveAnswers = {
+  alertas: string[];
   rf_dedo_frio_palido: string;
   rf_herida_abierta: string;
   rf_no_movimiento_total: string;
@@ -172,6 +178,7 @@ export type FingerAdaptiveAnswers = {
 
 export function defaultFingerAdaptiveAnswers(): FingerAdaptiveAnswers {
   return {
+    alertas: [],
     rf_dedo_frio_palido: "",
     rf_herida_abierta: "",
     rf_no_movimiento_total: "",
@@ -568,6 +575,7 @@ export function detectFingerRedFlags(answers: FingerAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(FINGER_QUESTIONS));
   const triggered: string[] = [];
   const pairs: Array<[keyof FingerAdaptiveAnswers, string]> = [
     ["rf_dedo_frio_palido", "dedo frío o pálido"],
@@ -592,9 +600,18 @@ export function detectFingerRedFlags(answers: FingerAdaptiveAnswers): {
   return { triggered, urgent: hard };
 }
 
+const FINGER_ONE_PAGE_IDS = [
+  "dedo_afectado",
+  "localizacion_dedo",
+  "cuando_empezo",
+  "como_empezo",
+  "detalle_otro",
+  "limitaciones_funcionales",
+] as const;
+
 export function getVisibleFingerQuestions(answers: FingerAdaptiveAnswers): FingerQuestionDef[] {
   const thumb = isThumbAffected(answers);
-  return FINGER_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = FINGER_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     let next: FingerQuestionDef = {
       ...q,
       label: thumbAwareLabel(q.id, q.label, thumb),
@@ -607,9 +624,11 @@ export function getVisibleFingerQuestions(answers: FingerAdaptiveAnswers): Finge
     }
     return next;
   });
+  return toOnePageQuestionnaire(list, FINGER_ONE_PAGE_IDS, FINGER_QUESTIONS, "core");
 }
 
 export function getVisibleFingerSections(answers: FingerAdaptiveAnswers): FingerQuestionSection[] {
+  const visible = getVisibleFingerQuestions(answers);
   const sections: FingerQuestionSection[] = [
     "red_flags",
     "core",
@@ -617,10 +636,7 @@ export function getVisibleFingerSections(answers: FingerAdaptiveAnswers): Finger
     "function",
     "history",
   ];
-  if (!detectFingerRedFlags(answers).urgent) {
-    sections.push("self_tests");
-  }
-  return sections;
+  return sections.filter((s) => visible.some((q) => q.section === s));
 }
 
 function isAnswered(q: FingerQuestionDef, answers: FingerAdaptiveAnswers): boolean {

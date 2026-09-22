@@ -5,10 +5,27 @@ import {
   YES_NO,
 } from "@/lib/consulta-shoulder-adaptive";
 import {
+  ALERTAS_NONE,
+  withAlertasSynced,
+} from "@/lib/consulta-compact";
+import {
   missingQuestionIssue,
   type AdaptiveValidationIssue,
 } from "@/lib/consulta-validation";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
+
+export const GENERIC_ALERTAS_OPTIONS = [
+  "Se ve torcido, deformado o muy distinto",
+  "Fiebre junto con el dolor",
+  "Pérdida de sensibilidad marcada",
+  ALERTAS_NONE,
+] as const;
+
+const GENERIC_ALERTAS_MAP: Record<string, string> = {
+  "Se ve torcido, deformado o muy distinto": "rf_deformidad",
+  "Fiebre junto con el dolor": "rf_fiebre",
+  "Pérdida de sensibilidad marcada": "rf_perdida_sensibilidad",
+};
 
 export type GenericConsultaAnswers = {
   zona: string;
@@ -18,6 +35,7 @@ export type GenericConsultaAnswers = {
   mecanismo_otro: string;
   intensidad_dolor: number;
   descripcion: string;
+  alertas: string[];
   rf_deformidad: string;
   rf_fiebre: string;
   rf_perdida_sensibilidad: string;
@@ -32,6 +50,7 @@ export function defaultGenericConsultaAnswers(): GenericConsultaAnswers {
     mecanismo_otro: "",
     intensidad_dolor: 5,
     descripcion: "",
+    alertas: [],
     rf_deformidad: "",
     rf_fiebre: "",
     rf_perdida_sensibilidad: "",
@@ -55,13 +74,6 @@ export function validateGenericConsulta(
       label: "¿Cuánto tiempo llevas con el problema?",
     });
   }
-  if (!a.inicio) {
-    return missingQuestionIssue({
-      id: "inicio",
-      section: "core",
-      label: "¿Cómo fue el inicio?",
-    });
-  }
   if (!a.mecanismo.length) {
     return missingQuestionIssue({
       id: "mecanismo",
@@ -76,25 +88,11 @@ export function validateGenericConsulta(
       label: "Cuéntanos qué pasó o cómo empezó",
     });
   }
-  if (!a.rf_deformidad) {
+  if (!a.alertas.length) {
     return missingQuestionIssue({
-      id: "rf_deformidad",
-      section: "red_flags",
-      label: "¿Deformidad evidente?",
-    });
-  }
-  if (!a.rf_fiebre) {
-    return missingQuestionIssue({
-      id: "rf_fiebre",
-      section: "red_flags",
-      label: "¿Tienes fiebre junto con el dolor?",
-    });
-  }
-  if (!a.rf_perdida_sensibilidad) {
-    return missingQuestionIssue({
-      id: "rf_perdida_sensibilidad",
-      section: "red_flags",
-      label: "¿Pérdida de sensibilidad?",
+      id: "alertas",
+      section: "core",
+      label: "¿Te ocurre alguna de estas cosas?",
     });
   }
   return null;
@@ -104,6 +102,7 @@ export function detectGenericRedFlags(a: GenericConsultaAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  a = withAlertasSynced(a, GENERIC_ALERTAS_MAP);
   const triggered: string[] = [];
   if (a.rf_deformidad === "Sí") {
     triggered.push("Se ve torcido, deformado o muy distinto");
@@ -123,6 +122,7 @@ export function detectGenericRedFlags(a: GenericConsultaAnswers): {
 }
 
 export function formatGenericConsulta(a: GenericConsultaAnswers, bodyMapText: string): string {
+  a = withAlertasSynced(a, GENERIC_ALERTAS_MAP);
   const { urgent, triggered } = detectGenericRedFlags(a);
 
   return [
@@ -147,4 +147,5 @@ export const GENERIC_FIELD_OPTIONS = {
   onset: ONSET_FORM_OPTIONS,
   mechanism: MECHANISM_OPTIONS,
   yesNo: YES_NO,
+  alertas: GENERIC_ALERTAS_OPTIONS,
 };

@@ -2,6 +2,11 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "@/lib/consulta-timing";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "@/lib/consulta-compact";
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
@@ -71,6 +76,7 @@ export const ASSOCIATED_SYMPTOM_OPTIONS = [
 export type HeadQuestionSection = "red_flags" | "core" | "neck_link" | "history";
 
 export type HeadAdaptiveAnswers = {
+  alertas: string[];
   evolucion: string;
   rf_peor_dolor: string;
   rf_neuro: string;
@@ -95,6 +101,7 @@ export type HeadAdaptiveAnswers = {
 
 export function defaultHeadAdaptiveAnswers(): HeadAdaptiveAnswers {
   return {
+    alertas: [],
     evolucion: "",
     rf_peor_dolor: "",
     rf_neuro: "",
@@ -318,13 +325,23 @@ export const HEAD_SECTION_ORDER: HeadQuestionSection[] = [
   "history",
 ];
 
+const HEAD_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_cabeza",
+  "mecanismo",
+  "mecanismo_otro",
+  "limitacion_funcional",
+  "sintomas_asociados",
+] as const;
+
 export function getVisibleHeadQuestions(answers: HeadAdaptiveAnswers): HeadQuestionDef[] {
-  return HEAD_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = HEAD_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     if (!q.options?.length) return q;
     const filtered = filterSleepDependentOptions(q.options, answers.evolucion);
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
+  return toOnePageQuestionnaire(list, HEAD_ONE_PAGE_IDS, HEAD_QUESTIONS, "core");
 }
 
 export function getVisibleHeadSections(answers: HeadAdaptiveAnswers): HeadQuestionSection[] {
@@ -345,6 +362,7 @@ export function detectHeadRedFlags(answers: HeadAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(HEAD_QUESTIONS));
   const labels: Record<string, string> = {
     rf_peor_dolor: "Peor dolor de cabeza / inicio súbito distinto",
     rf_neuro: "Síntomas neurológicos (visión, habla, debilidad, confusión)",

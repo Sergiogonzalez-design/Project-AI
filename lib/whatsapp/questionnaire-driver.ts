@@ -201,13 +201,6 @@ const GENERIC_QUESTIONS: WaQuestionDef[] = [
     required: true,
   },
   {
-    id: "inicio",
-    label: "¿Cómo fue el inicio?",
-    type: "single",
-    options: GENERIC_FIELD_OPTIONS.onset,
-    required: true,
-  },
-  {
     id: "mecanismo",
     label: "¿Qué pudo provocarlo? (elige una)",
     type: "single",
@@ -215,9 +208,10 @@ const GENERIC_QUESTIONS: WaQuestionDef[] = [
     required: true,
   },
   {
-    id: "intensidad_dolor",
-    label: "Intensidad del dolor (0–10)",
-    type: "slider",
+    id: "alertas",
+    label: "¿Te ocurre alguna de estas cosas?",
+    type: "multi",
+    options: GENERIC_FIELD_OPTIONS.alertas,
     required: true,
   },
 ];

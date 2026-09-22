@@ -3,6 +3,11 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "./consulta-timing";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "./consulta-compact";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 export const YES_NO = ["No", "Sí"] as const;
 
@@ -113,6 +118,7 @@ export const WEIGHTS_TIMING = ["Durante el levantamiento", "Después", "Horas m�
 export const NUMB_FINGERS = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"] as const;
 
 export type WristAdaptiveAnswers = {
+  alertas: string[];
   // Red flags
   rf_deformidad: string;
   rf_no_movimiento: string;
@@ -190,6 +196,7 @@ export type WristAdaptiveAnswers = {
 
 export function defaultWristAdaptiveAnswers(): WristAdaptiveAnswers {
   return {
+    alertas: [],
     rf_deformidad: "",
     rf_no_movimiento: "",
     rf_inflamacion_severa: "",
@@ -408,6 +415,7 @@ export function detectWristRedFlags(answers: WristAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(WRIST_QUESTIONS));
   const triggered: string[] = [];
   const pairs: Array<[keyof WristAdaptiveAnswers, string]> = [
     ["rf_deformidad", "se ve torcido, deformado o muy distinto"],
@@ -430,40 +438,29 @@ export function detectWristRedFlags(answers: WristAdaptiveAnswers): {
   };
 }
 
+const WRIST_ONE_PAGE_IDS = [
+  "localizacion_muneca",
+  "inicio",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+] as const;
+
 export function getVisibleWristQuestions(answers: WristAdaptiveAnswers): WristQuestionDef[] {
-  return WRIST_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = WRIST_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     if (!q.options?.length) return q;
     const filtered = filterSleepDependentOptions(q.options, answers.comienzo, answers.inicio);
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
+  return toOnePageQuestionnaire(list, WRIST_ONE_PAGE_IDS, WRIST_QUESTIONS, "core");
 }
 
 export function getVisibleWristSections(answers: WristAdaptiveAnswers): WristQuestionSection[] {
-  const sections: WristQuestionSection[] = ["red_flags", "core"];
-
-  const fall = answers.inicio === "Tras una caída" || answers.inicio === "Al apoyarme con la mano";
-  const weights = answers.inicio === "Tras levantar pesas" || answers.actividad_tipo === "Pesas / gimnasio";
-  const repetitive = answers.inicio === "Tras movimientos repetitivos";
-  const neuro = hasSymptom(answers, "Hormigueo") || hasSymptom(answers, "Entumecimiento");
-  const thumb = hasAnyLocation(answers, "Lado del pulgar") || hasAnyLocation(answers, "Base del pulgar");
-  const ulnar = hasAnyLocation(answers, "Lado del meñique");
-  const clicking =
-    hasSymptom(answers, "Chasquidos") ||
-    hasSymptom(answers, "Bloqueo") ||
-    hasSymptom(answers, "Sensación de que algo se mueve dentro");
-  const weakness = hasSymptom(answers, "Debilidad");
-
-  if (fall) sections.push("fall");
-  if (weights) sections.push("weights");
-  if (repetitive) sections.push("repetitive");
-  if (neuro) sections.push("neuro");
-  if (thumb) sections.push("thumb_side");
-  if (ulnar) sections.push("ulnar_side");
-  if (clicking) sections.push("clicking_locking");
-  if (weakness) sections.push("weakness");
-
-  return sections;
+  const visible = getVisibleWristQuestions(answers);
+  return (Object.keys(WRIST_SECTION_LABELS) as WristQuestionSection[]).filter((s) =>
+    visible.some((q) => q.section === s)
+  );
 }
 
 function isAnswered(q: WristQuestionDef, answers: WristAdaptiveAnswers): boolean {

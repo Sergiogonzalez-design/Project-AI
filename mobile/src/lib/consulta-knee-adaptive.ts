@@ -2,6 +2,11 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "./consulta-timing";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "./consulta-compact";
 /**
  * Adaptive questionnaire for knee pain — same structure as shoulder / neck / lower leg
  * (urgency → core → mechanism branches → neuro / swelling / instability → history).
@@ -135,6 +140,7 @@ export const INSTABILITY_GIVING_WAY_OPTIONS = [
 ] as const;
 
 export type KneeAdaptiveAnswers = {
+  alertas: string[];
   // Red flags
   rf_deformidad: string;
   rf_no_apoyo: string;
@@ -227,6 +233,7 @@ export type KneeAdaptiveAnswers = {
 
 export function defaultKneeAdaptiveAnswers(): KneeAdaptiveAnswers {
   return {
+    alertas: [],
     rf_deformidad: "",
     rf_no_apoyo: "",
     rf_bloqueo: "",
@@ -1097,6 +1104,17 @@ export const KNEE_SECTION_ORDER: KneeQuestionSection[] = [
   "history",
 ];
 
+const KNEE_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_rodilla",
+  "mecanismo",
+  "mecanismo_otro",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+  "irradiacion_detalle",
+] as const;
+
 export function getVisibleKneeQuestions(
   answers: KneeAdaptiveAnswers
 ): KneeQuestionDef[] {
@@ -1106,17 +1124,12 @@ export function getVisibleKneeQuestions(
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
-  // Urgent early exit: only red-flag items remain required / shown.
-  if (answers.acortar_por_urgencia) {
-    return list.filter((q) => q.section === "red_flags");
-  }
-  return list;
+  return toOnePageQuestionnaire(list, KNEE_ONE_PAGE_IDS, KNEE_QUESTIONS, "core");
 }
 
 export function getVisibleKneeSections(
   answers: KneeAdaptiveAnswers
 ): KneeQuestionSection[] {
-  if (answers.acortar_por_urgencia) return ["red_flags"];
   const visible = getVisibleKneeQuestions(answers);
   return KNEE_SECTION_ORDER.filter((s) => visible.some((q) => q.section === s));
 }
@@ -1135,6 +1148,7 @@ export function detectKneeRedFlags(answers: KneeAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(KNEE_QUESTIONS));
   const labels: Record<string, string> = {
     rf_deformidad: "Se ve torcido, deformado o muy distinto en rodilla",
     rf_no_apoyo: "Incapacidad para apoyar peso o caminar",
@@ -1210,6 +1224,7 @@ export function formatKneeAdaptive(
   answers: KneeAdaptiveAnswers,
   bodyMapText: string
 ): string {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(KNEE_QUESTIONS));
   const { urgent, triggered } = detectKneeRedFlags(answers);
   const lines: string[] = [
     "=== CUESTIONARIO ADAPTATIVO — RODILLA ===",

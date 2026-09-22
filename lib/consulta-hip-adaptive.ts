@@ -2,6 +2,11 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "@/lib/consulta-timing";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "@/lib/consulta-compact";
 /**
  * Adaptive questionnaire for hip / groin pain — same structure as knee / shoulder / lower leg
  * (urgency → core → mechanism branches → neuro / impingement / trochanter → history).
@@ -126,6 +131,7 @@ export const NEURO_ZONE_OPTIONS = [
 ] as const;
 
 export type HipAdaptiveAnswers = {
+  alertas: string[];
   // Red flags
   rf_no_apoyo: string;
   rf_deformidad: string;
@@ -206,6 +212,7 @@ export type HipAdaptiveAnswers = {
 
 export function defaultHipAdaptiveAnswers(): HipAdaptiveAnswers {
   return {
+    alertas: [],
     rf_no_apoyo: "",
     rf_deformidad: "",
     rf_fiebre: "",
@@ -975,6 +982,17 @@ export const HIP_SECTION_ORDER: HipQuestionSection[] = [
   "history",
 ];
 
+const HIP_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_cadera",
+  "mecanismo",
+  "mecanismo_otro",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+  "irradiacion_detalle",
+] as const;
+
 export function getVisibleHipQuestions(
   answers: HipAdaptiveAnswers
 ): HipQuestionDef[] {
@@ -984,17 +1002,12 @@ export function getVisibleHipQuestions(
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
-  // Urgent early exit: only red-flag items remain required / shown.
-  if (answers.acortar_por_urgencia) {
-    return list.filter((q) => q.section === "red_flags");
-  }
-  return list;
+  return toOnePageQuestionnaire(list, HIP_ONE_PAGE_IDS, HIP_QUESTIONS, "core");
 }
 
 export function getVisibleHipSections(
   answers: HipAdaptiveAnswers
 ): HipQuestionSection[] {
-  if (answers.acortar_por_urgencia) return ["red_flags"];
   const visible = getVisibleHipQuestions(answers);
   return HIP_SECTION_ORDER.filter((s) => visible.some((q) => q.section === s));
 }
@@ -1013,6 +1026,7 @@ export function detectHipRedFlags(answers: HipAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(HIP_QUESTIONS));
   const labels: Record<string, string> = {
     rf_no_apoyo: "No puedes apoyar peso tras golpe o caída",
     rf_deformidad: "Deformidad o pierna acortada/rotada",
@@ -1082,6 +1096,7 @@ export function formatHipAdaptive(
   answers: HipAdaptiveAnswers,
   bodyMapText: string
 ): string {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(HIP_QUESTIONS));
   const { urgent, triggered } = detectHipRedFlags(answers);
   const lines: string[] = [
     "=== CUESTIONARIO — ZONA GLÚTEO / ISQUIOTIBIAL / INGLE / CADERA ===",

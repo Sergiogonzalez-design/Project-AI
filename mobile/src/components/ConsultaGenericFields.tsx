@@ -6,13 +6,13 @@ import {
   GENERIC_FIELD_OPTIONS,
   type GenericConsultaAnswers,
 } from "../lib/consulta-generic";
+import { ALERTAS_LABEL, ALERTAS_NONE } from "../lib/consulta-compact";
 import {
   localizeShoulderOption,
   type ConsultLocale,
 } from "../lib/consulta-shoulder-adaptive";
 import { Colors } from "../lib/colors";
 import { chipStyle, chipTextStyle } from "./ui/chipStyle";
-import { PainScale } from "./ui/PainScale";
 
 const GENERIC_LABELS_EN = {
   banner: "Questionnaire to gather details before guidance.",
@@ -72,8 +72,13 @@ function MultiChipGroup({
   displayOption?: (opt: string) => string;
 }) {
   const toggle = (opt: string) => {
-    if (value.includes(opt)) onChange(value.filter((v) => v !== opt));
-    else onChange([...value, opt]);
+    if (opt === ALERTAS_NONE || opt === "Ninguno") {
+      onChange(value.includes(opt) ? [] : [opt]);
+      return;
+    }
+    const withoutNone = value.filter((v) => v !== ALERTAS_NONE && v !== "Ninguno");
+    if (withoutNone.includes(opt)) onChange(withoutNone.filter((v) => v !== opt));
+    else onChange([...withoutNone, opt]);
   };
   return (
     <View style={styles.chipGrid}>
@@ -115,14 +120,6 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
         </Text>
       </View>
 
-      <Text style={styles.sectionTitle}>{en ? L.urgency : "Comprobación de urgencia"}</Text>
-      <Text style={styles.label}>{en ? L.rf_deformidad : "¿Deformidad evidente?"}</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_deformidad} onChange={(rf_deformidad) => patch({ rf_deformidad })} displayOption={displayOption} />
-      <Text style={styles.label}>{en ? L.rf_fiebre : "¿Tienes fiebre junto con el dolor?"}</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_fiebre} onChange={(rf_fiebre) => patch({ rf_fiebre })} displayOption={displayOption} />
-      <Text style={styles.label}>{en ? L.rf_perdida_sensibilidad : "¿Pérdida de sensibilidad?"}</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.yesNo} value={a.rf_perdida_sensibilidad} onChange={(rf_perdida_sensibilidad) => patch({ rf_perdida_sensibilidad })} displayOption={displayOption} />
-
       <Text style={styles.sectionTitle}>{en ? L.problem : "Tu problema"}</Text>
       <Text style={styles.label}>{en ? L.zona : "¿Dónde te duele o te molesta?"}</Text>
       <ConsultaTextInput
@@ -135,8 +132,6 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
       />
       <Text style={styles.label}>{en ? L.evolucion : "¿Cuánto tiempo llevas con esto?"}</Text>
       <ChipGroup options={GENERIC_FIELD_OPTIONS.evolution} value={a.evolucion} onChange={(evolucion) => patch({ evolucion })} displayOption={displayOption} />
-      <Text style={styles.label}>{en ? L.inicio : "¿Cómo fue el inicio?"}</Text>
-      <ChipGroup options={GENERIC_FIELD_OPTIONS.onset} value={a.inicio} onChange={(inicio) => patch({ inicio })} displayOption={displayOption} />
       <Text style={styles.label}>{en ? L.mecanismo : "¿Qué pudo provocarlo? (puedes marcar varias)"}</Text>
       <MultiChipGroup options={GENERIC_FIELD_OPTIONS.mechanism} value={a.mecanismo} onChange={(mecanismo) => patch({ mecanismo })} displayOption={displayOption} />
       {a.mecanismo.includes("Otro") && (
@@ -148,11 +143,14 @@ export function ConsultaGenericFields({ value, onChange, locale = "es" }: Props)
           placeholderTextColor={Colors.textLight}
         />
       )}
-      <PainScale
-        value={a.intensidad_dolor}
-        onChange={(v) => patch({ intensidad_dolor: v })}
-        label={en ? L.intensidad : "Intensidad del dolor"}
-        locale={locale}
+      <Text style={styles.label}>
+        {en ? "Any of these warning signs?" : ALERTAS_LABEL}
+      </Text>
+      <MultiChipGroup
+        options={[...GENERIC_FIELD_OPTIONS.alertas]}
+        value={a.alertas}
+        onChange={(alertas) => patch({ alertas })}
+        displayOption={displayOption}
       />
       <Text style={styles.label}>{en ? L.descripcion : "Detalles adicionales (opcional)"}</Text>
       <ConsultaTextInput

@@ -1,4 +1,9 @@
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "@/lib/consulta-compact";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 import {
   filterSleepDependentOptions,
@@ -146,6 +151,7 @@ export const ROM_LIMIT_CAUSE_OPTIONS = [
 export const INSTABILITY_PREVIOUS_OPTIONS = ["No", "Una vez", "Varias veces"] as const;
 
 export type ElbowAdaptiveAnswers = {
+  alertas: string[];
   // Red flags
   rf_deformidad: string;
   rf_no_movimiento: string;
@@ -213,6 +219,7 @@ export type ElbowAdaptiveAnswers = {
 
 export function defaultElbowAdaptiveAnswers(): ElbowAdaptiveAnswers {
   return {
+    alertas: [],
     rf_deformidad: "",
     rf_no_movimiento: "",
     rf_inflamacion_severa: "",
@@ -546,13 +553,24 @@ export const ELBOW_SECTION_ORDER: ElbowQuestionSection[] = [
   "history",
 ];
 
+const ELBOW_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_codo",
+  "mecanismo",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+  "irradiacion_detalle",
+] as const;
+
 export function getVisibleElbowQuestions(answers: ElbowAdaptiveAnswers): ElbowQuestionDef[] {
-  return ELBOW_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = ELBOW_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     if (!q.options?.length) return q;
     const filtered = filterSleepDependentOptions(q.options, answers.evolucion);
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
+  return toOnePageQuestionnaire(list, ELBOW_ONE_PAGE_IDS, ELBOW_QUESTIONS, "core");
 }
 
 export function getVisibleElbowSections(answers: ElbowAdaptiveAnswers): ElbowQuestionSection[] {
@@ -575,6 +593,7 @@ export function detectElbowRedFlags(answers: ElbowAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(ELBOW_QUESTIONS));
   const labels: Record<string, string> = {
     rf_deformidad: "Se ve torcido, deformado o muy distinto tras lesión",
     rf_no_movimiento: "No puedes mover el codo en absoluto",

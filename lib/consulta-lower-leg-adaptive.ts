@@ -9,6 +9,11 @@ import type { AnkleFootFocus } from "@/lib/detect-body-part";
  * (foot vs ankle vs lower_leg) from the patient's initial complaint.
  */
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "@/lib/consulta-validation";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "@/lib/consulta-compact";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 
 export const YES_NO = ["No", "Sí"] as const;
@@ -176,6 +181,7 @@ export const SWELLING_ONSET_OPTIONS = [
 ] as const;
 
 export type LowerLegAdaptiveAnswers = {
+  alertas: string[];
   /** Matches what the patient said first: foot vs ankle vs shin/calf */
   region_focus: AnkleFootFocus;
   // Red flags
@@ -240,6 +246,7 @@ export function defaultLowerLegAdaptiveAnswers(
       ? [] // user still picks; we may prefill via withAnkleFootFocusFromText
       : [];
   return {
+    alertas: [],
     region_focus: focus,
     rf_deformidad: "",
     rf_no_apoyo: "",
@@ -977,10 +984,21 @@ function focusAwareQuestion(
   return q;
 }
 
+const LOWER_LEG_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_pierna",
+  "mecanismo",
+  "mecanismo_otro",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+  "irradiacion_detalle",
+] as const;
+
 export function getVisibleLowerLegQuestions(
   answers: LowerLegAdaptiveAnswers
 ): LowerLegQuestionDef[] {
-  return LOWER_LEG_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = LOWER_LEG_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     let next = focusAwareQuestion(q, answers);
     if (next.options?.length) {
       const filtered = filterSleepDependentOptions(next.options, answers.evolucion);
@@ -990,6 +1008,7 @@ export function getVisibleLowerLegQuestions(
     }
     return next;
   });
+  return toOnePageQuestionnaire(list, LOWER_LEG_ONE_PAGE_IDS, LOWER_LEG_QUESTIONS, "core");
 }
 
 export function getVisibleLowerLegSections(
@@ -1013,6 +1032,7 @@ export function detectLowerLegRedFlags(answers: LowerLegAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(LOWER_LEG_QUESTIONS));
   const labels: Record<string, string> = {
     rf_deformidad: "Se ve torcido, deformado o muy distinto",
     rf_no_apoyo: "No puedes apoyar o caminar en absoluto",

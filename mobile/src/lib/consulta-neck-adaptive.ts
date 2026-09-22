@@ -2,6 +2,11 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "./consulta-timing";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "./consulta-compact";
 /**
  * Adaptive questionnaire for neck / cervical spine — same structure as shoulder
  * (urgency → core → mechanism branches → neuro → history).
@@ -121,6 +126,7 @@ export const REPETITIVE_FREQUENCY_OPTIONS = [
 ] as const;
 
 export type NeckAdaptiveAnswers = {
+  alertas: string[];
   rf_trauma_grave: string;
   rf_debilidad_brazos_piernas: string;
   rf_perdida_sensibilidad: string;
@@ -166,6 +172,7 @@ export type NeckAdaptiveAnswers = {
 
 export function defaultNeckAdaptiveAnswers(): NeckAdaptiveAnswers {
   return {
+    alertas: [],
     rf_trauma_grave: "",
     rf_debilidad_brazos_piernas: "",
     rf_perdida_sensibilidad: "",
@@ -638,15 +645,27 @@ export const NECK_SECTION_ORDER: NeckQuestionSection[] = [
   "history",
 ];
 
+const NECK_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_cuello",
+  "mecanismo",
+  "mecanismo_otro",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+  "irradiacion_detalle",
+] as const;
+
 export function getVisibleNeckQuestions(
   answers: NeckAdaptiveAnswers
 ): NeckQuestionDef[] {
-  return NECK_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = NECK_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     if (!q.options?.length) return q;
     const filtered = filterSleepDependentOptions(q.options, answers.evolucion);
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
+  return toOnePageQuestionnaire(list, NECK_ONE_PAGE_IDS, NECK_QUESTIONS, "core");
 }
 
 export function getVisibleNeckSections(
@@ -674,6 +693,7 @@ export function detectNeckRedFlags(answers: NeckAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(NECK_QUESTIONS));
   const labels: Record<string, string> = {
     rf_trauma_grave: "Golpe o accidente fuerte en el cuello",
     rf_debilidad_brazos_piernas: "Debilidad en brazos/piernas o torpeza al caminar",

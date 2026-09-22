@@ -2,6 +2,11 @@ import {
   filterSleepDependentOptions,
   shouldShowSleepDependentQuestion,
 } from "./consulta-timing";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "./consulta-compact";
 /**
  * Adaptive questionnaire for back / lumbar-thoracic pain — same structure as knee / shoulder
  * (urgency → core → mechanism branches → neuro / sciatica pattern → history).
@@ -150,6 +155,7 @@ export const LIFT_POSTURE_OPTIONS = [
 ] as const;
 
 export type BackAdaptiveAnswers = {
+  alertas: string[];
   // Red flags
   rf_debilidad_bilateral_pie_caido: string;
   rf_anestesia_silla: string;
@@ -209,6 +215,7 @@ export type BackAdaptiveAnswers = {
 
 export function defaultBackAdaptiveAnswers(): BackAdaptiveAnswers {
   return {
+    alertas: [],
     rf_debilidad_bilateral_pie_caido: "",
     rf_anestesia_silla: "",
     rf_esfinteres: "",
@@ -752,15 +759,27 @@ export const BACK_SECTION_ORDER: BackQuestionSection[] = [
   "history",
 ];
 
+const BACK_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_espalda",
+  "mecanismo",
+  "mecanismo_otro",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+  "irradiacion_detalle",
+] as const;
+
 export function getVisibleBackQuestions(
   answers: BackAdaptiveAnswers
 ): BackQuestionDef[] {
-  return BACK_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
+  const list = BACK_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => {
     if (!q.options?.length) return q;
     const filtered = filterSleepDependentOptions(q.options, answers.evolucion);
     if (filtered.length === q.options.length) return q;
     return { ...q, options: filtered };
   });
+  return toOnePageQuestionnaire(list, BACK_ONE_PAGE_IDS, BACK_QUESTIONS, "core");
 }
 
 export function getVisibleBackSections(
@@ -785,6 +804,7 @@ export function detectBackRedFlags(answers: BackAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(BACK_QUESTIONS));
   const labels: Record<string, string> = {
     rf_debilidad_bilateral_pie_caido:
       "Debilidad bilateral progresiva / pie caído",

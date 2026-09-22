@@ -1,4 +1,9 @@
 import { missingQuestionIssue, type AdaptiveValidationIssue } from "./consulta-validation";
+import {
+  alertasOptionToRfId,
+  toOnePageQuestionnaire,
+  withAlertasSynced,
+} from "./consulta-compact";
 import { formatRedFlagScreenBlock } from "./consulta-red-flags-copy";
 import {
   filterSleepDependentOptions,
@@ -190,6 +195,7 @@ export const INSTABILITY_DIRECTION_OPTIONS = [
 ] as const;
 
 export type ShoulderAdaptiveAnswers = {
+  alertas: string[];
   // Red flags
   rf_deformidad: string;
   rf_no_movimiento: string;
@@ -242,6 +248,7 @@ export type ShoulderAdaptiveAnswers = {
 
 export function defaultShoulderAdaptiveAnswers(): ShoulderAdaptiveAnswers {
   return {
+    alertas: [],
     rf_deformidad: "",
     rf_no_movimiento: "",
     rf_perdida_fuerza: "",
@@ -622,11 +629,22 @@ export function adaptShoulderQuestionForFocus(
   }
 }
 
+const SHOULDER_ONE_PAGE_IDS = [
+  "evolucion",
+  "localizacion_hombro",
+  "mecanismo",
+  "mecanismo_otro",
+  "limitacion_funcional",
+  "sintomas_asociados",
+  "irradiacion",
+  "irradiacion_detalle",
+] as const;
+
 export function getVisibleShoulderQuestions(
   answers: ShoulderAdaptiveAnswers,
   focus: ShoulderQuestionnaireFocus = "shoulder"
 ): ShoulderQuestionDef[] {
-  return SHOULDER_QUESTIONS.filter((q) => {
+  const raw = SHOULDER_QUESTIONS.filter((q) => {
     if (focus === "pectoral" && q.section === "instability") return false;
     if (!q.showIf || q.showIf(answers)) return true;
     return false;
@@ -637,6 +655,7 @@ export function getVisibleShoulderQuestions(
     if (filtered.length === next.options.length) return next;
     return { ...next, options: filtered };
   });
+  return toOnePageQuestionnaire(raw, SHOULDER_ONE_PAGE_IDS, SHOULDER_QUESTIONS, "core");
 }
 
 export function getVisibleShoulderSections(
@@ -662,6 +681,7 @@ export function detectRedFlags(answers: ShoulderAdaptiveAnswers): {
   urgent: boolean;
   triggered: string[];
 } {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(SHOULDER_QUESTIONS));
   const labels: Record<string, string> = {
     rf_deformidad: "Se ve torcido, deformado o muy distinto tras un golpe o caída",
     rf_no_movimiento: "No puedes mover el brazo en absoluto",
@@ -721,6 +741,7 @@ export function formatShoulderAdaptive(
   bodyMapText: string,
   focus: ShoulderQuestionnaireFocus = "shoulder"
 ): string {
+  answers = withAlertasSynced(answers, alertasOptionToRfId(SHOULDER_QUESTIONS));
   const { urgent, triggered } = detectRedFlags(answers);
   const lines: string[] = [
     focus === "pectoral"
