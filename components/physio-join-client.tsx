@@ -64,14 +64,15 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
             { p_code: code }
           );
           if (!linkError) {
-            router.replace("/fisioterapia");
-            router.refresh();
+            window.location.assign("/fisioterapia");
             return;
           }
         }
       }
 
-      await supabase.auth.signOut({ scope: "local" });
+      // Clear any staff/patient session so the invite always opens consulta previa
+      // as a guest (name gate). Local-only can leave cookies that bounce to /fisio.
+      await supabase.auth.signOut({ scope: "global" });
 
       const guestClientId = getOrCreateGuestClientId();
       const res = await fetch("/api/auth/guest-physio", {
@@ -100,8 +101,9 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
         started.current = false;
         return;
       }
-      router.replace("/fisioterapia");
-      router.refresh();
+      // Hard navigation so middleware sees the new guest session immediately.
+      window.location.assign("/fisioterapia");
+      return;
     } catch {
       setError("No se pudo abrir la consulta. Inténtalo de nuevo.");
       started.current = false;

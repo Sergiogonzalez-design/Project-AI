@@ -288,7 +288,10 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith("/buscar/") ||
         pathname === "/privacidad" ||
         pathname === "/terminos";
-      if (!onClinicArea && !onSharedSite) {
+      // Patient invite deep links must stay reachable while staff is logged in.
+      const onPatientJoin =
+        pathname === "/unirse" || pathname.startsWith("/unirse/");
+      if (!onClinicArea && !onSharedSite && !onPatientJoin) {
         return NextResponse.redirect(new URL("/clinica/consulta", request.url));
       }
     }
@@ -307,7 +310,11 @@ export async function middleware(request: NextRequest) {
         pathname === "/privacidad" ||
         pathname === "/terminos" ||
         pathname.startsWith("/centro/");
-      if (!onPhysioArea && !onSharedSite) {
+      // Allow /unirse?code=… so staff can open the shared patient link
+      // (PhysioJoinClient signs them out and starts the guest consulta previa).
+      const onPatientJoin =
+        pathname === "/unirse" || pathname.startsWith("/unirse/");
+      if (!onPhysioArea && !onSharedSite && !onPatientJoin) {
         return NextResponse.redirect(new URL("/fisio", request.url));
       }
     }
