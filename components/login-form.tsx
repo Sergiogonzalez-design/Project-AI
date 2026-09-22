@@ -80,20 +80,30 @@ export function LoginForm({
     }
     setGuestLoading(true);
     try {
+      const { getOrCreateGuestClientId, persistGuestClientId } = await import(
+        "@/lib/guest-client-id"
+      );
+      const guestClientId = getOrCreateGuestClientId();
       const res = await fetch("/api/auth/guest-physio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: normalized }),
+        body: JSON.stringify({
+          code: normalized,
+          guestClientId,
+          channel: "web",
+        }),
       });
       const payload = (await res.json()) as {
         error?: string;
         email?: string;
         password?: string;
+        guestClientId?: string;
       };
       if (!res.ok || !payload.email || !payload.password) {
         setGuestError(payload.error ?? copy.guestStartError);
         return;
       }
+      persistGuestClientId(payload.guestClientId ?? guestClientId);
       const supabase = createClient();
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: payload.email,

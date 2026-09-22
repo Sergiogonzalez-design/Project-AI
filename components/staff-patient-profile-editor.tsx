@@ -15,6 +15,8 @@ export type StaffPatientProfile = {
   weight_kg: number | null;
   city: string | null;
   is_guest: boolean;
+  staff_notes: string | null;
+  whatsapp_phone: string | null;
 };
 
 type Props = {
@@ -56,6 +58,8 @@ function rowFromRpc(raw: unknown): StaffPatientProfile | null {
     weight_kg: r.weight_kg == null ? null : Number(r.weight_kg),
     city: (r.city as string | null) ?? null,
     is_guest: Boolean(r.is_guest),
+    staff_notes: (r.staff_notes as string | null) ?? null,
+    whatsapp_phone: (r.whatsapp_phone as string | null) ?? null,
   };
 }
 
@@ -273,6 +277,12 @@ export function StaffPatientProfileEditor({
             <SummaryRow label="Ciudad" value={profile.city} />
             {profile.email ? (
               <SummaryRow label="Email" value={profile.email} />
+            ) : null}
+            {profile.whatsapp_phone ? (
+              <SummaryRow
+                label="WhatsApp"
+                value={`+${profile.whatsapp_phone}`}
+              />
             ) : null}
           </dl>
         ) : (

@@ -59,7 +59,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "mcmurray",
     title: "Test de McMurray",
-    src: `${CLINICAL_TEST_CDN}/mcmurray.webp`,
+    src: `${CLINICAL_TEST_CDN}/mcmurray.webp?v=20260922mcm`,
     aliases: ["mcmurray", "mc murray", "test de mcmurray"],
   },
   {
@@ -335,7 +335,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "hip-scour",
     title: "Hip scour / quadrant",
-    src: `${CLINICAL_TEST_CDN}/hip-scour.webp`,
+    src: `${CLINICAL_TEST_CDN}/hip-scour.webp?v=20260922scour`,
     aliases: [
       "hip scour",
       "scour",
@@ -372,19 +372,19 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "cozen",
     title: "Test de Cozen",
-    src: `${CLINICAL_TEST_CDN}/cozen.webp`,
+    src: `${CLINICAL_TEST_CDN}/cozen.webp?v=20260921shoulder`,
     aliases: ["cozen", "test de cozen"],
   },
   {
     id: "mill",
     title: "Test de Mill",
-    src: `${CLINICAL_TEST_CDN}/mill.webp`,
+    src: `${CLINICAL_TEST_CDN}/mill.webp?v=20260921shoulder`,
     aliases: ["mill", "test de mill", "mills", "test de mills"],
   },
   {
     id: "maudsley",
     title: "Test de Maudsley",
-    src: `${CLINICAL_TEST_CDN}/maudsley.webp`,
+    src: `${CLINICAL_TEST_CDN}/maudsley.webp?v=20260921shoulder`,
     aliases: [
       "maudsley",
       "test de maudsley",
@@ -396,7 +396,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "hook-test",
     title: "Hook test (bíceps distal)",
-    src: `${CLINICAL_TEST_CDN}/hook-test.webp`,
+    src: `${CLINICAL_TEST_CDN}/hook-test.webp?v=20260921shoulder`,
     aliases: [
       "hook",
       "hook test",
@@ -410,7 +410,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "biceps-squeeze",
     title: "Biceps squeeze (bíceps distal)",
-    src: `${CLINICAL_TEST_CDN}/biceps-squeeze.webp`,
+    src: `${CLINICAL_TEST_CDN}/biceps-squeeze.webp?v=20260921shoulder`,
     aliases: [
       "biceps squeeze",
       "bíceps squeeze",
@@ -603,7 +603,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "crank",
     title: "Crank (screening labral)",
-    src: `${CLINICAL_TEST_CDN}/crank.webp`,
+    src: `${CLINICAL_TEST_CDN}/crank.webp?v=20260921shoulder`,
     aliases: [
       "crank",
       "crank test",
@@ -645,19 +645,19 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "kim-test",
     title: "Kim test (inestabilidad posterior)",
-    src: `${CLINICAL_TEST_CDN}/kim-test.webp`,
+    src: `${CLINICAL_TEST_CDN}/kim-test.webp?v=20260921kim`,
     aliases: ["kim test", "kim-test", "test de kim", "prueba de kim"],
   },
   {
     id: "jerk-test",
     title: "Jerk test (inestabilidad posterior)",
-    src: `${CLINICAL_TEST_CDN}/jerk-test.webp`,
+    src: `${CLINICAL_TEST_CDN}/jerk-test.webp?v=20260921shoulder`,
     aliases: ["jerk test", "jerk-test", "test de jerk", "prueba de jerk"],
   },
   {
     id: "valgus-stress-mcl",
     title: "Estrés en valgo (LCM)",
-    src: `${CLINICAL_TEST_CDN}/valgus-stress-mcl.webp`,
+    src: `${CLINICAL_TEST_CDN}/valgus-stress-mcl.webp?v=20260922valgus2`,
     aliases: [
       "estres en valgo lcm",
       "estrés en valgo lcm",
@@ -674,7 +674,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "varus-stress-lcl",
     title: "Estrés en varo (LCL)",
-    src: `${CLINICAL_TEST_CDN}/varus-stress-lcl.webp`,
+    src: `${CLINICAL_TEST_CDN}/varus-stress-lcl.webp?v=20260922varus`,
     aliases: [
       "estres en varo",
       "estrés en varo",
@@ -685,7 +685,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "chair-push-plri",
     title: "Chair push-up / chair sign (PLRI)",
-    src: `${CLINICAL_TEST_CDN}/chair-push-plri.webp`,
+    src: `${CLINICAL_TEST_CDN}/chair-push-plri.webp?v=20260921chair`,
     aliases: [
       "chair push",
       "chair push-up",
@@ -714,7 +714,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "noble-compression",
     title: "Noble compression (ITB)",
-    src: `${CLINICAL_TEST_CDN}/noble-compression.webp`,
+    src: `${CLINICAL_TEST_CDN}/noble-compression.webp?v=20260922noble`,
     aliases: [
       "noble",
       "noble compression",
@@ -747,7 +747,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "dial-test",
     title: "Dial test (PLC)",
-    src: `${CLINICAL_TEST_CDN}/dial-test.webp`,
+    src: `${CLINICAL_TEST_CDN}/dial-test.webp?v=20260922dial90`,
     aliases: [
       "dial test",
       "dial",
@@ -770,7 +770,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "elbow-flexion-cubital",
     title: "Test de flexión de codo (cubital)",
-    src: `${CLINICAL_TEST_CDN}/elbow-flexion-cubital.webp`,
+    src: `${CLINICAL_TEST_CDN}/elbow-flexion-cubital.webp?v=20260921elbow`,
     aliases: [
       "tunel cubital",
       "túnel cubital",
@@ -837,7 +837,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "finkelstein",
     title: "Finkelstein (De Quervain)",
-    src: `${CLINICAL_TEST_CDN}/finkelstein.webp`,
+    src: `${CLINICAL_TEST_CDN}/finkelstein.webp?v=20260921finkel`,
     aliases: [
       "finkelstein",
       "test de finkelstein",
@@ -927,7 +927,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "fovea-sign",
     title: "Fovea sign (TFCC)",
-    src: `${CLINICAL_TEST_CDN}/fovea-sign.webp`,
+    src: `${CLINICAL_TEST_CDN}/fovea-sign.webp?v=20260921fovea`,
     aliases: [
       "fovea",
       "fovea sign",
@@ -941,7 +941,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "piano-key",
     title: "Piano-key (DRUJ)",
-    src: `${CLINICAL_TEST_CDN}/piano-key.webp`,
+    src: `${CLINICAL_TEST_CDN}/piano-key.webp?v=20260921piano3`,
     aliases: [
       "piano key",
       "piano-key",
@@ -1048,7 +1048,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "lt-ballottement",
     title: "Ballottement LT / Reagan",
-    src: `${CLINICAL_TEST_CDN}/watson-scaphoid-shift.webp`,
+    src: `${CLINICAL_TEST_CDN}/lt-ballottement.webp?v=20260922lt`,
     aliases: [
       "ballottement lt",
       "lt ballottement",
@@ -1074,7 +1074,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "resisted-knee-flexion",
     title: "Flexión de rodilla resistida (isquiotibiales)",
-    src: `${CLINICAL_TEST_CDN}/active-slr.webp`,
+    src: `${CLINICAL_TEST_CDN}/resisted-knee-flexion.webp?v=20260922rkf`,
     aliases: [
       "flexion de rodilla resistida",
       "flexión de rodilla resistida",
@@ -1086,7 +1086,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "sitting-ischium",
     title: "Dolor al sentarse (isquion / proximal)",
-    src: `${CLINICAL_TEST_CDN}/active-slr.webp`,
+    src: `${CLINICAL_TEST_CDN}/sitting-ischium.webp?v=20260922sit`,
     aliases: [
       "dolor al sentarse",
       "sitting ischium",
@@ -1127,8 +1127,6 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "patellar-apprehension",
       "dial-test",
       "resisted-knee-flexion",
-      "hamstring-stretch",
-      "sitting-ischium",
     ],
   },
   {
@@ -1189,6 +1187,8 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "log-roll",
       "stinchfield",
       "hip-scour",
+      "hamstring-stretch",
+      "sitting-ischium",
       "hop-test",
     ],
   },

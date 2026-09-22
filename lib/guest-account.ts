@@ -65,3 +65,10 @@ export function isGuestDisplayNameSet(name?: string | null): boolean {
   }
   return true;
 }
+
+/** Digits-only phone for cross-channel patient identity (web/app/WhatsApp). */
+export function normalizeGuestPhoneInput(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  return digits.length >= 8 ? digits : null;
+}
+

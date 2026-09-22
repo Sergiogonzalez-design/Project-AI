@@ -6,7 +6,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Consulta previa · AIKinora",
-  description: "Vincula tu código y empieza la consulta previa",
+  description:
+    "Abre el enlace de tu fisioterapeuta para empezar la consulta previa",
 };
 
 type PageProps = {

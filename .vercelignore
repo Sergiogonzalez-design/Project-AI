@@ -1,0 +1,4 @@
+﻿public/taping/videos/**
+public/taping/_preview/**
+mobile/.tmp-expo-check/**
+**/*.mp4

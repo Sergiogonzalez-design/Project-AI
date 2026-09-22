@@ -43,7 +43,13 @@ export function parsePastedInviteCode(raw: string | null | undefined): string {
 export function buildPhysioInviteUrl(code: string): string {
   const base = WEB_APP_URL.replace(/\/$/, "");
   const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
+  // Patient opens link → auto-redeem → consulta previa name gate (no code typing).
   return `${base}/unirse?code=${encodeURIComponent(normalized)}`;
+}
+
+/** Share text for the web invite link (no bare code for the patient to type). */
+export function buildPhysioInviteShareText(): string {
+  return "Abre este enlace para la consulta previa en AIKinora. Te pedirán tu nombre; no hace falta introducir ningún código:";
 }
 
 export function buildPhysioWhatsAppInviteUrl(code: string): string {

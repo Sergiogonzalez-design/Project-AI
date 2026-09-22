@@ -266,17 +266,18 @@ export function ClinicTeamPanel({
             <p className="mt-4 text-xs font-bold uppercase tracking-wide text-blue-900">
               Enlace web
             </p>
-            <p className="mt-1 break-all text-blue-800">{created.link}</p>
-            <button
-              type="button"
-              className="mt-2 text-xs font-bold text-blue-700 hover:underline"
-              onClick={() => {
-                void navigator.clipboard.writeText(created.link);
-                markCopied("link");
-              }}
-            >
-              {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
-            </button>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-800 hover:bg-blue-100"
+                onClick={() => {
+                  void navigator.clipboard.writeText(created.link);
+                  markCopied("link");
+                }}
+              >
+                {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
+              </button>
+            </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
               <a
@@ -365,33 +366,36 @@ export function ClinicTeamPanel({
               const link = buildClinicStaffInviteUrl(inv.token);
               return (
                 <li key={inv.id} className="text-sm">
-                  <p className="font-semibold text-neutral-800">
-                    {inv.email || "Código libre"}
-                    {inv.invite_code ? ` · ${inv.invite_code}` : ""}
-                  </p>
-                  <p className="break-all text-xs text-neutral-500">{link}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      className="text-xs font-bold text-blue-700 hover:underline"
-                      onClick={() =>
-                        setCreated({
-                          link,
-                          code: inv.invite_code || inv.token.slice(0, 8).toUpperCase(),
-                          email: inv.email,
-                        })
-                      }
-                    >
-                      Ver / compartir
-                    </button>
-                    <button
-                      type="button"
-                      className="text-xs font-bold text-red-600 hover:underline disabled:opacity-50"
-                      disabled={deletingId === inv.id}
-                      onClick={() => void deleteInvite(inv)}
-                    >
-                      {deletingId === inv.id ? "Eliminando…" : "Eliminar"}
-                    </button>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold text-neutral-800">
+                      {inv.email || "Código libre"}
+                      {inv.invite_code ? ` · ${inv.invite_code}` : ""}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        className="text-xs font-bold text-blue-700 hover:underline"
+                        onClick={() =>
+                          setCreated({
+                            link,
+                            code:
+                              inv.invite_code ||
+                              inv.token.slice(0, 8).toUpperCase(),
+                            email: inv.email,
+                          })
+                        }
+                      >
+                        Ver / compartir
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs font-bold text-red-600 hover:underline disabled:opacity-50"
+                        disabled={deletingId === inv.id}
+                        onClick={() => void deleteInvite(inv)}
+                      >
+                        {deletingId === inv.id ? "Eliminando…" : "Eliminar"}
+                      </button>
+                    </div>
                   </div>
                 </li>
               );

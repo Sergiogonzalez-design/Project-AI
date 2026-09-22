@@ -122,8 +122,19 @@ export async function POST(request: NextRequest) {
           (async () => {
             try {
               const outbound = await handleWhatsAppInbound(admin, inbound);
+              let sendFailed = false;
               for (const out of outbound) {
-                await sendWhatsAppOutbound(from, out);
+                const sent = await sendWhatsAppOutbound(from, out);
+                if (!sent.ok && !sent.skipped) {
+                  sendFailed = true;
+                  console.error("[whatsapp] outbound failed", sent.error);
+                }
+              }
+              if (sendFailed) {
+                console.error(
+                  "[whatsapp] check WHATSAPP_TOKEN on Vercel — Meta send failed for",
+                  from
+                );
               }
             } catch (err) {
               console.error("[whatsapp] handler error", err);

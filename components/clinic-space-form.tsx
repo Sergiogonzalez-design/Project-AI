@@ -337,69 +337,75 @@ export function ClinicSpaceForm() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[24px] border border-neutral-200 bg-white shadow-sm">
-        <button
-          type="button"
-          onClick={() => coverRef.current?.click()}
-          className="relative block aspect-[2.2/1] min-h-[10rem] w-full overflow-hidden sm:aspect-[2.6/1] sm:min-h-[12rem] md:aspect-[3/1] md:min-h-[14rem]"
-          style={{
-            background: coverUrl
-              ? accent
-              : `linear-gradient(135deg, ${accent} 0%, #0f172a 100%)`,
-          }}
-        >
-          {coverUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={coverUrl}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover object-center"
-            />
-          ) : null}
-          <span className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-          <span className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white">
-            Cambiar portada
-          </span>
-        </button>
-        <input
-          ref={coverRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void uploadImage(file, "cover");
-            e.target.value = "";
-          }}
-        />
-        <div className="px-5 pb-5">
-          <div className="-mt-8 flex items-end gap-4">
+      <div className="rounded-[24px] border border-neutral-200 bg-white shadow-sm">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => coverRef.current?.click()}
+            className="relative block aspect-[2.2/1] min-h-[10rem] w-full overflow-hidden rounded-t-[23px] sm:aspect-[2.6/1] sm:min-h-[12rem] md:aspect-[3/1] md:min-h-[14rem]"
+            style={{
+              background: coverUrl
+                ? accent
+                : `linear-gradient(135deg, ${accent} 0%, #0f172a 100%)`,
+            }}
+          >
+            {coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverUrl}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            ) : null}
+            <span className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+            <span className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white">
+              Cambiar portada
+            </span>
+          </button>
+          <input
+            ref={coverRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void uploadImage(file, "cover");
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="absolute -bottom-10 left-5 z-10 flex h-[5.5rem] w-[5.5rem] items-center justify-center overflow-hidden rounded-[22px] border-4 border-white bg-slate-100 shadow-lg ring-1 ring-black/5 sm:h-24 sm:w-24"
+            aria-label={logoUrl ? "Cambiar logo" : "Añadir logo"}
+          >
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span
+                className="flex h-full w-full items-center justify-center text-2xl font-bold text-white"
+                style={{ background: accent }}
+              >
+                {(name || clinic.name || "C").slice(0, 1).toUpperCase()}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className="px-5 pb-5 pt-14">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-slate-100 shadow"
+              className="text-xs font-semibold text-blue-600 hover:underline"
             >
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" />
-              ) : (
-                <span className="px-1 text-center text-[10px] font-semibold text-slate-500">
-                  Logo
-                </span>
-              )}
+              {logoUrl ? "Cambiar logo" : "Añadir logo"}
             </button>
-            <div className="pb-1">
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="text-xs font-semibold text-blue-600 hover:underline"
-              >
-                {logoUrl ? "Cambiar logo" : "Añadir logo"}
-              </button>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Portada arriba y logo cuadrado — van encima del nombre en tu ficha pública.
-              </p>
-            </div>
+            <span className="text-xs text-slate-400">·</span>
+            <p className="text-xs text-slate-500">
+              Así se ve el logo sobre la portada en tu ficha pública.
+            </p>
           </div>
           <input
             ref={fileRef}

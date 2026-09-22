@@ -466,42 +466,42 @@ export function ClinicHomeScreen() {
       ) : null}
 
       <View style={styles.brandCard}>
-        <Pressable
-          onPress={() => void uploadClinicImage("cover")}
-          disabled={uploadingBrand !== null}
-          style={[
-            styles.coverTap,
-            !(coverPreview || clinic?.cover_url) && { backgroundColor: accent },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Cambiar imagen de portada"
-        >
-          {coverPreview || clinic?.cover_url ? (
-            <Image
-              source={{ uri: coverPreview || clinic?.cover_url || undefined }}
-              style={styles.coverImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.coverPlaceholder}>
-              <Text style={styles.coverPlaceholderTitle}>Portada / fondo</Text>
-              <Text style={styles.coverPlaceholderHint}>Toca para añadir imagen</Text>
-            </View>
-          )}
-          <View style={styles.coverBadge}>
-            {uploadingBrand === "cover" ? (
-              <Text style={styles.coverBadgeText}>Guardando…</Text>
+        <View style={styles.coverWrap}>
+          <Pressable
+            onPress={() => void uploadClinicImage("cover")}
+            disabled={uploadingBrand !== null}
+            style={[
+              styles.coverTap,
+              !(coverPreview || clinic?.cover_url) && { backgroundColor: accent },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar imagen de portada"
+          >
+            {coverPreview || clinic?.cover_url ? (
+              <Image
+                source={{ uri: coverPreview || clinic?.cover_url || undefined }}
+                style={styles.coverImage}
+                resizeMode="cover"
+              />
             ) : (
-              <Text style={styles.coverBadgeText}>
-                {coverPreview || clinic?.cover_url
-                  ? "Cambiar portada"
-                  : "Añadir portada"}
-              </Text>
+              <View style={styles.coverPlaceholder}>
+                <Text style={styles.coverPlaceholderTitle}>Portada / fondo</Text>
+                <Text style={styles.coverPlaceholderHint}>Toca para añadir imagen</Text>
+              </View>
             )}
-          </View>
-        </Pressable>
+            <View style={styles.coverBadge}>
+              {uploadingBrand === "cover" ? (
+                <Text style={styles.coverBadgeText}>Guardando…</Text>
+              ) : (
+                <Text style={styles.coverBadgeText}>
+                  {coverPreview || clinic?.cover_url
+                    ? "Cambiar portada"
+                    : "Añadir portada"}
+                </Text>
+              )}
+            </View>
+          </Pressable>
 
-        <View style={styles.logoRow}>
           <Pressable
             onPress={() => void uploadClinicImage("logo")}
             disabled={uploadingBrand !== null}
@@ -515,8 +515,10 @@ export function ClinicHomeScreen() {
                 style={styles.logoImage}
               />
             ) : (
-              <View style={styles.logoPlaceholder}>
-                <Text style={styles.logoPlaceholderText}>Logo</Text>
+              <View style={[styles.logoPlaceholder, { backgroundColor: accent }]}>
+                <Text style={styles.logoPlaceholderLetter}>
+                  {(clinic?.name || "C").slice(0, 1).toUpperCase()}
+                </Text>
               </View>
             )}
             {uploadingBrand === "logo" ? (
@@ -525,23 +527,24 @@ export function ClinicHomeScreen() {
               </View>
             ) : null}
           </Pressable>
-          <View style={styles.logoMeta}>
-            <Pressable
-              onPress={() => void uploadClinicImage("logo")}
-              disabled={uploadingBrand !== null}
-            >
-              <Text style={styles.linkInline}>
-                {uploadingBrand === "logo"
-                  ? "Guardando…"
-                  : logoPreview || clinic?.logo_url
-                    ? "Cambiar logo"
-                    : "Añadir logo"}
-              </Text>
-            </Pressable>
-            <Text style={styles.hintTight}>
-              Portada ancha arriba y logo cuadrado. Se ven en tu ficha pública.
+        </View>
+
+        <View style={styles.logoMetaBlock}>
+          <Pressable
+            onPress={() => void uploadClinicImage("logo")}
+            disabled={uploadingBrand !== null}
+          >
+            <Text style={styles.linkInline}>
+              {uploadingBrand === "logo"
+                ? "Guardando…"
+                : logoPreview || clinic?.logo_url
+                  ? "Cambiar logo"
+                  : "Añadir logo"}
             </Text>
-          </View>
+          </Pressable>
+          <Text style={styles.hintTight}>
+            Así se ve el logo sobre la portada en tu ficha pública.
+          </Text>
         </View>
       </View>
 
@@ -1052,19 +1055,23 @@ const styles = StyleSheet.create({
   },
   brandCard: {
     marginBottom: 8,
-    overflow: "hidden",
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
   },
+  coverWrap: {
+    position: "relative",
+    marginBottom: 44,
+  },
   coverTap: {
-    // Fixed height keeps the cover stable on phones (no Dimensions in StyleSheet).
     width: "100%",
     height: 148,
     backgroundColor: Colors.primary,
     justifyContent: "flex-end",
     overflow: "hidden",
+    borderTopLeftRadius: 19,
+    borderTopRightRadius: 19,
   },
   coverImage: {
     position: "absolute",
@@ -1101,62 +1108,59 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   coverBadgeText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    marginTop: -28,
-  },
   logoTap: {
-    width: 84,
-    height: 84,
-    borderRadius: 18,
+    position: "absolute",
+    left: 16,
+    bottom: -40,
+    width: 88,
+    height: 88,
+    borderRadius: 20,
     borderWidth: 4,
     borderColor: "#fff",
     overflow: "hidden",
     backgroundColor: "#f1f5f9",
-    elevation: 2,
+    elevation: 3,
     shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    zIndex: 2,
   },
-  logoSyncBadge: {
-    position: "absolute",
-    right: 4,
-    bottom: 4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
+  logoMetaBlock: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    gap: 4,
   },
-  logoSyncText: { color: "#fff", fontSize: 11, fontWeight: "800" },
   logoImage: { width: "100%", height: "100%" },
   logoPlaceholder: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  logoPlaceholderText: {
-    fontSize: 12,
+  logoPlaceholderLetter: {
+    fontSize: 28,
     fontWeight: "800",
+    color: "#fff",
+  },
+  logoSyncBadge: {
+    position: "absolute",
+    right: 4,
+    bottom: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  logoSyncText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  hintTight: {
+    fontSize: 12,
+    lineHeight: 16,
     color: Colors.textSecondary,
   },
-  logoMeta: { flex: 1, paddingBottom: 6 },
   linkInline: {
     fontSize: 13,
     fontWeight: "700",
     color: Colors.primary,
-    marginBottom: 4,
-  },
-  hintTight: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 16,
   },
   banner: {
     backgroundColor: "#FFFBEB",

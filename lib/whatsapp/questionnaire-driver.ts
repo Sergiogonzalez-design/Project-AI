@@ -155,11 +155,35 @@ export function prefillsWhatsAppSkippedAnswers(
   return next;
 }
 
-/** List row title ≤24 chars — keep readable start, full text in description/body. */
+/** WhatsApp list row title ≤24 chars. Prefer text before "(" for short readable titles. */
 export function waOptionListTitle(option: string, max = 24): string {
   const t = option.trim().replace(/\s+/g, " ");
+  const beforeParen = /^([^(]+?)\s*\(/.exec(t);
+  if (beforeParen) {
+    const short = beforeParen[1].trim();
+    if (short.length > 0 && short.length <= max) return short;
+  }
+  // e.g. "No puedo apoyar / caminar" → "No puedo apoyar"
+  const slashParts = t.split(/\s*\/\s*/);
+  if (slashParts.length > 1) {
+    const head = slashParts[0].trim();
+    if (head.length >= 3 && head.length <= max) return head;
+  }
   if (t.length <= max) return t;
   return `${t.slice(0, max - 1).trimEnd()}…`;
+}
+
+/** Strip web multi-select hints — WhatsApp lists only allow one choice. */
+export function waQuestionLabel(q: WaQuestionDef): string {
+  let label = q.label
+    .replace(/\s*\(puedes marcar varias(?: zonas)?\)/gi, "")
+    .replace(/\s*\(puedes marcar varios\)/gi, "")
+    .replace(/\s*\(elige una\)/gi, "")
+    .trim();
+  if (q.type === "multi") {
+    label = `${label}\n\nElige una opción (la que mejor describa tu caso).`;
+  }
+  return label;
 }
 
 const GENERIC_QUESTIONS: WaQuestionDef[] = [
@@ -380,17 +404,18 @@ export function applyAnswer(
 }
 
 export function questionToOutbound(q: WaQuestionDef): WhatsAppOutbound {
+  const label = waQuestionLabel(q);
   if (q.type === "text" || q.type === "slider") {
     const hint =
       q.type === "slider"
         ? "\n\nResponde con un número del 0 al 10."
         : "";
-    return { type: "text", text: `${q.label}${hint}` };
+    return { type: "text", text: `${label}${hint}` };
   }
 
   const opts = [...(q.options ?? [])];
   if (opts.length === 0) {
-    return { type: "text", text: q.label };
+    return { type: "text", text: label };
   }
 
   // Yes/No → reply buttons
@@ -401,7 +426,7 @@ export function questionToOutbound(q: WaQuestionDef): WhatsAppOutbound {
   ) {
     return {
       type: "buttons",
-      text: q.label,
+      text: label,
       buttons: opts.map((o) => ({
         id: `opt:${o}`,
         title: waOptionListTitle(o, 20),
@@ -412,7 +437,7 @@ export function questionToOutbound(q: WaQuestionDef): WhatsAppOutbound {
   if (opts.length <= 3) {
     return {
       type: "buttons",
-      text: q.label,
+      text: label,
       buttons: opts.map((o) => ({
         id: `opt:${o}`,
         title: waOptionListTitle(o, 20),
@@ -420,21 +445,27 @@ export function questionToOutbound(q: WaQuestionDef): WhatsAppOutbound {
     };
   }
 
-  // List: full options in body; short titles (≤24) + description (≤72).
+  // List: numbered body; short titles (≤24) + full description (≤72).
+  // WhatsApp lists are single-select only — never promise multi-select.
   const listed = opts.slice(0, 10);
   const bodyList = listed.map((o, i) => `${i + 1}. ${o}`).join("\n");
   return {
     type: "list",
-    text: `${q.label}\n\n${bodyList}`,
+    text: `${label}\n\n${bodyList}`,
     buttonLabel: "Ver opciones",
     sections: [
       {
         title: "Opciones",
-        rows: listed.map((o) => ({
-          id: `opt:${o}`,
-          title: waOptionListTitle(o, 24),
-          description: o.length > 24 ? o.slice(0, 72) : undefined,
-        })),
+        rows: listed.map((o) => {
+          const title = waOptionListTitle(o, 24);
+          const description = o.slice(0, 72);
+          return {
+            id: `opt:${o}`,
+            title,
+            // Always show full option under the short title when they differ.
+            description: description !== title ? description : undefined,
+          };
+        }),
       },
     ],
   };

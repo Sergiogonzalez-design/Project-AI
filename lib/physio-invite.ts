@@ -7,9 +7,15 @@ export function buildPhysioInviteUrl(code: string, origin?: string): string {
       (typeof window !== "undefined" ? window.location.origin : "")) ||
     "https://project-ai-swart.vercel.app";
   const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
-  // Patient join flow → guest session → /fisioterapia (consulta previa).
-  // Do not use /login?code=…: a logged-in fisio would be sent to /fisio.
+  // Patient opens link → auto-redeem on /unirse → /fisioterapia name gate.
+  // Code is embedded; patient never types it. Do not use /login?code=…:
+  // a logged-in fisio would be sent to /fisio.
   return `${base}/unirse?code=${encodeURIComponent(normalized)}`;
+}
+
+/** Share text for the web invite link (no bare code for the patient to type). */
+export function buildPhysioInviteShareText(): string {
+  return "Abre este enlace para la consulta previa en AIKinora. Te pedirán tu nombre; no hace falta introducir ningún código:";
 }
 
 /** Branded redirect that opens WhatsApp with the invite code prefilled. */

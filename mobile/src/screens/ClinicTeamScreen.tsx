@@ -263,8 +263,10 @@ export function ClinicTeamPanel({ embedded = false }: { embedded?: boolean }) {
           <Text style={[styles.inviteTitle, { marginTop: 14 }]}>
             {hub.webLinkTitle}
           </Text>
-          <Text style={styles.link}>{created.link}</Text>
-          <Pressable onPress={() => void copyText("link", created.link)}>
+          <Pressable
+            style={styles.copyLinkBtn}
+            onPress={() => void copyText("link", created.link)}
+          >
             <Text style={styles.copyLink}>
               {copied === "link" ? hub.linkCopied : hub.copyLinkLong}
             </Text>
@@ -318,37 +320,46 @@ export function ClinicTeamPanel({ embedded = false }: { embedded?: boolean }) {
           );
         })
       )}
-      {pending.map((inv) => (
-        <View key={inv.id} style={styles.pendingRow}>
-          <Text style={styles.muted}>
-            {hub.pending}: {inv.email || hub.openCode}
-            {inv.invite_code ? ` · ${inv.invite_code}` : ""}
-          </Text>
-          <View style={styles.pendingActions}>
-            {inv.token ? (
-              <Pressable
-                onPress={() =>
-                  setCreated({
-                    link: buildClinicStaffInviteUrl(inv.token),
-                    code: inv.invite_code || inv.token.slice(0, 8).toUpperCase(),
-                    email: inv.email,
-                  })
-                }
-              >
-                <Text style={styles.copyLink}>{hub.viewShare}</Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              disabled={deletingId === inv.id}
-              onPress={() => void deleteInvite(inv)}
-            >
-              <Text style={styles.deleteLink}>
-                {deletingId === inv.id ? hub.deleting : hub.delete}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      ))}
+      {pending.length > 0 ? (
+        <>
+          <Text style={styles.section}>{hub.pendingInvitesTitle}</Text>
+          {pending.map((inv) => (
+            <View key={inv.id} style={styles.pendingRow}>
+              <View style={styles.pendingMain}>
+                <Text style={styles.name}>
+                  {inv.email || hub.openCode}
+                  {inv.invite_code ? ` · ${inv.invite_code}` : ""}
+                </Text>
+                <View style={styles.pendingActions}>
+                  {inv.token ? (
+                    <Pressable
+                      onPress={() =>
+                        setCreated({
+                          link: buildClinicStaffInviteUrl(inv.token),
+                          code:
+                            inv.invite_code ||
+                            inv.token.slice(0, 8).toUpperCase(),
+                          email: inv.email,
+                        })
+                      }
+                    >
+                      <Text style={styles.copyLink}>{hub.viewShare}</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    disabled={deletingId === inv.id}
+                    onPress={() => void deleteInvite(inv)}
+                  >
+                    <Text style={styles.deleteLink}>
+                      {deletingId === inv.id ? hub.deleting : hub.delete}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          ))}
+        </>
+      ) : null}
     </View>
   );
 
@@ -432,9 +443,10 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     color: Colors.text,
   },
-  link: { marginTop: 6, fontSize: 12, color: Colors.primary, lineHeight: 18 },
   copyLink: { marginTop: 8, fontSize: 13, fontWeight: "700", color: Colors.primary },
+  copyLinkBtn: { alignSelf: "flex-start" },
   deleteLink: { marginTop: 8, fontSize: 13, fontWeight: "700", color: Colors.danger },
+  pendingMain: { flex: 1 },
   pendingActions: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
   shareRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
   shareBtn: {

@@ -6,6 +6,7 @@ import { ClinicTeamPanel } from "@/components/clinic-team-panel";
 import { clinicHubCopy } from "@/lib/clinic-hub-copy";
 import { staffPatientLabel, staffVisibleEmail } from "@/lib/guest-account";
 import {
+  buildPhysioInviteShareText,
   buildPhysioInviteUrl,
   buildPhysioWhatsAppInviteUrl,
 } from "@/lib/physio-invite";
@@ -177,11 +178,11 @@ export function ClinicPatientsPanel() {
           title:
             kind === "wa"
               ? "AIKinora — consulta previa por WhatsApp"
-              : "AIKinora — vinculación con tu clínica",
+              : "AIKinora — consulta previa",
           text:
             kind === "wa"
-              ? `Abre este enlace para la consulta previa por WhatsApp (código ${inviteCode}):`
-              : `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):`,
+              ? "Abre este enlace para la consulta previa por WhatsApp:"
+              : buildPhysioInviteShareText(),
           url,
         });
         return;
@@ -270,10 +271,20 @@ export function ClinicPatientsPanel() {
             {vinculacionOpen ? (
               <div className="mt-4 space-y-3">
                 <p className="text-sm text-neutral-600">{copy.linkingHint}</p>
+                {inviteLink ? (
+                  <p className="break-all rounded-xl bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+                    {inviteLink}
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2">
-                  <code className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-bold tracking-[0.18em] text-slate-900">
-                    {inviteCode ?? (loading ? "…" : "—")}
-                  </code>
+                  <button
+                    type="button"
+                    disabled={!inviteLink || codeBusy}
+                    onClick={() => void shareLink("web")}
+                    className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {copied === "link" ? copy.inviteCopied : copy.shareInvite}
+                  </button>
                   <div className="relative" ref={codeMenuRef}>
                     <button
                       type="button"
@@ -284,42 +295,20 @@ export function ClinicPatientsPanel() {
                       {copy.actions}
                     </button>
                     {codeMenuOpen && inviteCode ? (
-                      <div className="absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg">
-                        <button
-                          type="button"
-                          className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                          onClick={() => {
-                            void copyText("code", inviteCode);
-                            setCodeMenuOpen(false);
-                          }}
-                        >
-                          {copied === "code" ? copy.codeCopied : copy.copyCode}
-                        </button>
+                      <div className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg">
                         {inviteLink ? (
-                          <>
-                            <button
-                              type="button"
-                              className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                              onClick={() => {
-                                void copyText("link", inviteLink);
-                                setCodeMenuOpen(false);
-                              }}
-                            >
-                              {copied === "link"
-                                ? copy.linkCopied
-                                : copy.copyLink}
-                            </button>
-                            <button
-                              type="button"
-                              className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                              onClick={() => {
-                                void shareLink("web");
-                                setCodeMenuOpen(false);
-                              }}
-                            >
-                              {copy.shareLink}
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                            onClick={() => {
+                              void copyText("link", inviteLink);
+                              setCodeMenuOpen(false);
+                            }}
+                          >
+                            {copied === "link"
+                              ? copy.inviteCopied
+                              : copy.copyInvite}
+                          </button>
                         ) : null}
                         {whatsappInviteLink ? (
                           <>
@@ -349,6 +338,16 @@ export function ClinicPatientsPanel() {
                         ) : null}
                         <button
                           type="button"
+                          className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                          onClick={() => {
+                            void copyText("code", inviteCode);
+                            setCodeMenuOpen(false);
+                          }}
+                        >
+                          {copied === "code" ? copy.codeCopied : copy.copyCode}
+                        </button>
+                        <button
+                          type="button"
                           className="block w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50"
                           disabled={codeBusy}
                           onClick={() => {
@@ -362,14 +361,6 @@ export function ClinicPatientsPanel() {
                     ) : null}
                   </div>
                 </div>
-                {inviteLink ? (
-                  <p className="break-all text-xs text-neutral-500">{inviteLink}</p>
-                ) : null}
-                {whatsappInviteLink ? (
-                  <p className="break-all text-xs text-emerald-700">
-                    {whatsappInviteLink}
-                  </p>
-                ) : null}
               </div>
             ) : null}
           </section>

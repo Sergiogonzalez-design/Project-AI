@@ -6,7 +6,11 @@ import {
   PhysioClinicInfoCard,
   type PhysioClinicSummary,
 } from "@/components/physio-clinic-info-card";
-import { buildPhysioInviteUrl, buildPhysioWhatsAppInviteUrl } from "@/lib/physio-invite";
+import {
+  buildPhysioInviteShareText,
+  buildPhysioInviteUrl,
+  buildPhysioWhatsAppInviteUrl,
+} from "@/lib/physio-invite";
 import { staffPatientLabel } from "@/lib/guest-account";
 import { createClient } from "@/lib/supabase/client";
 
@@ -206,11 +210,11 @@ export default function FisioPatientsPage() {
           title:
             kind === "wa"
               ? "AIKinora — consulta previa por WhatsApp"
-              : "AIKinora — vinculación con tu fisioterapeuta",
+              : "AIKinora — consulta previa",
           text:
             kind === "wa"
-              ? `Abre este enlace para hacer la consulta previa por WhatsApp (código ${inviteCode}):`
-              : `Usa este enlace para vincularte en AIKinora (código ${inviteCode}):`,
+              ? "Abre este enlace para la consulta previa por WhatsApp:"
+              : buildPhysioInviteShareText(),
           url,
         });
         return;
@@ -289,7 +293,8 @@ export default function FisioPatientsPage() {
         ) : patients.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-500">
             Todavía no hay pacientes ni informes en esta cuenta. Abre Vinculación
-            para compartir tu código y pulsa Actualizar después de que el paciente
+            para compartir el enlace de consulta previa y pulsa Actualizar después
+            de que el paciente lo abra.
             termine el cuestionario.
           </p>
         ) : (
@@ -344,132 +349,108 @@ export default function FisioPatientsPage() {
         </button>
 
         {vinculacionOpen ? (
-          <section className="relative mt-3 rounded-2xl border border-neutral-200 bg-white p-6">
-            <div ref={codeMenuRef} className="absolute right-4 top-4 sm:right-5 sm:top-5">
-              <button
-                type="button"
-                aria-label={codeMenuOpen ? "Cerrar opciones" : "Más opciones"}
-                aria-expanded={codeMenuOpen}
-                disabled={!inviteCode && !codeBusy}
-                onClick={() => setCodeMenuOpen((v) => !v)}
-                className="rounded-xl border border-neutral-200 p-2.5 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-              >
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" aria-hidden>
-                  {codeMenuOpen ? (
-                    <path
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      d="M6 6l12 12M6 18L18 6"
-                    />
-                  ) : (
-                    <path
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      d="M12 6h.01M12 12h.01M12 18h.01"
-                    />
-                  )}
-                </svg>
-              </button>
-              {codeMenuOpen ? (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full z-20 mt-1 min-w-[13.5rem] overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg"
-                >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!inviteLink}
-                    onClick={() => {
-                      setCodeMenuOpen(false);
-                      void shareLink("web");
-                    }}
-                    className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-                  >
-                    {copied === "link" ? "Enlace web copiado" : "Copiar / compartir enlace web"}
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!whatsappInviteLink}
-                    onClick={() => {
-                      setCodeMenuOpen(false);
-                      void shareLink("wa");
-                    }}
-                    className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-                  >
-                    {copied === "wa"
-                      ? "Enlace WhatsApp copiado"
-                      : "Copiar / compartir enlace WhatsApp"}
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={codeBusy}
-                    onClick={() => {
-                      setCodeMenuOpen(false);
-                      void regenerateCode();
-                    }}
-                    className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-                  >
-                    {codeBusy ? "Generando…" : "Generar nuevo código"}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-
-            <h2 className="pr-12 text-lg font-semibold text-neutral-900">
-              Tu código de vinculación
+          <section className="mt-3 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-neutral-900">
+              Vinculación
             </h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Comparte el código, el enlace web o el enlace de WhatsApp. Misma
-              consulta previa; el informe llega a tu panel.
+            <p className="mt-0.5 text-sm text-neutral-500">
+              Enlace de consulta previa para pacientes
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.2em] text-blue-800">
-                {inviteCode ?? (loading ? "…" : "—")}
+            <p className="mt-3 text-sm text-neutral-600">
+              Comparte el enlace: el paciente lo abre y va directo a poner su
+              nombre. No necesita escribir ningún código. El informe llega a tu
+              panel.
+            </p>
+            {inviteLink ? (
+              <p className="mt-3 break-all rounded-xl bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+                {inviteLink}
               </p>
+            ) : null}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => inviteCode && void copyText("code", inviteCode)}
-                disabled={!inviteCode}
-                className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                disabled={!inviteLink || codeBusy}
+                onClick={() => void shareLink("web")}
+                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {copied === "code" ? "Copiado" : "Copiar código"}
+                {copied === "link"
+                  ? "Enlace copiado"
+                  : "Compartir enlace de consulta previa"}
               </button>
+              <div className="relative" ref={codeMenuRef}>
+                <button
+                  type="button"
+                  disabled={!inviteCode || codeBusy}
+                  onClick={() => setCodeMenuOpen((o) => !o)}
+                  className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  Más opciones
+                </button>
+                {codeMenuOpen && inviteCode ? (
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg"
+                  >
+                    {inviteLink ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                        onClick={() => {
+                          setCodeMenuOpen(false);
+                          void copyText("link", inviteLink);
+                        }}
+                      >
+                        {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
+                      </button>
+                    ) : null}
+                    {whatsappInviteLink ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                        onClick={() => {
+                          setCodeMenuOpen(false);
+                          void shareLink("wa");
+                        }}
+                      >
+                        {copied === "wa"
+                          ? "Enlace WhatsApp copiado"
+                          : "Compartir WhatsApp"}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                      onClick={() => {
+                        setCodeMenuOpen(false);
+                        void copyText("code", inviteCode);
+                      }}
+                    >
+                      {copied === "code"
+                        ? "Código copiado"
+                        : "Copiar código (solo si hace falta)"}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={codeBusy}
+                      className="block w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                      onClick={() => {
+                        setCodeMenuOpen(false);
+                        void regenerateCode();
+                      }}
+                    >
+                      {codeBusy ? "Generando…" : "Generar código nuevo"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
-            {inviteLink ? (
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <p className="min-w-0 flex-1 break-all rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 font-mono text-xs leading-relaxed text-neutral-600">
-                  {inviteLink}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void copyText("link", inviteLink)}
-                  className="shrink-0 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-                >
-                  {copied === "link" ? "Copiado" : "Copiar enlace web"}
-                </button>
-              </div>
-            ) : null}
-            {whatsappInviteLink ? (
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <p className="min-w-0 flex-1 break-all rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 font-mono text-xs leading-relaxed text-emerald-800">
-                  {whatsappInviteLink}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void copyText("wa", whatsappInviteLink)}
-                  className="shrink-0 rounded-xl border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
-                >
-                  {copied === "wa" ? "Copiado" : "Copiar WhatsApp"}
-                </button>
-              </div>
-            ) : null}
             <p className="mt-3 text-xs text-neutral-500">
-              Si regeneras el código, los pacientes ya vinculados siguen vinculados;
-              solo cambia el código para nuevos pacientes.
+              Si regeneras el código, los pacientes ya vinculados siguen
+              vinculados; solo cambia el enlace para nuevos pacientes.
             </p>
           </section>
         ) : null}

@@ -1,6 +1,5 @@
-import { randomBytes, randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GUEST_EMAIL_DOMAIN } from "@/lib/guest-account";
+import { findOrCreateGuestPatient } from "@/lib/find-or-create-guest-patient";
 import { looksLikeInviteCode, normalizeInviteCode } from "@/lib/physio-invite";
 
 export type ResolvedInvite = {
@@ -98,7 +97,7 @@ export async function resolveInviteCode(
   };
 }
 
-/** Create guest auth user + profile linked to physio (same pattern as guest-physio). */
+/** Create or reuse guest patient linked to physio (shared with web/mobile). */
 export async function createWhatsAppGuestPatient(
   admin: SupabaseClient,
   opts: {
@@ -108,46 +107,21 @@ export async function createWhatsAppGuestPatient(
     phoneE164: string;
   }
 ): Promise<
-  | { patientId: string; email: string; password: string }
+  | { patientId: string; email: string; password: string; reused: boolean }
   | { error: string }
 > {
-  const email = `guest.${randomUUID()}@${GUEST_EMAIL_DOMAIN}`;
-  const password = randomBytes(24).toString("base64url");
-  const name = opts.displayName.trim().slice(0, 80) || "Paciente";
-
-  const { data: created, error: createErr } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    app_metadata: { is_guest: true, channel: "whatsapp" },
-    user_metadata: {
-      display_name: name,
-      whatsapp_phone: opts.phoneE164.replace(/\D/g, ""),
-    },
+  const result = await findOrCreateGuestPatient(admin, {
+    physioId: opts.physioId,
+    clinicId: opts.clinicId,
+    displayName: opts.displayName,
+    phoneDigits: opts.phoneE164,
+    channel: "whatsapp",
   });
-
-  if (createErr || !created.user?.id) {
-    console.error("[whatsapp] createUser", createErr?.message);
-    return { error: "No se pudo crear la sesión de consulta." };
-  }
-
-  const patientId = created.user.id;
-  const { error: upsertErr } = await admin.from("profiles").upsert(
-    {
-      id: patientId,
-      account_type: "patient",
-      display_name: name,
-      physio_id: opts.physioId,
-      clinic_id: opts.clinicId ?? null,
-      onboarding_completed: true,
-    },
-    { onConflict: "id" }
-  );
-
-  if (upsertErr) {
-    console.error("[whatsapp] profile upsert", upsertErr.message);
-    return { error: "No se pudo vincular al fisioterapeuta." };
-  }
-
-  return { patientId, email, password };
+  if ("error" in result) return result;
+  return {
+    patientId: result.patientId,
+    email: result.email,
+    password: result.password,
+    reused: result.reused,
+  };
 }

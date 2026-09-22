@@ -4,13 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import {
+  getOrCreateGuestClientId,
+  persistGuestClientId,
+} from "@/lib/guest-client-id";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 
 /**
  * Redeem a physio/clinic patient invite code and open the pre-visit consult.
- * Always creates/switches to a guest patient session so a logged-in fisio
- * sharing their own link is not stuck on /fisio.
+ * Deep links with ?code= auto-redeem — patient never types a code.
+ * Reuses the same guest when this browser already visited (guestClientId).
+ * Logged-in patients are linked instead of replaced with a new guest.
  */
 export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
   const router = useRouter();
@@ -19,6 +24,8 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
     parsePastedInviteCode(initialCode)
   );
   const started = useRef(false);
+
+  const hasCode = parsePastedInviteCode(initialCode).length >= 6;
 
   useEffect(() => {
     if (started.current) return;
@@ -38,25 +45,52 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
     }
     try {
       const supabase = createClient();
-      // Drop any existing session (fisio/clinic/patient) so the link always
-      // opens the patient pre-visit flow.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("account_type")
+          .eq("id", user.id)
+          .maybeSingle();
+        const accountType =
+          (profile as { account_type?: string | null } | null)?.account_type ??
+          "patient";
+        if (accountType === "patient") {
+          const { error: linkError } = await supabase.rpc(
+            "patient_link_physio_code",
+            { p_code: code }
+          );
+          if (!linkError) {
+            router.replace("/fisioterapia");
+            router.refresh();
+            return;
+          }
+        }
+      }
+
       await supabase.auth.signOut({ scope: "local" });
 
+      const guestClientId = getOrCreateGuestClientId();
       const res = await fetch("/api/auth/guest-physio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, guestClientId, channel: "web" }),
       });
       const payload = (await res.json()) as {
         error?: string;
         email?: string;
         password?: string;
+        guestClientId?: string;
       };
       if (!res.ok || !payload.email || !payload.password) {
-        setError(payload.error ?? "No se pudo abrir la consulta con ese código.");
+        setError(payload.error ?? "No se pudo abrir la consulta con ese enlace.");
         started.current = false;
         return;
       }
+      persistGuestClientId(payload.guestClientId ?? guestClientId);
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: payload.email,
         password: payload.password,
@@ -80,8 +114,6 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
     await redeem(manualCode);
   }
 
-  const hasCode = parsePastedInviteCode(initialCode).length >= 6;
-
   return (
     <div className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white px-6 py-9 shadow-xl shadow-blue-500/10 sm:px-8">
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
@@ -98,8 +130,10 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             {hasCode && !error
-              ? "Abriendo tu consulta con el fisioterapeuta…"
-              : "Introduce el código de vinculación para empezar."}
+              ? "Abriendo tu consulta… A continuación te pediremos tu nombre."
+              : hasCode && error
+                ? "No se pudo abrir el enlace."
+                : "Introduce el código de vinculación para empezar."}
           </p>
         </div>
       </div>
@@ -108,6 +142,22 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
         <p className="text-center text-sm font-medium text-blue-700">
           Un momento…
         </p>
+      ) : hasCode && error ? (
+        <>
+          <p className="text-center text-sm text-red-600" role="alert">
+            {error}
+          </p>
+          <button
+            type="button"
+            className="btn-primary mt-4 w-full"
+            onClick={() => {
+              started.current = true;
+              void redeem(initialCode);
+            }}
+          >
+            Reintentar
+          </button>
+        </>
       ) : (
         <form onSubmit={(e) => void onManualSubmit(e)}>
           <label
@@ -132,27 +182,11 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
               {error}
             </p>
           ) : null}
-          <button
-            type="submit"
-            className="btn-primary mt-4 w-full"
-          >
+          <button type="submit" className="btn-primary mt-4 w-full">
             Empezar consulta previa
           </button>
         </form>
       )}
-
-      {error && hasCode ? (
-        <button
-          type="button"
-          className="btn-primary mt-4 w-full"
-          onClick={() => {
-            started.current = true;
-            void redeem(initialCode);
-          }}
-        >
-          Reintentar
-        </button>
-      ) : null}
 
       <p className="mt-6 text-center text-sm text-slate-500">
         ¿Ya tienes cuenta?{" "}

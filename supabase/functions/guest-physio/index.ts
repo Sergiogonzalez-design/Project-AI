@@ -71,6 +71,25 @@ function parsePastedInviteCode(raw: string | null | undefined): string {
   return looksLikeInviteCode(code) ? code : "";
 }
 
+function normalizePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  return digits.length >= 8 ? digits : null;
+}
+
+function normalizeGuestClientId(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const id = raw.trim().toLowerCase();
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      id
+    )
+  ) {
+    return null;
+  }
+  return id;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS });
@@ -89,7 +108,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const body = (await req.json()) as { code?: string };
+    const body = (await req.json()) as {
+      code?: string;
+      guestClientId?: string;
+      phone?: string;
+      channel?: string;
+    };
     const normalized = parsePastedInviteCode(body.code);
 
     if (normalized.length < 6) {
@@ -114,7 +138,7 @@ Deno.serve(async (req) => {
 
     const { data: physio, error: lookupError } = await admin
       .from("profiles")
-      .select("id, display_name, clinic_name")
+      .select("id, display_name, clinic_name, clinic_id")
       .eq("account_type", "physio")
       .eq("invite_code", normalized)
       .maybeSingle();
@@ -129,6 +153,7 @@ Deno.serve(async (req) => {
     let recipientId = physio?.id ?? null;
     let recipientName = physio?.display_name ?? null;
     let recipientClinic = physio?.clinic_name ?? null;
+    let clinicId: string | null = (physio?.clinic_id as string | null) ?? null;
 
     if (!recipientId) {
       const { data: clinic, error: clinicErr } = await admin
@@ -198,6 +223,7 @@ Deno.serve(async (req) => {
       recipientId = picked;
       recipientName = pickedName;
       recipientClinic = clinic.name;
+      clinicId = clinic.id;
     }
 
     if (!recipientId) {
@@ -207,14 +233,102 @@ Deno.serve(async (req) => {
       );
     }
 
-    const email = `guest.${crypto.randomUUID()}@${GUEST_EMAIL_DOMAIN}`;
+    const phoneDigits = normalizePhone(body.phone);
+    const guestClientId =
+      normalizeGuestClientId(body.guestClientId) ?? crypto.randomUUID();
     const password = crypto.randomUUID().replace(/-/g, "") + "A1!";
+    const channel = body.channel === "mobile" ? "mobile" : "web";
 
+    let existingId: string | null = null;
+    if (phoneDigits) {
+      const { data: byPhone } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("whatsapp_phone", phoneDigits)
+        .eq("account_type", "patient")
+        .maybeSingle();
+      if (byPhone?.id) existingId = byPhone.id as string;
+      if (!existingId) {
+        const { data: prior } = await admin
+          .from("whatsapp_consult_sessions")
+          .select("patient_id")
+          .eq("phone_e164", phoneDigits)
+          .not("patient_id", "is", null)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (prior?.patient_id) existingId = prior.patient_id as string;
+      }
+    }
+    if (!existingId) {
+      const { data: byClient } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("guest_client_id", guestClientId)
+        .eq("account_type", "patient")
+        .maybeSingle();
+      if (byClient?.id) existingId = byClient.id as string;
+    }
+
+    if (existingId) {
+      const { data: userData, error: getErr } =
+        await admin.auth.admin.getUserById(existingId);
+      const email = userData.user?.email;
+      if (!getErr && email) {
+        const { error: pwErr } = await admin.auth.admin.updateUserById(
+          existingId,
+          {
+            password,
+            user_metadata: {
+              ...(userData.user.user_metadata ?? {}),
+              ...(phoneDigits ? { whatsapp_phone: phoneDigits } : {}),
+              guest_client_id: guestClientId,
+            },
+          }
+        );
+        if (!pwErr) {
+          await admin.from("profiles").upsert(
+            {
+              id: existingId,
+              account_type: "patient",
+              physio_id: recipientId,
+              clinic_id: clinicId,
+              clinic_name: recipientClinic,
+              guest_client_id: guestClientId,
+              ...(phoneDigits ? { whatsapp_phone: phoneDigits } : {}),
+              onboarding_completed: true,
+              is_admin: false,
+            },
+            { onConflict: "id" }
+          );
+          return Response.json(
+            {
+              email,
+              password,
+              reused: true,
+              guestClientId,
+              physio: {
+                physio_id: recipientId,
+                physio_name: recipientName,
+                clinic_name: recipientClinic,
+              },
+            },
+            { headers: CORS }
+          );
+        }
+      }
+    }
+
+    const email = `guest.${crypto.randomUUID()}@${GUEST_EMAIL_DOMAIN}`;
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      app_metadata: { is_guest: true, account_type: "patient" },
+      app_metadata: { is_guest: true, account_type: "patient", channel },
+      user_metadata: {
+        ...(phoneDigits ? { whatsapp_phone: phoneDigits } : {}),
+        guest_client_id: guestClientId,
+      },
     });
 
     if (createError || !created.user) {
@@ -230,8 +344,10 @@ Deno.serve(async (req) => {
       onboarding_completed: true,
       is_admin: false,
       physio_id: recipientId,
+      clinic_id: clinicId,
       clinic_name: recipientClinic,
-      // Clear auto-filled guest.<uuid> from handle_new_user so the name gate runs.
+      guest_client_id: guestClientId,
+      whatsapp_phone: phoneDigits,
       display_name: null,
     });
 
@@ -252,6 +368,8 @@ Deno.serve(async (req) => {
       {
         email,
         password,
+        reused: false,
+        guestClientId,
         physio: {
           physio_id: recipientId,
           physio_name: recipientName,

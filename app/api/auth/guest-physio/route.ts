@@ -1,7 +1,6 @@
-import { randomBytes, randomUUID } from "crypto";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { GUEST_EMAIL_DOMAIN } from "@/lib/guest-account";
+import { findOrCreateGuestPatient } from "@/lib/find-or-create-guest-patient";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { checkRateLimit, rateLimitKey } from "@/lib/rate-limit";
 import { getSupabaseUrl } from "@/lib/supabase/env";
@@ -22,8 +21,7 @@ export async function OPTIONS() {
 
 /**
  * Public: redeem a physio invite code without a full account.
- * Creates a guest patient, links them to the physio, returns credentials
- * so the client can sign in for that one consult.
+ * Reuses the same patient when guestClientId or phone matches a prior visit.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +44,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = (await request.json()) as { code?: string };
+    const body = (await request.json()) as {
+      code?: string;
+      guestClientId?: string;
+      phone?: string;
+      channel?: "web" | "mobile";
+    };
     const normalized = parsePastedInviteCode(body.code);
     if (normalized.length < 6) {
       return NextResponse.json(
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     const { data: physio, error: lookupError } = await adminClient
       .from("profiles")
-      .select("id, display_name, clinic_name")
+      .select("id, display_name, clinic_name, clinic_id")
       .eq("account_type", "physio")
       .eq("invite_code", normalized)
       .maybeSingle();
@@ -76,6 +79,7 @@ export async function POST(request: NextRequest) {
     let recipientId = physio?.id ?? null;
     let recipientName = physio?.display_name ?? null;
     let recipientClinic = physio?.clinic_name ?? null;
+    let clinicId: string | null = (physio?.clinic_id as string | null) ?? null;
 
     if (!recipientId) {
       const { data: clinic, error: clinicErr } = await adminClient
@@ -144,6 +148,7 @@ export async function POST(request: NextRequest) {
       recipientId = picked;
       recipientName = pickedName;
       recipientClinic = clinic.name;
+      clinicId = clinic.id;
     }
 
     if (!recipientId) {
@@ -153,57 +158,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const email = `guest.${randomUUID()}@${GUEST_EMAIL_DOMAIN}`;
-    const password = randomBytes(18).toString("base64url");
-
-    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      app_metadata: { is_guest: true, account_type: "patient" },
+    const guest = await findOrCreateGuestPatient(adminClient, {
+      physioId: recipientId,
+      clinicId,
+      clinicName: recipientClinic,
+      guestClientId: body.guestClientId,
+      phoneDigits: body.phone,
+      channel: body.channel === "mobile" ? "mobile" : "web",
+      clearDisplayName: true,
     });
 
-    if (createError || !created.user) {
-      return NextResponse.json(
-        { error: createError?.message ?? "No se pudo empezar la consulta." },
-        { status: 400, headers: CORS }
-      );
+    if ("error" in guest) {
+      return NextResponse.json({ error: guest.error }, { status: 400, headers: CORS });
     }
-
-    await adminClient.auth.admin.updateUserById(created.user.id, {
-      app_metadata: { is_guest: true, account_type: "patient" },
-    });
-
-    const { error: profileError } = await adminClient.from("profiles").upsert({
-      id: created.user.id,
-      account_type: "patient",
-      onboarding_completed: true,
-      is_admin: false,
-      physio_id: recipientId,
-      clinic_name: recipientClinic,
-      // handle_new_user may auto-fill display_name from the guest email local-part;
-      // keep it null so Consulta previa always asks for the real patient name.
-      display_name: null,
-    });
-
-    if (profileError) {
-      await adminClient.auth.admin.deleteUser(created.user.id);
-      return NextResponse.json(
-        { error: "No se pudo vincular con tu fisioterapeuta. Inténtalo de nuevo." },
-        { status: 500, headers: CORS }
-      );
-    }
-
-    // Belt-and-suspenders: clear any trigger-filled placeholder name.
-    await adminClient
-      .from("profiles")
-      .update({ display_name: null })
-      .eq("id", created.user.id);
 
     return NextResponse.json(
       {
-        email,
-        password,
+        email: guest.email,
+        password: guest.password,
+        reused: guest.reused,
+        guestClientId: guest.guestClientId,
         physio: {
           physio_id: recipientId,
           physio_name: recipientName,

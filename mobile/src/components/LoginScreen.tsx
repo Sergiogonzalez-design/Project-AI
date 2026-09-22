@@ -116,35 +116,57 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
     }
     setGuestLoading(true);
     try {
-      // Match web /unirse: clear any residual session before guest redeem.
+      const {
+        getOrCreateGuestClientId,
+        persistGuestClientId,
+      } = await import("../lib/guest-client-id");
+      const guestClientId = await getOrCreateGuestClientId();
+
+      // Match web /unirse: clear staff sessions before guest redeem.
+      // Returning guests are restored via guestClientId on the server.
       await supabase.auth.signOut({ scope: "local" });
 
       let email: string | undefined;
       let password: string | undefined;
       let apiError: string | undefined;
+      let returnedClientId: string | undefined;
+
+      const body = {
+        code: normalized,
+        guestClientId,
+        channel: "mobile" as const,
+      };
 
       const { data: fnData, error: fnError } = await supabase.functions.invoke(
         "guest-physio",
-        { body: { code: normalized } }
+        { body }
       );
-      const fnPayload = fnData as { error?: string; email?: string; password?: string } | null;
+      const fnPayload = fnData as {
+        error?: string;
+        email?: string;
+        password?: string;
+        guestClientId?: string;
+      } | null;
       if (!fnError && fnPayload?.email && fnPayload?.password) {
         email = fnPayload.email;
         password = fnPayload.password;
+        returnedClientId = fnPayload.guestClientId;
       } else {
         const res = await fetch(`${WEB_APP_URL}/api/auth/guest-physio`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: normalized }),
+          body: JSON.stringify(body),
         });
         const payload = (await res.json()) as {
           error?: string;
           email?: string;
           password?: string;
+          guestClientId?: string;
         };
         if (res.ok && payload.email && payload.password) {
           email = payload.email;
           password = payload.password;
+          returnedClientId = payload.guestClientId;
         } else {
           apiError =
             payload.error ??
@@ -158,6 +180,7 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
         setGuestError(apiError ?? t.auth.guestStartError);
         return;
       }
+      await persistGuestClientId(returnedClientId ?? guestClientId);
       const { error: signError } = await supabase.auth.signInWithPassword({
         email,
         password,
