@@ -299,6 +299,7 @@ const WELCOME_MESSAGE_ES =
 const WELCOME_MESSAGE_EN =
   "How can I help you? Tell me if you have any discomfort or a question about exercises.";
 const WELCOME_ID = "welcome";
+const FISIO_LINKED_WELCOME_ID = "fisio-linked-welcome";
 
 type Phase = "intro" | "questionnaire" | "followup" | "complete";
 type Message = {
@@ -604,6 +605,7 @@ export function AIInquiriesScreen({
   const [messages, setMessages] = useState<Message[]>([]);
   // Fisioterapia never boots into the intro animation — wait for history first.
   const [physioIntro, setPhysioIntro] = useState(!linkedPhysio);
+  const linkedWelcomeQueuedRef = useRef(false);
   const [phase, setPhase] = useState<Phase>("intro");
   const [initialMessage, setInitialMessage] = useState("");
   const [questionnairePart, setQuestionnairePart] = useState<BodyPartId | "generic">("shoulder");
@@ -686,8 +688,8 @@ export function AIInquiriesScreen({
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [fisioBootDeadline, setFisioBootDeadline] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
+  const [holdForQuestionnaire, setHoldForQuestionnaire] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTitle, setActiveTitle] = useState<string>(t.consulta.newConsulta);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -839,16 +841,23 @@ export function AIInquiriesScreen({
   }, []);
 
   useEffect(() => {
-    if (!linkedPhysio) return;
-    const t = setTimeout(() => setFisioBootDeadline(true), 800);
-    return () => clearTimeout(t);
-  }, [linkedPhysio]);
-
-  useEffect(() => {
     if (!pendingFisioCodeReload.current || !linkedPhysio) return;
     pendingFisioCodeReload.current = false;
     void loadConversations({ skipAutoOpen: true });
   }, [linkedPhysio]);
+
+  function showLinkedPhysioWelcome() {
+    if (linkedWelcomeQueuedRef.current) return;
+    linkedWelcomeQueuedRef.current = true;
+    setPhysioIntro(false);
+    const msg: Message = {
+      id: FISIO_LINKED_WELCOME_ID,
+      role: "assistant",
+      content: welcomeText,
+    };
+    setMessages([msg]);
+    beginAssistantReveal(FISIO_LINKED_WELCOME_ID, welcomeText);
+  }
 
   function skipPhysioIntro() {
     if (!physioIntro || activeId) return;
@@ -857,12 +866,13 @@ export function AIInquiriesScreen({
   }
 
   useEffect(() => {
+    if (linkedPhysio) return;
     if (!physioIntro || activeId) return;
     const timer = setTimeout(() => {
       skipPhysioIntro();
     }, 600);
     return () => clearTimeout(timer);
-  }, [physioIntro, activeId]);
+  }, [physioIntro, activeId, linkedPhysio]);
 
   const updateScrollDownVisibility = useCallback(() => {
     const { offset, viewport, content } = scrollMetrics.current;
@@ -1085,11 +1095,11 @@ export function AIInquiriesScreen({
       }
 
       if (linkedPhysio) {
-        setPhysioIntro(true);
+        showLinkedPhysioWelcome();
       }
     } catch (err) {
       console.error("No se pudieron cargar las consultas:", err);
-      if (linkedPhysio) setPhysioIntro(true);
+      if (linkedPhysio) showLinkedPhysioWelcome();
     } finally {
       setHistoryLoaded(true);
     }
@@ -1229,7 +1239,7 @@ export function AIInquiriesScreen({
     revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
-    setPhysioIntro(false);
+    linkedWelcomeQueuedRef.current = false;
     setPhase("intro");
     setInitialMessage("");
     setEvaluatedParts([]);
@@ -1250,6 +1260,11 @@ export function AIInquiriesScreen({
     setAttachedUri(null);
     setHistoryOpen(false);
     setPhysioReportSentBanner(false);
+    if (linkedPhysio) {
+      showLinkedPhysioWelcome();
+    } else {
+      setPhysioIntro(false);
+    }
   }
 
   function deleteConversation(id: string) {
@@ -1294,7 +1309,7 @@ export function AIInquiriesScreen({
     revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
-    setPhysioIntro(true);
+    linkedWelcomeQueuedRef.current = false;
     setPhase("intro");
     setInitialMessage("");
     setQuestionnairePart("shoulder");
@@ -1341,6 +1356,7 @@ export function AIInquiriesScreen({
     setFisioNewConsultDraft(true);
     setHistoryLoaded(true);
     setOpeningConversation(false);
+    showLinkedPhysioWelcome();
   }
 
   async function handleAnotherPhysioLinked(physio: LinkedPhysioInfo) {
@@ -1810,6 +1826,7 @@ export function AIInquiriesScreen({
         ? `${pending}\n${text}`.trim()
         : text;
     setPendingComplaintText(null);
+    setHoldForQuestionnaire(false);
     setInitialMessage(contextText);
     setQuestionnairePart(part);
     setAwaitingNextPart(null);
@@ -2263,6 +2280,7 @@ export function AIInquiriesScreen({
     clearAttachment();
     setChatLoading(true);
     setFormError(null);
+    if (linkedPhysio) setHoldForQuestionnaire(true);
 
     setMessages((prev) => [
       ...prev,
@@ -2398,6 +2416,7 @@ export function AIInquiriesScreen({
     } finally {
       submittingRef.current = false;
       setChatLoading(false);
+      if (phaseRef.current !== "questionnaire") setHoldForQuestionnaire(false);
     }
   }
 
@@ -3890,8 +3909,9 @@ export function AIInquiriesScreen({
     !activeId;
   const showFisioBootstrap =
     Boolean(linkedPhysio) &&
-    !fisioBootDeadline &&
-    (!historyLoaded || (openingConversation && messages.length === 0));
+    (holdForQuestionnaire ||
+      !historyLoaded ||
+      (openingConversation && messages.length === 0));
   const physioHighlightPhrases = collectPhysioHighlightPhrases(
     linkedPhysio,
     conversations
@@ -4143,7 +4163,8 @@ export function AIInquiriesScreen({
           }}
           scrollEventThrottle={16}
         >
-          {messages.map((msg) => (
+          {!(Boolean(linkedPhysio) || Boolean(guestMode)) &&
+            messages.map((msg) => (
             <FadeInView
               key={msg.id}
               style={[
@@ -4202,7 +4223,7 @@ export function AIInquiriesScreen({
               questionnaireTopY.current = e.nativeEvent.layout.y;
             }}
           >
-            <TrustPanel locale={locale} />
+            {isConsultaPrevia ? null : <TrustPanel locale={locale} />}
             {questionnairePart === "shoulder" ? (
               <>
                 <ConsultaAdaptiveShoulder
@@ -4580,16 +4601,12 @@ export function AIInquiriesScreen({
       ) : null}
 
       {showFisioBootstrap ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={Colors.primary} />
-          <Text style={{ marginTop: 10, fontSize: 13, color: Colors.textSecondary }}>
-            {locale === "en" ? "Loading…" : "Cargando…"}
-          </Text>
-        </View>
+        <View style={{ flex: 1, backgroundColor: Colors.background }} />
       ) : physioIntro &&
+        !linkedPhysio &&
         phase === "intro" &&
         !activeId &&
-        (!linkedPhysio || conversations.length === 0 || fisioNewConsultDraft) ? (
+        (conversations.length === 0 || fisioNewConsultDraft) ? (
         <PhysioIntro onSkip={skipPhysioIntro} greeting={introGreeting} />
       ) : showFisioPickExisting ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 }}>

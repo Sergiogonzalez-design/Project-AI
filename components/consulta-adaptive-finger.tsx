@@ -4,7 +4,8 @@ import { consultaNavLabels } from "@/lib/consulta-nav-labels";
 
 import { scrollToQuestionnaireQuestion } from "@/lib/consulta-validation";
 
-import { chipClass } from "@/components/ui/chip-style";
+import { ChipButton } from "@/components/ui/chip-button";
+import { MultiChipGroup } from "@/components/ui/multi-chip-group";
 import { PainScale } from "@/components/ui/pain-scale";
 import { QuestionnaireProgress } from "@/components/ui/questionnaire-progress";
 import { QuestionnaireQuestionList } from "@/components/ui/questionnaire-question-list";
@@ -44,55 +45,12 @@ function ChipGroup({
   return (
     <div className="mb-5 flex flex-wrap gap-2.5">
       {options.map((opt) => (
-        <button
+        <ChipButton
           key={opt}
-          type="button"
+          selected={value === opt}
           onClick={() => onChange(opt)}
-          className={chipClass(value === opt)}
-        >
-          {displayOption ? displayOption(opt) : opt}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function MultiChipGroup({
-  options,
-  value,
-  onChange,
-  displayOption,
-}: {
-  options: readonly string[];
-  value: string[];
-  onChange: (v: string[]) => void;
-  displayOption?: (opt: string) => string;
-}) {
-  const exclusiveOption = options.find((o) => o === "Ninguna" || o === "No" || o === "Nada específico");
-
-  function toggle(opt: string) {
-    if (exclusiveOption && opt === exclusiveOption) {
-      onChange(value.includes(opt) ? [] : [opt]);
-      return;
-    }
-    const withoutExclusive = exclusiveOption
-      ? value.filter((v) => v !== exclusiveOption)
-      : value;
-    if (withoutExclusive.includes(opt)) onChange(withoutExclusive.filter((v) => v !== opt));
-    else onChange([...withoutExclusive, opt]);
-  }
-
-  return (
-    <div className="mb-5 flex flex-wrap gap-2.5">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => toggle(opt)}
-          className={chipClass(value.includes(opt))}
-        >
-          {displayOption ? displayOption(opt) : opt}
-        </button>
+          label={displayOption ? displayOption(opt) : opt}
+        />
       ))}
     </div>
   );
@@ -235,6 +193,7 @@ function QuestionField({
           value={Array.isArray(val) ? val : []}
           onChange={(v) => onPatch({ [q.id]: v } as Partial<FingerAdaptiveAnswers>)}
           displayOption={displayOption}
+          layout={q.id === "alertas" ? "stack" : "wrap"}
         />
       </div>
     );
@@ -323,7 +282,7 @@ export function ConsultaAdaptiveFinger({
         </div>
       )}
 
-      {urgent && currentSection !== "red_flags" && (
+      {urgent && sections.length > 1 && currentSection !== "red_flags" && (
         <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-800 shadow-sm">
           <strong>{redFlagsDetectedLabel(locale)}</strong> {triggered.join(", ")}. {redFlagsUrgencyNote(locale)}
         </div>

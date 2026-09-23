@@ -1,6 +1,6 @@
 "use client";
 
-import { chipClass } from "@/components/ui/chip-style";
+import { ChipButton } from "@/components/ui/chip-button";
 import {
   formatFunctionalTestAnswers,
   type FunctionalTestAnswer,
@@ -120,22 +120,18 @@ export function FunctionalTestYesNo({
                 </span>
               </p>
               <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
+                <ChipButton
+                  selected={answers[test.n] === "si"}
                   disabled={disabled || sent}
                   onClick={() => choose(test.n, "si")}
-                  className={chipClass(answers[test.n] === "si")}
-                >
-                  {yes}
-                </button>
-                <button
-                  type="button"
+                  label={yes}
+                />
+                <ChipButton
+                  selected={answers[test.n] === "no"}
                   disabled={disabled || sent}
                   onClick={() => choose(test.n, "no")}
-                  className={chipClass(answers[test.n] === "no")}
-                >
-                  {no}
-                </button>
+                  label={no}
+                />
               </div>
             </div>
           );

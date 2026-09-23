@@ -16,7 +16,7 @@ import {
   type LowerLegQuestionDef,
 } from "../lib/consulta-lower-leg-adaptive";
 import { Colors } from "../lib/colors";
-import { chipStyle, chipTextStyle } from "./ui/chipStyle";
+import { chipStackStyle, chipStyle, chipTextStyle } from "./ui/chipStyle";
 import { PainScale } from "./ui/PainScale";
 import { QuestionnaireProgress } from "./ui/QuestionnaireProgress";
 import { redFlagsDetectedLabel, redFlagsSectionIntro, redFlagsUrgencyNote } from "../lib/consulta-red-flags-copy";
@@ -55,11 +55,13 @@ function MultiChipGroup({
   value,
   onChange,
   displayOption,
+  layout = "wrap",
 }: {
   options: readonly string[];
   value: string[];
   onChange: (v: string[]) => void;
   displayOption?: (opt: string) => string;
+  layout?: "wrap" | "stack";
 }) {
   const noneOption = options.find(
     (o) =>
@@ -82,12 +84,15 @@ function MultiChipGroup({
     }
   }
 
+  const containerStyle = layout === "stack" ? styles.chipStack : styles.chipGrid;
+  const optionStyle = layout === "stack" ? chipStackStyle : chipStyle;
+
   return (
-    <View style={styles.chipGrid}>
+    <View style={containerStyle}>
       {options.map((opt) => (
         <Pressable
           key={opt}
-          style={chipStyle(value.includes(opt))}
+          style={optionStyle(value.includes(opt))}
           onPress={() => toggle(opt)}
         >
           <Text style={chipTextStyle(value.includes(opt))}>
@@ -149,6 +154,7 @@ function QuestionField({
           value={Array.isArray(val) ? val : []}
           onChange={(v) => onPatch({ [q.id]: v } as Partial<LowerLegAdaptiveAnswers>)}
           displayOption={displayOption}
+          layout={q.id === "alertas" ? "stack" : "wrap"}
         />
       </View>
     );
@@ -232,7 +238,7 @@ export function ConsultaAdaptiveLowerLeg({
         </View>
       )}
 
-      {urgent && currentSection !== "red_flags" && (
+      {urgent && sections.length > 1 && currentSection !== "red_flags" && (
         <View style={styles.redBox}>
           <Text style={styles.redText}>
             {redFlagsDetectedLabel(locale)} {triggered.map((x) => localizeLowerLegOption(x, locale)).join(", ")}.{redFlagsUrgencyNote(locale)}
@@ -296,6 +302,7 @@ const styles = {
   field: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: "600" as const, color: Colors.text, marginBottom: 8 },
   chipGrid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 8 },
+  chipStack: { gap: 10 },
   chip: {
     borderWidth: 1,
     borderColor: Colors.border,

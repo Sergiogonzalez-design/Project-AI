@@ -1,6 +1,6 @@
 "use client";
 
-import { chipClass } from "@/components/ui/chip-style";
+import { ChipButton } from "@/components/ui/chip-button";
 import {
   defaultGenericConsultaAnswers,
   GENERIC_FIELD_OPTIONS,
@@ -46,14 +46,12 @@ function ChipGroup({
   return (
     <div className="mb-5 flex flex-wrap gap-2.5">
       {options.map((opt) => (
-        <button
+        <ChipButton
           key={opt}
-          type="button"
+          selected={value === opt}
           onClick={() => onChange(opt)}
-          className={chipClass(value === opt)}
-        >
-          {displayOption ? displayOption(opt) : opt}
-        </button>
+          label={displayOption ? displayOption(opt) : opt}
+        />
       ))}
     </div>
   );
@@ -82,14 +80,12 @@ function MultiChipGroup({
   return (
     <div className="mb-5 flex flex-wrap gap-2.5">
       {options.map((opt) => (
-        <button
+        <ChipButton
           key={opt}
-          type="button"
+          selected={value.includes(opt)}
           onClick={() => toggle(opt)}
-          className={chipClass(value.includes(opt))}
-        >
-          {displayOption ? displayOption(opt) : opt}
-        </button>
+          label={displayOption ? displayOption(opt) : opt}
+        />
       ))}
     </div>
   );

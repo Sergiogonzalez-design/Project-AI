@@ -19,18 +19,23 @@ const chipBase = {
 const chipSelected = {
   borderColor: Colors.primary,
   backgroundColor: Colors.primary,
-  shadowColor: Colors.primary,
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.25,
-  shadowRadius: 6,
-  elevation: 2,
+} as const;
+
+const chipStackBase = {
+  ...chipBase,
+  borderRadius: 16,
+  alignSelf: "stretch" as const,
+  width: "100%" as const,
+  minHeight: 52,
+  paddingVertical: 12,
 } as const;
 
 const chipTextBase = {
   fontSize: 13,
-  fontWeight: "600",
+  fontWeight: "600" as const,
   color: Colors.text,
-  letterSpacing: -0.1,
+  letterSpacing: 0,
+  lineHeight: 18,
 } as const;
 
 const chipTextSelected = {
@@ -40,6 +45,10 @@ const chipTextSelected = {
 
 export function chipStyle(selected: boolean) {
   return selected ? [chipBase, chipSelected] : [chipBase];
+}
+
+export function chipStackStyle(selected: boolean) {
+  return selected ? [chipStackBase, chipSelected] : [chipStackBase];
 }
 
 export function chipTextStyle(selected: boolean) {

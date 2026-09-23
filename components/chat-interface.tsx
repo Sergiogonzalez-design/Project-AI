@@ -312,6 +312,7 @@ const WELCOME_MESSAGE_ES =
 const WELCOME_MESSAGE_EN =
   "How can I help you? Tell me if you have any discomfort or a question about exercises.";
 const WELCOME_ID = "welcome";
+const FISIO_LINKED_WELCOME_ID = "fisio-linked-welcome";
 
 function formatDate(iso: string, locale: ConsultLanguage) {
   return new Date(iso).toLocaleDateString(locale === "en" ? "en-US" : "es-ES", {
@@ -771,13 +772,15 @@ export function ChatInterface({
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [fisioBootDeadline, setFisioBootDeadline] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
+  /** Hide the empty chat while consulta previa is opening the questionnaire. */
+  const [holdForQuestionnaire, setHoldForQuestionnaire] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeTitle, setActiveTitle] = useState(() => (uiLocale === "en" ? "New consultation" : "Nueva consulta"));
   const [messages, setMessages] = useState<Message[]>([]);
   // Fisioterapia never boots into the intro animation — wait for history first.
   const [physioIntro, setPhysioIntro] = useState(!linkedPhysio);
+  const linkedWelcomeQueuedRef = useRef(false);
   const [phase, setPhase] = useState<Phase>("intro");
   const [initialMessage, setInitialMessage] = useState("");
   const [questionnairePart, setQuestionnairePart] = useState<BodyPartId | "generic">("shoulder");
@@ -1172,12 +1175,6 @@ export function ChatInterface({
   }, []);
 
   useEffect(() => {
-    if (!linkedPhysio) return;
-    const t = window.setTimeout(() => setFisioBootDeadline(true), 800);
-    return () => window.clearTimeout(t);
-  }, [linkedPhysio]);
-
-  useEffect(() => {
     if (!pendingFisioCodeReload.current || !linkedPhysio) return;
     pendingFisioCodeReload.current = false;
     void loadConversations({ skipAutoOpen: true });
@@ -1364,6 +1361,19 @@ export function ChatInterface({
     updateScrollDownVisibility();
   }, [messages, loading, phase, physioIntro, updateScrollDownVisibility]);
 
+  function showLinkedPhysioWelcome() {
+    if (linkedWelcomeQueuedRef.current) return;
+    linkedWelcomeQueuedRef.current = true;
+    setPhysioIntro(false);
+    const msg: Message = {
+      id: FISIO_LINKED_WELCOME_ID,
+      role: "assistant",
+      content: welcomeText,
+    };
+    setMessages([msg]);
+    beginAssistantReveal(FISIO_LINKED_WELCOME_ID, welcomeText);
+  }
+
   function skipPhysioIntro() {
     if (!physioIntro || activeId) return;
     setPhysioIntro(false);
@@ -1371,12 +1381,13 @@ export function ChatInterface({
   }
 
   useEffect(() => {
+    if (linkedPhysio) return;
     if (!physioIntro || activeId) return;
     const timer = setTimeout(() => {
       skipPhysioIntro();
     }, 600);
     return () => clearTimeout(timer);
-  }, [physioIntro, activeId]);
+  }, [physioIntro, activeId, linkedPhysio]);
 
   async function loadConversations(opts?: { skipAutoOpen?: boolean }) {
     try {
@@ -1414,12 +1425,11 @@ export function ChatInterface({
       }
 
       if (linkedPhysio) {
-        // First assigned consult — show intro only once history is confirmed empty.
-        setPhysioIntro(true);
+        showLinkedPhysioWelcome();
       }
     } catch (err) {
       console.error("No se pudieron cargar las consultas:", err);
-      if (linkedPhysio) setPhysioIntro(true);
+      if (linkedPhysio) showLinkedPhysioWelcome();
     } finally {
       setHistoryLoaded(true);
     }
@@ -1571,7 +1581,7 @@ export function ChatInterface({
     revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
-    setPhysioIntro(false);
+    linkedWelcomeQueuedRef.current = false;
     setPhase("intro");
     setInitialMessage("");
     setEvaluatedParts([]);
@@ -1592,6 +1602,11 @@ export function ChatInterface({
     clearAttachment();
     setMobileSidebarOpen(false);
     setPhysioReportSentBanner(false);
+    if (linkedPhysio) {
+      showLinkedPhysioWelcome();
+    } else {
+      setPhysioIntro(false);
+    }
   }
 
   async function deleteConversation(id: string) {
@@ -1839,6 +1854,7 @@ export function ChatInterface({
         ? `${pending}\n${text}`.trim()
         : text;
     setPendingComplaintText(null);
+    setHoldForQuestionnaire(false);
     setInitialMessage(contextText);
     resetQuestionnaireState(part);
     setAwaitingNextPart(null);
@@ -1862,7 +1878,6 @@ export function ChatInterface({
           ? `\n\nYou mentioned more than one area — we'll go one by one. After this, ${remainingCount} more questionnaire${remainingCount === 1 ? "" : "s"} remain.`
           : `\n\nHas mencionado más de una zona: iremos **una a una**. Después de esta, quedan ${remainingCount} cuestionario${remainingCount === 1 ? "" : "s"} más.`;
     }
-    beginAssistantReveal(introId, intro);
     setMessages((prev) => [
       ...prev,
       {
@@ -2431,6 +2446,7 @@ export function ChatInterface({
         },
       ]);
       setLoading(true);
+      if (linkedPhysio) setHoldForQuestionnaire(true);
     });
     scrollToBottomAfterPaint();
 
@@ -2562,11 +2578,12 @@ export function ChatInterface({
     } finally {
       submittingRef.current = false;
       setLoading(false);
+      if (phaseRef.current !== "questionnaire") setHoldForQuestionnaire(false);
     }
   }
 
   async function handleQuestionnaireSubmit() {
-    if (loading || submittingRef.current || revealingMessageIdRef.current) return;
+    if (loading || submittingRef.current) return;
 
     // Prefer refs so "Enviar ahora (urgencia)" can setState + submit with the same answers.
     const kneeAnswers = kneeAnswersRef.current;
@@ -3982,7 +3999,7 @@ export function ChatInterface({
     revealingMessageIdRef.current = null;
     setRevealingMessageId(null);
     setShowScrollDown(false);
-    setPhysioIntro(true);
+    linkedWelcomeQueuedRef.current = false;
     setPhase("intro");
     setInitialMessage("");
     setQuestionnairePart("shoulder");
@@ -4021,6 +4038,7 @@ export function ChatInterface({
     setFisioNewConsultDraft(true);
     setHistoryLoaded(true);
     setOpeningConversation(false);
+    showLinkedPhysioWelcome();
   }
 
   async function handleAnotherPhysioLinked(physio: LinkedPhysioInfo) {
@@ -4274,6 +4292,7 @@ export function ChatInterface({
     historyLoaded &&
     !openingConversation &&
     !physioIntro &&
+    !holdForQuestionnaire &&
     phase !== "complete" &&
     (phase === "intro" || phase === "followup") &&
     (!linkedPhysio || Boolean(activeId) || conversations.length === 0 || fisioNewConsultDraft);
@@ -4286,8 +4305,9 @@ export function ChatInterface({
     !activeId;
   const showFisioBootstrap =
     Boolean(linkedPhysio) &&
-    !fisioBootDeadline &&
-    (!historyLoaded || (openingConversation && messages.length === 0));
+    (holdForQuestionnaire ||
+      !historyLoaded ||
+      (openingConversation && messages.length === 0));
   const inputPlaceholder =
     phase === "intro"
       ? linkedPhysio
@@ -4335,6 +4355,7 @@ export function ChatInterface({
   ]);
 
   const chatBusy = loading || Boolean(revealingMessageId);
+  const questionnaireSubmitBusy = loading || submittingRef.current;
   // Consulta previa = Fisioterapia after linking a physio (incl. guest invite flow).
   const isConsultaPrevia = Boolean(linkedPhysio) || guestMode;
   const questionnaireSubmitLabel = isConsultaPrevia
@@ -4472,13 +4493,12 @@ export function ChatInterface({
           className="scrollbar-thin h-full min-h-0 overflow-y-auto overscroll-contain [overflow-anchor:none]"
         >
           {showFisioBootstrap ? (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-sm text-slate-500">Cargando…</p>
-            </div>
+            <div className="h-full bg-[var(--background)]" />
           ) : physioIntro &&
+            !linkedPhysio &&
             phase === "intro" &&
             !activeId &&
-            (!linkedPhysio || conversations.length === 0 || fisioNewConsultDraft) ? (
+            (conversations.length === 0 || fisioNewConsultDraft) ? (
             <PhysioIntro
               onSkip={skipPhysioIntro}
               greeting={introGreeting}
@@ -4511,7 +4531,8 @@ export function ChatInterface({
                 : undefined
             }
           >
-            {messages.map((msg, msgIndex) => {
+            {!(linkedPhysio && (phase === "questionnaire" || holdForQuestionnaire)) &&
+              messages.map((msg, msgIndex) => {
               if (
                 linkedPhysio &&
                 phase === "complete" &&
@@ -4745,9 +4766,10 @@ export function ChatInterface({
             {phase === "questionnaire" && (
               <div
                 ref={questionnaireRef}
-                className="animate-scale-in rounded-3xl border border-slate-200 bg-white p-4 shadow-[var(--shadow-elevated)] sm:p-6"
+                translate="no"
+                className="notranslate animate-scale-in rounded-3xl border border-slate-200 bg-white p-4 shadow-[var(--shadow-elevated)] sm:p-6"
               >
-                <TrustPanel locale={consultLanguage} />
+                {isConsultaPrevia ? null : <TrustPanel locale={consultLanguage} />}
                 {questionnairePart === "shoulder" ? (
                   <>
                     <ConsultaAdaptiveShoulder
@@ -4768,7 +4790,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4790,7 +4812,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4812,7 +4834,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4834,7 +4856,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4856,7 +4878,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4878,7 +4900,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4900,7 +4922,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4927,7 +4949,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4949,7 +4971,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4976,7 +4998,7 @@ export function ChatInterface({
                       <button
                         type="button"
                         onClick={handleQuestionnaireSubmit}
-                        disabled={chatBusy}
+                        disabled={questionnaireSubmitBusy}
                         className="btn-primary mt-4 w-full"
                       >
                         {questionnaireSubmitLabel}
@@ -4992,7 +5014,7 @@ export function ChatInterface({
                     <button
                       type="button"
                       onClick={handleQuestionnaireSubmit}
-                      disabled={chatBusy}
+                      disabled={questionnaireSubmitBusy}
                       className="btn-primary w-full"
                     >
                         {questionnaireSubmitLabel}

@@ -16,6 +16,8 @@ export function QuestionnaireProgress({
   totalSteps: number;
   locale?: "es" | "en";
 }) {
+  if (totalSteps <= 1) return null;
+
   const current = Math.min(stepIndex + 1, Math.max(totalSteps, 1));
   const pct = totalSteps > 0 ? Math.round((current / totalSteps) * 100) : 0;
   const remaining = Math.max(totalSteps - current, 0);
