@@ -59,7 +59,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "mcmurray",
     title: "Test de McMurray",
-    src: `${CLINICAL_TEST_CDN}/mcmurray.webp?v=20260922mcm`,
+    src: `${CLINICAL_TEST_CDN}/mcmurray.webp?v=20260923mcm`,
     aliases: ["mcmurray", "mc murray", "test de mcmurray"],
   },
   {
@@ -88,12 +88,20 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   },
   {
     id: "apprehension",
-    title: "Apprehension / Relocation",
-    src: `${CLINICAL_TEST_CDN}/apprehension.webp`,
+    title: "Apprehension / Relocation (hombro)",
+    src: `${CLINICAL_TEST_CDN}/apprehension.webp?v=20260923appr`,
     aliases: [
+      "apprehension / relocation (hombro)",
+      "apprehension hombro",
+      "aprension hombro",
+      "relocation hombro",
       "apprehension",
       "aprension",
       "aprehensión",
+      "apprehension test",
+      "test de apprehension",
+      "test de aprension",
+      "test de aprehensión",
       "relocation",
       "relocacion",
       "reubicación",
@@ -145,12 +153,18 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
     id: "thompson",
     title: "Test de Thompson",
     src: `${CLINICAL_TEST_CDN}/thompson.webp`,
-    aliases: ["thompson", "test de thompson", "squeeze test", "simmonds"],
+    aliases: [
+      "thompson",
+      "test de thompson",
+      "thompson squeeze",
+      "squeeze de aquiles",
+      "simmonds",
+    ],
   },
   {
     id: "matles",
     title: "Test de Matles",
-    src: `${CLINICAL_TEST_CDN}/matles.webp`,
+    src: `${CLINICAL_TEST_CDN}/matles.webp?v=20260924matles`,
     aliases: ["matles", "test de matles"],
   },
   {
@@ -168,7 +182,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "windlass",
     title: "Test de Windlass",
-    src: `${CLINICAL_TEST_CDN}/windlass.webp`,
+    src: `${CLINICAL_TEST_CDN}/windlass.webp?v=20260924wl`,
     aliases: ["windlass", "test de windlass"],
   },
   {
@@ -194,7 +208,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "syndesmosis-squeeze",
     title: "Squeeze de sindesmosis",
-    src: `${CLINICAL_TEST_CDN}/syndesmosis-squeeze.webp`,
+    src: `${CLINICAL_TEST_CDN}/syndesmosis-squeeze.webp?v=20260924sq`,
     aliases: [
       "syndesmosis squeeze",
       "squeeze sindesmosis",
@@ -207,7 +221,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "kleiger",
     title: "Kleiger / rotación externa",
-    src: `${CLINICAL_TEST_CDN}/kleiger.webp`,
+    src: `${CLINICAL_TEST_CDN}/kleiger.webp?v=20260924kl`,
     aliases: [
       "kleiger",
       "kleiger test",
@@ -220,19 +234,33 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "talar-tilt",
     title: "Talar tilt",
-    src: `${CLINICAL_TEST_CDN}/talar-tilt.webp`,
+    src: `${CLINICAL_TEST_CDN}/talar-tilt.webp?v=20260924tt3v`,
     aliases: [
       "talar tilt",
       "talar-tilt",
+      "talar tilt atfl",
+      "talar tilt lpaa",
+      "talar tilt deltoideo",
+      "talar tilt cfl",
       "inversion stress ankle",
       "estres en inversion tobillo",
       "estrés en inversión tobillo",
+      "talon hacia dentro",
+      "talón hacia dentro",
+      "talon hacia fuera",
+      "talón hacia fuera",
+      "ligamento peroneo astragalino",
+      "peroneo astragalino anterior",
+      "ligamento deltoideo",
+      "peroneocalcaneo",
+      "peroneocalcáneo",
+      "calcaneofibular",
     ],
   },
   {
     id: "mulder",
     title: "Test de Mulder",
-    src: `${CLINICAL_TEST_CDN}/mulder.webp`,
+    src: `${CLINICAL_TEST_CDN}/mulder.webp?v=20260924mul`,
     aliases: [
       "mulder",
       "mulder test",
@@ -245,7 +273,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "tinel-tarsal",
     title: "Tinel tarsal",
-    src: `${CLINICAL_TEST_CDN}/tinel-tarsal.webp`,
+    src: `${CLINICAL_TEST_CDN}/tinel-tarsal.webp?v=20260924tt`,
     aliases: [
       "tinel tarsal",
       "tinel-tarsal",
@@ -280,14 +308,14 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   },
   {
     id: "resisted-adduction",
-    title: "Aducción resistida (squeeze)",
+    title: "Aducción resistida (cadera)",
     src: `${CLINICAL_TEST_CDN}/resisted-adduction.webp`,
     aliases: [
       "resisted adduction",
       "aduccion resistida",
       "aducción resistida",
-      "squeeze test",
-      "squeeze",
+      "squeeze de cadera",
+      "squeeze aductores",
       "apretar rodillas",
     ],
   },
@@ -395,7 +423,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   },
   {
     id: "hook-test",
-    title: "Hook test (bíceps distal)",
+    title: "Hook test (codo / tendón distal)",
     src: `${CLINICAL_TEST_CDN}/hook-test.webp?v=20260921shoulder`,
     aliases: [
       "hook",
@@ -403,8 +431,8 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "test de hook",
       "hook bíceps",
       "hook biceps",
-      "bíceps distal",
-      "biceps distal",
+      "hook tendon",
+      "hook tendón",
     ],
   },
   {
@@ -416,9 +444,17 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "bíceps squeeze",
       "squeeze bíceps",
       "squeeze biceps",
+      "prueba de squeeze",
+      "pruebas de squeeze",
+      "test de squeeze",
+      "squeeze test biceps",
       "compresión bíceps",
       "compresion biceps",
       "ruland",
+      "bíceps distal",
+      "biceps distal",
+      "prueba del biceps distal",
+      "prueba del bíceps distal",
     ],
   },
   {
@@ -657,7 +693,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "valgus-stress-mcl",
     title: "Estrés en valgo (LCM)",
-    src: `${CLINICAL_TEST_CDN}/valgus-stress-mcl.webp?v=20260922valgus2`,
+    src: `${CLINICAL_TEST_CDN}/valgus-stress-mcl.webp?v=20260923valg5`,
     aliases: [
       "estres en valgo lcm",
       "estrés en valgo lcm",
@@ -674,7 +710,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "varus-stress-lcl",
     title: "Estrés en varo (LCL)",
-    src: `${CLINICAL_TEST_CDN}/varus-stress-lcl.webp?v=20260922varus`,
+    src: `${CLINICAL_TEST_CDN}/varus-stress-lcl.webp?v=20260923varu5`,
     aliases: [
       "estres en varo",
       "estrés en varo",
@@ -690,6 +726,8 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
       "chair push",
       "chair push-up",
       "chair sign",
+      "chair press",
+      "press test codo",
       "plri",
       "posterolateral",
       "pivot shift codo",
@@ -732,22 +770,27 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   },
   {
     id: "patellar-apprehension",
-    title: "Aprensión rotuliana",
-    src: `${CLINICAL_TEST_CDN}/patellar-apprehension.webp`,
+    title: "Aprensión rotuliana (rodilla)",
+    src: `${CLINICAL_TEST_CDN}/patellar-apprehension.webp?v=20260924patrkf`,
     aliases: [
+      "aprension rotuliana (rodilla)",
+      "aprension rotuliana",
       "patellar apprehension",
       "aprehension rotuliana",
       "aprensión rotuliana",
-      "apprehension test",
       "aprehension de rotula",
       "aprensión de rótula",
+      "aprehension rotula",
+      "apprehension rodilla",
+      "aprension rodilla",
+      "apprehension rotuliana",
       "moving apprehension",
     ],
   },
   {
     id: "dial-test",
     title: "Dial test (PLC)",
-    src: `${CLINICAL_TEST_CDN}/dial-test.webp?v=20260922dial90`,
+    src: `${CLINICAL_TEST_CDN}/dial-test.webp?v=20260923dial`,
     aliases: [
       "dial test",
       "dial",
@@ -914,14 +957,17 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   },
   {
     id: "press-test",
-    title: "Press test (Lester / TFCC)",
+    title: "Press test (Lester / TFCC — muñeca cubital)",
     src: `${CLINICAL_TEST_CDN}/press-test.webp`,
     aliases: [
-      "press test",
+      "press test lester",
       "press test tfcc",
-      "lester press",
-      "lester",
+      "press test muneca",
       "press test muñeca",
+      "lester press",
+      "lester tfcc",
+      "press test cubital",
+      "press test",
     ],
   },
   {
@@ -1074,7 +1120,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "resisted-knee-flexion",
     title: "Flexión de rodilla resistida (isquiotibiales)",
-    src: `${CLINICAL_TEST_CDN}/resisted-knee-flexion.webp?v=20260922rkf`,
+    src: `${CLINICAL_TEST_CDN}/resisted-knee-flexion.webp?v=20260924patrkf`,
     aliases: [
       "flexion de rodilla resistida",
       "flexión de rodilla resistida",
@@ -1223,8 +1269,8 @@ const CLINICAL_TEST_REGION_GROUPS: readonly {
       "cozen",
       "mill",
       "maudsley",
-      "hook-test",
       "biceps-squeeze",
+      "hook-test",
       "milking-maneuver",
       "moving-valgus",
       "resisted-wrist-flexion",
@@ -1283,8 +1329,25 @@ REGLA DE ZONA (CRÍTICO — error grave si se incumple):
 - PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro; dolor de codo/UCL → NUNCA Test de Lachman (eso es RODILLA / LCA).
 - Signo de Tinel y Phalen (sin «tarsal») del catálogo son de MUÑECA/MANO. Para pie/túnel tarsiano numerar **Tinel tarsal** (grupo Tobillo / pie), NUNCA «Signo de Tinel» de muñeca.
 - Codo medial / UCL / lanzadores: numerar **Moving valgus stress (UCL)** y/o **Milking maneuver (UCL)**. PROHIBIDO numerar «Test de Lachman» o «Lachman de codo» (no hay vídeo de Lachman de codo; Lachman del catálogo es solo rodilla).
+- NOMBRES QUE NO SE PUEDEN CRUZAR (error grave):
+  - Bíceps DISTAL (codo, pop / déficit de supinación) → numerar **Biceps squeeze (bíceps distal)**. Complemento: **Hook test (codo / tendón distal)**. NUNCA Press test. NUNCA Speed / Yergason / Uppercut (eso es bíceps de HOMBRO).
+  - Press test (Lester) → SOLO **Muñeca cubital / TFCC**. NUNCA bíceps. NUNCA codo PLRI.
+  - Chair push-up / chair sign → CODO PLRI. NUNCA bíceps. NUNCA TFCC.
+  - Squeeze de sindesmosis, aducción resistida de cadera y Thompson ≠ Biceps squeeze.
 - Si una maniobra útil no está en el grupo de esa zona, menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
+
+HOMÓNIMOS (CRÍTICO — si el nombre existe en 2+ zonas, PREGUNTA; no adivines):
+- Si el fisioterapeuta nombra una prueba compartida o ambigua SIN zona clara, NO numeres todavía. Pregunta en una frase: «¿Para qué zona la quieres?» y espera. Ej.: apprehension, cajón anterior, Tinel, Lachman, valgo/valgus, squeeze, press.
+- Homónimos del catálogo (usa SIEMPRE el nombre canónico CON zona):
+  - Aprensión / apprehension / relocation → **Apprehension / Relocation (hombro)** vs **Aprensión rotuliana (rodilla)**. NUNCA texto de rodilla/LCA con vídeo de hombro, ni al revés.
+  - Cajón anterior → **Cajón anterior (rodilla)** vs **Cajón anterior (tobillo)**.
+  - Tinel → **Signo de Tinel** (muñeca) vs **Tinel tarsal** (pie).
+  - Lachman → solo **Test de Lachman (rodilla / LCA)**. Si dice «Lachman de codo», pregunta o usa **Moving valgus stress (UCL)**.
+  - Valgo / valgus → **Estrés en valgo (LCM)** (rodilla) vs **Moving valgus stress (UCL)** (codo).
+  - Squeeze → **Biceps squeeze (bíceps distal)** vs **Squeeze de sindesmosis** (tobillo).
+  - Press → **Press test (Lester / TFCC — muñeca cubital)** vs **Chair push-up / chair sign** (codo).
+- Solo cuando el fisio confirme la zona, o el caso deje UNA zona inequívoca, numera el nombre canónico de ESA zona.
 
 Catálogo por zona:
 ${groups}
@@ -1313,6 +1376,14 @@ export function isAllClinicalPruebasRequest(text: string): boolean {
 
 const ZONE_QUERY_PATTERNS: readonly { ids: readonly string[]; re: RegExp }[] = [
   {
+    ids: ["biceps-squeeze", "hook-test"],
+    re: /\b(biceps distal|distal biceps|rotura.{0,16}biceps|pop.{0,24}biceps)\b|\bbiceps\b(?!.*\b(hombro|shoulder|surco|speed|yergason|uppercut)\b)/,
+  },
+  {
+    ids: ["speed", "yergason", "uppercut"],
+    re: /\b(bicipital|surco bicipital|biceps (de |del )?hombro|speed|yergason|uppercut)\b/,
+  },
+  {
     ids: CLINICAL_TEST_REGION_GROUPS.find((g) =>
       g.label.startsWith("Columna")
     )!.ids,
@@ -1321,7 +1392,7 @@ const ZONE_QUERY_PATTERNS: readonly { ids: readonly string[]; re: RegExp }[] = [
   {
     ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label.startsWith("Muñeca"))!
       .ids,
-    re: /\b(muneca|wrist|mano|hand|carpo|carpal)\b/,
+    re: /\b(muneca|wrist|mano|hand|carpo|carpal|tfcc)\b/,
   },
   {
     ids: CLINICAL_TEST_REGION_GROUPS.find((g) => g.label === "Codo")!.ids,
@@ -1528,6 +1599,65 @@ export function findClinicalTestImage(
   const byId = (id: string) =>
     CLINICAL_TEST_IMAGES.find((t) => t.id === id) ?? null;
 
+  // Shared names (apprehension, Tinel, cajón…): only attach if exactly one
+  // region is named. Bare title → null so we never show the wrong video.
+  const homonymFamilies: {
+    trigger: RegExp;
+    members: { id: string; region: RegExp }[];
+  }[] = [
+    {
+      trigger:
+        /\b(apprehension|aprension|aprehension|relocation|relocacion|reubicacion)\b/,
+      members: [
+        {
+          id: "apprehension",
+          region:
+            /\b(hombro|shoulder|glenohumeral|humeral|manguito|escapul)\b/,
+        },
+        {
+          id: "patellar-apprehension",
+          region: /\b(rodilla|knee|rotul|patel|lca|acl|tibia|femur)\b/,
+        },
+      ],
+    },
+    {
+      trigger: /\btinel\b/,
+      members: [
+        {
+          id: "tinel",
+          region: /\b(muneca|wrist|carpiano|mediano|codo|elbow|cubital)\b/,
+        },
+        {
+          id: "tinel-tarsal",
+          region: /\b(tarsal|tarsiano|pie|plantar|tobillo)\b/,
+        },
+      ],
+    },
+    {
+      trigger: /\b(cajon|drawer)\b/,
+      members: [
+        {
+          id: "anterior-drawer-knee",
+          region: /\b(rodilla|knee|lca|acl)\b/,
+        },
+        {
+          id: "anterior-drawer-ankle",
+          region: /\b(tobillo|ankle|atfl)\b/,
+        },
+        {
+          id: "posterior-drawer-pcl",
+          region: /\b(posterior|lcp|pcl|sag)\b/,
+        },
+      ],
+    },
+  ];
+  for (const family of homonymFamilies) {
+    if (!family.trigger.test(haystack)) continue;
+    const matched = family.members.filter((m) => m.region.test(haystack));
+    if (matched.length === 1) return byId(matched[0].id);
+    return null;
+  }
+
   const kneeIds = new Set(
     CLINICAL_TEST_REGION_GROUPS.find((g) => g.label === "Rodilla")?.ids ?? []
   );
@@ -1536,12 +1666,46 @@ export function findClinicalTestImage(
     /\b(pulgar|thumb|mcp|esquiador|gamekeeper|skier)\b/.test(haystack);
   const kneeCue =
     /\b(rodilla|knee|lca|acl|lcp|pcl|menisc|rotul|patell)\b/.test(haystack);
+  const wristTfccCue =
+    /\b(tfcc|muneca|wrist|lester|fovea|cubital wrist|lado cubital)\b/.test(
+      haystack
+    );
   const elbowCue =
     /\b(codo|elbow|epicondil|lanzador|thrower|milking|moving valgus|plri|chair push|chair sign|biceps distal|hook test)\b/.test(
       haystack
     ) ||
     (/\b(ucl|ligamento colateral cubital|colateral cubital)\b/.test(haystack) &&
       !thumbCue);
+
+  const distalBicepsCue =
+    /\b(biceps distal|distal biceps|prueba del biceps distal|rotura.{0,16}biceps)\b/.test(
+      haystack
+    ) ||
+    (/\bbiceps\b/.test(haystack) &&
+      /\b(codo|squeeze|hook|ruland|pop|supinacion)\b/.test(haystack) &&
+      !/\b(speed|yergason|uppercut|surco|hombro)\b/.test(haystack));
+
+  // Distal biceps is squeeze. Never attach Press test (TFCC) or hip/ankle squeeze.
+  if (distalBicepsCue && !/\bhook\b/.test(normalized)) {
+    return byId("biceps-squeeze");
+  }
+  if (/\bhook\b/.test(normalized) && (distalBicepsCue || /\bbiceps\b/.test(haystack))) {
+    return byId("hook-test");
+  }
+
+  // "Press test" is Lester TFCC (muñeca). Elbow chair-press → chair-push. Never biceps.
+  if (
+    /\bpress test\b/.test(normalized) ||
+    (normalized.includes("lester") && normalized.includes("press"))
+  ) {
+    if (/\bbiceps\b/.test(haystack) && !wristTfccCue) {
+      return byId("biceps-squeeze");
+    }
+    if (elbowCue && !wristTfccCue && !/\b(tfcc|lester)\b/.test(normalized)) {
+      return byId("chair-push-plri");
+    }
+    return byId("press-test");
+  }
 
   const ankleCue =
     normalized.includes("tobillo") ||

@@ -46,6 +46,26 @@ export function guestNameStorageKey(userId: string): string {
   return `aikinora-guest-named:${userId}`;
 }
 
+/** Set on /unirse after redeem so /fisioterapia can paint the name gate immediately. */
+export const INVITE_NAME_GATE_HINT = "aikinora-invite-needs-name";
+
+export function readInviteNameGateHint(): boolean {
+  try {
+    return sessionStorage.getItem(INVITE_NAME_GATE_HINT) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function writeInviteNameGateHint(needed: boolean) {
+  try {
+    if (needed) sessionStorage.setItem(INVITE_NAME_GATE_HINT, "1");
+    else sessionStorage.removeItem(INVITE_NAME_GATE_HINT);
+  } catch {
+    // ignore private-mode storage errors
+  }
+}
+
 /**
  * True when the guest has entered a real name (not the auto-filled
  * `guest.<uuid>` local-part from handle_new_user / email).

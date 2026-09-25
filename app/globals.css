@@ -64,6 +64,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Visible chip text lives in CSS, so browser translate cannot stack a second copy. */
+.chip-label {
+  display: inline;
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+.chip-label::before {
+  content: attr(data-label);
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+.chip-label font {
+  display: none !important;
+}
+
 ::selection {
   background: #dbeafe;
   color: #1e40af;

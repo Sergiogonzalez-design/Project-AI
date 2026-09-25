@@ -168,8 +168,10 @@ export async function verifyMetaSignature(
 ): Promise<boolean> {
   const secret = process.env.WHATSAPP_APP_SECRET?.trim();
   if (!secret) {
-    // Allow unverified traffic only when secret is not configured (dev).
-    return process.env.NODE_ENV !== "production";
+    // Dev: allow. Production: only if explicitly opted in during Meta bootstrap
+    // (set WHATSAPP_ALLOW_UNSIGNED_WEBHOOK=1 until APP_SECRET is configured).
+    if (process.env.NODE_ENV !== "production") return true;
+    return process.env.WHATSAPP_ALLOW_UNSIGNED_WEBHOOK === "1";
   }
   if (!signatureHeader?.startsWith("sha256=")) return false;
   const expected = signatureHeader.slice("sha256=".length);

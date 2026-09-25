@@ -361,7 +361,7 @@ export const translations = {
       shareInviteMessage:
         "Abre este enlace para la consulta previa en AIKinora. Te pedirán tu nombre; no hace falta introducir ningún código:\n{link}",
       shareWhatsAppMessage:
-        "Abre este enlace para la consulta previa por WhatsApp:\n{link}",
+        "Abre este enlace de WhatsApp. El asistente ya sabe quién es tu fisio y te pedirá tu nombre:\n{link}",
       physiosLead:
         "Genera un código o enlace para que un fisioterapeuta cree su cuenta. El código funciona al registrarse (Crear cuenta → Fisio).",
       emailOptional: "Correo del fisioterapeuta (opcional)",
@@ -763,7 +763,7 @@ export const translations = {
       shareInviteMessage:
         "Open this link for the pre-visit consult in AIKinora. You'll be asked for your name; no code needed:\n{link}",
       shareWhatsAppMessage:
-        "Open this link for the pre-visit consult on WhatsApp:\n{link}",
+        "Open this WhatsApp link. The assistant already knows your physio and will ask for your name:\n{link}",
       physiosLead:
         "Generate a code or link so a physiotherapist can create their account. The code works at signup (Create account → Physio).",
       emailOptional: "Physiotherapist email (optional)",

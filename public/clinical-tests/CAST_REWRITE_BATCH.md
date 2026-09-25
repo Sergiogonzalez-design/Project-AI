@@ -39,7 +39,7 @@ Same two people as Cozen: grey crew-neck patient + medium-blue V-neck scrubs phy
 | 3 | resisted-hip-flexion | `resisted-hip-flexion.png` | `resisted-hip-flexion.mp4` |
 | 4 | resisted-abduction | `resisted-abduction.png` | `resisted-abduction.mp4` |
 | 5 | log-roll | `log-roll.png` | `log-roll.mp4` |
-| 6 | stinchfield | `stinchfield.png` | `stinchfield.mp4` |
+| 6 | stinchfield | `stinchfield-start.png` + last `stinchfield-end.png` | `stinchfield.mp4` |
 | 7 | hip-scour | `hip-scour.png` | `hip-scour.mp4` |
 | 8 | noble-compression | `noble-compression.png` | `noble-compression.mp4` |
 | 9 | ober-test | `ober-test.png` | `ober-test.mp4` |
@@ -53,7 +53,7 @@ Same two people as Cozen: grey crew-neck patient + medium-blue V-neck scrubs phy
 | 17 | active-slr | `active-slr.png` | `active-slr.mp4` |
 | 18 | syndesmosis-squeeze | `syndesmosis-squeeze.png` | `syndesmosis-squeeze.mp4` |
 | 19 | kleiger | `kleiger.png` | `kleiger.mp4` |
-| 20 | talar-tilt | `talar-tilt.png` | `talar-tilt.mp4` |
+| 20 | talar-tilt (×3) | `talar-tilt-atfl/deltoid/cfl.png` | `talar-tilt-*.mp4` |
 | 21 | flexion-rotation | `flexion-rotation.png` | `flexion-rotation.mp4` |
 | 22 | bakody | `bakody.png` | `bakody.mp4` |
 | 23 | chair-push-plri | `chair-push-plri-start.png` | `chair-push-plri.mp4` |
@@ -118,10 +118,26 @@ Using this illustration as reference, animate the passive log roll test: patient
 
 ## 6. stinchfield
 
-**Image:** `stinchfield.png` · **Out:** `stinchfield.mp4`
+**First frame:** `stinchfield-start.png` · **Last frame:** `stinchfield-end.png` · **Out:** `stinchfield.mp4`  
+**Camera lock:** high-angle looking from the patient's HEAD toward the FEET (Physiotutors POV).  
+**Motion lock:** External Rotation Stinchfield — straight leg in ER; patient pushes UP against resistance at the ankle.
 
 ```
-Using this illustration as reference, animate the Stinchfield test: patient supine lifts a straight leg about 20–30°; clinician applies controlled downward resistance on the distal thigh; brief hold then lower. Optional soft cyan highlight on the deep anterior hip. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate the External Rotation Stinchfield test EXACTLY like Physiotutors.
+
+CAMERA (CRITICAL): keep the SAME high-angle view looking DOWN the body from near the patient's HEAD toward the FEET. Do NOT switch to a side-on camera.
+
+SETUP: patient SUPINE. Tested leg STRAIGHT (knee extended). Hip in EXTERNAL ROTATION — foot / toes point OUTWARD to the side. Clinician grips the distal leg JUST ABOVE THE ANKLE with both hands.
+
+START (0–1s): leg on/near the table in ER; clinician ready to resist.
+
+MOTION (1–7s): patient ACTIVELY LIFTS / PUSHES the straight leg UPWARD (hip flexion) against the clinician's DOWNWARD resistance at the ankle — patient “apretar hacia arriba”. Keep knee straight and keep EXTERNAL ROTATION (toes stay out). Rise about 20–30°, brief hold.
+
+END (7–8s): hold the elevated resisted position in ER.
+
+FORBIDDEN: side camera; bend the knee; foot pointing to the ceiling without ER; resistance on the thigh only; passive flop. Camera steady, 8 seconds, no logos, no captions, no watermarks.
+
+CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people.
 ```
 
 ---
@@ -190,16 +206,27 @@ Using this illustration as reference, animate the Ober test: patient side-lying 
 ## 10. patellar-apprehension
 
 **Image:** `patellar-apprehension.png` · **Out:** `patellar-apprehension.mp4`  
-**Motion lock:** push patella laterally (hacia fuera).
+**Motion lock:** thumbs on the **rótula / patella bone** → push laterally (hacia fuera).  
+**FORBIDDEN:** pressing the **tendón rotuliano** (patellar tendon below the kneecap).
 
 ```
-Using this illustration as reference, animate the patellar apprehension test (aprehensión rotuliana).
+Using this illustration as reference, animate the patellar apprehension test (aprehensión rotuliana). Photorealistic. NO anatomical drawings, NO skeleton overlays, NO arrows, NO captions.
 
-SETUP: patient SUPINE, knee slightly flexed (~20–30°). Clinician places thumbs (or fingers) on the MEDIAL edge of the patella (rótula).
+SETUP: patient SUPINE. Knee ONLY slightly flexed (~20–30° — almost straight, NOT 90°). Heel on the table. Close three-quarter view of the anterior knee so the kneecap is clearly visible.
+
+HANDS — CRITICAL (error if wrong):
+- Clinician presses with BOTH THUMBS directly on the MEDIAL (inner) BORDER of the PATELLA / KNEECAP BONE (rótula).
+- Contact is ON THE HARD OVAL OF THE KNEECAP itself — apretar la RÓTULA.
+- Fingers may lightly stabilize the lateral side of the patella, but force is thumbs on the patella bone.
+
+FORBIDDEN HAND CONTACT:
+- Do NOT press / push / squeeze the PATELLAR TENDON (tendón rotuliano) — the soft vertical band BELOW the kneecap down to the tibial tuberosity.
+- Do NOT put main force on the shin, tibial tuberosity, or soft tissue under the inferior pole of the patella.
+- Do NOT grab the calf as the main action.
 
 CRITICAL MOTION — RÓTULA HACIA FUERA:
-- Clearly PUSH / glide the PATELLA LATERALLY (hacia fuera — toward the outer side of the knee).
-- The only main movement is the kneecap sliding outward. Do NOT push the patella inward (medially). Do NOT move the whole leg as the main action.
+- Clearly PUSH / glide the PATELLA BONE LATERALLY (hacia fuera — toward the outer side of the knee).
+- The only main movement is the kneecap sliding outward under the thumbs. Do NOT push inward. Do NOT move the whole leg as the main action.
 
 MOTION (1–7s): gentle steady lateral push of the patella → brief hold (apprehension moment) → release back to center. Calm, controlled. Do NOT dramatize pain or dislocation. No cyan overlays required.
 
@@ -210,22 +237,29 @@ CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult ma
 
 ## 11. dial-test
 
-**Image:** `dial-test.png` · **Out:** `dial-test.mp4`  
-**Motion lock:** prone, both knees ~90°, external rotation of both feet.
+**First frame:** `dial-test-start.png` (prone, knees STRAIGHT)  
+**Last frame:** `dial-test-end.png` (prone, knees ~90°, dial ER) · **Out:** `dial-test.mp4`  
+**Catalog still:** `dial-test.png` (= end pose)
 
 ```
-Using this illustration as reference, animate the dial test (Loomer) for posterolateral corner / rotational instability.
+Using this illustration as the FIRST frame (and the matching END still as the LAST frame if available), animate the dial test (Loomer) for posterolateral corner EXACTLY like Physiotutors. Photorealistic. NO anatomical drawings, NO skeleton overlays, NO arrows, NO captions.
 
-CRITICAL SETUP — KNEES ALMOST 90°:
-- Patient PRONE (face down) on the table.
-- BOTH knees flexed to nearly 90° — thighs on the table, lower legs pointing almost VERTICALLY upward (like Physiotutors). Do NOT use 30° as the main position.
-- Clinician stands at the foot of the table, both hands cupping the patient's feet / heels.
+CAMERA: keep the SAME side / three-quarter view of the legs. Do NOT switch to overhead.
 
-MOTION (1–7s): gently EXTERNALLY ROTATE both feet / tibias outward together (dial motion — feet turn out like opening a dial), hold briefly to compare sides, slight return. Keep the knees locked near 90° the whole time — do not straighten or drop the lower legs.
+SEQUENCE (8s) — CRITICAL ORDER:
+1) START (0–1.5s): patient PRONE (face down). BOTH knees FULLY STRAIGHT / extended flat on the table (0°). Clinician at the foot of the table holding / ready at the feet.
+2) BEND (1.5–3.5s): clinician passively flexes BOTH knees together up to nearly 90° — thighs stay on the table, lower legs rise to point almost VERTICALLY upward. Smooth, controlled.
+3) DIAL (3.5–7s) — BILATERAL EXTERNAL ROTATION (CRITICAL):
+   With knees locked near 90°, BOTH hands cup the heels/feet.
+   Rotate BOTH tibias / feet EXTERNALLY so the feet OPEN AWAY from each other (like opening a dial / a V):
+   - Patient's RIGHT foot: toes turn OUTWARD to the patient's right (away from midline).
+   - Patient's LEFT foot: toes turn OUTWARD to the patient's left (away from midline) — MIRROR of the right foot, OPPOSITE direction, same external rotation.
+   Heels stay relatively close; toes / forefeet spread apart. Brief hold to compare sides.
+4) END (7–8s): hold the 90° pose with BOTH feet still externally rotated open (V shape). Do NOT let either foot turn inward at the end.
 
-FORBIDDEN: knees at only ~30° as the main pose; supine patient; internal rotation as the main move. No cyan overlays required.
+FORBIDDEN: left foot turning the SAME way as the right (that makes left INTERNAL); left foot collapsing toward midline; only one foot rotating; starting already at 90° with no bend; supine; knees only ~30°; dropping legs straight during dial.
 
-CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people, logos, watermarks. Camera steady, 8 seconds.
 ```
 
 ---
@@ -317,31 +351,72 @@ Using this illustration as reference, animate the active straight leg raise (ASL
 
 ## 18. syndesmosis-squeeze
 
-**Image:** `syndesmosis-squeeze.png` · **Out:** `syndesmosis-squeeze.mp4`
+**Image:** `syndesmosis-squeeze.png` · **Out:** `syndesmosis-squeeze.mp4`  
+**Motion lock:** BOTH hands compress **toda la tibia y el peroné** (bones together). ≠ Thompson.
 
 ```
-Using this illustration as reference, animate the syndesmosis (tibiofibular) squeeze test: patient supine; clinician compresses the mid-calf tibia and fibula together with both hands, holds briefly, then releases; do not squeeze the Achilles tendon or calf belly like a Thompson test. Optional soft cyan highlight on the distal tibiofibular syndesmosis. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate the syndesmosis squeeze test (squeeze de sindesmosis / high ankle). Photorealistic. NO anatomical drawings, NO skeleton overlays, NO arrows, NO captions.
+
+SETUP: patient SUPINE. Tested lower leg accessible (knee slightly flexed or extended). Focus on the MID-CALF / mid-shaft of the lower leg — between knee and ankle.
+
+HANDS — CRITICAL (error if wrong):
+- Clinician uses BOTH hands to compress TODA LA TIBIA Y EL PERONÉ.
+- Hands at the SAME HEIGHT on mid-calf, opposite sides of the leg (like a clamp / vise).
+- One hand presses the MEDIAL TIBIA (shin bone); the other presses the LATERAL FIBULA (peroné).
+- Squeeze the two long bones firmly TOWARD EACH OTHER across the full width of the leg — clear bilateral bone-to-bone compression with both palms wrapping the shafts.
+- Hold the squeeze briefly → release.
+
+FORBIDDEN:
+- Thompson Achilles soft-calf squeeze (only soft tissue → foot plantarflexes). This is NOT Thompson.
+- One hand only.
+- Hands only on the knee or only on the ankle/foot.
+- Squeezing soft calf belly without compressing tibia + fibula bones.
+
+MOTION (1–7s): place both hands → firm squeeze of tibia+fibula together → brief hold → release. Calm, controlled.
+
+CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 ```
 
 ---
 
 ## 19. kleiger
 
-**Image:** `kleiger.png` · **Out:** `kleiger.mp4`
+**Image:** `kleiger.png` · **Out:** `kleiger.mp4`  
+**Motion lock:** fisio **empuja de dentro a fuera** (rotación externa del pie).
 
 ```
-Using this illustration as reference, animate the Kleiger / external rotation test: patient seated with the lower leg hanging; clinician stabilizes the tibia and gently externally rotates the foot (optionally with slight dorsiflexion); brief hold then release. Optional soft cyan highlight on the anterior tibiofibular syndesmosis. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate the Kleiger / external rotation test (rotación externa / sindesmosis). Photorealistic. NO anatomical drawings, NO skeleton overlays, NO arrows, NO captions.
+
+SETUP: patient seated on the table edge (or semi-reclined) with the tested lower leg free. Clinician faces the foot.
+
+HANDS:
+- One hand stabilizes the distal TIBIA / lower leg so the shin does NOT rotate.
+- The other hand grips the FOOT and HEEL (midfoot + calcaneus).
+
+CRITICAL MOTION — EMPUJAR DE DENTRO A FUERA (error if missing):
+- The clinician clearly PUSHES / rotates the foot FROM INSIDE (medial) TO OUTSIDE (lateral) — “de dentro a fuera”.
+- External rotation of the foot: toes and forefoot swing outward while the tibia stays fixed.
+- Optional slight dorsiflexion while pushing outward.
+- Visible force direction: medial → lateral on the foot. Brief hold at end-range outward rotation → gentle return.
+
+FORBIDDEN: pushing inward (de fuera a dentro); inversion; only moving the heel without rotating the foot outward; Thompson; syndesmosis squeeze.
+
+MOTION (1–7s): stabilize tibia → push foot de dentro a fuera (external rotation) → brief hold → release. Calm, controlled.
+
+CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 ```
 
 ---
 
-## 20. talar-tilt
+## 20. talar-tilt (3 clips — see TALAR_TILT_3_DAVINCI.md)
 
-**Image:** `talar-tilt.png` · **Out:** `talar-tilt.mp4`
+| Variant | Image | Out |
+|---------|-------|-----|
+| ATFL / talón dentro | `talar-tilt-atfl.png` | `talar-tilt-atfl.mp4` |
+| Deltoideo / talón fuera | `talar-tilt-deltoid.png` | `talar-tilt-deltoid.mp4` |
+| CFL / dorsiflexión | `talar-tilt-cfl.png` | `talar-tilt-cfl.mp4` |
 
-```
-Using this illustration as reference, animate the talar tilt test: clinician stabilizes the lower leg and gently inverts the calcaneus/talus to stress the lateral ankle ligaments; brief hold then release; calm controlled motion. Optional soft cyan highlight on the lateral ankle / CFL. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
-```
+Full prompts: **`TALAR_TILT_3_DAVINCI.md`**.
 
 ---
 

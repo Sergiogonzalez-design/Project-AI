@@ -1,10 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  buildPhysioLinkedPostQuestionnaireMessage,
-  physioDisplayName,
-} from "@/lib/physio-linked-welcome";
-import {
-  formatFunctionalTestAnswers,
   splitFunctionalTests,
   type FunctionalTestItem,
 } from "@/lib/functional-test-answers";
@@ -13,11 +8,27 @@ import {
   FUNCTIONAL_TEST_QUESTIONS,
   resolveFunctionalRegion,
 } from "@/lib/consulta-functional-tests";
-import { extractInviteCodeFromWhatsAppText, normalizeInviteCode } from "@/lib/physio-invite";
+import {
+  extractInviteCodeFromWhatsAppText,
+  isWhatsAppInvitePrefill,
+} from "@/lib/physio-invite";
 import { bodyAreaLabelFromText } from "@/lib/consulta-triage";
 import {
+  buildWhatsAppAlreadyComplete,
+  buildWhatsAppAskNameAgain,
+  buildWhatsAppComplete,
+  buildWhatsAppIntakeMore,
+  buildWhatsAppIntakePrompt,
+  buildWhatsAppNameWelcome,
+  buildWhatsAppNeedCode,
+  buildWhatsAppQuestionnaireIntro,
+  buildWhatsAppRestartWithoutCode,
+} from "./copy";
+import {
   createWhatsAppGuestPatient,
+  resolveBindingForPhone,
   resolveInviteCode,
+  type ResolvedInvite,
 } from "./invite-resolve";
 import {
   applyAnswer,
@@ -48,12 +59,6 @@ function replies(
 
 function text(t: string): WhatsAppOutbound {
   return { type: "text", text: t };
-}
-
-function functionalPromptList(tests: FunctionalTestItem[]): string {
-  return tests
-    .map((t) => `${t.n}. ${t.prompt}`)
-    .join("\n");
 }
 
 function buildFunctionalTests(
@@ -90,12 +95,6 @@ async function startFunctionalPhase(
   bodyArea: string
 ): Promise<{ session: WhatsAppConsultSession; out: WhatsAppOutbound[] }> {
   const tests = buildFunctionalTests(bodyArea);
-  const msg = buildPhysioLinkedPostQuestionnaireMessage({
-    physioName: session.state.physioName,
-    aiText: `Pruebas funcionales\n${functionalPromptList(tests)}`,
-    bodyArea,
-    language: "es",
-  });
   const first = tests[0];
   const updated =
     (await mergeSessionState(
@@ -111,20 +110,130 @@ async function startFunctionalPhase(
       { phase: "functional" }
     )) ?? session;
 
-  const out: WhatsAppOutbound[] = [
-    text(msg.split(/\n\nPruebas/)[0]?.trim() || msg),
-  ];
-  if (first) {
-    out.push({
+  if (!first) {
+    return { session: updated, out: [] };
+  }
+  return {
+    session: updated,
+    out: [
+      {
+        type: "buttons",
+        text: `Prueba 1/${tests.length}:\n${first.prompt}`,
+        buttons: [
+          { id: "fn:si", title: "Sí" },
+          { id: "fn:no", title: "No" },
+        ],
+      },
+    ],
+  };
+}
+
+async function attachBindingAndWelcome(
+  admin: SupabaseClient,
+  session: WhatsAppConsultSession,
+  resolved: ResolvedInvite
+): Promise<{ session: WhatsAppConsultSession; out: WhatsAppOutbound[] }> {
+  const updated =
+    (await mergeSessionState(
+      admin,
+      session,
+      {
+        physioName: resolved.physioName,
+        clinicName: resolved.clinicName,
+      },
+      {
+        phase: "name",
+        invite_code: resolved.inviteCode || session.invite_code,
+        physio_id: resolved.physioId,
+        clinic_id: resolved.clinicId,
+      }
+    )) ?? session;
+
+  return {
+    session: updated,
+    out: replies(
+      text(
+        buildWhatsAppNameWelcome({
+          physioName: resolved.physioName,
+          clinicName: resolved.clinicName,
+        })
+      )
+    ),
+  };
+}
+
+async function attachInviteAndWelcome(
+  admin: SupabaseClient,
+  session: WhatsAppConsultSession,
+  code: string
+): Promise<{ session: WhatsAppConsultSession; out: WhatsAppOutbound[] } | { error: string }> {
+  const resolved = await resolveInviteCode(admin, code);
+  if ("error" in resolved) return { error: resolved.error };
+  return attachBindingAndWelcome(admin, session, resolved);
+}
+
+async function attachRememberedOrAskCode(
+  admin: SupabaseClient,
+  session: WhatsAppConsultSession,
+  phone: string,
+  fallback: string
+): Promise<WhatsAppOutbound[]> {
+  const remembered = await resolveBindingForPhone(admin, phone);
+  if (remembered) {
+    const started = await attachBindingAndWelcome(admin, session, remembered);
+    return started.out;
+  }
+  return replies(text(fallback));
+}
+
+function resumeCurrentPrompt(
+  session: WhatsAppConsultSession
+): WhatsAppOutbound[] {
+  if (session.phase === "name") {
+    return replies(
+      text(
+        buildWhatsAppNameWelcome({
+          physioName: session.state.physioName,
+          clinicName: session.state.clinicName,
+        })
+      )
+    );
+  }
+  if (session.phase === "intake") {
+    return replies(
+      text(buildWhatsAppIntakePrompt(session.state.displayName || "de nuevo"))
+    );
+  }
+  if (session.phase === "questionnaire") {
+    const part = session.state.questionnairePart || "generic";
+    const answers = session.state.answers ?? {};
+    const q =
+      (session.state.currentQuestionId &&
+        getPartDriver(part)
+          .getVisible(answers)
+          .find((item) => item.id === session.state.currentQuestionId)) ||
+      nextUnansweredQuestion(part, answers);
+    return q
+      ? replies(questionToOutbound(q))
+      : replies(text(buildWhatsAppIntakeMore()));
+  }
+  if (session.phase === "functional") {
+    const tests = session.state.functionalTests ?? [];
+    const idx = session.state.functionalIndex ?? 0;
+    const current = tests[idx];
+    if (!current) {
+      return replies(text(buildWhatsAppAlreadyComplete()));
+    }
+    return replies({
       type: "buttons",
-      text: `Prueba 1/${tests.length}:\n${first.prompt}`,
+      text: `Prueba ${idx + 1}/${tests.length}:\n${current.prompt}`,
       buttons: [
         { id: "fn:si", title: "Sí" },
         { id: "fn:no", title: "No" },
       ],
     });
   }
-  return { session: updated, out };
+  return replies(text(buildWhatsAppNeedCode()));
 }
 
 /**
@@ -162,11 +271,21 @@ export async function handleWhatsAppInbound(
   const rawText = (inbound.text || "").trim();
   const buttonReply = parseOptionReply(rawText, inbound.buttonId);
 
-  // Restart command — any non-complete phase, or complete + keyword
+  const invitePrefill = isWhatsAppInvitePrefill(rawText, session.invite_code);
+  const incomingCode = extractInviteCodeFromWhatsAppText(rawText);
+
+  // Restart: keep the same fisio/clinic from the invite link when possible.
+  // Do not treat a body-area word ("hombro") as a new invite code.
   const wantsRestart = /^(hola|hi|hello|reiniciar|empezar|start|reset)$/i.test(
     rawText
   );
-  if (wantsRestart && session.phase !== "idle" && session.phase !== "awaiting_code") {
+  if (
+    (wantsRestart || invitePrefill) &&
+    session.phase !== "idle" &&
+    session.phase !== "awaiting_code" &&
+    session.phase !== "name"
+  ) {
+    const prevCode = incomingCode || session.invite_code;
     if (!session.completed_at) {
       await mergeSessionState(
         admin,
@@ -176,94 +295,67 @@ export async function handleWhatsAppInbound(
       );
     }
     session = (await createSession(admin, phone, { phase: "idle" })) ?? session;
-    return replies(
-      text(
-        "Empezamos de nuevo. Envíame el código de tu fisioterapeuta (o abre el enlace de WhatsApp que te compartió)."
-      )
+    if (prevCode) {
+      const started = await attachInviteAndWelcome(admin, session, prevCode);
+      if ("error" in started) return replies(text(started.error));
+      return started.out;
+    }
+    return attachRememberedOrAskCode(
+      admin,
+      session,
+      phone,
+      buildWhatsAppRestartWithoutCode()
     );
   }
 
   if (session.phase === "complete") {
-    return replies(
-      text(
-        "Tu consulta previa ya está completa. Tu fisioterapeuta puede ver el informe en AIKinora. Si necesitas otra consulta, escribe *reiniciar* o pide un código nuevo."
-      )
-    );
+    return replies(text(buildWhatsAppAlreadyComplete()));
   }
 
   // --- idle / awaiting_code ---
   if (session.phase === "idle" || session.phase === "awaiting_code") {
-    const code =
-      extractInviteCodeFromWhatsAppText(rawText) ||
-      (session.invite_code ?? "");
-    if (!code) {
-      session =
-        (await mergeSessionState(admin, session, {}, { phase: "awaiting_code" })) ??
-        session;
-      return replies(
-        text(
-          "¡Hola! Soy Physio, el asistente de fisioterapia de AIKinora.\n\nPara empezar la consulta previa, envíame el código de tu fisioterapeuta (o abre el enlace de WhatsApp que te compartió)."
-        )
-      );
-    }
-
-    const resolved = await resolveInviteCode(admin, code);
-    if ("error" in resolved) {
-      return replies(text(resolved.error));
+    const code = incomingCode || session.invite_code || "";
+    if (code) {
+      const started = await attachInviteAndWelcome(admin, session, code);
+      if ("error" in started) return replies(text(started.error));
+      return started.out;
     }
 
     session =
-      (await mergeSessionState(
-        admin,
-        session,
-        {
-          physioName: resolved.physioName,
-          clinicName: resolved.clinicName,
-        },
-        {
-          phase: "name",
-          invite_code: resolved.inviteCode,
-          physio_id: resolved.physioId,
-          clinic_id: resolved.clinicId,
-        }
-      )) ?? session;
-
-    const who = physioDisplayName(resolved.physioName, "es");
-    const clinicBit = resolved.clinicName ? ` (${resolved.clinicName})` : "";
-    return replies(
-      text(
-        `¡Hola! Soy Physio, el asistente de fisioterapia de AIKinora.\n\n${who}${clinicBit} te ha pedido que completes esta consulta previa conmigo. En unos minutos reuniré lo esencial para que pueda preparar mejor tu cita.\n\n¿Cómo te llamas? (nombre y apellidos)`
-      )
+      (await mergeSessionState(admin, session, {}, { phase: "awaiting_code" })) ??
+      session;
+    return attachRememberedOrAskCode(
+      admin,
+      session,
+      phone,
+      buildWhatsAppNeedCode()
     );
   }
 
   // --- name ---
   if (session.phase === "name") {
-    const name = rawText.replace(/\*/g, "").trim();
-    // Only reject the WhatsApp invite prefill — NOT real names.
-    // extractInviteCodeFromWhatsAppText matches any 6+ letter token (e.g. "Sergio").
-    const looksLikeInvitePrefill =
-      /^hola,?\s*quiero hacer la consulta previa/i.test(name) ||
-      (/consulta previa/i.test(name) && /c[oó]digo\s*:/i.test(name)) ||
-      (session.invite_code != null &&
-        normalizeInviteCode(name) === normalizeInviteCode(session.invite_code));
-    if (looksLikeInvitePrefill) {
+    if (invitePrefill || wantsRestart) {
       return replies(
         text(
-          "Ese mensaje es el enlace de entrada, no tu nombre.\n\n¿Cómo te llamas? (nombre y apellidos)"
+          buildWhatsAppNameWelcome({
+            physioName: session.state.physioName,
+            clinicName: session.state.clinicName,
+          })
         )
       );
     }
+    const name = rawText.replace(/\*/g, "").trim();
     if (name.length < 2 || name.length > 80) {
-      return replies(text("Escribe tu nombre (al menos 2 letras)."));
+      return replies(text(buildWhatsAppAskNameAgain()));
     }
     if (!session.physio_id) {
-      return replies(text("Falta el vínculo con el fisioterapeuta. Envía el código otra vez."));
+      return replies(text(buildWhatsAppNeedCode()));
     }
 
     const guest = await createWhatsAppGuestPatient(admin, {
       physioId: session.physio_id,
       clinicId: session.clinic_id,
+      clinicName: session.state.clinicName,
       displayName: name,
       phoneE164: phone,
     });
@@ -283,21 +375,18 @@ export async function handleWhatsAppInbound(
         { phase: "intake", patient_id: guest.patientId }
       )) ?? session;
 
-    const welcome = guest.reused
-      ? `Hola de nuevo, ${name}. Continuamos en tu historial de paciente.\n\nCuéntame qué te molesta ahora: dónde duele, cuándo empezó y cómo te afecta.`
-      : `Gracias, ${name}.\n\nCuéntame qué te molesta: dónde duele, cuándo empezó y cómo te afecta.`;
-
-    return replies(text(welcome));
+    return replies(text(buildWhatsAppIntakePrompt(name, guest.reused)));
   }
 
   // --- intake ---
   if (session.phase === "intake") {
-    if (rawText.length < 8) {
-      return replies(
-        text("Cuéntame un poco más (zona, cuándo empezó y cómo te afecta).")
-      );
+    if (invitePrefill) {
+      return resumeCurrentPrompt(session);
     }
     const part = resolveQuestionnairePart(rawText);
+    if (rawText.length < 3 || (rawText.length < 6 && part === "generic")) {
+      return replies(text(buildWhatsAppIntakeMore()));
+    }
     const driver = getPartDriver(part);
     const answers = prefillsWhatsAppSkippedAnswers(driver.defaultAnswers());
     const bodyArea = bodyAreaLabelFromText(rawText) || part;
@@ -331,13 +420,16 @@ export async function handleWhatsAppInbound(
         currentQuestionId: q.id,
       })) ?? session;
     return replies(
-      text("Vamos con unas preguntas cortas para completar el informe."),
+      text(buildWhatsAppQuestionnaireIntro()),
       questionToOutbound(q)
     );
   }
 
   // --- questionnaire ---
   if (session.phase === "questionnaire") {
+    if (invitePrefill) {
+      return resumeCurrentPrompt(session);
+    }
     const part = session.state.questionnairePart || "generic";
     const driver = getPartDriver(part);
     let answers = { ...(session.state.answers ?? driver.defaultAnswers()) };
@@ -448,9 +540,7 @@ export async function handleWhatsAppInbound(
     });
   }
 
-  return replies(
-    text("Escribe *hola* para empezar o envía el código de tu fisioterapeuta.")
-  );
+  return replies(text(buildWhatsAppNeedCode()));
 }
 
 async function finishReport(
@@ -466,10 +556,5 @@ async function finishReport(
       )
     );
   }
-  const who = physioDisplayName(session.state.physioName, "es");
-  return replies(
-    text(
-      `¡Gracias por tu tiempo!\n\n${who} ya tiene el informe de tu consulta previa en AIKinora y podrá prepararse mejor para tu tratamiento.\n\nAIKinora es orientación: no sustituye una valoración presencial.`
-    )
-  );
+  return replies(text(buildWhatsAppComplete(session.state.physioName)));
 }

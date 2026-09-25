@@ -6,14 +6,17 @@
 
 import { CLINICAL_TEST_CDN } from "./clinical-test-cdn";
 
-const VIDEO_CACHE = "v=20260922rkf";
+const VIDEO_CACHE = "v=20260924tt";
 
 /** Test ids that currently have a shipped demo video. */
 export const CLINICAL_TEST_VIDEOS = {
   lachman: `${CLINICAL_TEST_CDN}/videos/lachman.mp4?${VIDEO_CACHE}`,
   "anterior-drawer-knee": `${CLINICAL_TEST_CDN}/videos/anterior-drawer-knee.mp4?${VIDEO_CACHE}`,
   "pivot-shift": `${CLINICAL_TEST_CDN}/videos/pivot-shift.mp4?${VIDEO_CACHE}`,
-  mcmurray: `${CLINICAL_TEST_CDN}/videos/mcmurray.mp4?${VIDEO_CACHE}`,
+  /** Primary McMurray clip = medial (menisco interno). Use getClinicalTestVideoClips for both. */
+  mcmurray: `${CLINICAL_TEST_CDN}/videos/mcmurray-medial.mp4?${VIDEO_CACHE}`,
+  "mcmurray-medial": `${CLINICAL_TEST_CDN}/videos/mcmurray-medial.mp4?${VIDEO_CACHE}`,
+  "mcmurray-lateral": `${CLINICAL_TEST_CDN}/videos/mcmurray-lateral.mp4?${VIDEO_CACHE}`,
   thessaly: `${CLINICAL_TEST_CDN}/videos/thessaly.mp4?${VIDEO_CACHE}`,
   neer: `${CLINICAL_TEST_CDN}/videos/neer.mp4?${VIDEO_CACHE}`,
   "hawkins-kennedy": `${CLINICAL_TEST_CDN}/videos/hawkins-kennedy.mp4?${VIDEO_CACHE}`,
@@ -44,7 +47,11 @@ export const CLINICAL_TEST_VIDEOS = {
   "patellar-apprehension": `${CLINICAL_TEST_CDN}/videos/patellar-apprehension.mp4?${VIDEO_CACHE}`,
   "dial-test": `${CLINICAL_TEST_CDN}/videos/dial-test.mp4?${VIDEO_CACHE}`,
   kleiger: `${CLINICAL_TEST_CDN}/videos/kleiger.mp4?${VIDEO_CACHE}`,
-  "talar-tilt": `${CLINICAL_TEST_CDN}/videos/talar-tilt.mp4?${VIDEO_CACHE}`,
+  /** Primary talar tilt = ATFL / talón hacia dentro. Use getClinicalTestVideoClips for all 3. */
+  "talar-tilt": `${CLINICAL_TEST_CDN}/videos/talar-tilt-atfl.mp4?${VIDEO_CACHE}`,
+  "talar-tilt-atfl": `${CLINICAL_TEST_CDN}/videos/talar-tilt-atfl.mp4?${VIDEO_CACHE}`,
+  "talar-tilt-deltoid": `${CLINICAL_TEST_CDN}/videos/talar-tilt-deltoid.mp4?${VIDEO_CACHE}`,
+  "talar-tilt-cfl": `${CLINICAL_TEST_CDN}/videos/talar-tilt-cfl.mp4?${VIDEO_CACHE}`,
   "syndesmosis-squeeze": `${CLINICAL_TEST_CDN}/videos/syndesmosis-squeeze.mp4?${VIDEO_CACHE}`,
   mulder: `${CLINICAL_TEST_CDN}/videos/mulder.mp4?${VIDEO_CACHE}`,
   "tinel-tarsal": `${CLINICAL_TEST_CDN}/videos/tinel-tarsal.mp4?${VIDEO_CACHE}`,
@@ -130,4 +137,55 @@ export function getClinicalTestVideoSrc(testId: string): string | null {
   const alias = CLINICAL_TEST_VIDEO_ALIASES[testId];
   if (alias) return CLINICAL_TEST_VIDEOS[alias];
   return null;
+}
+
+export type ClinicalTestVideoClip = {
+  id: string;
+  label: string;
+  src: string;
+};
+
+/** Multi-clip demos (e.g. McMurray, talar tilt). Falls back to a single clip. */
+export function getClinicalTestVideoClips(testId: string): ClinicalTestVideoClip[] {
+  if (testId === "mcmurray" || testId === "mcmurray-medial" || testId === "mcmurray-lateral") {
+    return [
+      {
+        id: "mcmurray-medial",
+        label: "Menisco interno",
+        src: CLINICAL_TEST_VIDEOS["mcmurray-medial"],
+      },
+      {
+        id: "mcmurray-lateral",
+        label: "Menisco externo",
+        src: CLINICAL_TEST_VIDEOS["mcmurray-lateral"],
+      },
+    ];
+  }
+  if (
+    testId === "talar-tilt" ||
+    testId === "talar-tilt-atfl" ||
+    testId === "talar-tilt-deltoid" ||
+    testId === "talar-tilt-cfl"
+  ) {
+    return [
+      {
+        id: "talar-tilt-atfl",
+        label: "Talón hacia dentro (LPAA / ATFL)",
+        src: CLINICAL_TEST_VIDEOS["talar-tilt-atfl"],
+      },
+      {
+        id: "talar-tilt-deltoid",
+        label: "Talón hacia fuera (deltoideo)",
+        src: CLINICAL_TEST_VIDEOS["talar-tilt-deltoid"],
+      },
+      {
+        id: "talar-tilt-cfl",
+        label: "Flexión dorsal (peroneocalcáneo / CFL)",
+        src: CLINICAL_TEST_VIDEOS["talar-tilt-cfl"],
+      },
+    ];
+  }
+  const src = getClinicalTestVideoSrc(testId);
+  if (!src) return [];
+  return [{ id: testId, label: "", src }];
 }

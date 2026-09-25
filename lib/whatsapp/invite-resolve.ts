@@ -10,6 +10,24 @@ export type ResolvedInvite = {
   inviteCode: string;
 };
 
+async function clinicDisplayName(
+  admin: SupabaseClient,
+  clinicId: string | null,
+  fallback: string | null
+): Promise<string | null> {
+  if (clinicId) {
+    const { data } = await admin
+      .from("clinics")
+      .select("name")
+      .eq("id", clinicId)
+      .maybeSingle();
+    const name = typeof data?.name === "string" ? data.name.trim() : "";
+    if (name) return name;
+  }
+  const fb = fallback?.trim();
+  return fb || null;
+}
+
 /** Same invite lookup as guest-physio (physio code or clinic patient code). */
 export async function resolveInviteCode(
   admin: SupabaseClient,
@@ -32,11 +50,16 @@ export async function resolveInviteCode(
   }
 
   if (physio?.id) {
+    const clinicId = (physio.clinic_id as string | null) ?? null;
     return {
       physioId: physio.id,
-      clinicId: (physio.clinic_id as string | null) ?? null,
+      clinicId,
       physioName: physio.display_name ?? null,
-      clinicName: physio.clinic_name ?? null,
+      clinicName: await clinicDisplayName(
+        admin,
+        clinicId,
+        physio.clinic_name as string | null
+      ),
       inviteCode: normalized,
     };
   }
@@ -97,12 +120,108 @@ export async function resolveInviteCode(
   };
 }
 
+export async function resolvePhysioBinding(
+  admin: SupabaseClient,
+  physioId: string,
+  fallbackInvite?: string | null
+): Promise<ResolvedInvite | { error: string }> {
+  const { data: physio } = await admin
+    .from("profiles")
+    .select("id, display_name, clinic_name, clinic_id, invite_code")
+    .eq("id", physioId)
+    .eq("account_type", "physio")
+    .maybeSingle();
+
+  if (!physio?.id) {
+    if (fallbackInvite) return resolveInviteCode(admin, fallbackInvite);
+    return { error: "No se encontró al fisioterapeuta." };
+  }
+
+  const clinicId = (physio.clinic_id as string | null) ?? null;
+  const inviteCode =
+    (typeof physio.invite_code === "string" && physio.invite_code.trim()) ||
+    (fallbackInvite ? normalizeInviteCode(fallbackInvite) : "");
+
+  return {
+    physioId: physio.id,
+    clinicId,
+    physioName: physio.display_name ?? null,
+    clinicName: await clinicDisplayName(
+      admin,
+      clinicId,
+      physio.clinic_name as string | null
+    ),
+    inviteCode,
+  };
+}
+
+/**
+ * Returning WhatsApp patient: reuse the last fisio/clinic for this phone
+ * so they never have to type the invite code again after saving the number.
+ */
+export async function resolveBindingForPhone(
+  admin: SupabaseClient,
+  phone: string
+): Promise<ResolvedInvite | null> {
+  const phone_e164 = phone.replace(/\D/g, "");
+  if (phone_e164.length < 8) return null;
+
+  const { data: last } = await admin
+    .from("whatsapp_consult_sessions")
+    .select("invite_code, physio_id")
+    .eq("phone_e164", phone_e164)
+    .or("physio_id.not.is.null,invite_code.not.is.null")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (last?.invite_code) {
+    const byCode = await resolveInviteCode(admin, last.invite_code as string);
+    if (!("error" in byCode)) return byCode;
+  }
+  if (last?.physio_id) {
+    const byPhysio = await resolvePhysioBinding(
+      admin,
+      last.physio_id as string,
+      last.invite_code as string | null
+    );
+    if (!("error" in byPhysio)) return byPhysio;
+  }
+
+  const phoneCandidates = [phone_e164];
+  if (phone_e164.startsWith("34") && phone_e164.length >= 11) {
+    phoneCandidates.push(phone_e164.slice(2));
+  } else if (phone_e164.length === 9) {
+    phoneCandidates.push(`34${phone_e164}`);
+  }
+
+  const { data: patient } = await admin
+    .from("profiles")
+    .select("physio_id")
+    .in("whatsapp_phone", phoneCandidates)
+    .eq("account_type", "patient")
+    .not("physio_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (patient?.physio_id) {
+    const byPhysio = await resolvePhysioBinding(
+      admin,
+      patient.physio_id as string
+    );
+    if (!("error" in byPhysio)) return byPhysio;
+  }
+
+  return null;
+}
+
 /** Create or reuse guest patient linked to physio (shared with web/mobile). */
 export async function createWhatsAppGuestPatient(
   admin: SupabaseClient,
   opts: {
     physioId: string;
     clinicId?: string | null;
+    clinicName?: string | null;
     displayName: string;
     phoneE164: string;
   }
@@ -113,6 +232,7 @@ export async function createWhatsAppGuestPatient(
   const result = await findOrCreateGuestPatient(admin, {
     physioId: opts.physioId,
     clinicId: opts.clinicId,
+    clinicName: opts.clinicName,
     displayName: opts.displayName,
     phoneDigits: opts.phoneE164,
     channel: "whatsapp",

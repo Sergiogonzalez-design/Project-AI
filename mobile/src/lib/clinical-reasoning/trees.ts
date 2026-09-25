@@ -1548,6 +1548,7 @@ const ELBOW_TREE: ClinicalReasoningTree = {
     "resisted-wrist-flexion": "el_resisted_flexion",
     "elbow-flexion-cubital": "el_cubital_flexion",
     "hook-test": "el_hook",
+    "biceps-squeeze": "el_squeeze",
     "moving-valgus": "el_moving_valgus",
     "milking-maneuver": "el_moving_valgus",
     phalen: "el_phalen_hint",
@@ -1723,7 +1724,7 @@ const ELBOW_TREE: ClinicalReasoningTree = {
           rationale: "Trauma + pop + déficit de fuerza.",
         },
       ],
-      { nextNodeId: "el_hook" }
+      { nextNodeId: "el_squeeze" }
     ),
     el_oa_cluster: conclusionNode(
       "el_oa_cluster",
@@ -1866,6 +1867,12 @@ const ELBOW_TREE: ClinicalReasoningTree = {
       ],
       { nextNodeId: "el_cubital_flexion" }
     ),
+    el_squeeze: testNode(
+      "el_squeeze",
+      "biceps-squeeze",
+      branch("el_distal_biceps_cluster", "Sin supinación pasiva al comprimir el vientre"),
+      branch("el_hook", "Hay supinación — complementar con hook")
+    ),
     el_hook: testNode(
       "el_hook",
       "hook-test",
@@ -1896,6 +1903,7 @@ const WRIST_HAND_TREE: ClinicalReasoningTree = {
     "snuffbox-palpation": "wh_snuffbox",
     "thumb-axial-load": "wh_thumb_axial",
     "tfcc-ulnar-load": "wh_tfcc",
+    "press-test": "wh_press",
     "fovea-sign": "wh_fovea",
     "piano-key": "wh_piano_key",
     "watson-scaphoid-shift": "wh_watson",
@@ -2214,7 +2222,13 @@ const WRIST_HAND_TREE: ClinicalReasoningTree = {
       "wh_tfcc",
       "tfcc-ulnar-load",
       branch("wh_tfcc_cluster", "Dolor cubital familiar"),
-      branch("wh_fovea", "Carga cubital no familiar — fóvea/DRUJ")
+      branch("wh_press", "Carga cubital no familiar — press / fóvea")
+    ),
+    wh_press: testNode(
+      "wh_press",
+      "press-test",
+      branch("wh_tfcc_cluster", "Dolor cubital familiar al presionar el borde cubital"),
+      branch("wh_fovea", "Press no familiar — fóvea/DRUJ")
     ),
     wh_fovea: testNode(
       "wh_fovea",

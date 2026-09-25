@@ -9,6 +9,7 @@ import {
 import {
   buildPhysioInviteShareText,
   buildPhysioInviteUrl,
+  buildPhysioWhatsAppInviteShareText,
   buildPhysioWhatsAppInviteUrl,
 } from "@/lib/physio-invite";
 import { staffPatientLabel } from "@/lib/guest-account";
@@ -213,7 +214,7 @@ export default function FisioPatientsPage() {
               : "AIKinora — consulta previa",
           text:
             kind === "wa"
-              ? "Abre este enlace para la consulta previa por WhatsApp:"
+              ? buildPhysioWhatsAppInviteShareText()
               : buildPhysioInviteShareText(),
           url,
         });

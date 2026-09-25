@@ -93,7 +93,8 @@ export function GuestNameGate({ onSaved }: Props) {
       </button>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        translate="no"
+        className="notranslate w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <Image src="/logo-icon.png" alt="AIKinora" width={56} height={56} className="mx-auto mb-4 object-contain" />
         <h2 className="text-center text-lg font-semibold text-slate-900">¿Cómo te llamas?</h2>

@@ -55,7 +55,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "valgus-stress-mcl",
     title: "Estrés en valgo (LCM)",
     procedure:
-      "Supino. Valgo suave a ~30° (aísla más LCM) y a 0° (cápsula/LCA si holgura). Comparar con contralateral. Registrar dolor familiar en LCM y/o apertura medial.",
+      "Supino, pierna COMPLETAMENTE recta (0°). Vista lateral tipo clínica. Una mano en cara lateral de la rodilla empuja hacia dentro; la otra en el tobillo lleva el pie hacia fuera → valgo / LCM.",
     evidenceNote:
       "JOSPT CPG knee ligament (Logerstedt): dolor/holgura → LCM ↑. No inventar grado I–III por dolor solo. Coexiste a menudo con menisco/LCA (tríada).",
   },
@@ -63,7 +63,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "varus-stress-lcl",
     title: "Estrés en varo (LCL)",
     procedure:
-      "Supino. Varo a 0° y ~30°. Comparar con contralateral. Registrar dolor LCL familiar y/o apertura lateral.",
+      "Supino, pierna COMPLETAMENTE recta (0°). Vista lateral tipo clínica. Una mano en cara medial de la rodilla dirige hacia fuera; la otra en el tobillo lleva el pie hacia dentro → varo / LCL.",
     evidenceNote:
       "JOSPT CPG knee ligament: LCL ↑. Varo + hiperextensión → pensar PLC. No confundir con ITB (sobreuso, sin trauma).",
   },
@@ -93,7 +93,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
   },
   "patellar-apprehension": {
     id: "patellar-apprehension",
-    title: "Aprensión rotuliana",
+    title: "Aprensión rotuliana (rodilla)",
     procedure:
       "Empuje lateral suave de la rótula (~20–30°). Positivo si aprensión / «se va» familiar.",
     evidenceNote:
@@ -103,7 +103,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "dial-test",
     title: "Dial test (PLC)",
     procedure:
-      "Prono; rotación externa tibial a 30° y 90°. Comparar lados. Asimetría 30° → PLC ↑; 30°+90° → PLC+LCP ↑.",
+      "Prono. Partir de rodillas en extensión → flexionar ambas a ~90° → rotación externa tibial bilateral (dial) comparando lados. Asimetría a 30° → PLC ↑; a 30°+90° → PLC+LCP ↑ (cualitativo).",
     evidenceNote:
       "LaPrade/Cooper PLC exam — cualitativo. No confirma grado. Multiplanar severa → urgencia.",
   },
@@ -133,9 +133,9 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
   },
   apprehension: {
     id: "apprehension",
-    title: "Apprehension / Relocation",
+    title: "Apprehension / Relocation (hombro)",
     procedure:
-      "Abducción + rotación externa progresiva. Positivo si aprensión; relocation al presionar humeral anterior.",
+      "SUPINO (no sentado). Hombro a 90° de abducción + codo a 90°; rotación externa progresiva mirando aprensión (miedo). Relocation: presión posterior sobre cabeza humeral → alivia. No forzar luxación.",
     evidenceNote:
       "Farber JBJS 2006: aprensión (miedo a que se salga) > dolor solo. Relocation refuerza. Historia de luxación pesa mucho.",
   },
@@ -183,7 +183,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "matles",
     title: "Test de Matles",
     procedure:
-      "Decúbito prono, flexión de rodilla. Pie caído vs. contralateral.",
+      "Prono. Partir con ambas rodillas estiradas → flexionar ambas a ~90° → comparar reposo: un pie en flexión plantar vs el otro en neutro (asimetría sugiere Aquiles).",
     evidenceNote:
       "Complemento de Thompson (ángulo de reposo). Cluster: pop + no puntillas + Thompson. No usar solo.",
   },
@@ -199,7 +199,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "syndesmosis-squeeze",
     title: "Squeeze de sindesmosis",
     procedure:
-      "Comprimir tibia–peroné a mitad de pierna. Dolor tibiofibular anterior alto familiar.",
+      "Ambas manos comprimen tibia y peroné a mitad de pierna (hacia dentro, como una pinza). Dolor tibiofibular anterior alto familiar.",
     evidenceNote:
       "JOSPT ankle CPG: apoyo sindesmosis en cluster. Precisión mixta aislada. ≠ Thompson (Aquiles).",
   },
@@ -207,7 +207,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "kleiger",
     title: "Kleiger / rotación externa",
     procedure:
-      "Rotación externa del pie (± dorsiflexión) estabilizando tibia. Dolor sindesmosis alto familiar.",
+      "Estabilizar tibia y empujar el pie de dentro a fuera (rotación externa, ± dorsiflexión). Dolor sindesmosis alto familiar.",
     evidenceNote:
       "Cluster sindesmosis con squeeze. Cualitativo — no inventar Sn/Sp ni grado.",
   },
@@ -215,15 +215,15 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "talar-tilt",
     title: "Talar tilt",
     procedure:
-      "Inversión del calcáneo/astrágalo estabilizando tibia. Comparar holgura y dolor CFL.",
+      "Tres variantes: (1) talón hacia dentro / inversión (± ligera plantarflexión) → LPAA/ATFL; (2) talón hacia fuera / eversión → deltoideo; (3) pie en dorsiflexión y mover el calcáneo hacia dentro y fuera → peroneocalcáneo/CFL. Estabilizar tibia; comparar holgura y dolor familiar.",
     evidenceNote:
-      "CFL / complejo lateral. Mejor diferido. No inventar grado I–III.",
+      "Complejo lateral + deltoideo. Mejor diferido. No inventar grado I–III ni Sn/Sp.",
   },
   mulder: {
     id: "mulder",
     title: "Test de Mulder",
     procedure:
-      "Comprimir cabezas metatarsianas (± presión en espacio interdigital). Dolor/click familiar antepié.",
+      "Apretar todo el pie / antepié de lado a lado (comprimir todas las cabezas metatarsianas; ± presión interdigital). Dolor/click familiar antepié.",
     evidenceNote:
       "Neuroma/irritación interdigital. Click sin dolor familiar pesa poco. No inventar Sn/Sp.",
   },
@@ -231,7 +231,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "tinel-tarsal",
     title: "Tinel tarsal",
     procedure:
-      "Percusión sobre nervio tibial posterior (maléolo medial). Hormigueo/ardor familiar plantar.",
+      "Golpecitos sobre el nervio tibial posterior en el tobillo medial, un poco más arriba del maléolo (proximal / túnel tarsiano alto). Hormigueo/ardor familiar plantar.",
     evidenceNote:
       "Túnel tarsiano en cluster. No uses Tinel de muñeca. Cualitativo.",
   },
@@ -239,7 +239,7 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "windlass",
     title: "Test de Windlass",
     procedure:
-      "Extensión activa/pasiva del hallux (dedo gordo) con pie en carga o sentado.",
+      "Extender el dedo gordo (hallux) hasta poner la planta / fascia plantar en tensión clara (arco se tensa). Pie en carga o sentado. Dolor familiar en calcáneo medial / fascia.",
     evidenceNote:
       "JOSPT Heel Pain CPG; De Garceau 2003: aislado limitado (negativo no excluye). Cluster: primeros pasos + palpación calcáneo.",
   },
@@ -247,17 +247,17 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
     id: "heel-raise",
     title: "Elevación de talones",
     procedure:
-      "Bilateral y monopodal: elevar talones. Valorar dolor, fuerza y simetría.",
+      "Bipedestación (apoyo ligero si hace falta). Primero bilateral, luego monopodal en la pierna afectada. Elevar al máximo los talones y bajar con control. Observar: altura del talón, dolor, fatiga y simetría (Aquiles/tríceps). Desde atrás, mirar el calcáneo: con tibial posterior competente el talón suele invertirse (varo) al subir; si el talón queda en valgo / «hacia afuera», no invierte, o el arco medial colapsa → compatible con debilidad/disfunción del tibial posterior (integrar en cluster, no aislado).",
     evidenceNote:
-      "Imposible monopodal + pop + Thompson → rotura completa ↑. Dolor con Thompson conservado → tendinopatía (Silbernagel / JOSPT Achilles).",
+      "Doble lectura: (1) Aquiles — imposible monopodal + pop + Thompson → rotura completa ↑; dolor con Thompson conservado → tendinopatía (Silbernagel / JOSPT Achilles). (2) Tibial posterior — fallo de inversión del calcáneo / valgo residual en heel-raise → PTTD ↑ (hipótesis; no Sn/Sp inventados). Miedo/dolor agudo puede imitar déficit.",
   },
   "hop-test": {
     id: "hop-test",
     title: "Hop test",
     procedure:
-      "Salto monopodal en la pierna afectada comparando dolor, control y distancia.",
+      "Salto monopodal en la pierna afectada comparando dolor, control y distancia (y con contralateral). Útil también como cribado de fractura por estrés: dolor óseo focal agudo al aterrizar o imposibilidad de saltar sin apoyo → sospecha ↑ (metatarsianos, tibia, calcáneo u otra zona según localización). NO realizar si no puede apoyar o hay trauma agudo no cribado (Ottawa / red flags).",
     evidenceNote:
-      "Post-trauma: NO si no puede apoyar. Imposible o dolor óseo intenso → fractura/avulsión ↑. También criterio RTS (no es test de labrum).",
+      "Post-trauma agudo: NO si no puede apoyar. Imposible o dolor óseo intenso → fractura/avulsión ↑. En sobreuso (corredor, aumento de carga): hop doloroso localizado → fractura por estrés en diferencial (hipótesis; no Sn/Sp inventados; imagen si cambia manejo). También criterio RTS (no es test de labrum).",
   },
   faber: {
     id: "faber",
@@ -637,11 +637,27 @@ export const CLINICAL_TEST_META: Record<string, ClinicalTestMeta> = {
   },
   "hook-test": {
     id: "hook-test",
-    title: "Hook test (bíceps distal)",
+    title: "Hook test (codo / tendón distal)",
     procedure:
       "Codo flexionado ~90°, antebrazo supinado. Intentar enganchar el tendón distal del bíceps con el índice desde lateral. Ausencia de gancho + déficit de supinación → completa ↑.",
     evidenceNote:
-      "O’Driscoll AJSM 2005 (completas). Hook enganchable no descarta parcial. Squeeze (Ruland) como complemento. No LET.",
+      "O’Driscoll AJSM 2005 (completas). Hook enganchable no descarta parcial. El test canónico de bíceps distal en AIKinora es Biceps squeeze (Ruland). No LET. No Press test (eso es TFCC / muñeca).",
+  },
+  "biceps-squeeze": {
+    id: "biceps-squeeze",
+    title: "Biceps squeeze (bíceps distal)",
+    procedure:
+      "Codo ~60–80° de flexión. Comprimir el vientre del bíceps; la respuesta positiva es SUPINACIÓN pasiva del antebrazo (palma hacia arriba). Sin supinación → rotura distal ↑.",
+    evidenceNote:
+      "Ruland JSES 2005. Prueba de bíceps distal de este catálogo. No confundir con squeeze de cadera, Thompson ni Press test (TFCC).",
+  },
+  "press-test": {
+    id: "press-test",
+    title: "Press test (Lester / TFCC — muñeca cubital)",
+    procedure:
+      "Antebrazo y borde cubital / hipotenar apoyados en la mesa; el paciente presiona hacia abajo (carga cubital). Dolor familiar en el lado cubital de la MUÑECA.",
+    evidenceNote:
+      "Lester JHS 1995 (TFCC). Es de MUÑECA, no de bíceps ni de codo PLRI. Chair push-up = PLRI de codo.",
   },
   "moving-valgus": {
     id: "moving-valgus",

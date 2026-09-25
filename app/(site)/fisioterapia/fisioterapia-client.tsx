@@ -5,7 +5,13 @@ import { GuestNameGate } from "@/components/guest-name-gate";
 import { NavBackButton } from "@/components/nav-back-button";
 import { PhysioCodeGate } from "@/components/physio-code-gate";
 import { createClient } from "@/lib/supabase/client";
-import { guestNameStorageKey, isGuestUser, isGuestDisplayNameSet } from "@/lib/guest-account";
+import {
+  guestNameStorageKey,
+  isGuestUser,
+  isGuestDisplayNameSet,
+  readInviteNameGateHint,
+  writeInviteNameGateHint,
+} from "@/lib/guest-account";
 import { useEffect, useState } from "react";
 
 type LinkedPhysio = {
@@ -21,10 +27,10 @@ export function FisioterapiaClient() {
   const [linked, setLinked] = useState<LinkedPhysio | null>(() =>
     linkedPhysioCache?.physio_id ? linkedPhysioCache : null
   );
-  const [guestMode, setGuestMode] = useState(false);
-  const [needsName, setNeedsName] = useState(false);
-  // Always resolve auth + guest name before showing chat (avoids skipping the name gate).
-  const [ready, setReady] = useState(false);
+  const [guestMode, setGuestMode] = useState(() => readInviteNameGateHint());
+  const [needsName, setNeedsName] = useState(() => readInviteNameGateHint());
+  // Invite deep-link can paint the name gate immediately; otherwise wait for auth.
+  const [ready, setReady] = useState(() => readInviteNameGateHint());
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +80,10 @@ export function FisioterapiaClient() {
           } catch {
             // ignore private-mode storage errors
           }
-          if (!cancelled) setNeedsName(!named);
+          if (!cancelled) {
+            setNeedsName(!named);
+            writeInviteNameGateHint(!named);
+          }
         }
 
         if (!cancelled) {
@@ -95,12 +104,21 @@ export function FisioterapiaClient() {
     };
   }, []);
 
-  if (!ready) {
+  if (guestMode && needsName) {
     return (
-      <div className="flex h-[calc(100dvh-3.5rem)] items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">Cargando…</p>
+      <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+        <GuestNameGate
+          onSaved={() => {
+            writeInviteNameGateHint(false);
+            setNeedsName(false);
+          }}
+        />
       </div>
     );
+  }
+
+  if (!ready) {
+    return <div className="h-[calc(100dvh-3.5rem)] bg-[var(--background)]" />;
   }
 
   if (!linked) {
@@ -129,14 +147,6 @@ export function FisioterapiaClient() {
             setLinked(physio);
           }}
         />
-      </div>
-    );
-  }
-
-  if (guestMode && needsName) {
-    return (
-      <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
-        <GuestNameGate onSaved={() => setNeedsName(false)} />
       </div>
     );
   }

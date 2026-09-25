@@ -1,7 +1,7 @@
 "use client";
 
 import type { ClinicalTestImage } from "@/lib/clinical-test-images";
-import { getClinicalTestVideoSrc } from "@/lib/clinical-test-videos";
+import { getClinicalTestVideoClips } from "@/lib/clinical-test-videos";
 import Image from "next/image";
 import { useRef, useState } from "react";
 
@@ -103,15 +103,23 @@ type MediaBlockProps = {
 
 /** Prefer demo video when shipped; fall back to illustration. */
 export function ClinicalTestMediaBlock({ test, className }: MediaBlockProps) {
-  const videoSrc = getClinicalTestVideoSrc(test.id);
-  if (videoSrc) {
+  const clips = getClinicalTestVideoClips(test.id);
+  if (clips.length > 0) {
     return (
-      <ClinicalTestVideoPlayer
-        src={videoSrc}
-        title={test.title}
-        poster={test.src || undefined}
-        className={className ?? "mt-2 max-w-md"}
-      />
+      <div className={`flex flex-col gap-3 ${className ?? "mt-2 max-w-md"}`}>
+        {clips.map((clip) => (
+          <div key={clip.id} className="flex flex-col gap-1">
+            {clip.label ? (
+              <p className="text-xs font-semibold text-slate-700">{clip.label}</p>
+            ) : null}
+            <ClinicalTestVideoPlayer
+              src={clip.src}
+              title={clip.label ? `${test.title} — ${clip.label}` : test.title}
+              poster={test.src || undefined}
+            />
+          </div>
+        ))}
+      </div>
     );
   }
 

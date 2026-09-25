@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AIKinora",
   description: "Guía y consulta de fisioterapia",
+  other: {
+    google: "notranslate",
+  },
 };
 
 export const viewport: Viewport = {
@@ -36,9 +39,13 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      translate="no"
+      className={`${geistSans.variable} ${geistMono.variable} notranslate h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-[#F5F8FF] font-sans text-slate-900 antialiased">
+      <body
+        translate="no"
+        className="notranslate flex min-h-full flex-col bg-[#F5F8FF] font-sans text-slate-900 antialiased"
+      >
         <UiLocaleProvider>
           <ScrollToTopOnNavigate />
           <div className="flex min-h-full flex-1 flex-col">{children}</div>

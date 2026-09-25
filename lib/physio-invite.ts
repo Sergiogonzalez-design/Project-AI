@@ -18,6 +18,11 @@ export function buildPhysioInviteShareText(): string {
   return "Abre este enlace para la consulta previa en AIKinora. Te pedirán tu nombre; no hace falta introducir ningún código:";
 }
 
+/** Share text for the per-physio WhatsApp invite link. */
+export function buildPhysioWhatsAppInviteShareText(): string {
+  return "Abre este enlace de WhatsApp. El asistente ya sabe quién es tu fisio y te pedirá tu nombre:";
+}
+
 /** Branded redirect that opens WhatsApp with the invite code prefilled. */
 export function buildPhysioWhatsAppInviteUrl(
   code: string,
@@ -97,6 +102,25 @@ export function parsePastedInviteCode(raw: string | null | undefined): string {
   const code = normalizeInviteCode(text).replace(/[^A-Z0-9]/g, "");
   if (!code) return "";
   return code.slice(0, 24);
+}
+
+/** True when the patient sent the wa.me prefill instead of a real answer. */
+export function isWhatsAppInvitePrefill(
+  text: string | null | undefined,
+  inviteCode?: string | null
+): boolean {
+  const raw = (text ?? "").trim();
+  if (!raw) return false;
+  if (/^hola,?\s*quiero hacer la consulta previa/i.test(raw)) return true;
+  if (/consulta previa/i.test(raw) && /c[oó]digo\s*:/i.test(raw)) return true;
+  if (
+    inviteCode &&
+    looksLikeInviteCode(inviteCode) &&
+    normalizeInviteCode(raw) === normalizeInviteCode(inviteCode)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /** Pull invite code from WhatsApp prefill text or free-form message. */

@@ -8,6 +8,7 @@ import { staffPatientLabel, staffVisibleEmail } from "@/lib/guest-account";
 import {
   buildPhysioInviteShareText,
   buildPhysioInviteUrl,
+  buildPhysioWhatsAppInviteShareText,
   buildPhysioWhatsAppInviteUrl,
 } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
@@ -181,7 +182,7 @@ export function ClinicPatientsPanel() {
               : "AIKinora — consulta previa",
           text:
             kind === "wa"
-              ? "Abre este enlace para la consulta previa por WhatsApp:"
+              ? buildPhysioWhatsAppInviteShareText()
               : buildPhysioInviteShareText(),
           url,
         });

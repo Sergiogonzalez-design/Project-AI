@@ -21,7 +21,7 @@ powershell -File scripts/append-kinora-logo-outro.ps1 -Only <id>.mp4
 
 **COMMON_SUFFIX:**
 
-> Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+> CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 
 ---
 
@@ -43,7 +43,7 @@ powershell -File scripts/append-kinora-logo-outro.ps1 -Only <id>.mp4
 **Path:** `public/clinical-tests/thigh-thrust.png` Â· **Out:** `thigh-thrust.mp4`
 
 ```
-Using this illustration as reference, animate the thigh thrust (posterior shear) sacroiliac provocation test: patient supine, hip flexed about 90Â°, clinician applies a controlled axial push along the femur toward the table; show a brief hold then release; do not dramatize pain. Optional soft cyan highlight on the SI joint. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate the thigh thrust (posterior shear) sacroiliac provocation test: patient supine, hip flexed about 90Â°, clinician applies a controlled axial push along the femur toward the table; show a brief hold then release; do not dramatize pain. Optional soft cyan highlight on the SI joint. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 ```
 
 ---
@@ -55,7 +55,7 @@ Using this illustration as reference, animate the thigh thrust (posterior shear)
 **Path:** `public/clinical-tests/si-distraction.png` Â· **Out:** `si-distraction.mp4`
 
 ```
-Using this illustration as reference, animate the sacroiliac distraction (gapping) test: patient supine; clinician places hands on both ASIS and applies a controlled outward / cross-arm pressure; brief hold then release. Optional soft cyan highlight on the SI joints. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate the sacroiliac distraction (gapping) test: patient supine; clinician places hands on both ASIS and applies a controlled outward / cross-arm pressure; brief hold then release. Optional soft cyan highlight on the SI joints. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 ```
 
 ---
@@ -67,7 +67,7 @@ Using this illustration as reference, animate the sacroiliac distraction (gappin
 **Path:** `public/clinical-tests/si-compression.png` Â· **Out:** `si-compression.mp4`
 
 ```
-Using this illustration as reference, animate the sacroiliac compression test: patient side-lying; clinician applies a controlled downward pressure on the iliac crest toward the table; brief hold then release. Optional soft cyan highlight on the SI joint. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate the sacroiliac compression test: patient side-lying; clinician applies a controlled downward pressure on the iliac crest toward the table; brief hold then release. Optional soft cyan highlight on the SI joint. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 ```
 
 ---
@@ -79,5 +79,5 @@ Using this illustration as reference, animate the sacroiliac compression test: p
 **Path:** `public/clinical-tests/active-slr.png` Â· **Out:** `active-slr.mp4`
 
 ```
-Using this illustration as reference, animate the active straight leg raise (ASLR) for pelvic girdle pain: single continuous scene â€” patient supine lifts one straight leg a short distance off the table, holds briefly, then lowers; calm controlled motion, no kicking, no split-screen, no second panel with pelvic compression. Optional soft cyan pelvic highlight. Educational physiotherapy demonstration video, realistic clinic setting, soft neutral lighting, anatomically accurate hand placement, calm professional clinician and patient, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+Using this illustration as reference, animate the active straight leg raise (ASLR) for pelvic girdle pain: single continuous scene â€” patient supine lifts one straight leg a short distance off the table, holds briefly, then lowers; calm controlled motion, no kicking, no split-screen, no second panel with pelvic compression. Optional soft cyan pelvic highlight. CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate hand placement, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
 ```

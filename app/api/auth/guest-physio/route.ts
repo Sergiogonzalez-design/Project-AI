@@ -158,6 +158,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (clinicId) {
+      const { data: clinicRow } = await adminClient
+        .from("clinics")
+        .select("name")
+        .eq("id", clinicId)
+        .maybeSingle();
+      const fromClinic = typeof clinicRow?.name === "string" ? clinicRow.name.trim() : "";
+      if (fromClinic) recipientClinic = fromClinic;
+    }
+
     const guest = await findOrCreateGuestPatient(adminClient, {
       physioId: recipientId,
       clinicId,

@@ -52,6 +52,7 @@ import { staffPatientLabel } from "../lib/guest-account";
 import {
   buildPhysioInviteShareText,
   buildPhysioInviteUrl,
+  buildPhysioWhatsAppInviteShareText,
   buildPhysioWhatsAppInviteUrl,
 } from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
@@ -392,7 +393,7 @@ export function PhysioPatientsScreen() {
     setCodeMenuOpen(false);
     const shareText =
       kind === "wa"
-        ? "Abre este enlace para la consulta previa por WhatsApp:"
+        ? buildPhysioWhatsAppInviteShareText()
         : buildPhysioInviteShareText();
     try {
       await Share.share(

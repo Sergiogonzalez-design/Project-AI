@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { clinicalTestMediaUri } from "../lib/clinical-test-cdn";
 import type { ClinicalTestImage } from "../lib/clinical-test-images";
-import { getClinicalTestVideoSrc } from "../lib/clinical-test-videos";
+import { getClinicalTestVideoClips } from "../lib/clinical-test-videos";
 import { Colors } from "../lib/colors";
 import { useI18n } from "../lib/i18n";
 
@@ -75,11 +75,21 @@ function ClinicalTestVideoPlayer({ src, title }: { src: string; title: string })
 
 /** Demo video when shipped; illustration otherwise. */
 export function ClinicalTestMediaBlock({ test }: { test: ClinicalTestImage }) {
-  const videoSrc = getClinicalTestVideoSrc(test.id);
-  if (videoSrc) {
+  const clips = getClinicalTestVideoClips(test.id);
+  if (clips.length > 0) {
     return (
-      <View style={styles.videoWrap}>
-        <ClinicalTestVideoPlayer src={videoSrc} title={test.title} />
+      <View style={styles.clipsWrap}>
+        {clips.map((clip) => (
+          <View key={clip.id} style={styles.clipBlock}>
+            {clip.label ? <Text style={styles.clipLabel}>{clip.label}</Text> : null}
+            <View style={styles.videoWrap}>
+              <ClinicalTestVideoPlayer
+                src={clip.src}
+                title={clip.label ? `${test.title} — ${clip.label}` : test.title}
+              />
+            </View>
+          </View>
+        ))}
       </View>
     );
   }
@@ -98,8 +108,21 @@ export function ClinicalTestMediaBlock({ test }: { test: ClinicalTestImage }) {
 }
 
 const styles = StyleSheet.create({
-  videoWrap: {
+  clipsWrap: {
     marginTop: 8,
+    width: "100%",
+    gap: 12,
+  },
+  clipBlock: {
+    width: "100%",
+    gap: 4,
+  },
+  clipLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.text,
+  },
+  videoWrap: {
     width: "100%",
     maxWidth: "100%",
     alignSelf: "stretch",

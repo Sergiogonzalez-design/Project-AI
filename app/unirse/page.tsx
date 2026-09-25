@@ -26,9 +26,17 @@ export default async function UnirsePage({ searchParams }: PageProps) {
     );
   }
 
+  const autoRedeem = initialCode.length >= 6;
+
   return (
     <AuthPageShell>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6">
+      <main
+        className={
+          autoRedeem
+            ? "flex min-h-screen flex-col bg-[var(--background)]"
+            : "flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-10 sm:px-6"
+        }
+      >
         <PhysioJoinClient initialCode={initialCode} />
       </main>
     </AuthPageShell>

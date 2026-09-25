@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   getOrCreateGuestClientId,
   persistGuestClientId,
 } from "@/lib/guest-client-id";
+import { isGuestDisplayNameSet, writeInviteNameGateHint } from "@/lib/guest-account";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 
@@ -18,7 +18,6 @@ import { createClient } from "@/lib/supabase/client";
  * Logged-in patients are linked instead of replaced with a new guest.
  */
 export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState(() =>
     parsePastedInviteCode(initialCode)
@@ -101,6 +100,21 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
         started.current = false;
         return;
       }
+      const {
+        data: { user: guestUser },
+      } = await supabase.auth.getUser();
+      if (guestUser) {
+        const { data: guestProfile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", guestUser.id)
+          .maybeSingle();
+        writeInviteNameGateHint(
+          !isGuestDisplayNameSet(
+            (guestProfile?.display_name as string | null) ?? null
+          )
+        );
+      }
       // Hard navigation so middleware sees the new guest session immediately.
       window.location.assign("/fisioterapia");
       return;
@@ -116,8 +130,19 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
     await redeem(manualCode);
   }
 
+  if (hasCode && !error) {
+    return (
+      <div
+        className="min-h-screen bg-[var(--background)]"
+        aria-busy="true"
+        aria-label="Abriendo consulta"
+      />
+    );
+  }
+
   return (
-    <div className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white px-6 py-9 shadow-xl shadow-blue-500/10 sm:px-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col items-center justify-center px-4 py-10">
+    <div className="w-full rounded-3xl border border-slate-200/80 bg-white px-6 py-9 shadow-xl shadow-blue-500/10 sm:px-8">
       <div className="mb-6 flex flex-col items-center gap-3 text-center">
         <Image
           src="/logo-icon.png"
@@ -131,20 +156,14 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
             Consulta previa
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            {hasCode && !error
-              ? "Abriendo tu consulta… A continuación te pediremos tu nombre."
-              : hasCode && error
-                ? "No se pudo abrir el enlace."
-                : "Introduce el código de vinculación para empezar."}
+            {hasCode
+              ? "No se pudo abrir el enlace."
+              : "Introduce el código de vinculación para empezar."}
           </p>
         </div>
       </div>
 
-      {hasCode && !error ? (
-        <p className="text-center text-sm font-medium text-blue-700">
-          Un momento…
-        </p>
-      ) : hasCode && error ? (
+      {hasCode ? (
         <>
           <p className="text-center text-sm text-red-600" role="alert">
             {error}
@@ -196,6 +215,7 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
           Iniciar sesión
         </Link>
       </p>
+    </div>
     </div>
   );
 }

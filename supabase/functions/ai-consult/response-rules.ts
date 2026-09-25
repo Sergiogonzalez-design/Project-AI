@@ -1018,9 +1018,10 @@ LENGUAJE: «sospecha de fractura de escafoides — priorizar valoración/imagen�
 
 export const AI_ELBOW_DISTAL_BICEPS_RULES = `BÍCEPS DISTAL (Physioguide — codo anterior / pop):
 
-CLUSTER: pop antecubital al cargar + pérdida de contorno ± hueco + debilidad de SUPINACIÓN + hook test no engancha → rotura completa ↑ → derivación (O’Driscoll 2005 series de completas). Squeeze (Ruland) sin supinación apoya.
+CLUSTER: pop antecubital al cargar + pérdida de contorno ± hueco + debilidad de SUPINACIÓN + Biceps squeeze (Ruland) sin supinación pasiva → rotura distal ↑ → derivación. Hook (O’Driscoll) complementa; no engancha apoya completa.
 
 REGLAS:
+- La prueba numerada de bíceps DISTAL es **Biceps squeeze (bíceps distal)**. Hook es complemento. NUNCA Press test (eso es TFCC / muñeca). NUNCA Speed/Yergason/Uppercut (bíceps de hombro).
 - NUNCA Cozen = bíceps. NUNCA LET si hay pop + déficit de supinación.
 - Hook enganchable NO descarta parcial → imagen (eco/RMN).
 - No inventar Sn/Sp. Completa = no «esperar a ver».
@@ -2960,8 +2961,25 @@ REGLA DE ZONA (CRÍTICO — error grave si se incumple):
 - PROHIBIDO numerar tests de otra región. Ejemplos: dolor lumbar → NUNCA Cajón posterior, Lachman ni tests de rodilla; dolor de pie/tobillo → NUNCA Spurling, Phalen, Signo de Tinel (muñeca), ULTT, Neer, Lachman, etc.; dolor de muñeca → NUNCA Windlass/Thompson; dolor de rodilla → NUNCA tests de hombro; dolor de codo/UCL → NUNCA Test de Lachman (eso es RODILLA / LCA).
 - Signo de Tinel y Phalen (sin «tarsal») del catálogo son de MUÑECA/MANO. Para pie/túnel tarsiano numerar **Tinel tarsal** (grupo Tobillo / pie), NUNCA «Signo de Tinel» de muñeca.
 - Codo medial / UCL / lanzadores: numerar **Moving valgus stress (UCL)** y/o **Milking maneuver (UCL)**. PROHIBIDO numerar «Test de Lachman» o «Lachman de codo» (no hay vídeo de Lachman de codo; Lachman del catálogo es solo rodilla).
+- NOMBRES QUE NO SE PUEDEN CRUZAR (error grave):
+  - Bíceps DISTAL (codo, pop / déficit de supinación) → numerar **Biceps squeeze (bíceps distal)**. Complemento: **Hook test (codo / tendón distal)**. NUNCA Press test. NUNCA Speed / Yergason / Uppercut (eso es bíceps de HOMBRO).
+  - Press test (Lester) → SOLO **Muñeca cubital / TFCC**. NUNCA bíceps. NUNCA codo PLRI.
+  - Chair push-up / chair sign → CODO PLRI. NUNCA bíceps. NUNCA TFCC.
+  - Squeeze de sindesmosis, aducción resistida de cadera y Thompson ≠ Biceps squeeze.
 - Si una maniobra útil no está en el grupo de esa zona, menciónala en prosa SIN numerarla (así no aparece la imagen de otra región).
 - Hipótesis a distancia se pueden explicar en texto; las pruebas numeradas son SOLO locales a la zona lesionada.
+
+HOMÓNIMOS (CRÍTICO — si el nombre existe en 2+ zonas, PREGUNTA; no adivines):
+- Si el fisioterapeuta nombra una prueba compartida o ambigua SIN zona clara, NO numeres todavía. Pregunta en una frase: «¿Para qué zona la quieres?» y espera. Ej.: apprehension, cajón anterior, Tinel, Lachman, valgo/valgus, squeeze, press.
+- Homónimos del catálogo (usa SIEMPRE el nombre canónico CON zona):
+  - Aprensión / apprehension / relocation → **Apprehension / Relocation (hombro)** vs **Aprensión rotuliana (rodilla)**. NUNCA texto de rodilla/LCA con vídeo de hombro, ni al revés.
+  - Cajón anterior → **Cajón anterior (rodilla)** vs **Cajón anterior (tobillo)**.
+  - Tinel → **Signo de Tinel** (muñeca) vs **Tinel tarsal** (pie).
+  - Lachman → solo **Test de Lachman (rodilla / LCA)**. Si dice «Lachman de codo», pregunta o usa **Moving valgus stress (UCL)**.
+  - Valgo / valgus → **Estrés en valgo (LCM)** (rodilla) vs **Moving valgus stress (UCL)** (codo).
+  - Squeeze → **Biceps squeeze (bíceps distal)** vs **Squeeze de sindesmosis** (tobillo).
+  - Press → **Press test (Lester / TFCC — muñeca cubital)** vs **Chair push-up / chair sign** (codo).
+- Solo cuando el fisio confirme la zona, o el caso deje UNA zona inequívoca, numera el nombre canónico de ESA zona.
 
 Catálogo por zona:
 **Rodilla**
@@ -2975,14 +2993,15 @@ Catálogo por zona:
   - Cajón posterior / sag (LCP)
   - Noble compression (ITB)
   - Test de Ober
-  - Aprensión rotuliana
+  - Aprensión rotuliana (rodilla)
   - Dial test (PLC)
+  - Flexión de rodilla resistida (isquiotibiales)
 **Hombro**
   - Test de Neer
   - Hawkins-Kennedy
   - Jobe / Empty can
   - Full can / Jobe pulgar arriba
-  - Apprehension / Relocation
+  - Apprehension / Relocation (hombro)
   - Surprise / Release (inestabilidad anterior)
   - Test de Speed
   - Test de Yergason
@@ -3020,29 +3039,43 @@ Catálogo por zona:
   - FABER / Patrick
   - FADIR
   - Test de Trendelenburg
-  - Aducción resistida (squeeze)
+  - Aducción resistida (cadera)
   - Flexión de cadera resistida
   - Test de Thomas
   - Abducción de cadera resistida
   - Log roll
   - Stinchfield
   - Hip scour / quadrant
+  - Estiramiento de isquiotibiales
+  - Dolor al sentarse (isquion / proximal)
   - Hop test
 **Muñeca / mano**
   - Test de Phalen
   - Signo de Tinel
+  - Test de Durkan / compresión carpiana
   - Finkelstein (De Quervain)
+  - WHAT (De Quervain)
+  - Watson / scaphoid shift
   - Palpación de la tabaquera anatómica
   - Carga axial del pulgar (escafoides)
   - Carga cubital / fosa cubital (TFCC)
+  - Press test (Lester / TFCC — muñeca cubital)
+  - Fovea sign (TFCC)
+  - Piano-key (DRUJ)
   - Grind test CMC del pulgar
+  - CMC lever (rizartrosis)
+  - Ballottement LT / Reagan
   - Estrés UCL del pulgar (valgo MCP)
+  - Test de Froment (cubital)
+  - Jersey finger (FDP)
+  - Mallet finger (extensor)
+  - Trigger finger (A1)
 **Codo**
   - Test de Cozen
   - Test de Mill
   - Test de Maudsley
-  - Hook test (bíceps distal)
   - Biceps squeeze (bíceps distal)
+  - Hook test (codo / tendón distal)
   - Milking maneuver (UCL)
   - Moving valgus stress (UCL)
   - Flexión de muñeca resistida (medial)

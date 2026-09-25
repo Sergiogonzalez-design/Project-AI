@@ -98,25 +98,25 @@
 
 ## TEST: HEEL RAISE (elevación de talones)
 
-**Purpose:** Carga del Aquiles / tríceps. Completas suelen **no** poder monopodal.
+**Purpose:** Carga del Aquiles / tríceps **y** cribado funcional del tibial posterior (inversión del calcáneo / control del arco).
 
 **Position:** Bipedestación. Bilateral luego monopodal.
 
-**Procedure:** Elevar talones. Dolor, déficit, asimetría.
+**Procedure:** Elevar talones al máximo y bajar con control. Valorar altura, dolor, fatiga y simetría. Observar desde atrás el calcáneo: inversión (varo) esperable si el tibial posterior contribuye; valgo residual / talón «hacia afuera» / colapso del arco medial → sospecha de debilidad del tibial posterior (hipótesis de cluster, no test aislado).
 
-**Positive:** Imposible monopodal (rotura completa típica) **o** dolor en el tendón al repetir (tendinopatía).
+**Positive:** (A) Imposible monopodal (rotura completa de Aquiles típica) **o** dolor en el tendón al repetir (tendinopatía). (B) Fallo de inversión calcánea / valgo en la elevación → compatible con disfunción del tibial posterior.
 
-**Pain location:** Terón medio vs insercional vs gemelo.
+**Pain location:** Tendón medio vs insercional vs gemelo vs arco medial / retromaleolar medial (tibial posterior).
 
-**Familiar pain:** El de correr/saltar.
+**Familiar pain:** El de correr/saltar (Aquiles) o de marcha prolongada / pie plano adquirido (PTTD).
 
-**Clinical meaning:** Funcional. Tendinopatía: duele pero suele poder (con dolor). Rotura completa: suele no poder.
+**Clinical meaning:** Funcional. Tendinopatía Aquiles: duele pero suele poder (con dolor). Rotura completa: suele no poder. PTTD: a menudo puede elevar pero con mala inversión / colapso del arco.
 
-**Limitations:** Dolor agudo/miedo imita déficit.
+**Limitations:** Dolor agudo/miedo imita déficit. No inventar Sn/Sp; integrar con palpación, arco y marcha.
 
-**AI rule:** Distingue «duele al ponerme de puntillas» vs «no puedo». Lo segundo + pop → rotura ↑.
+**AI rule:** Distingue «duele al ponerme de puntillas» vs «no puedo» (Aquiles) vs «subo pero el talón no invierte / se va en valgo» (tibial posterior). Lo segundo + pop → rotura Aquiles ↑. Lo tercero → PTTD en diferencial.
 
-**Citation:** Silbernagel KG et al. Achilles tendinopathy loading. JOSPT Achilles CPG.
+**Citation:** Silbernagel KG et al. Achilles tendinopathy loading. JOSPT Achilles CPG. Clinical PTTD heel-rise / inversion observation (cualitativo).
 
 ---
 

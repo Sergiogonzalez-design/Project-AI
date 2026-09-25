@@ -52,6 +52,11 @@ export function buildPhysioInviteShareText(): string {
   return "Abre este enlace para la consulta previa en AIKinora. Te pedirán tu nombre; no hace falta introducir ningún código:";
 }
 
+/** Share text for the per-physio WhatsApp invite link. */
+export function buildPhysioWhatsAppInviteShareText(): string {
+  return "Abre este enlace de WhatsApp. El asistente ya sabe quién es tu fisio y te pedirá tu nombre:";
+}
+
 export function buildPhysioWhatsAppInviteUrl(code: string): string {
   const base = WEB_APP_URL.replace(/\/$/, "");
   const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
