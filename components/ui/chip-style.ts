@@ -9,7 +9,7 @@ function chipBase(selected: boolean, layout: "inline" | "stack"): string {
   const size =
     layout === "stack"
       ? "flex w-full min-h-[3.25rem] items-center justify-start rounded-2xl border-2 px-4 py-3"
-      : "inline-flex items-center justify-start rounded-2xl border-2 px-4 py-2.5";
+      : "inline-flex min-h-11 items-center justify-start rounded-2xl border-2 px-4 py-2.5";
   return [
     "notranslate",
     size,

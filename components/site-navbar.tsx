@@ -146,12 +146,12 @@ export function SiteNavbar() {
           <div className="fixed inset-0 z-[100]" role="presentation">
             <button
               type="button"
-              className="absolute inset-0 top-14 bg-black/40"
+              className="absolute inset-0 bg-black/40 [top:calc(3.5rem+env(safe-area-inset-top))]"
               aria-label="Cerrar menú"
               onClick={() => setMenuOpen(false)}
             />
             <aside
-              className="absolute bottom-0 right-0 top-14 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
+              className="absolute bottom-0 right-0 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)] [top:calc(3.5rem+env(safe-area-inset-top))]"
               style={{ animation: "slideInRight 180ms ease-out" }}
               role="dialog"
               aria-modal="true"
@@ -162,7 +162,7 @@ export function SiteNavbar() {
                   <Link
                     href="/signup"
                     onClick={() => setMenuOpen(false)}
-                    className="rounded-[14px] px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-[#F1F5F9]"
+                    className="min-h-11 rounded-[14px] px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-[#F1F5F9]"
                   >
                     Crear cuenta
                   </Link>
@@ -177,7 +177,7 @@ export function SiteNavbar() {
                       key={href}
                       href={href}
                       onClick={() => setMenuOpen(false)}
-                      className={`rounded-[14px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                      className={`min-h-11 rounded-[14px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                         active
                           ? "bg-[#EFF6FF] text-slate-900 shadow-[inset_3px_0_0_#2563EB]"
                           : "text-slate-800 hover:bg-[#F1F5F9]"
@@ -220,7 +220,7 @@ export function SiteNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-[110] w-full border-b border-slate-200/70 bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-[110] w-full border-b border-slate-200/70 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur-md">
         <div className="flex h-14 w-full items-center gap-2 px-4 sm:px-6">
           <Link
             href={homeHref}
@@ -251,7 +251,7 @@ export function SiteNavbar() {
             ) : null}
             <button
               type="button"
-              className="rounded-lg p-2 text-neutral-700 transition-colors hover:bg-neutral-100"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg p-2 text-neutral-700 transition-colors hover:bg-neutral-100"
               onClick={() => setMenuOpen((o) => !o)}
               aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
               aria-expanded={menuOpen}

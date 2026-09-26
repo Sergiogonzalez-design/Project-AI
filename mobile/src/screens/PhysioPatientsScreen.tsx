@@ -1191,9 +1191,8 @@ const styles = StyleSheet.create({
   },
   codeActionsRow: {
     marginTop: 4,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
+    flexDirection: "column",
+    alignItems: "stretch",
     gap: 8,
   },
   inviteLinkDisplay: {
@@ -1224,16 +1223,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   actionsWrap: {
-    position: "relative",
-    zIndex: 20,
+    width: "100%",
   },
   actionsBtn: {
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 44,
     backgroundColor: Colors.white,
+    alignItems: "center",
   },
   actionsBtnText: {
     fontSize: 13,
@@ -1241,11 +1241,8 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   codeMenu: {
-    position: "absolute",
-    top: "100%",
-    right: 0,
-    marginTop: 4,
-    minWidth: 230,
+    marginTop: 8,
+    width: "100%",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -1258,6 +1255,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   codeMenuItem: {
+    alignSelf: "stretch",
+    width: "100%",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -1265,6 +1264,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: Colors.text,
+    textAlign: "left",
   },
   cardTitle: {
     fontSize: 17,

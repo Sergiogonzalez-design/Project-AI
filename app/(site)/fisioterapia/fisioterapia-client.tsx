@@ -106,7 +106,7 @@ export function FisioterapiaClient() {
 
   if (guestMode && needsName) {
     return (
-      <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <GuestNameGate
           onSaved={() => {
             writeInviteNameGateHint(false);
@@ -118,13 +118,13 @@ export function FisioterapiaClient() {
   }
 
   if (!ready) {
-    return <div className="h-[calc(100dvh-3.5rem)] bg-[var(--background)]" />;
+    return <div className="min-h-0 flex-1 bg-[var(--background)]" />;
   }
 
   if (!linked) {
     if (guestMode) {
       return (
-        <div className="flex h-[calc(100dvh-3.5rem)] flex-col items-center justify-center gap-3 bg-slate-50 px-6 text-center">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-slate-50 px-6 text-center">
           <p className="text-sm text-slate-600">
             No se encontró el fisioterapeuta de este código. Vuelve al inicio e
             introdúcelo de nuevo.
@@ -137,7 +137,7 @@ export function FisioterapiaClient() {
     }
 
     return (
-      <div className="relative flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="absolute left-4 top-3 z-10 sm:left-6">
           <NavBackButton fallbackHref="/consulta" />
         </div>
@@ -152,7 +152,7 @@ export function FisioterapiaClient() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <ChatInterface
         linkedPhysio={linked}
         guestMode={guestMode}

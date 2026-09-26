@@ -4368,7 +4368,7 @@ export function ChatInterface({
   return (
     <div className="flex h-full min-h-0 flex-1 overflow-hidden bg-[var(--background)]">
       {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
+        <div className="fixed inset-0 z-[120] flex md:hidden">
           <button
             type="button"
             aria-label="Cerrar menú"

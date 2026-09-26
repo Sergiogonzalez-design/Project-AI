@@ -2,7 +2,7 @@ import { FisioChatInterface } from "@/components/fisio-chat-interface";
 
 export default function ClinicaConsultaPage() {
   return (
-    <div className="flex h-[calc(100svh-4.5rem)] max-h-[calc(100dvh-4.5rem)] flex-col overflow-hidden supports-[height:100dvh]:h-[calc(100dvh-4.5rem)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <FisioChatInterface />
     </div>
   );

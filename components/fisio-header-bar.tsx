@@ -17,7 +17,7 @@ export function FisioHeaderBar() {
   const screen = screenLabelForPath(pathname);
 
   return (
-    <header className="sticky top-0 z-[110] shrink-0 border-b border-neutral-200 bg-white">
+    <header className="sticky top-0 z-[110] shrink-0 border-b border-neutral-200 bg-white pt-[env(safe-area-inset-top)]">
       <div className="flex h-14 w-full items-center gap-2 px-4 sm:px-6">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">

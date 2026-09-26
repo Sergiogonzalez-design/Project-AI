@@ -55,6 +55,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  overflow-x: clip;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -62,6 +66,25 @@ body {
   letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Chat / consulta: pin the shell to the visible viewport so the footer
+   and iOS chrome cannot cover composer / questionnaire buttons. */
+html.app-fullbleed,
+html.app-fullbleed body {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  button,
+  [type="button"],
+  [type="submit"],
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
 }
 
 /* Visible chip text lives in CSS, so browser translate cannot stack a second copy. */

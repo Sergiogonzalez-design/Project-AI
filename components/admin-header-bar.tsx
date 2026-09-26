@@ -12,7 +12,7 @@ const NAV = [
 
 export function AdminHeaderBar() {
   return (
-    <header className="border-b border-neutral-200 bg-white">
+    <header className="border-b border-neutral-200 bg-white pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-4 sm:px-6">
         <NavBackButton fallbackHref="/consulta" />
         <div className="min-w-0 flex-1">

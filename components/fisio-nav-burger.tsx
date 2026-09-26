@@ -60,13 +60,13 @@ export function FisioNavBurger({
           >
             <button
               type="button"
-              className="pointer-events-auto absolute inset-0 top-14 bg-black/40"
+              className="pointer-events-auto absolute inset-0 bg-black/40 [top:calc(3.5rem+env(safe-area-inset-top))]"
               aria-label="Cerrar menú"
               onClick={() => setOpen(false)}
             />
             <aside
               id={menuId}
-              className="pointer-events-auto absolute bottom-0 right-0 top-14 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
+              className="pointer-events-auto absolute bottom-0 right-0 z-[1] flex w-[min(17.5rem,88vw)] flex-col border-l border-slate-200/80 bg-[#FAFAFA] shadow-[0_8px_30px_rgba(15,23,42,0.08)] [top:calc(3.5rem+env(safe-area-inset-top))]"
               style={{ animation: "slideInRight 180ms ease-out" }}
               role="dialog"
               aria-modal="true"
@@ -97,7 +97,7 @@ export function FisioNavBurger({
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
-        className="rounded-lg p-2 text-neutral-700 transition-colors hover:bg-neutral-100"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-lg p-2 text-neutral-700 transition-colors hover:bg-neutral-100"
       >
         <svg width="22" height="22" fill="none" viewBox="0 0 24 24" aria-hidden>
           {open ? (
@@ -140,7 +140,7 @@ function NavLinks({
             key={href}
             href={href}
             onClick={onNavigate}
-            className={`rounded-[14px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+            className={`min-h-11 rounded-[14px] px-4 py-3 text-sm font-semibold transition-all duration-200 ${
               active
                 ? "bg-[#EFF6FF] text-slate-900 shadow-[inset_3px_0_0_#2563EB]"
                 : "text-slate-800 hover:bg-[#F1F5F9]"

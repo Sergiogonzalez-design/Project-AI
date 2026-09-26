@@ -227,8 +227,8 @@ export default function FisioPatientsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+    <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
+      <h1 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
         Bienvenido/a
         {physioName ? `, ${physioName}` : ""}
         {clinicName ? ` · ${clinicName}` : ""}
@@ -295,8 +295,7 @@ export default function FisioPatientsPage() {
           <p className="mt-4 text-sm text-neutral-500">
             Todavía no hay pacientes ni informes en esta cuenta. Abre Vinculación
             para compartir el enlace de consulta previa y pulsa Actualizar después
-            de que el paciente lo abra.
-            termine el cuestionario.
+            de que el paciente termine el cuestionario.
           </p>
         ) : (
           <ul className="mt-4 divide-y divide-neutral-100">
@@ -367,87 +366,85 @@ export default function FisioPatientsPage() {
                 {inviteLink}
               </p>
             ) : null}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-4 flex flex-col gap-2" ref={codeMenuRef}>
               <button
                 type="button"
                 disabled={!inviteLink || codeBusy}
                 onClick={() => void shareLink("web")}
-                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="min-h-11 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {copied === "link"
                   ? "Enlace copiado"
                   : "Compartir enlace de consulta previa"}
               </button>
-              <div className="relative" ref={codeMenuRef}>
-                <button
-                  type="button"
-                  disabled={!inviteCode || codeBusy}
-                  onClick={() => setCodeMenuOpen((o) => !o)}
-                  className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+              <button
+                type="button"
+                disabled={!inviteCode || codeBusy}
+                onClick={() => setCodeMenuOpen((o) => !o)}
+                className="min-h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+              >
+                Más opciones
+              </button>
+              {codeMenuOpen && inviteCode ? (
+                <div
+                  role="menu"
+                  className="flex w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white"
                 >
-                  Más opciones
-                </button>
-                {codeMenuOpen && inviteCode ? (
-                  <div
-                    role="menu"
-                    className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg"
+                  {inviteLink ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                      onClick={() => {
+                        setCodeMenuOpen(false);
+                        void copyText("link", inviteLink);
+                      }}
+                    >
+                      {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
+                    </button>
+                  ) : null}
+                  {whatsappInviteLink ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                      onClick={() => {
+                        setCodeMenuOpen(false);
+                        void shareLink("wa");
+                      }}
+                    >
+                      {copied === "wa"
+                        ? "Enlace WhatsApp copiado"
+                        : "Compartir WhatsApp"}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                    onClick={() => {
+                      setCodeMenuOpen(false);
+                      void copyText("code", inviteCode);
+                    }}
                   >
-                    {inviteLink ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                        onClick={() => {
-                          setCodeMenuOpen(false);
-                          void copyText("link", inviteLink);
-                        }}
-                      >
-                        {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
-                      </button>
-                    ) : null}
-                    {whatsappInviteLink ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                        onClick={() => {
-                          setCodeMenuOpen(false);
-                          void shareLink("wa");
-                        }}
-                      >
-                        {copied === "wa"
-                          ? "Enlace WhatsApp copiado"
-                          : "Compartir WhatsApp"}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                      onClick={() => {
-                        setCodeMenuOpen(false);
-                        void copyText("code", inviteCode);
-                      }}
-                    >
-                      {copied === "code"
-                        ? "Código copiado"
-                        : "Copiar código (solo si hace falta)"}
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      disabled={codeBusy}
-                      className="block w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50 disabled:opacity-50"
-                      onClick={() => {
-                        setCodeMenuOpen(false);
-                        void regenerateCode();
-                      }}
-                    >
-                      {codeBusy ? "Generando…" : "Generar código nuevo"}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+                    {copied === "code"
+                      ? "Código copiado"
+                      : "Copiar código (solo si hace falta)"}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={codeBusy}
+                    className="min-h-11 w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                    onClick={() => {
+                      setCodeMenuOpen(false);
+                      void regenerateCode();
+                    }}
+                  >
+                    {codeBusy ? "Generando…" : "Generar código nuevo"}
+                  </button>
+                </div>
+              ) : null}
             </div>
             <p className="mt-3 text-xs text-neutral-500">
               Si regeneras el código, los pacientes ya vinculados siguen

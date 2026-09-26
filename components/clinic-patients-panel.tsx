@@ -277,30 +277,29 @@ export function ClinicPatientsPanel() {
                     {inviteLink}
                   </p>
                 ) : null}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col gap-2" ref={codeMenuRef}>
                   <button
                     type="button"
                     disabled={!inviteLink || codeBusy}
                     onClick={() => void shareLink("web")}
-                    className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="min-h-11 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                   >
                     {copied === "link" ? copy.inviteCopied : copy.shareInvite}
                   </button>
-                  <div className="relative" ref={codeMenuRef}>
-                    <button
-                      type="button"
-                      disabled={!inviteCode || codeBusy}
-                      onClick={() => setCodeMenuOpen((o) => !o)}
-                      className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-                    >
-                      {copy.actions}
-                    </button>
-                    {codeMenuOpen && inviteCode ? (
-                      <div className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg">
+                  <button
+                    type="button"
+                    disabled={!inviteCode || codeBusy}
+                    onClick={() => setCodeMenuOpen((o) => !o)}
+                    className="min-h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {copy.actions}
+                  </button>
+                  {codeMenuOpen && inviteCode ? (
+                    <div className="flex w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white">
                         {inviteLink ? (
                           <button
                             type="button"
-                            className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                            className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
                             onClick={() => {
                               void copyText("link", inviteLink);
                               setCodeMenuOpen(false);
@@ -315,7 +314,7 @@ export function ClinicPatientsPanel() {
                           <>
                             <button
                               type="button"
-                              className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                              className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
                               onClick={() => {
                                 void copyText("wa", whatsappInviteLink);
                                 setCodeMenuOpen(false);
@@ -327,7 +326,7 @@ export function ClinicPatientsPanel() {
                             </button>
                             <button
                               type="button"
-                              className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                              className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
                               onClick={() => {
                                 void shareLink("wa");
                                 setCodeMenuOpen(false);
@@ -339,7 +338,7 @@ export function ClinicPatientsPanel() {
                         ) : null}
                         <button
                           type="button"
-                          className="block w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
+                          className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
                           onClick={() => {
                             void copyText("code", inviteCode);
                             setCodeMenuOpen(false);
@@ -349,7 +348,7 @@ export function ClinicPatientsPanel() {
                         </button>
                         <button
                           type="button"
-                          className="block w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50"
+                          className="block min-h-11 w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50"
                           disabled={codeBusy}
                           onClick={() => {
                             setCodeMenuOpen(false);
@@ -358,9 +357,8 @@ export function ClinicPatientsPanel() {
                         >
                           {codeBusy ? copy.generating : copy.newCode}
                         </button>
-                      </div>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : null}

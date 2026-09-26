@@ -182,6 +182,7 @@ export function GuestPhysioNavigator({ onCreateAccount, onExitToLogin }: Props) 
           headerRight: () => (
             <Pressable
               onPress={() => setMenuOpen(true)}
+              hitSlop={12}
               style={{ marginRight: 8, padding: 8 }}
               accessibilityLabel={t.menu.open}
             >
@@ -217,13 +218,14 @@ export function GuestPhysioNavigator({ onCreateAccount, onExitToLogin }: Props) 
           }}
         >
           <Pressable
-            style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
+            style={{ flex: 1 }}
             onPress={() => setMenuOpen(false)}
             accessibilityLabel={t.menu.close}
           />
           <View
             style={{
               height: "100%",
+              zIndex: 2,
               width: drawerWidth,
               backgroundColor: "#FAFAFA",
               borderLeftWidth: 1,

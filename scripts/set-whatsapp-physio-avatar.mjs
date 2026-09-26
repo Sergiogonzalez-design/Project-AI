@@ -13,7 +13,7 @@ import { resolve } from "node:path";
 
 const token = process.env.WHATSAPP_TOKEN?.trim();
 const phoneNumberId =
-  process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || "1375791535606539";
+  process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || "1423894820796295";
 const appId = process.env.META_APP_ID?.trim() || "2156461741616743";
 const imagePath = resolve(
   process.env.WHATSAPP_AVATAR_PATH || "public/physio/physio-avatar.png"

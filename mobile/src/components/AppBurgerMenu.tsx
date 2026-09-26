@@ -85,6 +85,7 @@ export function AppBurgerMenu({
     <>
       <Pressable
         onPress={() => setOpen(true)}
+        hitSlop={12}
         style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
         accessibilityLabel={t.menu.open}
         accessibilityRole="button"
@@ -191,12 +192,12 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     flexDirection: "row",
-    justifyContent: "flex-end",
     backgroundColor: "rgba(15, 23, 42, 0.4)",
   },
-  backdrop: { ...StyleSheet.absoluteFill },
+  backdrop: { flex: 1 },
   drawer: {
     height: "100%",
+    zIndex: 2,
     backgroundColor: "#FAFAFA",
     borderLeftWidth: 1,
     borderLeftColor: Colors.border,

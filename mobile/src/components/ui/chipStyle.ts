@@ -14,6 +14,7 @@ const chipBase = {
   borderRadius: 999,
   paddingHorizontal: 15,
   paddingVertical: 10,
+  minHeight: 44,
 } as const;
 
 const chipSelected = {
