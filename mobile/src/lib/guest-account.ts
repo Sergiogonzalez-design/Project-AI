@@ -66,6 +66,17 @@ export function isGuestDisplayNameSet(name?: string | null): boolean {
   return true;
 }
 
+/** Name + phone both required to identify a guest patient uniquely. */
+export function isGuestIdentityComplete(opts: {
+  displayName?: string | null;
+  phone?: string | null;
+}): boolean {
+  return (
+    isGuestDisplayNameSet(opts.displayName) &&
+    normalizeGuestPhoneInput(opts.phone ?? "") != null
+  );
+}
+
 /** Digits-only phone for cross-channel patient identity (web/app/WhatsApp). */
 export function normalizeGuestPhoneInput(raw: string): string | null {
   const digits = raw.replace(/\D/g, "");

@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   guestNameStorageKey,
   isGuestUser,
-  isGuestDisplayNameSet,
+  isGuestIdentityComplete,
   readInviteNameGateHint,
   writeInviteNameGateHint,
 } from "@/lib/guest-account";
@@ -97,14 +97,15 @@ export function FisioterapiaClient() {
         if (guest || inviteWantsNameGate()) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("display_name")
+            .select("display_name, whatsapp_phone")
             .eq("id", user.id)
             .maybeSingle();
-          const named = isGuestDisplayNameSet(
-            (profile?.display_name as string | null) ?? null
-          );
+          const identified = isGuestIdentityComplete({
+            displayName: (profile?.display_name as string | null) ?? null,
+            phone: (profile?.whatsapp_phone as string | null) ?? null,
+          });
           try {
-            if (named) {
+            if (identified) {
               sessionStorage.setItem(guestNameStorageKey(user.id), "1");
             } else {
               sessionStorage.removeItem(guestNameStorageKey(user.id));
@@ -113,13 +114,12 @@ export function FisioterapiaClient() {
             // ignore private-mode storage errors
           }
           if (!cancelled) {
-            const mustAsk = !named;
+            // Invite deep-link always shows the name gate (even if a prior
+            // identity exists) so a second visit can confirm name + phone.
+            const mustAsk =
+              gateParam || readInviteNameGateHint() || !identified;
             setNeedsName(mustAsk);
             writeInviteNameGateHint(mustAsk);
-            if (named && gateParam) {
-              // Drop the query so refresh doesn't reopen the gate forever.
-              router.replace("/fisioterapia");
-            }
           }
         }
 

@@ -28,8 +28,10 @@ export function GuestNameGate({ onSaved }: Props) {
       return;
     }
     const phoneDigits = normalizeGuestPhoneInput(phone);
-    if (phone.trim() && !phoneDigits) {
-      setError("Introduce un teléfono válido (con prefijo, ej. 34612345678).");
+    if (!phoneDigits) {
+      setError(
+        "Introduce tu teléfono con prefijo (ej. 34612345678). Es obligatorio para identificarte."
+      );
       return;
     }
     setLoading(true);
@@ -37,39 +39,46 @@ export function GuestNameGate({ onSaved }: Props) {
     try {
       const supabase = createClient();
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token || !session.user) {
         setError("Sesión caducada. Vuelve a abrir el enlace de tu fisioterapeuta.");
         return;
       }
-      const patch: { display_name: string; whatsapp_phone?: string } = {
-        display_name: displayName,
-      };
-      if (phoneDigits) patch.whatsapp_phone = phoneDigits;
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(patch)
-        .eq("id", user.id);
-      if (updateError) {
-        // Unique phone already used → still save name; warn softly.
-        if (phoneDigits && /whatsapp_phone|unique/i.test(updateError.message)) {
-          const { error: nameOnlyErr } = await supabase
-            .from("profiles")
-            .update({ display_name: displayName })
-            .eq("id", user.id);
-          if (nameOnlyErr) {
-            setError("No se pudo guardar tu nombre. Inténtalo de nuevo.");
-            return;
-          }
-        } else {
-          setError("No se pudo guardar tu nombre. Inténtalo de nuevo.");
-          return;
-        }
+      const res = await fetch("/api/auth/guest-identify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ displayName, phone: phoneDigits }),
+      });
+      const payload = (await res.json()) as {
+        error?: string;
+        email?: string;
+        password?: string;
+        switched?: boolean;
+      };
+      if (!res.ok || !payload.email || !payload.password) {
+        setError(payload.error ?? "No se pudo guardar tus datos. Inténtalo de nuevo.");
+        return;
       }
+
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email: payload.email,
+        password: payload.password,
+      });
+      if (signError) {
+        setError(signError.message);
+        return;
+      }
+
       try {
-        sessionStorage.setItem(guestNameStorageKey(user.id), "1");
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) sessionStorage.setItem(guestNameStorageKey(user.id), "1");
       } catch {
         // Private mode — still continue into the consult.
       }
@@ -99,8 +108,8 @@ export function GuestNameGate({ onSaved }: Props) {
         <Image src="/logo-icon.png" alt="AIKinora" width={56} height={56} className="mx-auto mb-4 object-contain" />
         <h2 className="text-center text-lg font-semibold text-slate-900">¿Cómo te llamas?</h2>
         <p className="mt-2 text-center text-sm leading-relaxed text-slate-600">
-          Tu fisioterapeuta verá este nombre en el informe. Si vuelves más
-          tarde (web, app o WhatsApp), tu historial se mantiene.
+          Nombre y teléfono identifican tu ficha. Así tu fisio sabe quién eres
+          aunque otra persona se llame igual.
         </p>
         <label htmlFor="guest-display-name" className="mt-5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Nombre
@@ -112,10 +121,11 @@ export function GuestNameGate({ onSaved }: Props) {
           placeholder="Nombre y apellidos"
           autoComplete="name"
           autoFocus
+          required
           className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
         />
         <label htmlFor="guest-phone" className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Teléfono (opcional)
+          Teléfono
         </label>
         <input
           id="guest-phone"
@@ -125,11 +135,12 @@ export function GuestNameGate({ onSaved }: Props) {
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Ej. 34612345678"
           autoComplete="tel"
+          required
           className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
         />
         <p className="mt-1.5 text-xs text-slate-500">
-          Si usas el mismo número en WhatsApp, el fisio verá todas tus consultas
-          juntas.
+          Obligatorio, con prefijo del país. El mismo número une web, app y
+          WhatsApp en tu historial.
         </p>
         {error ? (
           <p className="mt-3 text-sm text-red-600" role="alert">

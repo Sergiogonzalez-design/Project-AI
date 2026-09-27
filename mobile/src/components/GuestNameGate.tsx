@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { WEB_APP_URL } from "../lib/admin-api";
 import { Colors } from "../lib/colors";
 import { deleteOwnAccountAndSignOut } from "../lib/delete-account";
 import {
@@ -41,46 +42,53 @@ export function GuestNameGate({ onSaved, onExit }: Props) {
       return;
     }
     const phoneDigits = normalizeGuestPhoneInput(phone);
-    if (phone.trim() && !phoneDigits) {
-      setError(t.guest.phoneInvalid);
+    if (!phoneDigits) {
+      setError(t.guest.phoneRequired);
       return;
     }
     setLoading(true);
     setError(null);
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token || !session.user) {
         setError(t.guest.sessionExpired);
         return;
       }
-      const patch: { display_name: string; whatsapp_phone?: string } = {
-        display_name: displayName,
-      };
-      if (phoneDigits) patch.whatsapp_phone = phoneDigits;
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(patch)
-        .eq("id", user.id);
-      if (updateError) {
-        if (phoneDigits && /whatsapp_phone|unique/i.test(updateError.message)) {
-          const { error: nameOnlyErr } = await supabase
-            .from("profiles")
-            .update({ display_name: displayName })
-            .eq("id", user.id);
-          if (nameOnlyErr) {
-            setError(t.guest.saveNameError);
-            return;
-          }
-        } else {
-          setError(t.guest.saveNameError);
-          return;
-        }
+      const res = await fetch(`${WEB_APP_URL}/api/auth/guest-identify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ displayName, phone: phoneDigits }),
+      });
+      const payload = (await res.json()) as {
+        error?: string;
+        email?: string;
+        password?: string;
+      };
+      if (!res.ok || !payload.email || !payload.password) {
+        setError(payload.error ?? t.guest.saveNameError);
+        return;
       }
+
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email: payload.email,
+        password: payload.password,
+      });
+      if (signError) {
+        setError(signError.message);
+        return;
+      }
+
       try {
-        await AsyncStorage.setItem(guestNameStorageKey(user.id), "1");
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) await AsyncStorage.setItem(guestNameStorageKey(user.id), "1");
       } catch {
         // Still continue into the consult.
       }

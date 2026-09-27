@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GuestNameGate } from "../components/GuestNameGate";
 import { Colors } from "../lib/colors";
-import { guestNameStorageKey, isGuestDisplayNameSet } from "../lib/guest-account";
+import { guestNameStorageKey, isGuestIdentityComplete } from "../lib/guest-account";
 import { useI18n } from "../lib/i18n";
 import {
   getLinkedPhysioCache,
@@ -32,15 +32,18 @@ type Props = {
 
 const Tab = createBottomTabNavigator();
 
-async function guestAlreadyNamed(userId: string): Promise<boolean> {
+async function guestAlreadyIdentified(userId: string): Promise<boolean> {
   const { data } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, whatsapp_phone")
     .eq("id", userId)
     .maybeSingle();
-  const named = isGuestDisplayNameSet(data?.display_name ?? null);
+  const identified = isGuestIdentityComplete({
+    displayName: data?.display_name ?? null,
+    phone: data?.whatsapp_phone ?? null,
+  });
   try {
-    if (named) {
+    if (identified) {
       await AsyncStorage.setItem(guestNameStorageKey(userId), "1");
     } else {
       await AsyncStorage.removeItem(guestNameStorageKey(userId));
@@ -48,7 +51,7 @@ async function guestAlreadyNamed(userId: string): Promise<boolean> {
   } catch {
     // ignore
   }
-  return named;
+  return identified;
 }
 
 /** Isolated navigator so the login screen never imports the heavy consult chat. */
@@ -73,8 +76,8 @@ export function GuestPhysioNavigator({ onCreateAccount, onExitToLogin }: Props) 
           data: { user },
         } = await supabase.auth.getUser();
         if (user && !cancelled) {
-          const named = await guestAlreadyNamed(user.id);
-          if (!cancelled) setNeedsName(!named);
+          const identified = await guestAlreadyIdentified(user.id);
+          if (!cancelled) setNeedsName(!identified);
         }
 
         let next = getLinkedPhysioCache() ?? null;

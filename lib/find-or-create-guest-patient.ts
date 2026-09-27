@@ -26,6 +26,9 @@ export type FindOrCreateGuestOpts = {
   /**
    * Web/mobile first visit: force display_name null so the name gate runs.
    * Ignored when displayName is provided.
+   * When the reused guest already sent a report to this physio (and there is
+   * no phone match), mints a new guest so a second visit / different name is
+   * a clean chart — not the previous “¡Gracias!” screen.
    */
   clearDisplayName?: boolean;
 };
@@ -97,7 +100,7 @@ export async function findOrCreateGuestPatient(
   opts: FindOrCreateGuestOpts
 ): Promise<FindOrCreateGuestResult> {
   const phoneDigits = normalizePhone(opts.phoneDigits);
-  const guestClientId =
+  let guestClientId =
     normalizeGuestClientId(opts.guestClientId) ?? randomUUID();
   const password = randomBytes(24).toString("base64url");
   const channel = opts.channel ?? "web";
@@ -112,6 +115,22 @@ export async function findOrCreateGuestPatient(
     phoneDigits,
     guestClientId
   );
+
+  // Same browser after a finished consulta previa: do not reopen the thank-you
+  // chat under a new name. Phone-linked patients stay the same chart.
+  if (existingId && opts.clearDisplayName && !phoneDigits && !name) {
+    const { data: priorReport } = await admin
+      .from("clinical_reports")
+      .select("id")
+      .eq("patient_id", existingId)
+      .eq("physio_id", opts.physioId)
+      .limit(1)
+      .maybeSingle();
+    if (priorReport?.id) {
+      existingId = null;
+      guestClientId = randomUUID();
+    }
+  }
 
   if (existingId) {
     const { data: userData, error: getErr } =

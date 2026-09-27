@@ -259,6 +259,7 @@ import {
   fisioNewConsultCooldownMessage,
   fisioNewConsultHoursRemaining,
 } from "@/lib/fisio-consult-cooldown";
+import { consumeInviteFreshConsultaHint } from "@/lib/guest-account";
 import {
   type ConsultLanguage,
 } from "@/lib/consult-language";
@@ -1415,6 +1416,20 @@ export function ChatInterface({
 
       // Fisioterapia: open latest assigned chat before revealing the UI (avoids intro /
       // empty-chat / typing-indicator flashes when switching from Consulta).
+      // Invite re-open: start a fresh draft instead of the previous thank-you screen.
+      const inviteFresh = Boolean(linkedPhysio) && consumeInviteFreshConsultaHint();
+      if (inviteFresh && linkedPhysio) {
+        setFisioNewConsultDraft(true);
+        setActiveId(null);
+        setActiveTitle(
+          `Consulta con ${physioDisplayName(linkedPhysio.physio_name)}`
+        );
+        setMessages([]);
+        setPhysioReportSentBanner(false);
+        setPhase("intro");
+        showLinkedPhysioWelcome();
+        return;
+      }
       if (linkedPhysio && list.length > 0 && !opts?.skipAutoOpen) {
         const preferred =
           (linkedPhysio.physio_id

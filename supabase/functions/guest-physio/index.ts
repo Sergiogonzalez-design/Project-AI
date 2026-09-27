@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
     }
 
     const phoneDigits = normalizePhone(body.phone);
-    const guestClientId =
+    let guestClientId =
       normalizeGuestClientId(body.guestClientId) ?? crypto.randomUUID();
     const password = crypto.randomUUID().replace(/-/g, "") + "A1!";
     const channel = body.channel === "mobile" ? "mobile" : "web";
@@ -270,6 +270,21 @@ Deno.serve(async (req) => {
       if (byClient?.id) existingId = byClient.id as string;
     }
 
+    // Same device after a finished consulta: mint a new guest (name gate + fresh chat).
+    if (existingId && !phoneDigits) {
+      const { data: priorReport } = await admin
+        .from("clinical_reports")
+        .select("id")
+        .eq("patient_id", existingId)
+        .eq("physio_id", recipientId)
+        .limit(1)
+        .maybeSingle();
+      if (priorReport?.id) {
+        existingId = null;
+        guestClientId = crypto.randomUUID();
+      }
+    }
+
     if (existingId) {
       const { data: userData, error: getErr } =
         await admin.auth.admin.getUserById(existingId);
@@ -295,6 +310,7 @@ Deno.serve(async (req) => {
               clinic_id: clinicId,
               clinic_name: recipientClinic,
               guest_client_id: guestClientId,
+              display_name: null,
               ...(phoneDigits ? { whatsapp_phone: phoneDigits } : {}),
               onboarding_completed: true,
               is_admin: false,

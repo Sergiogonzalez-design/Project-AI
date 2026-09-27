@@ -49,6 +49,9 @@ export function guestNameStorageKey(userId: string): string {
 /** Set on /unirse after redeem so /fisioterapia can paint the name gate immediately. */
 export const INVITE_NAME_GATE_HINT = "aikinora-invite-needs-name";
 
+/** After invite redeem: prefer a new draft instead of auto-opening a finished chat. */
+export const INVITE_FRESH_CONSULTA_HINT = "aikinora-invite-fresh-consulta";
+
 export function readInviteNameGateHint(): boolean {
   try {
     return sessionStorage.getItem(INVITE_NAME_GATE_HINT) === "1";
@@ -64,6 +67,30 @@ export function writeInviteNameGateHint(needed: boolean) {
   } catch {
     // ignore private-mode storage errors
   }
+}
+
+export function readInviteFreshConsultaHint(): boolean {
+  try {
+    return sessionStorage.getItem(INVITE_FRESH_CONSULTA_HINT) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function writeInviteFreshConsultaHint(needed: boolean) {
+  try {
+    if (needed) sessionStorage.setItem(INVITE_FRESH_CONSULTA_HINT, "1");
+    else sessionStorage.removeItem(INVITE_FRESH_CONSULTA_HINT);
+  } catch {
+    // ignore private-mode storage errors
+  }
+}
+
+/** Consume the fresh-consulta flag (one-shot after invite redeem). */
+export function consumeInviteFreshConsultaHint(): boolean {
+  const needed = readInviteFreshConsultaHint();
+  if (needed) writeInviteFreshConsultaHint(false);
+  return needed;
 }
 
 /**
@@ -84,6 +111,17 @@ export function isGuestDisplayNameSet(name?: string | null): boolean {
     return false;
   }
   return true;
+}
+
+/** Name + phone both required to identify a guest patient uniquely. */
+export function isGuestIdentityComplete(opts: {
+  displayName?: string | null;
+  phone?: string | null;
+}): boolean {
+  return (
+    isGuestDisplayNameSet(opts.displayName) &&
+    normalizeGuestPhoneInput(opts.phone ?? "") != null
+  );
 }
 
 /** Digits-only phone for cross-channel patient identity (web/app/WhatsApp). */

@@ -7,7 +7,10 @@ import {
   getOrCreateGuestClientId,
   persistGuestClientId,
 } from "@/lib/guest-client-id";
-import { writeInviteNameGateHint } from "@/lib/guest-account";
+import {
+  writeInviteFreshConsultaHint,
+  writeInviteNameGateHint,
+} from "@/lib/guest-account";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 
@@ -103,6 +106,7 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
       // Always open the name screen after invite redeem so the fisio gets a
       // real patient name before chat (even when reusing guestClientId).
       writeInviteNameGateHint(true);
+      writeInviteFreshConsultaHint(true);
       // Hard navigation so middleware sees the new guest session immediately.
       window.location.assign("/fisioterapia?gate=name");
       return;

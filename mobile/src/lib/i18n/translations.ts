@@ -31,17 +31,19 @@ export const translations = {
     guest: {
       nameTitle: "¿Cómo te llamas?",
       nameHint:
-        "Tu fisioterapeuta verá este nombre en el informe. Si vuelves más tarde (web, app o WhatsApp), tu historial se mantiene.",
+        "Nombre y teléfono identifican tu ficha. Así tu fisio sabe quién eres aunque otra persona se llame igual.",
       namePlaceholder: "Nombre y apellidos",
-      phoneLabel: "Teléfono (opcional)",
+      phoneLabel: "Teléfono",
       phonePlaceholder: "Ej. 34612345678",
       phoneHint:
-        "Si usas el mismo número en WhatsApp, el fisio verá todas tus consultas juntas.",
+        "Obligatorio, con prefijo del país. El mismo número une web, app y WhatsApp en tu historial.",
       phoneInvalid: "Introduce un teléfono válido (con prefijo, ej. 34612345678).",
+      phoneRequired:
+        "Introduce tu teléfono con prefijo (ej. 34612345678). Es obligatorio para identificarte.",
       nameRequired: "Escribe tu nombre para que tu fisioterapeuta sepa quién eres.",
       startConsult: "Empezar consulta",
       sessionExpired: "Sesión caducada. Vuelve a introducir el código.",
-      saveNameError: "No se pudo guardar tu nombre. Inténtalo de nuevo.",
+      saveNameError: "No se pudo guardar tus datos. Inténtalo de nuevo.",
       physioNotFound:
         "No se encontró el fisioterapeuta de este código. Vuelve al inicio e introdúcelo de nuevo.",
     },
@@ -433,17 +435,19 @@ export const translations = {
     guest: {
       nameTitle: "What's your name?",
       nameHint:
-        "Your physiotherapist will see this name on the report. If you return later (web, app, or WhatsApp), your history stays together.",
+        "Name and phone identify your chart, so your physio knows who you are even if someone else shares your name.",
       namePlaceholder: "Full name",
-      phoneLabel: "Phone (optional)",
+      phoneLabel: "Phone",
       phonePlaceholder: "e.g. 34612345678",
       phoneHint:
-        "If you use the same number on WhatsApp, your physio will see all visits together.",
+        "Required, with country code. The same number keeps web, app, and WhatsApp history together.",
       phoneInvalid: "Enter a valid phone number (with country code).",
+      phoneRequired:
+        "Enter your phone with country code (e.g. 34612345678). Required to identify you.",
       nameRequired: "Enter your name so your physiotherapist knows who you are.",
       startConsult: "Start consult",
       sessionExpired: "Session expired. Enter the code again.",
-      saveNameError: "Could not save your name. Please try again.",
+      saveNameError: "Could not save your details. Please try again.",
       physioNotFound:
         "We couldn't find a physiotherapist for this code. Go back and enter it again.",
     },
