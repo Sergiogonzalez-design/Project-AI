@@ -173,17 +173,140 @@ export function waOptionListTitle(option: string, max = 24): string {
   return `${t.slice(0, max - 1).trimEnd()}…`;
 }
 
-/** Strip web multi-select hints — WhatsApp lists only allow one choice. */
-export function waQuestionLabel(q: WaQuestionDef): string {
+/** Strip web-only parentheticals; keep multi-select guidance for WhatsApp. */
+export function waQuestionLabel(
+  q: WaQuestionDef,
+  selected: readonly string[] = []
+): string {
   let label = q.label
-    .replace(/\s*\(puedes marcar varias(?: zonas)?\)/gi, "")
-    .replace(/\s*\(puedes marcar varios\)/gi, "")
     .replace(/\s*\(elige una\)/gi, "")
     .trim();
   if (q.type === "multi") {
-    label = `${label}\n\nElige una opción (la que mejor describa tu caso).`;
+    const picked =
+      selected.length > 0
+        ? `\n\nElegido: ${selected.map((s) => waOptionListTitle(s, 40)).join(", ")}.`
+        : "";
+    label = `${label}${picked}\n\nPuedes marcar varias. Pulsa Listo cuando termines.`;
   }
   return label;
+}
+
+/** Options like "Ninguna" end multi-select immediately. */
+export function isMultiExclusiveOption(option: string): boolean {
+  const t = option.trim().toLowerCase();
+  if (!t) return false;
+  if (/^ningun[oaá]?(\s+de\s+estas)?$/i.test(t)) return true;
+  if (/ninguna de estas/i.test(t)) return true;
+  if (t === "nada" || t === "no" || t === "ninguno de estos") return true;
+  return false;
+}
+
+export type QuestionOutboundOpts = {
+  selected?: readonly string[];
+  /** 0-based page when there are more options than fit on reply buttons. */
+  page?: number;
+};
+
+/**
+ * Prefer reply buttons (shown directly). WhatsApp allows max 3 buttons, so we
+ * paginate with "Más" instead of interactive lists ("Ver opciones").
+ */
+export function questionToOutbound(
+  q: WaQuestionDef,
+  opts: QuestionOutboundOpts = {}
+): WhatsAppOutbound {
+  const selected = [...(opts.selected ?? [])];
+  const page = Math.max(0, opts.page ?? 0);
+  const label = waQuestionLabel(q, selected);
+
+  if (q.type === "text" || q.type === "slider") {
+    const hint =
+      q.type === "slider"
+        ? "\n\nResponde con un número del 0 al 10."
+        : "";
+    return { type: "text", text: `${label}${hint}` };
+  }
+
+  const allOpts = [...(q.options ?? [])];
+  if (allOpts.length === 0) {
+    return { type: "text", text: label };
+  }
+
+  const available =
+    q.type === "multi"
+      ? allOpts.filter((o) => !selected.some((s) => s.toLowerCase() === o.toLowerCase()))
+      : allOpts;
+
+  // Multi done with nothing left to pick → only Listo.
+  if (q.type === "multi" && available.length === 0) {
+    return {
+      type: "buttons",
+      text: label,
+      buttons: [{ id: "multi:done", title: "Listo" }],
+    };
+  }
+
+  const showListo = q.type === "multi" && selected.length > 0;
+  // WhatsApp max 3 reply buttons. Reserve slots for Listo / Más.
+  let pageSize = 3;
+  if (showListo) {
+    // With Listo, show up to 2 remaining options; if more, pageSize 1 + Más + Listo.
+    pageSize = available.length > 2 ? 1 : Math.min(2, Math.max(available.length, 1));
+  } else if (available.length > 3) {
+    pageSize = 2; // 2 options + Más
+  }
+
+  const start = page * pageSize;
+  const slice = available.slice(start, start + pageSize);
+  const hasMore = start + pageSize < available.length;
+  const hasPrev = page > 0;
+
+  const buttons: { id: string; title: string }[] = slice.map((o) => ({
+    id: `opt:${o}`,
+    title: waOptionListTitle(o, 20),
+  }));
+
+  if (showListo && hasMore) {
+    buttons.length = Math.min(buttons.length, 1);
+    buttons.push({ id: "page:next", title: "Más" });
+    buttons.push({ id: "multi:done", title: "Listo" });
+  } else if (showListo) {
+    buttons.push({ id: "multi:done", title: "Listo" });
+  } else if (hasMore) {
+    buttons.push({ id: "page:next", title: "Más" });
+  } else if (hasPrev && buttons.length < 3) {
+    buttons.push({ id: "page:prev", title: "Anterior" });
+  }
+
+  // If somehow empty (bad page), reset to first page of available.
+  if (buttons.length === 0 && available.length > 0) {
+    return questionToOutbound(q, { selected, page: 0 });
+  }
+
+  return {
+    type: "buttons",
+    text: label,
+    buttons: buttons.slice(0, 3),
+  };
+}
+
+export function parseOptionReply(
+  text: string,
+  buttonId?: string | null
+): string {
+  if (buttonId?.startsWith("opt:")) return buttonId.slice(4);
+  return text.trim();
+}
+
+export function isPageNavButton(buttonId?: string | null): "next" | "prev" | null {
+  if (buttonId === "page:next") return "next";
+  if (buttonId === "page:prev") return "prev";
+  return null;
+}
+
+export function isMultiDoneButton(buttonId?: string | null, text?: string): boolean {
+  if (buttonId === "multi:done") return true;
+  return /^(listo|hecho|continuar|siguiente|ok|vale)$/i.test((text ?? "").trim());
 }
 
 const GENERIC_QUESTIONS: WaQuestionDef[] = [
@@ -364,16 +487,24 @@ export function applyAnswer(
 ): Record<string, unknown> {
   const next = { ...answers };
   const text = raw.trim();
-  const isMulti = q.type === "multi" || Array.isArray(answers[q.id]);
+  if (!text) return next;
+
+  const isMulti = q.type === "multi";
   if (isMulti) {
     const opts = q.options ?? [];
-    const picked = opts.find(
-      (o) => o.toLowerCase() === text.toLowerCase()
-    );
+    const picked = opts.find((o) => o.toLowerCase() === text.toLowerCase());
     const value = picked ?? text;
-    if (value) {
+    if (isMultiExclusiveOption(value)) {
       next[q.id] = [value];
+      return next;
     }
+    const prev = Array.isArray(answers[q.id])
+      ? [...(answers[q.id] as string[])]
+      : [];
+    if (!prev.some((p) => p.toLowerCase() === value.toLowerCase())) {
+      prev.push(value);
+    }
+    next[q.id] = prev;
     return next;
   }
   if (q.type === "slider") {
@@ -397,78 +528,3 @@ export function applyAnswer(
   return next;
 }
 
-export function questionToOutbound(q: WaQuestionDef): WhatsAppOutbound {
-  const label = waQuestionLabel(q);
-  if (q.type === "text" || q.type === "slider") {
-    const hint =
-      q.type === "slider"
-        ? "\n\nResponde con un número del 0 al 10."
-        : "";
-    return { type: "text", text: `${label}${hint}` };
-  }
-
-  const opts = [...(q.options ?? [])];
-  if (opts.length === 0) {
-    return { type: "text", text: label };
-  }
-
-  // Yes/No → reply buttons
-  if (
-    opts.length === 2 &&
-    opts.some((o) => /^s[ií]$/i.test(o)) &&
-    opts.some((o) => /^no$/i.test(o))
-  ) {
-    return {
-      type: "buttons",
-      text: label,
-      buttons: opts.map((o) => ({
-        id: `opt:${o}`,
-        title: waOptionListTitle(o, 20),
-      })),
-    };
-  }
-
-  if (opts.length <= 3) {
-    return {
-      type: "buttons",
-      text: label,
-      buttons: opts.map((o) => ({
-        id: `opt:${o}`,
-        title: waOptionListTitle(o, 20),
-      })),
-    };
-  }
-
-  // List: numbered body; short titles (≤24) + full description (≤72).
-  // WhatsApp lists are single-select only — never promise multi-select.
-  const listed = opts.slice(0, 10);
-  const bodyList = listed.map((o, i) => `${i + 1}. ${o}`).join("\n");
-  return {
-    type: "list",
-    text: `${label}\n\n${bodyList}`,
-    buttonLabel: "Ver opciones",
-    sections: [
-      {
-        title: "Opciones",
-        rows: listed.map((o) => {
-          const title = waOptionListTitle(o, 24);
-          const description = o.slice(0, 72);
-          return {
-            id: `opt:${o}`,
-            title,
-            // Always show full option under the short title when they differ.
-            description: description !== title ? description : undefined,
-          };
-        }),
-      },
-    ],
-  };
-}
-
-export function parseOptionReply(
-  text: string,
-  buttonId?: string | null
-): string {
-  if (buttonId?.startsWith("opt:")) return buttonId.slice(4);
-  return text.trim();
-}

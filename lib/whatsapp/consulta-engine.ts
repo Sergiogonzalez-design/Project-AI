@@ -33,11 +33,15 @@ import {
 import {
   applyAnswer,
   getPartDriver,
+  isMultiDoneButton,
+  isMultiExclusiveOption,
+  isPageNavButton,
   nextUnansweredQuestion,
   parseOptionReply,
   prefillsWhatsAppSkippedAnswers,
   questionToOutbound,
   resolveQuestionnairePart,
+  type WaQuestionDef,
 } from "./questionnaire-driver";
 import { completeWhatsAppPhysioReport } from "./report";
 import {
@@ -51,14 +55,31 @@ import type {
   WhatsAppOutbound,
 } from "./types";
 
-function replies(
-  ...messages: WhatsAppOutbound[]
-): WhatsAppOutbound[] {
+function replies(...messages: WhatsAppOutbound[]): WhatsAppOutbound[] {
   return messages;
 }
 
-function text(t: string): WhatsAppOutbound {
-  return { type: "text", text: t };
+function text(body: string): WhatsAppOutbound {
+  return { type: "text", text: body };
+}
+
+function selectedForQuestion(
+  answers: Record<string, unknown>,
+  q: WaQuestionDef
+): string[] {
+  const v = answers[q.id];
+  return Array.isArray(v) ? (v as string[]) : [];
+}
+
+function outboundForQuestion(
+  q: WaQuestionDef,
+  answers: Record<string, unknown>,
+  page = 0
+): WhatsAppOutbound {
+  return questionToOutbound(q, {
+    selected: selectedForQuestion(answers, q),
+    page,
+  });
 }
 
 function buildFunctionalTests(
@@ -214,7 +235,9 @@ function resumeCurrentPrompt(
           .find((item) => item.id === session.state.currentQuestionId)) ||
       nextUnansweredQuestion(part, answers);
     return q
-      ? replies(questionToOutbound(q))
+      ? replies(
+          outboundForQuestion(q, answers, session.state.optionPage ?? 0)
+        )
       : replies(text(buildWhatsAppIntakeMore()));
   }
   if (session.phase === "functional") {
@@ -400,6 +423,7 @@ export async function handleWhatsAppInbound(
           answers,
           bodyArea,
           currentQuestionId: null,
+          optionPage: 0,
         },
         { phase: "questionnaire" }
       )) ?? session;
@@ -421,7 +445,7 @@ export async function handleWhatsAppInbound(
       })) ?? session;
     return replies(
       text(buildWhatsAppQuestionnaireIntro()),
-      questionToOutbound(q)
+      outboundForQuestion(q, answers, 0)
     );
   }
 
@@ -453,7 +477,82 @@ export async function handleWhatsAppInbound(
       return started.out;
     }
 
-    answers = applyAnswer(answers, current, buttonReply || rawText);
+    const pageNav = isPageNavButton(inbound.buttonId);
+    if (pageNav) {
+      const curPage = session.state.optionPage ?? 0;
+      const nextPage = pageNav === "next" ? curPage + 1 : Math.max(0, curPage - 1);
+      session =
+        (await mergeSessionState(admin, session, {
+          optionPage: nextPage,
+          currentQuestionId: current.id,
+        })) ?? session;
+      return replies(outboundForQuestion(current, answers, nextPage));
+    }
+
+    if (current.type === "multi" && isMultiDoneButton(inbound.buttonId, rawText)) {
+      const selected = selectedForQuestion(answers, current);
+      if (selected.length === 0 && current.required) {
+        return replies(
+          text("Elige al menos una opción y pulsa Listo cuando termines."),
+          outboundForQuestion(current, answers, 0)
+        );
+      }
+      if (selected.length === 0) {
+        answers = { ...answers, [current.id]: ["Ninguna"] };
+      }
+      // Mark answered and advance.
+      const nextQ = nextUnansweredQuestion(part, answers);
+      if (!nextQ) {
+        const symptomContext = driver.format(
+          answers,
+          session.state.intakeText || ""
+        );
+        session =
+          (await mergeSessionState(admin, session, {
+            answers,
+            currentQuestionId: null,
+            optionPage: 0,
+            symptomContext,
+          })) ?? session;
+        const started = await startFunctionalPhase(
+          admin,
+          session,
+          symptomContext,
+          session.state.bodyArea || part
+        );
+        return started.out;
+      }
+      session =
+        (await mergeSessionState(admin, session, {
+          answers,
+          currentQuestionId: nextQ.id,
+          optionPage: 0,
+        })) ?? session;
+      return replies(outboundForQuestion(nextQ, answers, 0));
+    }
+
+    const choice = buttonReply || rawText;
+    if (!choice.trim()) {
+      return replies(
+        outboundForQuestion(current, answers, session.state.optionPage ?? 0)
+      );
+    }
+
+    answers = applyAnswer(answers, current, choice);
+    const exclusive =
+      current.type === "multi" && isMultiExclusiveOption(choice);
+
+    // Multi-select: keep asking until Listo (unless exclusive option).
+    if (current.type === "multi" && !exclusive) {
+      session =
+        (await mergeSessionState(admin, session, {
+          answers,
+          currentQuestionId: current.id,
+          optionPage: 0,
+        })) ?? session;
+      return replies(outboundForQuestion(current, answers, 0));
+    }
+
     const nextQ = nextUnansweredQuestion(part, answers);
     if (!nextQ) {
       const symptomContext = driver.format(
@@ -464,6 +563,7 @@ export async function handleWhatsAppInbound(
         (await mergeSessionState(admin, session, {
           answers,
           currentQuestionId: null,
+          optionPage: 0,
           symptomContext,
         })) ?? session;
       const started = await startFunctionalPhase(
@@ -479,8 +579,9 @@ export async function handleWhatsAppInbound(
       (await mergeSessionState(admin, session, {
         answers,
         currentQuestionId: nextQ.id,
+        optionPage: 0,
       })) ?? session;
-    return replies(questionToOutbound(nextQ));
+    return replies(outboundForQuestion(nextQ, answers, 0));
   }
 
   // --- functional ---

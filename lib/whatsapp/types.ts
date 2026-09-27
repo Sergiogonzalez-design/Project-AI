@@ -14,6 +14,8 @@ export type WhatsAppSessionState = {
   questionnairePart?: string;
   answers?: Record<string, unknown>;
   currentQuestionId?: string | null;
+  /** Pagination for WhatsApp reply buttons when a question has >3 options. */
+  optionPage?: number;
   symptomContext?: string;
   redFlagsUrgent?: boolean;
   functionalTests?: { n: number; prompt: string }[];
