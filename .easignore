@@ -1,0 +1,24 @@
+# Keep EAS uploads lean (monorepo root is the archive root).
+# Mobile loads clinical-test media from Supabase CDN, not these local files.
+
+Notes.txt
+.whatsapp-verify-token.tmp
+onix-app-store-screenshots/
+public/clinical-tests/_preview/
+public/clinical-tests/_kim-frames/
+public/clinical-tests/**/*.bak
+public/clinical-tests/**/*.bak2
+public/clinical-tests/videos/
+public/taping/
+scripts/.tmp/
+scripts/**/*.tmp
+mobile/.tmp-expo-check/
+supabase/.temp/
+**/*.mp4
+**/*.bak
+**/*.bak2
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+.git/
