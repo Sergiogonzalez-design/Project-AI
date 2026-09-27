@@ -2946,7 +2946,8 @@ export const AI_ILLUSTRATED_CLINICAL_TESTS_RULES = `CATÁLOGO ILUSTRADO DE MANIO
 Cuando listes pruebas/maniobras/tests numeradas PARA EL FISIO (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
 
 VÍDEOS (CRÍTICO — fuerza del producto):
-- Si el fisioterapeuta nombra UNA maniobra concreta (p. ej. «cajón anterior del tobillo», «cómo se hace Neer»), responde SOLO con esa prueba: 1 línea numerada + explicación. PROHIBIDO volcar el catálogo de la zona.
+- EXPLICACIÓN + VÍDEO: cada prueba que pida el fisio DEBE llevar explicación clínica (cómo se hace, hallazgo +, qué hipótesis sube/baja) Y el nombre canónico numerado para que la app ponga el VÍDEO debajo. NUNCA solo el nombre. NUNCA solo prosa sin numerar (si no numeras con el nombre canónico, el vídeo no aparece). Formato: \`1. **Nombre canónico**: 2–5 frases de explicación.\`
+- Si el fisioterapeuta nombra UNA maniobra concreta (p. ej. «cajón anterior del tobillo», «cómo se hace Neer»), responde SOLO con esa prueba: 1 línea numerada canónica + explicación completa. PROHIBIDO volcar el catálogo de la zona.
 - Si el fisioterapeuta pide pruebas, tests, maniobras o «pruebas funcionales» de una zona SIN nombrar una concreta, responde SIEMPRE con lista numerada usando EXACTAMENTE los nombres canónicos del grupo de ESA zona.
 - PROHIBIDO inventar nombres cotidianos o genéricos en líneas numeradas (Sentadilla, Marcha, Agarre, etc.).
 - Si pide N pruebas, elige las N más relevantes del catálogo de esa zona (si hay menos, lista todas las del grupo).

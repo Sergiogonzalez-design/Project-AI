@@ -39,7 +39,7 @@ import {
   nextUnansweredQuestion,
   parseOptionReply,
   prefillsWhatsAppSkippedAnswers,
-  questionToOutbound,
+  questionToMessages,
   resolveQuestionnairePart,
   type WaQuestionDef,
 } from "./questionnaire-driver";
@@ -75,8 +75,8 @@ function outboundForQuestion(
   q: WaQuestionDef,
   answers: Record<string, unknown>,
   page = 0
-): WhatsAppOutbound {
-  return questionToOutbound(q, {
+): WhatsAppOutbound[] {
+  return questionToMessages(q, {
     selected: selectedForQuestion(answers, q),
     page,
   });
@@ -235,9 +235,7 @@ function resumeCurrentPrompt(
           .find((item) => item.id === session.state.currentQuestionId)) ||
       nextUnansweredQuestion(part, answers);
     return q
-      ? replies(
-          outboundForQuestion(q, answers, session.state.optionPage ?? 0)
-        )
+      ? replies(...outboundForQuestion(q, answers, session.state.optionPage ?? 0))
       : replies(text(buildWhatsAppIntakeMore()));
   }
   if (session.phase === "functional") {
@@ -445,7 +443,7 @@ export async function handleWhatsAppInbound(
       })) ?? session;
     return replies(
       text(buildWhatsAppQuestionnaireIntro()),
-      outboundForQuestion(q, answers, 0)
+      ...outboundForQuestion(q, answers, 0)
     );
   }
 
@@ -477,16 +475,15 @@ export async function handleWhatsAppInbound(
       return started.out;
     }
 
-    const pageNav = isPageNavButton(inbound.buttonId);
+    const pageNav = isPageNavButton(inbound.buttonId, rawText);
     if (pageNav) {
-      const curPage = session.state.optionPage ?? 0;
-      const nextPage = pageNav === "next" ? curPage + 1 : Math.max(0, curPage - 1);
+      const nextPage = pageNav === "next" ? 1 : 0;
       session =
         (await mergeSessionState(admin, session, {
           optionPage: nextPage,
           currentQuestionId: current.id,
         })) ?? session;
-      return replies(outboundForQuestion(current, answers, nextPage));
+      return replies(...outboundForQuestion(current, answers, nextPage));
     }
 
     if (current.type === "multi" && isMultiDoneButton(inbound.buttonId, rawText)) {
@@ -494,7 +491,7 @@ export async function handleWhatsAppInbound(
       if (selected.length === 0 && current.required) {
         return replies(
           text("Elige al menos una opción y pulsa Listo cuando termines."),
-          outboundForQuestion(current, answers, 0)
+          ...outboundForQuestion(current, answers, 0)
         );
       }
       if (selected.length === 0) {
@@ -528,19 +525,23 @@ export async function handleWhatsAppInbound(
           currentQuestionId: nextQ.id,
           optionPage: 0,
         })) ?? session;
-      return replies(outboundForQuestion(nextQ, answers, 0));
+      return replies(...outboundForQuestion(nextQ, answers, 0));
     }
 
     const choice = buttonReply || rawText;
     if (!choice.trim()) {
       return replies(
-        outboundForQuestion(current, answers, session.state.optionPage ?? 0)
+        ...outboundForQuestion(current, answers, session.state.optionPage ?? 0)
       );
     }
 
     answers = applyAnswer(answers, current, choice);
+    const stored = answers[current.id];
+    const storedLast = Array.isArray(stored)
+      ? String(stored[stored.length - 1] ?? "")
+      : String(stored ?? "");
     const exclusive =
-      current.type === "multi" && isMultiExclusiveOption(choice);
+      current.type === "multi" && isMultiExclusiveOption(storedLast);
 
     // Multi-select: keep asking until Listo (unless exclusive option).
     if (current.type === "multi" && !exclusive) {
@@ -550,7 +551,7 @@ export async function handleWhatsAppInbound(
           currentQuestionId: current.id,
           optionPage: 0,
         })) ?? session;
-      return replies(outboundForQuestion(current, answers, 0));
+      return replies(...outboundForQuestion(current, answers, 0));
     }
 
     const nextQ = nextUnansweredQuestion(part, answers);
@@ -581,7 +582,7 @@ export async function handleWhatsAppInbound(
         currentQuestionId: nextQ.id,
         optionPage: 0,
       })) ?? session;
-    return replies(outboundForQuestion(nextQ, answers, 0));
+    return replies(...outboundForQuestion(nextQ, answers, 0));
   }
 
   // --- functional ---

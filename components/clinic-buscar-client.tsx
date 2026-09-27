@@ -262,25 +262,21 @@ export function ClinicBuscarClient() {
   }
 
   return (
-    <div className="min-h-full bg-[#f3f4f6]">
-      <div className="border-b border-white/60 bg-gradient-to-br from-slate-950 via-blue-950 to-blue-700 text-white">
-        <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-200">
-            Directorio
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Encuentra tu clínica
-          </h1>
-          <p className="mt-2 max-w-xl text-sm text-blue-100/90">
-            Perfiles, novedades y contacto directo. Como un canal, pensado para
-            fisioterapia.
-          </p>
-        </div>
-      </div>
+    <div className="min-h-full bg-[#F8FAFC]">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-600">
+          Directorio
+        </p>
+        <h1 className="mt-1 text-[22px] font-bold tracking-tight text-slate-950 sm:text-3xl">
+          Encuentra tu clínica
+        </h1>
+        <p className="mt-2 max-w-xl text-sm text-slate-500">
+          Perfiles, novedades y contacto directo. Como un canal, pensado para
+          fisioterapia.
+        </p>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
         <div
-          className="mb-6 grid h-11 shrink-0 grid-cols-3 gap-1 rounded-2xl bg-white p-1 shadow-sm"
+          className="mb-6 mt-6 grid h-11 shrink-0 grid-cols-3 gap-1 rounded-2xl bg-white p-1 shadow-sm"
           role="tablist"
           aria-label="Secciones del directorio"
         >

@@ -14,6 +14,7 @@ import { ClinicalTestMediaBlock } from "@/components/clinical-test-media";
 import {
   clinicalTestRegionIdsForHeading,
   isClinicalRegionSectionLabel,
+  findClinicalTestImage,
   leftoverIllustratedTests,
   nextIllustratedFallbackTest,
   pickIllustratedTestsForPruebasQuery,
@@ -218,6 +219,17 @@ function renderAssistantContent(
         shownTestIds,
         currentRegionIds
       );
+    }
+    if (!showImage) {
+      const fromLine = findClinicalTestImage(stripMarkdownStars(trimmed));
+      if (
+        fromLine &&
+        !shownTestIds.has(fromLine.id) &&
+        (!currentRegionIds || currentRegionIds.includes(fromLine.id)) &&
+        (!lockToSingle || fromLine.id === lockToSingle.id)
+      ) {
+        showImage = fromLine;
+      }
     }
     if (showImage) shownTestIds.add(showImage.id);
 
@@ -1124,12 +1136,6 @@ export function FisioChatInterface() {
                   autoCorrect="off"
                   spellCheck={false}
                   name="aikinora-fisio-composer"
-                  onFocus={(e) => {
-                    const el = e.currentTarget;
-                    window.setTimeout(() => {
-                      el.scrollIntoView({ block: "nearest", inline: "nearest" });
-                    }, 350);
-                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
