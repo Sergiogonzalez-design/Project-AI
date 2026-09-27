@@ -1,23 +1,22 @@
 import { useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
-import * as Clipboard from "expo-clipboard";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { PhysioReportView } from "../components/PhysioReportView";
-import { StaffPatientProfileEditor } from "../components/StaffPatientProfileEditor";
+import { StaffPatientProfileEditor, fetchStaffPatientProfile, type StaffPatientProfile } from "../components/StaffPatientProfileEditor";
 import {
   StaffPatientNotesCard,
   StaffReportNotesField,
 } from "../components/StaffPatientNotes";
+import { StaffDeletePatientButton } from "../components/StaffDeletePatientButton";
+import { VinculacionInviteCard } from "../components/VinculacionInviteCard";
 import { Colors } from "../lib/colors";
 import {
   buildConsultaNumberMap,
@@ -63,15 +62,15 @@ export function ClinicPatientsScreen() {
   const [patients, setPatients] = useState<ClinicPatient[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<ClinicPatient | null>(null);
+  const [detailProfile, setDetailProfile] = useState<StaffPatientProfile | null>(
+    null
+  );
+  const [openingPatientId, setOpeningPatientId] = useState<string | null>(null);
   const [reports, setReports] = useState<ClinicalReport[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [reportsLoading, setReportsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [codeMenuOpen, setCodeMenuOpen] = useState(false);
-  const [vinculacionOpen, setVinculacionOpen] = useState(true);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
   const whatsappInviteLink = inviteCode
@@ -104,30 +103,53 @@ export function ClinicPatientsScreen() {
   }, [load]);
 
   async function openPatient(patient: ClinicPatient) {
-    setSelectedPatient(patient);
-    setReportsLoading(true);
-    setExpandedId(null);
-    const { data, error: err } = await supabase
-      .from("clinical_reports")
-      .select(
-        "id, created_at, body_area, patient_summary, physio_report, status, staff_notes"
-      )
-      .eq("patient_id", patient.id)
-      .order("created_at", { ascending: false });
-    if (err) setError(err.message);
-    setReports((data as ClinicalReport[]) ?? []);
-    setReportsLoading(false);
+    if (openingPatientId) return;
+    setOpeningPatientId(patient.id);
+    setError(null);
+    try {
+      const [reportsRes, profile] = await Promise.all([
+        supabase
+          .from("clinical_reports")
+          .select(
+            "id, created_at, body_area, patient_summary, physio_report, status, staff_notes"
+          )
+          .eq("patient_id", patient.id)
+          .order("created_at", { ascending: false }),
+        fetchStaffPatientProfile(patient.id).catch(() => null),
+      ]);
+      if (reportsRes.error) setError(reportsRes.error.message);
+      const list = (reportsRes.data as ClinicalReport[]) ?? [];
+      setReports(list);
+      setExpandedId(null);
+      setDetailProfile(profile);
+      setSelectedPatient(
+        profile?.display_name
+          ? { ...patient, display_name: profile.display_name }
+          : patient
+      );
 
-    const newIds = ((data as ClinicalReport[]) ?? [])
-      .filter((r) => r.status === "new")
-      .map((r) => r.id);
-    if (newIds.length > 0) {
-      await supabase
-        .from("clinical_reports")
-        .update({ status: "viewed", viewed_at: new Date().toISOString() })
-        .in("id", newIds)
-        .eq("status", "new");
+      const newIds = list.filter((r) => r.status === "new").map((r) => r.id);
+      if (newIds.length > 0) {
+        await supabase
+          .from("clinical_reports")
+          .update({ status: "viewed", viewed_at: new Date().toISOString() })
+          .in("id", newIds)
+          .eq("status", "new");
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No se pudo abrir el paciente."
+      );
+    } finally {
+      setOpeningPatientId(null);
     }
+  }
+
+  function closePatient() {
+    setSelectedPatient(null);
+    setDetailProfile(null);
+    setReports([]);
+    setExpandedId(null);
   }
 
   async function regenerateCode() {
@@ -143,24 +165,6 @@ export function ClinicPatientsScreen() {
     setInviteCode((data as string) ?? null);
   }
 
-  async function copy(kind: "code" | "link" | "wa", value: string) {
-    await Clipboard.setStringAsync(value);
-    setCopied(kind);
-    setTimeout(() => setCopied(null), 2000);
-  }
-
-  async function shareInvite(kind: "web" | "wa" = "web") {
-    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
-    if (!url || !inviteCode) return;
-    const template =
-      kind === "wa" ? hub.shareWhatsAppMessage : hub.shareInviteMessage;
-    await Share.share({
-      message: template
-        .replace("{code}", inviteCode)
-        .replace("{link}", url),
-    });
-  }
-
   const patientsLabel =
     patients.length === 1
       ? hub.patientsCount.replace("{n}", String(patients.length))
@@ -174,16 +178,19 @@ export function ClinicPatientsScreen() {
     const consultaNumbers = buildConsultaNumberMap(reports);
     const history = summarizeConsultaHistory(reports);
     return (
-      <ScrollView contentContainerStyle={styles.wrap}>
+      <ScrollView
+        key={selectedPatient.id}
+        contentContainerStyle={styles.wrap}
+      >
         <Pressable
-          onPress={() => setSelectedPatient(null)}
+          onPress={closePatient}
           style={styles.closeBtn}
         >
           <Text style={styles.closeText}>{hub.closePatient}</Text>
         </Pressable>
         <Text style={styles.title}>{label}</Text>
         <Text style={styles.sub}>{hub.patientReports}</Text>
-        {!reportsLoading && history.total > 0 ? (
+        {history.total > 0 ? (
           <View style={styles.historyStats}>
             <View style={styles.historyStat}>
               <Text style={styles.historyStatLabel}>Consultas</Text>
@@ -213,6 +220,7 @@ export function ClinicPatientsScreen() {
         ) : null}
         <StaffPatientProfileEditor
           patientId={selectedPatient.id}
+          initialProfile={detailProfile}
           onDisplayNameChange={(name) => {
             setSelectedPatient((prev) =>
               prev
@@ -221,13 +229,14 @@ export function ClinicPatientsScreen() {
             );
           }}
         />
-        <StaffPatientNotesCard patientId={selectedPatient.id} />
+        <StaffPatientNotesCard
+          patientId={selectedPatient.id}
+          initialNotes={detailProfile?.staff_notes ?? ""}
+        />
         <Text style={styles.historyTitle}>
           {locale === "en" ? "Visit history" : "Historial de consultas"}
         </Text>
-        {reportsLoading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
-        ) : reports.length === 0 ? (
+        {reports.length === 0 ? (
           <Text style={styles.empty}>{hub.noReports}</Text>
         ) : (
           reports.map((report) => {
@@ -278,6 +287,15 @@ export function ClinicPatientsScreen() {
             );
           })
         )}
+        <StaffDeletePatientButton
+          patientId={selectedPatient.id}
+          patientLabel={label}
+          onDeleted={() => {
+            const id = selectedPatient.id;
+            closePatient();
+            setPatients((prev) => prev.filter((p) => p.id !== id));
+          }}
+        />
       </ScrollView>
     );
   }
@@ -315,137 +333,15 @@ export function ClinicPatientsScreen() {
         <>
           <Text style={styles.sub}>{hub.patientsLead}</Text>
 
-          <View style={styles.card}>
-            <Pressable
-              onPress={() => {
-                setVinculacionOpen((v) => !v);
-                if (vinculacionOpen) setCodeMenuOpen(false);
-              }}
-              style={styles.vinculacionHead}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: vinculacionOpen }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{hub.linkingTitle}</Text>
-                <Text style={styles.linkingSubtitle}>
-                  {hub.linkingSubtitle}
-                </Text>
-              </View>
-              <Text style={styles.chevron}>{vinculacionOpen ? "▴" : "▾"}</Text>
-            </Pressable>
-
-            {vinculacionOpen ? (
-              <View style={styles.vinculacionBody}>
-                <Text style={styles.hint}>{hub.linkingHint}</Text>
-                {inviteLink ? (
-                  <Text style={styles.inviteLinkDisplay} selectable>
-                    {inviteLink}
-                  </Text>
-                ) : null}
-                <Pressable
-                  style={[
-                    styles.primaryShareBtn,
-                    (!inviteLink || codeBusy) && { opacity: 0.5 },
-                  ]}
-                  disabled={!inviteLink || codeBusy}
-                  onPress={() => void shareInvite("web")}
-                >
-                  <Text style={styles.primaryShareBtnText}>
-                    {copied === "link"
-                      ? hub.copied
-                      : hub.shareInvite}
-                  </Text>
-                </Pressable>
-                <View style={styles.codeRow}>
-                  <View style={styles.actionsWrap}>
-                    <Pressable
-                      style={[
-                        styles.actionsBtn,
-                        (!inviteCode || codeBusy) && { opacity: 0.5 },
-                      ]}
-                      disabled={!inviteCode || codeBusy}
-                      onPress={() => setCodeMenuOpen((o) => !o)}
-                    >
-                      <Text style={styles.actionsBtnText}>{hub.actions}</Text>
-                    </Pressable>
-                    {codeMenuOpen && inviteCode ? (
-                      <View style={styles.codeMenu}>
-                        {inviteLink ? (
-                          <Pressable
-                            style={styles.codeMenuItem}
-                            onPress={() => {
-                              setCodeMenuOpen(false);
-                              void copy("link", inviteLink);
-                            }}
-                          >
-                            <Text style={styles.codeMenuItemText}>
-                              {copied === "link" ? hub.copied : hub.copyLink}
-                            </Text>
-                          </Pressable>
-                        ) : null}
-                        {whatsappInviteLink ? (
-                          <>
-                            <Pressable
-                              style={styles.codeMenuItem}
-                              onPress={() => {
-                                setCodeMenuOpen(false);
-                                void copy("wa", whatsappInviteLink);
-                              }}
-                            >
-                              <Text style={styles.codeMenuItemText}>
-                                {copied === "wa"
-                                  ? hub.copied
-                                  : hub.copyWhatsApp}
-                              </Text>
-                            </Pressable>
-                            <Pressable
-                              style={styles.codeMenuItem}
-                              onPress={() => {
-                                setCodeMenuOpen(false);
-                                void shareInvite("wa");
-                              }}
-                            >
-                              <Text style={styles.codeMenuItemText}>
-                                {hub.shareWhatsApp}
-                              </Text>
-                            </Pressable>
-                          </>
-                        ) : null}
-                        <Pressable
-                          style={styles.codeMenuItem}
-                          onPress={() => {
-                            setCodeMenuOpen(false);
-                            void copy("code", inviteCode);
-                          }}
-                        >
-                          <Text style={styles.codeMenuItemText}>
-                            {copied === "code" ? hub.copied : hub.copyCode}
-                          </Text>
-                        </Pressable>
-                        <Pressable
-                          style={styles.codeMenuItem}
-                          disabled={codeBusy}
-                          onPress={() => {
-                            setCodeMenuOpen(false);
-                            void regenerateCode();
-                          }}
-                        >
-                          <Text
-                            style={[
-                              styles.codeMenuItemText,
-                              { color: "#92400E" },
-                            ]}
-                          >
-                            {codeBusy ? hub.creating : hub.newCode}
-                          </Text>
-                        </Pressable>
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-              </View>
-            ) : null}
-          </View>
+          <VinculacionInviteCard
+            inviteLink={inviteLink}
+            whatsappInviteLink={whatsappInviteLink}
+            inviteCode={inviteCode}
+            codeBusy={codeBusy}
+            onRegenerate={() => void regenerateCode()}
+            title={hub.linkingTitle}
+            subtitle={hub.linkingSubtitle}
+          />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -464,7 +360,11 @@ export function ClinicPatientsScreen() {
             patients.map((p) => (
               <Pressable
                 key={p.id}
-                style={styles.patientRow}
+                style={[
+                  styles.patientRow,
+                  openingPatientId === p.id && { opacity: 0.55 },
+                ]}
+                disabled={openingPatientId != null}
                 onPress={() => void openPatient(p)}
               >
                 <View style={{ flex: 1 }}>
@@ -482,8 +382,17 @@ export function ClinicPatientsScreen() {
                       ? hub.physioLabel.replace("{name}", p.physio_name)
                       : hub.unassignedPhysio}
                   </Text>
+                  {openingPatientId === p.id ? (
+                    <Text style={styles.meta}>
+                      {locale === "en" ? "Opening…" : "Abriendo ficha…"}
+                    </Text>
+                  ) : null}
                 </View>
-                <Text style={styles.link}>{hub.viewReport}</Text>
+                {openingPatientId === p.id ? (
+                  <ActivityIndicator color={Colors.primary} />
+                ) : (
+                  <Text style={styles.link}>{hub.viewReport}</Text>
+                )}
               </Pressable>
             ))
           )}
@@ -585,104 +494,7 @@ const styles = StyleSheet.create({
     overflow: "visible",
     zIndex: 2,
   },
-  vinculacionHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  vinculacionBody: {
-    marginTop: 12,
-  },
-  linkingSubtitle: {
-    marginTop: 2,
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  chevron: { fontSize: 14, color: Colors.textSecondary, paddingHorizontal: 4 },
-  hint: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: Colors.textSecondary,
-    marginBottom: 12,
-  },
-  inviteLinkDisplay: {
-    marginBottom: 10,
-    fontSize: 11,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-  primaryShareBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  primaryShareBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: Colors.white,
-    textAlign: "center",
-  },
   cardTitle: { fontSize: 16, fontWeight: "700", color: Colors.text },
-  codeRow: {
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: 8,
-  },
-  codePill: {
-    backgroundColor: "#F1F5F9",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  code: {
-    fontSize: 15,
-    fontWeight: "800",
-    letterSpacing: 3,
-    color: Colors.text,
-    fontVariant: ["tabular-nums"],
-  },
-  actionsWrap: { width: "100%" },
-  actionsBtn: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 44,
-    backgroundColor: "#fff",
-    alignItems: "center",
-  },
-  actionsBtnText: { fontSize: 13, fontWeight: "700", color: Colors.text },
-  codeMenu: {
-    marginTop: 8,
-    width: "100%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-    overflow: "hidden",
-  },
-  codeMenuItem: {
-    alignSelf: "stretch",
-    width: "100%",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  codeMenuItemText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.text,
-    textAlign: "left",
-  },
   row: { flexDirection: "row", gap: 8, marginTop: 10 },
   btn: {
     flex: 1,

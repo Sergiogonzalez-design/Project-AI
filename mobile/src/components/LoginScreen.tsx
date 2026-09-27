@@ -55,6 +55,7 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
   const [inviteCode, setInviteCode] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
   const [guestLoading, setGuestLoading] = useState(false);
+  const [deepLinkRedeem, setDeepLinkRedeem] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const autoGuestStarted = useRef(false);
   const busy = loading || guestLoading;
@@ -65,6 +66,7 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
       if (code.length < 6 || autoGuestStarted.current) return;
       autoGuestStarted.current = true;
       setInviteCode(code);
+      setDeepLinkRedeem(true);
       // Redeem on next tick so state is set for the form.
       setTimeout(() => {
         void redeemGuestCode(code);
@@ -112,6 +114,7 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
     const normalized = parsePastedInviteCode(rawCode);
     if (normalized.length < 6) {
       setGuestError(t.auth.guestCodeRequired);
+      setDeepLinkRedeem(false);
       return;
     }
     setGuestLoading(true);
@@ -178,6 +181,8 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
 
       if (!email || !password) {
         setGuestError(apiError ?? t.auth.guestStartError);
+        setDeepLinkRedeem(false);
+        autoGuestStarted.current = false;
         return;
       }
       await persistGuestClientId(returnedClientId ?? guestClientId);
@@ -185,9 +190,15 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
         email,
         password,
       });
-      if (signError) setGuestError(translateAuthError(signError.message, t));
+      if (signError) {
+        setGuestError(translateAuthError(signError.message, t));
+        setDeepLinkRedeem(false);
+        autoGuestStarted.current = false;
+      }
     } catch {
       setGuestError(t.auth.guestStartError);
+      setDeepLinkRedeem(false);
+      autoGuestStarted.current = false;
     } finally {
       setGuestLoading(false);
     }
@@ -203,130 +214,167 @@ export function LoginScreen({ onSwitch, onForgot }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
-      <DismissKeyboard>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-          onScrollBeginDrag={Keyboard.dismiss}
-        >
-        <View style={styles.header}>
-          <Image source={require("../../assets/logo.png")} style={styles.logo} />
-          <Text style={styles.title}>{t.auth.loginTitle}</Text>
-          <Text style={styles.subtitle}>{t.auth.loginSubtitle}</Text>
+      {deepLinkRedeem && guestLoading ? (
+        <View style={styles.deepLinkBusy}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.deepLinkBusyTitle}>Abriendo consulta previa…</Text>
+          <Text style={styles.deepLinkBusySub}>
+            No hace falta introducir ningún código.
+          </Text>
         </View>
-
-        <View style={styles.card}>
-          <AuthTextField
-            label={t.auth.email}
-            value={email}
-            onChangeText={setEmail}
-            editable={!busy}
-            {...authEmailProps}
-            onSubmitEditing={() => passwordRef.current?.focus()}
-          />
-
-          <View style={{ height: 12 }} />
-
-          <AuthTextField
-            label={t.auth.password}
-            value={password}
-            onChangeText={setPassword}
-            editable={!busy}
-            {...authPasswordProps}
-            showPasswordLabel={t.auth.showPassword}
-            hidePasswordLabel={t.auth.hidePassword}
-            ref={passwordRef}
-            onSubmitEditing={handleLogin}
-          />
-
-          <View style={{ height: 12 }} />
-
-          <Pressable
-            onPress={onForgot}
-            disabled={busy}
-            style={styles.forgotRow}
-            accessibilityRole="button"
-            accessibilityLabel={t.auth.forgotPassword}
+      ) : (
+        <DismissKeyboard>
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            onScrollBeginDrag={Keyboard.dismiss}
           >
-            <Text style={styles.forgotText}>{t.auth.forgotPassword}</Text>
-          </Pressable>
+            <View style={styles.header}>
+              <Image
+                source={require("../../assets/logo.png")}
+                style={styles.logo}
+              />
+              <Text style={styles.title}>{t.auth.loginTitle}</Text>
+              <Text style={styles.subtitle}>{t.auth.loginSubtitle}</Text>
+            </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+            <View style={styles.card}>
+              <AuthTextField
+                label={t.auth.email}
+                value={email}
+                onChangeText={setEmail}
+                editable={!busy}
+                {...authEmailProps}
+                onSubmitEditing={() => passwordRef.current?.focus()}
+              />
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              pressed && styles.buttonPressed,
-              busy && styles.buttonDisabled,
-            ]}
-            onPress={handleLogin}
-            disabled={busy}
-          >
-            {loading ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>{t.auth.login}</Text>
-            )}
-          </Pressable>
+              <View style={{ height: 12 }} />
 
-          <Pressable style={styles.switchRow} onPress={onSwitch} disabled={busy}>
-            <Text style={styles.switchText}>
-              {t.auth.noAccount}
-              <Text style={styles.switchLink}>{t.auth.signup}</Text>
-            </Text>
-          </Pressable>
+              <AuthTextField
+                label={t.auth.password}
+                value={password}
+                onChangeText={setPassword}
+                editable={!busy}
+                {...authPasswordProps}
+                showPasswordLabel={t.auth.showPassword}
+                hidePasswordLabel={t.auth.hidePassword}
+                ref={passwordRef}
+                onSubmitEditing={handleLogin}
+              />
 
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>{t.auth.or}</Text>
-            <View style={styles.dividerLine} />
-          </View>
+              <View style={{ height: 12 }} />
 
-          <Text style={styles.guestTitle}>{t.auth.guestCodeTitle}</Text>
-          <AuthTextField
-            label={t.auth.guestCodeLabel}
-            value={inviteCode}
-            onChangeText={(v) => setInviteCode(parsePastedInviteCode(v))}
-            editable={!busy}
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="off"
-            textContentType="none"
-            importantForAutofill="no"
-            placeholder={t.auth.guestCodePlaceholder}
-            returnKeyType="done"
-            blurOnSubmit
-            onSubmitEditing={() => void handleGuestCode()}
-          />
-          {guestError ? <Text style={styles.error}>{guestError}</Text> : null}
-          <Pressable
-            style={({ pressed }) => [
-              styles.guestButton,
-              pressed && styles.guestButtonPressed,
-              busy && styles.buttonDisabled,
-            ]}
-            onPress={() => void handleGuestCode()}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel={t.auth.guestStartA11y}
-          >
-            {guestLoading ? (
-              <ActivityIndicator color={Colors.primary} />
-            ) : (
-            <Text style={styles.guestButtonText}>{t.auth.guestStart}</Text>
-          )}
-        </Pressable>
-        </View>
-      </ScrollView>
-      </DismissKeyboard>
+              <Pressable
+                onPress={onForgot}
+                disabled={busy}
+                style={styles.forgotRow}
+                accessibilityRole="button"
+                accessibilityLabel={t.auth.forgotPassword}
+              >
+                <Text style={styles.forgotText}>{t.auth.forgotPassword}</Text>
+              </Pressable>
+
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  pressed && styles.buttonPressed,
+                  busy && styles.buttonDisabled,
+                ]}
+                onPress={handleLogin}
+                disabled={busy}
+              >
+                {loading ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.buttonText}>{t.auth.login}</Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={styles.switchRow}
+                onPress={onSwitch}
+                disabled={busy}
+              >
+                <Text style={styles.switchText}>
+                  {t.auth.noAccount}
+                  <Text style={styles.switchLink}>{t.auth.signup}</Text>
+                </Text>
+              </Pressable>
+
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>{t.auth.or}</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <Text style={styles.guestTitle}>{t.auth.guestCodeTitle}</Text>
+              <AuthTextField
+                label={t.auth.guestCodeLabel}
+                value={inviteCode}
+                onChangeText={(v) => setInviteCode(parsePastedInviteCode(v))}
+                editable={!busy}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                textContentType="none"
+                importantForAutofill="no"
+                placeholder={t.auth.guestCodePlaceholder}
+                returnKeyType="done"
+                blurOnSubmit
+                onSubmitEditing={() => void handleGuestCode()}
+              />
+              {guestError ? <Text style={styles.error}>{guestError}</Text> : null}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.guestButton,
+                  pressed && styles.guestButtonPressed,
+                  busy && styles.buttonDisabled,
+                ]}
+                onPress={() => void handleGuestCode()}
+                disabled={busy}
+                accessibilityRole="button"
+                accessibilityLabel={t.auth.guestStartA11y}
+              >
+                {guestLoading ? (
+                  <ActivityIndicator color={Colors.primary} />
+                ) : (
+                  <Text style={styles.guestButtonText}>{t.auth.guestStart}</Text>
+                )}
+              </Pressable>
+            </View>
+          </ScrollView>
+        </DismissKeyboard>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
+  deepLinkBusy: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  deepLinkBusyTitle: {
+    marginTop: 8,
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.text,
+    textAlign: "center",
+  },
+  deepLinkBusySub: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+  },
   container: {
     flexGrow: 1,
     justifyContent: "center",

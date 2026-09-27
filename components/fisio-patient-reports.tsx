@@ -12,6 +12,7 @@ import {
   StaffReportNotesField,
 } from "@/components/staff-patient-notes";
 import { StaffPatientProfileEditor } from "@/components/staff-patient-profile-editor";
+import { StaffDeletePatientButton } from "@/components/staff-delete-patient-button";
 import {
   buildConsultaNumberMap,
   formatConsultaLabel,
@@ -310,6 +311,12 @@ export function FisioPatientReports({
           })
         )}
       </section>
+
+      <StaffDeletePatientButton
+        patientId={patientId}
+        patientLabel={liveLabel}
+        redirectTo={backHref}
+      />
     </main>
   );
 }

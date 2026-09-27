@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ClinicTeamPanel } from "@/components/clinic-team-panel";
+import { VinculacionInviteCard } from "@/components/vinculacion-invite-card";
 import { clinicHubCopy } from "@/lib/clinic-hub-copy";
 import { staffPatientLabel, staffVisibleEmail } from "@/lib/guest-account";
 import {
-  buildPhysioInviteShareText,
   buildPhysioInviteUrl,
-  buildPhysioWhatsAppInviteShareText,
   buildPhysioWhatsAppInviteUrl,
 } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
@@ -51,11 +50,7 @@ export function ClinicPatientsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
-  const [codeMenuOpen, setCodeMenuOpen] = useState(false);
-  const [vinculacionOpen, setVinculacionOpen] = useState(true);
   const [tab, setTab] = useState<"pacientes" | "fisios">("pacientes");
-  const codeMenuRef = useRef<HTMLDivElement>(null);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
   const whatsappInviteLink = inviteCode
@@ -122,24 +117,6 @@ export function ClinicPatientsPanel() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (!codeMenuOpen) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!codeMenuRef.current?.contains(e.target as Node)) {
-        setCodeMenuOpen(false);
-      }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setCodeMenuOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [codeMenuOpen]);
-
   async function regenerateCode() {
     setCodeBusy(true);
     setError(null);
@@ -153,45 +130,6 @@ export function ClinicPatientsPanel() {
       return;
     }
     setInviteCode((data as string) ?? null);
-    setCopied(null);
-  }
-
-  async function copyText(kind: "code" | "link" | "wa", value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(kind);
-      setTimeout(() => setCopied(null), 2000);
-    } catch {
-      setError(
-        kind === "code"
-          ? "No se pudo copiar el código."
-          : "No se pudo copiar el enlace."
-      );
-    }
-  }
-
-  async function shareLink(kind: "web" | "wa" = "web") {
-    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
-    if (!url || !inviteCode) return;
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try {
-        await navigator.share({
-          title:
-            kind === "wa"
-              ? "AIKinora — consulta previa por WhatsApp"
-              : "AIKinora — consulta previa",
-          text:
-            kind === "wa"
-              ? buildPhysioWhatsAppInviteShareText()
-              : buildPhysioInviteShareText(),
-          url,
-        });
-        return;
-      } catch {
-        // Fall through
-      }
-    }
-    await copyText(kind === "wa" ? "wa" : "link", url);
   }
 
   return (
@@ -250,119 +188,15 @@ export function ClinicPatientsPanel() {
             </p>
           ) : null}
 
-          <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setVinculacionOpen((v) => !v)}
-              className="flex w-full items-center justify-between gap-3 text-left"
-            >
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-900">
-                  {copy.linkingTitle}
-                </h2>
-                <p className="mt-0.5 text-sm text-neutral-500">
-                  {copy.linkingSubtitle}
-                </p>
-              </div>
-              <span className="text-neutral-400">
-                {vinculacionOpen ? "▴" : "▾"}
-              </span>
-            </button>
-
-            {vinculacionOpen ? (
-              <div className="mt-4 space-y-3">
-                <p className="text-sm text-neutral-600">{copy.linkingHint}</p>
-                {inviteLink ? (
-                  <p className="break-all rounded-xl bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
-                    {inviteLink}
-                  </p>
-                ) : null}
-                <div className="flex flex-col gap-2" ref={codeMenuRef}>
-                  <button
-                    type="button"
-                    disabled={!inviteLink || codeBusy}
-                    onClick={() => void shareLink("web")}
-                    className="min-h-11 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {copied === "link" ? copy.inviteCopied : copy.shareInvite}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!inviteCode || codeBusy}
-                    onClick={() => setCodeMenuOpen((o) => !o)}
-                    className="min-h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-                  >
-                    {copy.actions}
-                  </button>
-                  {codeMenuOpen && inviteCode ? (
-                    <div className="flex w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white">
-                        {inviteLink ? (
-                          <button
-                            type="button"
-                            className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                            onClick={() => {
-                              void copyText("link", inviteLink);
-                              setCodeMenuOpen(false);
-                            }}
-                          >
-                            {copied === "link"
-                              ? copy.inviteCopied
-                              : copy.copyInvite}
-                          </button>
-                        ) : null}
-                        {whatsappInviteLink ? (
-                          <>
-                            <button
-                              type="button"
-                              className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                              onClick={() => {
-                                void copyText("wa", whatsappInviteLink);
-                                setCodeMenuOpen(false);
-                              }}
-                            >
-                              {copied === "wa"
-                                ? copy.whatsappCopied
-                                : copy.copyWhatsApp}
-                            </button>
-                            <button
-                              type="button"
-                              className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                              onClick={() => {
-                                void shareLink("wa");
-                                setCodeMenuOpen(false);
-                              }}
-                            >
-                              {copy.shareWhatsApp}
-                            </button>
-                          </>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="block min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                          onClick={() => {
-                            void copyText("code", inviteCode);
-                            setCodeMenuOpen(false);
-                          }}
-                        >
-                          {copied === "code" ? copy.codeCopied : copy.copyCode}
-                        </button>
-                        <button
-                          type="button"
-                          className="block min-h-11 w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50"
-                          disabled={codeBusy}
-                          onClick={() => {
-                            setCodeMenuOpen(false);
-                            void regenerateCode();
-                          }}
-                        >
-                          {codeBusy ? copy.generating : copy.newCode}
-                        </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </section>
+          <VinculacionInviteCard
+            inviteLink={inviteLink}
+            whatsappInviteLink={whatsappInviteLink}
+            inviteCode={inviteCode}
+            codeBusy={codeBusy}
+            onRegenerate={() => void regenerateCode()}
+            title={copy.linkingTitle}
+            subtitle={copy.linkingSubtitle}
+          />
 
           {!loading && recentReports.length > 0 ? (
             <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">

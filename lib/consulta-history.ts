@@ -5,7 +5,7 @@ export type ConsultaHistoryItem = {
   created_at: string;
 };
 
-/** Map report id → 1-based consulta number (oldest = #1). */
+/** Map report id → 1-based consulta number (oldest = 1). */
 export function buildConsultaNumberMap(
   reports: ConsultaHistoryItem[]
 ): Map<string, number> {
@@ -24,9 +24,9 @@ export function formatConsultaLabel(
 ): string {
   const area = (bodyArea || "").trim();
   if (locale === "en") {
-    return area ? `Visit #${n} · ${area}` : `Visit #${n}`;
+    return area ? `Visit ${n} · ${area}` : `Visit ${n}`;
   }
-  return area ? `Consulta #${n} · ${area}` : `Consulta #${n}`;
+  return area ? `Consulta ${n} · ${area}` : `Consulta ${n}`;
 }
 
 export function summarizeConsultaHistory(reports: ConsultaHistoryItem[]): {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,13 +10,24 @@ import {
 import { Colors } from "../lib/colors";
 import { supabase } from "../lib/supabase";
 
-export function StaffPatientNotesCard({ patientId }: { patientId: string }) {
-  const [notes, setNotes] = useState("");
-  const [loaded, setLoaded] = useState(false);
+export function StaffPatientNotesCard({
+  patientId,
+  initialNotes,
+}: {
+  patientId: string;
+  /** Prefetched notes — skips the loading flash when opening a ficha. */
+  initialNotes?: string | null;
+}) {
+  const [notes, setNotes] = useState(initialNotes ?? "");
+  const [loaded, setLoaded] = useState(initialNotes !== undefined);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  const seededForPatient = useRef<string | null>(
+    initialNotes !== undefined ? patientId : null
+  );
 
   const load = useCallback(async () => {
     setError(null);
@@ -45,8 +56,18 @@ export function StaffPatientNotesCard({ patientId }: { patientId: string }) {
   }, [patientId]);
 
   useEffect(() => {
+    if (seededForPatient.current === patientId) return;
+    seededForPatient.current = patientId;
+    if (initialNotes !== undefined) {
+      setNotes(initialNotes ?? "");
+      setDirty(false);
+      setLoaded(true);
+      setError(null);
+      return;
+    }
+    setLoaded(false);
     void load();
-  }, [load]);
+  }, [initialNotes, load, patientId]);
 
   async function handleSave() {
     setSaving(true);

@@ -28,6 +28,8 @@ export type StaffPatientProfile = {
 
 type Props = {
   patientId: string;
+  /** Prefetched profile — skips the loading flash when opening a ficha. */
+  initialProfile?: StaffPatientProfile | null;
   onDisplayNameChange?: (name: string | null) => void;
 };
 
@@ -66,23 +68,43 @@ function rowFromRpc(raw: unknown): StaffPatientProfile | null {
   };
 }
 
+/** Prefetch profile (+ notes) before opening the patient ficha. */
+export async function fetchStaffPatientProfile(
+  patientId: string
+): Promise<StaffPatientProfile | null> {
+  const { data, error } = await supabase.rpc("staff_get_patient_profile", {
+    p_patient_id: patientId,
+  });
+  if (error) throw new Error(error.message);
+  return rowFromRpc(data);
+}
+
 export function StaffPatientProfileEditor({
   patientId,
+  initialProfile = null,
   onDisplayNameChange,
 }: Props) {
-  const [profile, setProfile] = useState<StaffPatientProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<StaffPatientProfile | null>(
+    initialProfile
+  );
+  const [loading, setLoading] = useState(!initialProfile);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
 
-  const [displayName, setDisplayName] = useState("");
-  const [age, setAge] = useState("");
-  const [sex, setSex] = useState("");
-  const [heightCm, setHeightCm] = useState("");
-  const [weightKg, setWeightKg] = useState("");
-  const [city, setCity] = useState("");
+  const [displayName, setDisplayName] = useState(
+    initialProfile?.display_name ?? ""
+  );
+  const [age, setAge] = useState(initialProfile?.age?.toString() ?? "");
+  const [sex, setSex] = useState(initialProfile?.sex ?? "");
+  const [heightCm, setHeightCm] = useState(
+    initialProfile?.height_cm?.toString() ?? ""
+  );
+  const [weightKg, setWeightKg] = useState(
+    initialProfile?.weight_kg?.toString() ?? ""
+  );
+  const [city, setCity] = useState(initialProfile?.city ?? "");
 
   const fillForm = useCallback((p: StaffPatientProfile) => {
     setDisplayName(p.display_name ?? "");
@@ -95,6 +117,9 @@ export function StaffPatientProfileEditor({
 
   const nameChangeRef = useRef(onDisplayNameChange);
   nameChangeRef.current = onDisplayNameChange;
+  const seededForPatient = useRef<string | null>(
+    initialProfile?.id === patientId ? patientId : null
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -134,8 +159,18 @@ export function StaffPatientProfileEditor({
   }, [fillForm, patientId]);
 
   useEffect(() => {
+    if (seededForPatient.current === patientId) return;
+    seededForPatient.current = patientId;
+    if (initialProfile && initialProfile.id === patientId) {
+      setProfile(initialProfile);
+      fillForm(initialProfile);
+      setLoading(false);
+      setEditing(false);
+      setError(null);
+      return;
+    }
     void load();
-  }, [load]);
+  }, [fillForm, initialProfile, load, patientId]);
 
   async function handleSave() {
     setSaving(true);

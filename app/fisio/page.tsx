@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   PhysioClinicInfoCard,
   type PhysioClinicSummary,
 } from "@/components/physio-clinic-info-card";
+import { VinculacionInviteCard } from "@/components/vinculacion-invite-card";
 import {
-  buildPhysioInviteShareText,
   buildPhysioInviteUrl,
-  buildPhysioWhatsAppInviteShareText,
   buildPhysioWhatsAppInviteUrl,
 } from "@/lib/physio-invite";
 import { staffPatientLabel } from "@/lib/guest-account";
@@ -31,16 +30,12 @@ export default function FisioPatientsPage() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
-  const [codeMenuOpen, setCodeMenuOpen] = useState(false);
-  const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
   const [clinicName, setClinicName] = useState<string | null>(null);
   const [clinic, setClinic] = useState<PhysioClinicSummary | null>(null);
   const [claimCode, setClaimCode] = useState("");
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
-  const codeMenuRef = useRef<HTMLDivElement>(null);
 
   const inviteLink = inviteCode ? buildPhysioInviteUrl(inviteCode) : null;
   const whatsappInviteLink = inviteCode
@@ -154,24 +149,6 @@ export default function FisioPatientsPage() {
     }
   }
 
-  useEffect(() => {
-    if (!codeMenuOpen) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!codeMenuRef.current?.contains(e.target as Node)) {
-        setCodeMenuOpen(false);
-      }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setCodeMenuOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [codeMenuOpen]);
-
   async function regenerateCode() {
     setCodeBusy(true);
     setError(null);
@@ -185,45 +162,6 @@ export default function FisioPatientsPage() {
       return;
     }
     setInviteCode((data as string) ?? null);
-    setCopied(null);
-  }
-
-  async function copyText(kind: "code" | "link" | "wa", value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(kind);
-      setTimeout(() => setCopied(null), 2000);
-    } catch {
-      setError(
-        kind === "code"
-          ? "No se pudo copiar el código."
-          : "No se pudo copiar el enlace."
-      );
-    }
-  }
-
-  async function shareLink(kind: "web" | "wa" = "web") {
-    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
-    if (!url || !inviteCode) return;
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      try {
-        await navigator.share({
-          title:
-            kind === "wa"
-              ? "AIKinora — consulta previa por WhatsApp"
-              : "AIKinora — consulta previa",
-          text:
-            kind === "wa"
-              ? buildPhysioWhatsAppInviteShareText()
-              : buildPhysioInviteShareText(),
-          url,
-        });
-        return;
-      } catch {
-        // Fall through to clipboard if share is cancelled/unavailable.
-      }
-    }
-    await copyText(kind === "wa" ? "wa" : "link", url);
   }
 
   return (
@@ -275,6 +213,14 @@ export default function FisioPatientsPage() {
         </p>
       ) : null}
 
+      <VinculacionInviteCard
+        inviteLink={inviteLink}
+        whatsappInviteLink={whatsappInviteLink}
+        inviteCode={inviteCode}
+        codeBusy={codeBusy}
+        onRegenerate={() => void regenerateCode()}
+      />
+
       <section className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-neutral-900">
@@ -293,9 +239,8 @@ export default function FisioPatientsPage() {
           <p className="mt-4 text-sm text-neutral-500">Cargando…</p>
         ) : patients.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-500">
-            Todavía no hay pacientes ni informes en esta cuenta. Abre Vinculación
-            para compartir el enlace de consulta previa y pulsa Actualizar después
-            de que el paciente termine el cuestionario.
+            Todavía no hay pacientes ni informes. Comparte el enlace de arriba;
+            cuando el paciente abra la consulta previa, pulsa Actualizar.
           </p>
         ) : (
           <ul className="mt-4 divide-y divide-neutral-100">
@@ -331,128 +276,6 @@ export default function FisioPatientsPage() {
           </ul>
         )}
       </section>
-
-      <div className="mt-8">
-        <button
-          type="button"
-          aria-expanded={vinculacionOpen}
-          onClick={() => {
-            setVinculacionOpen((v) => !v);
-            if (vinculacionOpen) setCodeMenuOpen(false);
-          }}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl bg-blue-600 px-5 py-4 text-left text-base font-semibold text-white hover:bg-blue-700"
-        >
-          <span>Vinculación</span>
-          <span className="text-blue-100" aria-hidden>
-            {vinculacionOpen ? "▴" : "▾"}
-          </span>
-        </button>
-
-        {vinculacionOpen ? (
-          <section className="mt-3 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Vinculación
-            </h2>
-            <p className="mt-0.5 text-sm text-neutral-500">
-              Enlace de consulta previa para pacientes
-            </p>
-            <p className="mt-3 text-sm text-neutral-600">
-              Comparte el enlace: el paciente lo abre y va directo a poner su
-              nombre. No necesita escribir ningún código. El informe llega a tu
-              panel.
-            </p>
-            {inviteLink ? (
-              <p className="mt-3 break-all rounded-xl bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
-                {inviteLink}
-              </p>
-            ) : null}
-            <div className="mt-4 flex flex-col gap-2" ref={codeMenuRef}>
-              <button
-                type="button"
-                disabled={!inviteLink || codeBusy}
-                onClick={() => void shareLink("web")}
-                className="min-h-11 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {copied === "link"
-                  ? "Enlace copiado"
-                  : "Compartir enlace de consulta previa"}
-              </button>
-              <button
-                type="button"
-                disabled={!inviteCode || codeBusy}
-                onClick={() => setCodeMenuOpen((o) => !o)}
-                className="min-h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
-              >
-                Más opciones
-              </button>
-              {codeMenuOpen && inviteCode ? (
-                <div
-                  role="menu"
-                  className="flex w-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white"
-                >
-                  {inviteLink ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                      onClick={() => {
-                        setCodeMenuOpen(false);
-                        void copyText("link", inviteLink);
-                      }}
-                    >
-                      {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
-                    </button>
-                  ) : null}
-                  {whatsappInviteLink ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                      onClick={() => {
-                        setCodeMenuOpen(false);
-                        void shareLink("wa");
-                      }}
-                    >
-                      {copied === "wa"
-                        ? "Enlace WhatsApp copiado"
-                        : "Compartir WhatsApp"}
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="min-h-11 w-full px-3 py-2.5 text-left text-sm hover:bg-neutral-50"
-                    onClick={() => {
-                      setCodeMenuOpen(false);
-                      void copyText("code", inviteCode);
-                    }}
-                  >
-                    {copied === "code"
-                      ? "Código copiado"
-                      : "Copiar código (solo si hace falta)"}
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={codeBusy}
-                    className="min-h-11 w-full px-3 py-2.5 text-left text-sm text-amber-800 hover:bg-amber-50 disabled:opacity-50"
-                    onClick={() => {
-                      setCodeMenuOpen(false);
-                      void regenerateCode();
-                    }}
-                  >
-                    {codeBusy ? "Generando…" : "Generar código nuevo"}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-            <p className="mt-3 text-xs text-neutral-500">
-              Si regeneras el código, los pacientes ya vinculados siguen
-              vinculados; solo cambia el enlace para nuevos pacientes.
-            </p>
-          </section>
-        ) : null}
-      </div>
     </main>
   );
 }

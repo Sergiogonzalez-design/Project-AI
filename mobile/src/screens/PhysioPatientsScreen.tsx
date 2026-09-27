@@ -8,10 +8,8 @@ import {
   Alert,
   Image,
   Keyboard,
-  Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -29,12 +27,14 @@ import {
 } from "../components/PhysioReportView";
 import { ClinicalReasoningFlow } from "../components/ClinicalReasoningFlow";
 import { PhysioAssistantBody } from "../components/PhysioAssistantBody";
-import { StaffPatientProfileEditor } from "../components/StaffPatientProfileEditor";
+import { StaffPatientProfileEditor, fetchStaffPatientProfile, type StaffPatientProfile } from "../components/StaffPatientProfileEditor";
 import {
   StaffPatientNotesCard,
   StaffReportNotesField,
 } from "../components/StaffPatientNotes";
+import { StaffDeletePatientButton } from "../components/StaffDeletePatientButton";
 import { TypingIndicator } from "../components/TypingIndicator";
+import { VinculacionInviteCard } from "../components/VinculacionInviteCard";
 import {
   composerBottomInset,
   useKeyboardHeight,
@@ -46,13 +46,10 @@ import {
   summarizeConsultaHistory,
 } from "../lib/consulta-history";
 import { pickIllustratedTestsForPruebasQuery } from "../lib/clinical-test-images";
-import { copyToClipboard } from "../lib/copy-to-clipboard";
 import { photoOnlyCaption, uploadConsultPhotoFromUri } from "../lib/consult-photo";
 import { staffPatientLabel } from "../lib/guest-account";
 import {
-  buildPhysioInviteShareText,
   buildPhysioInviteUrl,
-  buildPhysioWhatsAppInviteShareText,
   buildPhysioWhatsAppInviteUrl,
 } from "../lib/physio-invite";
 import { supabase } from "../lib/supabase";
@@ -121,9 +118,6 @@ export function PhysioPatientsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [copied, setCopied] = useState<"code" | "link" | "wa" | null>(null);
-  const [codeMenuOpen, setCodeMenuOpen] = useState(false);
-  const [vinculacionOpen, setVinculacionOpen] = useState(false);
   const [physioName, setPhysioName] = useState<string | null>(null);
   const [clinicName, setClinicName] = useState<string | null>(null);
   const [clinic, setClinic] = useState<PhysioClinicSummary | null>(null);
@@ -136,8 +130,11 @@ export function PhysioPatientsScreen() {
     : null;
 
   const [selectedPatient, setSelectedPatient] = useState<PhysioPatient | null>(null);
+  const [detailProfile, setDetailProfile] = useState<StaffPatientProfile | null>(
+    null
+  );
+  const [openingPatientId, setOpeningPatientId] = useState<string | null>(null);
   const [reports, setReports] = useState<ClinicalReport[]>([]);
-  const [reportsLoading, setReportsLoading] = useState(false);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [reasoningReport, setReasoningReport] = useState<ClinicalReport | null>(
     null
@@ -363,90 +360,65 @@ export function PhysioPatientsScreen() {
       return;
     }
     setInviteCode((data as string) ?? null);
-    setCopied(null);
-  }
-
-  async function copyText(kind: "code" | "link" | "wa", value: string) {
-    setError(null);
-    setCodeMenuOpen(false);
-    const ok = await copyToClipboard(value);
-    if (!ok) {
-      try {
-        await Share.share({ message: value });
-        return;
-      } catch {
-        setError(
-          kind === "code"
-            ? "No se pudo copiar el código."
-            : "No se pudo copiar el enlace."
-        );
-        return;
-      }
-    }
-    setCopied(kind);
-    setTimeout(() => setCopied(null), 2000);
-  }
-
-  async function shareLink(kind: "web" | "wa" = "web") {
-    const url = kind === "wa" ? whatsappInviteLink : inviteLink;
-    if (!url || !inviteCode) return;
-    setCodeMenuOpen(false);
-    const shareText =
-      kind === "wa"
-        ? buildPhysioWhatsAppInviteShareText()
-        : buildPhysioInviteShareText();
-    try {
-      await Share.share(
-        Platform.OS === "ios"
-          ? {
-              url,
-              message: shareText,
-            }
-          : {
-              title:
-                kind === "wa"
-                  ? "AIKinora — consulta previa por WhatsApp"
-                  : "AIKinora — consulta previa",
-              message: `${shareText}\n${url}`,
-            }
-      );
-    } catch {
-      await copyText(kind === "wa" ? "wa" : "link", url);
-    }
   }
 
   async function openPatient(patient: PhysioPatient) {
-    setSelectedPatient(patient);
+    if (openingPatientId) return;
+    setOpeningPatientId(patient.id);
+    setError(null);
+    try {
+      const [reportsRes, profile] = await Promise.all([
+        supabase
+          .from("clinical_reports")
+          .select(
+            "id, created_at, body_area, patient_summary, physio_report, status, staff_notes"
+          )
+          .eq("patient_id", patient.id)
+          .order("created_at", { ascending: false }),
+        fetchStaffPatientProfile(patient.id).catch(() => null),
+      ]);
+
+      const list = (reportsRes.data as ClinicalReport[]) ?? [];
+      setReports(list);
+      setExpandedReportId(null);
+      setDetailProfile(profile);
+      // Reveal detail only when everything is ready — avoids staggered layout jumps.
+      setSelectedPatient(
+        profile?.display_name
+          ? { ...patient, display_name: profile.display_name }
+          : patient
+      );
+
+      const newIds = list.filter((r) => r.status === "new").map((r) => r.id);
+      if (newIds.length > 0) {
+        const { error: updateError } = await supabase
+          .from("clinical_reports")
+          .update({ status: "viewed", viewed_at: new Date().toISOString() })
+          .in("id", newIds)
+          .eq("status", "new");
+        if (!updateError) {
+          setReports((prev) =>
+            prev.map((r) =>
+              newIds.includes(r.id) ? { ...r, status: "viewed" } : r
+            )
+          );
+          setUnreadByPatient((prev) => ({ ...prev, [patient.id]: 0 }));
+        }
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No se pudo abrir el paciente."
+      );
+    } finally {
+      setOpeningPatientId(null);
+    }
+  }
+
+  function closePatient() {
+    setSelectedPatient(null);
+    setDetailProfile(null);
     setReports([]);
     setExpandedReportId(null);
-    setReportsLoading(true);
-    const { data } = await supabase
-      .from("clinical_reports")
-      .select(
-        "id, created_at, body_area, patient_summary, physio_report, status, staff_notes"
-      )
-      .eq("patient_id", patient.id)
-      .order("created_at", { ascending: false });
-    const list = (data as ClinicalReport[]) ?? [];
-    setReports(list);
-    setReportsLoading(false);
-
-    // Opening this patient's informes clears the "nuevo" badge on the list.
-    const newIds = list.filter((r) => r.status === "new").map((r) => r.id);
-    if (newIds.length === 0) return;
-
-    const { error: updateError } = await supabase
-      .from("clinical_reports")
-      .update({ status: "viewed", viewed_at: new Date().toISOString() })
-      .in("id", newIds)
-      .eq("status", "new");
-
-    if (!updateError) {
-      setReports((prev) =>
-        prev.map((r) => (newIds.includes(r.id) ? { ...r, status: "viewed" } : r))
-      );
-      setUnreadByPatient((prev) => ({ ...prev, [patient.id]: 0 }));
-    }
   }
 
   async function toggleReport(report: ClinicalReport) {
@@ -697,7 +669,7 @@ export function PhysioPatientsScreen() {
         <View style={[styles.detailHeader, subviewHeaderPad]}>
           <Pressable
             style={styles.backBtn}
-            onPress={() => setSelectedPatient(null)}
+            onPress={closePatient}
             accessibilityLabel="Volver a pacientes"
             hitSlop={8}
           >
@@ -710,8 +682,12 @@ export function PhysioPatientsScreen() {
             })}
           </Text>
         </View>
-        <ScreenScrollView ref={detailScrollRef} contentContainerStyle={styles.container}>
-          {!reportsLoading && history.total > 0 ? (
+        <ScreenScrollView
+          key={selectedPatient.id}
+          ref={detailScrollRef}
+          contentContainerStyle={styles.container}
+        >
+          {history.total > 0 ? (
             <View style={styles.historyStats}>
               <View style={styles.historyStat}>
                 <Text style={styles.historyStatLabel}>Consultas</Text>
@@ -733,6 +709,7 @@ export function PhysioPatientsScreen() {
           ) : null}
           <StaffPatientProfileEditor
             patientId={selectedPatient.id}
+            initialProfile={detailProfile}
             onDisplayNameChange={(name) => {
               setSelectedPatient((prev) =>
                 prev
@@ -744,11 +721,12 @@ export function PhysioPatientsScreen() {
               );
             }}
           />
-          <StaffPatientNotesCard patientId={selectedPatient.id} />
+          <StaffPatientNotesCard
+            patientId={selectedPatient.id}
+            initialNotes={detailProfile?.staff_notes ?? ""}
+          />
           <Text style={styles.historyTitle}>Historial de consultas</Text>
-          {reportsLoading ? (
-            <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
-          ) : reports.length === 0 ? (
+          {reports.length === 0 ? (
             <View style={styles.card}>
               <Text style={styles.userMeta}>
                 Este paciente todavía no ha completado ninguna consulta.
@@ -824,6 +802,23 @@ export function PhysioPatientsScreen() {
             );
           })
         )}
+          <StaffDeletePatientButton
+            patientId={selectedPatient.id}
+            patientLabel={staffPatientLabel({
+              displayName: selectedPatient.display_name,
+              email: selectedPatient.email,
+            })}
+            onDeleted={() => {
+              const id = selectedPatient.id;
+              closePatient();
+              setPatients((prev) => prev.filter((p) => p.id !== id));
+              setUnreadByPatient((prev) => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+              });
+            }}
+          />
         </ScreenScrollView>
       </View>
     );
@@ -884,6 +879,14 @@ export function PhysioPatientsScreen() {
           </View>
         ) : null}
 
+        <VinculacionInviteCard
+          inviteLink={inviteLink}
+          whatsappInviteLink={whatsappInviteLink}
+          inviteCode={inviteCode}
+          codeBusy={codeBusy}
+          onRegenerate={() => void regenerateCode()}
+        />
+
         <View style={styles.listHeader}>
           <Text style={styles.listHeaderText}>
             {patients.length} paciente{patients.length === 1 ? "" : "s"}
@@ -897,9 +900,8 @@ export function PhysioPatientsScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 24 }} />
         ) : patients.length === 0 ? (
           <Text style={styles.userMeta}>
-            Todavía no hay pacientes ni informes en esta cuenta. Abre Vinculación
-            para compartir el enlace de consulta previa y pulsa Actualizar cuando
-            el paciente lo abra.
+            Todavía no hay pacientes ni informes. Comparte el enlace de arriba;
+            cuando el paciente abra la consulta previa, pulsa Actualizar.
           </Text>
         ) : (
           patients.map((patient) => {
@@ -907,7 +909,11 @@ export function PhysioPatientsScreen() {
             return (
               <Pressable
                 key={patient.id}
-                style={styles.userCard}
+                style={[
+                  styles.userCard,
+                  openingPatientId === patient.id && { opacity: 0.55 },
+                ]}
+                disabled={openingPatientId != null}
                 onPress={() => void openPatient(patient)}
               >
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -924,159 +930,19 @@ export function PhysioPatientsScreen() {
                       </View>
                     )}
                   </View>
+                  {openingPatientId === patient.id ? (
+                    <Text style={styles.userMeta}>Abriendo ficha…</Text>
+                  ) : null}
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
+                {openingPatientId === patient.id ? (
+                  <ActivityIndicator color={Colors.primary} />
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
+                )}
               </Pressable>
             );
           })
         )}
-
-        <Pressable
-          onPress={() => {
-            setVinculacionOpen((v) => !v);
-            if (vinculacionOpen) setCodeMenuOpen(false);
-          }}
-          style={({ pressed }) => [
-            styles.vinculacionBtn,
-            pressed && { backgroundColor: Colors.primaryDark },
-          ]}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: vinculacionOpen }}
-        >
-          <Text style={styles.vinculacionBtnText}>Vinculación</Text>
-          <Ionicons
-            name={vinculacionOpen ? "chevron-up" : "chevron-down"}
-            size={18}
-            color={Colors.white}
-          />
-        </Pressable>
-
-        {vinculacionOpen ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Vinculación</Text>
-            <Text style={styles.cardSubtitle}>
-              Enlace de consulta previa para pacientes
-            </Text>
-            <Text style={[styles.cardSubtitle, { marginTop: 10 }]}>
-              Comparte el enlace: el paciente lo abre y va directo a poner su
-              nombre. No necesita escribir ningún código. El informe llega a tu
-              panel.
-            </Text>
-
-            {inviteLink ? (
-              <Text style={styles.inviteLinkDisplay} selectable>
-                {inviteLink}
-              </Text>
-            ) : null}
-
-            <Pressable
-              onPress={() => void shareLink("web")}
-              disabled={!inviteLink || codeBusy}
-              style={({ pressed }) => [
-                styles.primaryShareBtn,
-                pressed && { backgroundColor: Colors.primaryDark },
-                (!inviteLink || codeBusy) && { opacity: 0.5 },
-              ]}
-            >
-              <Text style={styles.primaryShareBtnText}>
-                {copied === "link"
-                  ? "Enlace copiado"
-                  : "Compartir enlace de consulta previa"}
-              </Text>
-            </Pressable>
-
-            <View style={styles.codeActionsRow}>
-              <View style={styles.actionsWrap}>
-                <Pressable
-                  onPress={() => setCodeMenuOpen((v) => !v)}
-                  disabled={!inviteCode && !codeBusy}
-                  style={({ pressed }) => [
-                    styles.actionsBtn,
-                    pressed && { backgroundColor: Colors.background },
-                    !inviteCode && !codeBusy && { opacity: 0.5 },
-                  ]}
-                >
-                  <Text style={styles.actionsBtnText}>Más opciones</Text>
-                </Pressable>
-                {codeMenuOpen && inviteCode ? (
-                  <View style={styles.codeMenu}>
-                    <Pressable
-                      disabled={!inviteLink}
-                      onPress={() => {
-                        setCodeMenuOpen(false);
-                        if (inviteLink) void copyText("link", inviteLink);
-                      }}
-                      style={({ pressed }) => [
-                        styles.codeMenuItem,
-                        pressed && { backgroundColor: Colors.background },
-                        !inviteLink && { opacity: 0.5 },
-                      ]}
-                    >
-                      <Text style={styles.codeMenuItemText}>
-                        {copied === "link" ? "Enlace copiado" : "Copiar enlace"}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      disabled={!whatsappInviteLink}
-                      onPress={() => {
-                        setCodeMenuOpen(false);
-                        void shareLink("wa");
-                      }}
-                      style={({ pressed }) => [
-                        styles.codeMenuItem,
-                        pressed && { backgroundColor: Colors.background },
-                        !whatsappInviteLink && { opacity: 0.5 },
-                      ]}
-                    >
-                      <Text style={styles.codeMenuItemText}>
-                        {copied === "wa"
-                          ? "Enlace WhatsApp copiado"
-                          : "Compartir WhatsApp"}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setCodeMenuOpen(false);
-                        void copyText("code", inviteCode);
-                      }}
-                      style={({ pressed }) => [
-                        styles.codeMenuItem,
-                        pressed && { backgroundColor: Colors.background },
-                      ]}
-                    >
-                      <Text style={styles.codeMenuItemText}>
-                        {copied === "code"
-                          ? "Código copiado"
-                          : "Copiar código (solo si hace falta)"}
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      disabled={codeBusy}
-                      onPress={() => {
-                        setCodeMenuOpen(false);
-                        void regenerateCode();
-                      }}
-                      style={({ pressed }) => [
-                        styles.codeMenuItem,
-                        pressed && { backgroundColor: Colors.background },
-                        codeBusy && { opacity: 0.5 },
-                      ]}
-                    >
-                      <Text style={[styles.codeMenuItemText, { color: "#92400E" }]}>
-                        {codeBusy ? "Generando…" : "Generar código nuevo"}
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-
-            <Text style={styles.cardFoot}>
-              Si regeneras el código, los pacientes ya vinculados siguen
-              vinculados; solo cambia el enlace para nuevos pacientes.
-            </Text>
-          </View>
-        ) : null}
       </ScreenScrollView>
     </DismissKeyboard>
   );
@@ -1154,183 +1020,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 16,
     overflow: "visible",
-  },
-  vinculacionBtn: {
-    marginTop: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
-    borderWidth: 0,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-  vinculacionBtnText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.white,
-  },
-  codeMenuWrap: {
-    position: "absolute",
-    right: 16,
-    top: 16,
-    zIndex: 20,
-    alignItems: "flex-end",
-  },
-  codeMenuBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.white,
-  },
-  codeActionsRow: {
-    marginTop: 4,
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: 8,
-  },
-  inviteLinkDisplay: {
-    marginTop: 12,
-    fontSize: 11,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-  primaryShareBtn: {
-    marginTop: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  primaryShareBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: Colors.white,
-    textAlign: "center",
-  },
-  codePill: {
-    backgroundColor: "#F1F5F9",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  actionsWrap: {
-    width: "100%",
-  },
-  actionsBtn: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 44,
-    backgroundColor: Colors.white,
-    alignItems: "center",
-  },
-  actionsBtnText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: Colors.text,
-  },
-  codeMenu: {
-    marginTop: 8,
-    width: "100%",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    paddingVertical: 4,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  codeMenuItem: {
-    alignSelf: "stretch",
-    width: "100%",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  codeMenuItemText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.text,
-    textAlign: "left",
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: Colors.text,
-  },
-  cardSubtitle: {
-    marginTop: 2,
-    fontSize: 13,
-    lineHeight: 18,
-    color: Colors.textSecondary,
-  },
-  codeBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 10,
-  },
-  codeDisplay: {
-    fontSize: 15,
-    fontWeight: "800",
-    letterSpacing: 3,
-    color: Colors.text,
-    fontVariant: ["tabular-nums"],
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-  },
-  linkBox: {
-    marginTop: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: "#F8FAFC",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  linkText: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: Colors.textSecondary,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-  },
-  copyBtn: {
-    minHeight: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  copyBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#334155",
-  },
-  cardFoot: {
-    marginTop: 12,
-    fontSize: 12,
-    lineHeight: 16,
-    color: Colors.textLight,
   },
   input: {
     borderWidth: 1,
