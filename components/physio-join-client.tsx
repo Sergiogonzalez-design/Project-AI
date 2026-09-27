@@ -7,7 +7,7 @@ import {
   getOrCreateGuestClientId,
   persistGuestClientId,
 } from "@/lib/guest-client-id";
-import { isGuestDisplayNameSet, writeInviteNameGateHint } from "@/lib/guest-account";
+import { writeInviteNameGateHint } from "@/lib/guest-account";
 import { parsePastedInviteCode } from "@/lib/physio-invite";
 import { createClient } from "@/lib/supabase/client";
 
@@ -100,23 +100,11 @@ export function PhysioJoinClient({ initialCode }: { initialCode: string }) {
         started.current = false;
         return;
       }
-      const {
-        data: { user: guestUser },
-      } = await supabase.auth.getUser();
-      if (guestUser) {
-        const { data: guestProfile } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", guestUser.id)
-          .maybeSingle();
-        writeInviteNameGateHint(
-          !isGuestDisplayNameSet(
-            (guestProfile?.display_name as string | null) ?? null
-          )
-        );
-      }
+      // Always open the name screen after invite redeem so the fisio gets a
+      // real patient name before chat (even when reusing guestClientId).
+      writeInviteNameGateHint(true);
       // Hard navigation so middleware sees the new guest session immediately.
-      window.location.assign("/fisioterapia");
+      window.location.assign("/fisioterapia?gate=name");
       return;
     } catch {
       setError("No se pudo abrir la consulta. Inténtalo de nuevo.");

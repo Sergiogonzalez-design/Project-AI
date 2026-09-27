@@ -12,6 +12,7 @@ import {
   readInviteNameGateHint,
   writeInviteNameGateHint,
 } from "@/lib/guest-account";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type LinkedPhysio = {
@@ -23,14 +24,45 @@ type LinkedPhysio = {
 /** Avoid a loading flash every time the user switches Consulta ↔ Fisioterapia. */
 let linkedPhysioCache: LinkedPhysio | null | undefined;
 
+function inviteWantsNameGate(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (new URLSearchParams(window.location.search).get("gate") === "name") {
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return readInviteNameGateHint();
+}
+
 export function FisioterapiaClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const gateParam = searchParams.get("gate") === "name";
+
   const [linked, setLinked] = useState<LinkedPhysio | null>(() =>
     linkedPhysioCache?.physio_id ? linkedPhysioCache : null
   );
-  const [guestMode, setGuestMode] = useState(() => readInviteNameGateHint());
-  const [needsName, setNeedsName] = useState(() => readInviteNameGateHint());
+  const [guestMode, setGuestMode] = useState(
+    () => gateParam || readInviteNameGateHint()
+  );
+  const [needsName, setNeedsName] = useState(
+    () => gateParam || readInviteNameGateHint()
+  );
   // Invite deep-link can paint the name gate immediately; otherwise wait for auth.
-  const [ready, setReady] = useState(() => readInviteNameGateHint());
+  const [ready, setReady] = useState(
+    () => gateParam || readInviteNameGateHint()
+  );
+
+  useEffect(() => {
+    if (gateParam) {
+      writeInviteNameGateHint(true);
+      setGuestMode(true);
+      setNeedsName(true);
+      setReady(true);
+    }
+  }, [gateParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +81,7 @@ export function FisioterapiaClient() {
         }
         const guest = isGuestUser(user);
         if (cancelled) return;
-        setGuestMode(guest);
+        setGuestMode(guest || inviteWantsNameGate());
 
         let next = linkedPhysioCache ?? null;
         if (!next?.physio_id) {
@@ -62,7 +94,7 @@ export function FisioterapiaClient() {
         }
         linkedPhysioCache = next;
 
-        if (guest) {
+        if (guest || inviteWantsNameGate()) {
           const { data: profile } = await supabase
             .from("profiles")
             .select("display_name")
@@ -81,8 +113,13 @@ export function FisioterapiaClient() {
             // ignore private-mode storage errors
           }
           if (!cancelled) {
-            setNeedsName(!named);
-            writeInviteNameGateHint(!named);
+            const mustAsk = !named;
+            setNeedsName(mustAsk);
+            writeInviteNameGateHint(mustAsk);
+            if (named && gateParam) {
+              // Drop the query so refresh doesn't reopen the gate forever.
+              router.replace("/fisioterapia");
+            }
           }
         }
 
@@ -102,15 +139,19 @@ export function FisioterapiaClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [gateParam, router]);
 
-  if (guestMode && needsName) {
+  // Name screen first for invite guests — never paint chat until we know.
+  if ((guestMode || gateParam || readInviteNameGateHint()) && needsName) {
     return (
       <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
         <GuestNameGate
           onSaved={() => {
             writeInviteNameGateHint(false);
             setNeedsName(false);
+            if (gateParam) {
+              router.replace("/fisioterapia");
+            }
           }}
         />
       </div>

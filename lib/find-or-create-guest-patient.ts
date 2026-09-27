@@ -156,6 +156,9 @@ export async function findOrCreateGuestPatient(
       }
       if (name) {
         profilePatch.display_name = name;
+      } else if (opts.clearDisplayName) {
+        // Web/app invite: force name gate even when reusing guest_client_id.
+        profilePatch.display_name = null;
       }
 
       const { error: upsertErr } = await admin
