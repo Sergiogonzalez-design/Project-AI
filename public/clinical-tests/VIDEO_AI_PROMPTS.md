@@ -414,35 +414,38 @@ Using this illustration as reference, animate ulnar collateral ligament stress o
 
 ## 40. finkelstein
 
-**Refs:** Physiotutors original Finkelstein (NOT Eichhoff) — [youtube.com/watch?v=8WBVXBx34W0](https://www.youtube.com/watch?v=8WBVXBx34W0)
+**Refs:** Physio WhatsApp demo (2026-09-27) — fist with thumb INSIDE, then ulnar deviation (clinic “Finkelstein” / Eichhoff-style).  
+**Ref frames:** `public/clinical-tests/_preview/finkelstein-ref/frame-01.jpg` … `frame-07.jpg`
 
-**DaVinci upload (START):** `c:\Users\sergi\project-ai\public\clinical-tests\finkelstein-start.png`  
-**Last frame:** `c:\Users\sergi\project-ai\public\clinical-tests\finkelstein-end.png`  
+**DaVinci upload (START):** fist already made, thumb tucked inside, wrist still fairly straight  
+**Last frame:** same fist, wrist clearly bent toward the pinky (ulnar)  
 **IMAGE:** `public/clinical-tests/finkelstein.webp`  
 **FILE OUT:** `finkelstein.mp4`
 
-**Still lock:** START = hand hanging off table edge, thumb UP (Physiotutors 0:00). END = clinician presses the thumb down / ulnar. NOT Eichhoff fist-over-thumb.
+**Still lock:** START = thumb INSIDE the fist, wrist neutral. END = same fist, wrist tilted down toward pinky. NOT the old “thumb up + clinician presses thumb” version.
 
-**Prompt (copy/paste) � original Finkelstein like Physiotutors:**
+**Prompt (copy/paste) — easy, match physio video:**
 
 ```
-Using this illustration as reference, animate the ORIGINAL Finkelstein test for De Quervain EXACTLY like Physiotutors. NOT Eichhoff.
+Using this illustration as reference, animate the Finkelstein test for De Quervain EXACTLY like this:
 
-SETUP: patient's forearm rests on a treatment TABLE; the HAND hangs OFF the edge of the table.
+START: the patient makes a FIST with the THUMB TUCKED INSIDE the palm, fingers wrapped over the thumb (thumb hidden). Wrist still straight / neutral.
 
-START (0�1s): hand hanging freely off the edge, THUMB pointing UP (thumbs-up / radial side up), fingers relaxed and slightly curled. No pressure yet.
+MOTION: slowly bend the wrist DOWN toward the PINKY side (ulnar deviation). Keep the fist closed the whole time. Forearm stays still; only the wrist bends.
 
-MOTION (1�7s): clinician's hands enter � one stabilizes the forearm on the table; the OTHER grasps the patient's THUMB and applies clear DOWNWARD PRESSURE, pushing the thumb toward the floor into ulnar deviation. Only the thumb is pressed � not the other fingers.
+END: hold the fist with the wrist clearly tilted toward the pinky. Stretch visible on the thumb side of the wrist.
 
-END (7�8s): hold with the thumb pressed down / ulnarly.
+CAMERA: close-up on forearm and hand from the thumb side, steady. Optional: clinician’s hand gently guides the fist down, or patient does it alone — either is fine.
 
-FORBIDDEN: Eichhoff fist with thumb tucked inside; pressing the fingers instead of the thumb; hand supported flat on the table. Camera steady, 8 seconds, no logos, no captions, no watermarks.
+CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table, polished medical-illustration style.
+
+FORBIDDEN: thumb pointing UP outside the fist; clinician pressing only the free thumb (old Physiotutors version); open hand; different faces; logos; captions; watermarks. Educational physiotherapy demo, soft light, 8 seconds.
 ```
 
 **Ultra-short:**
 
 ```
-Finkelstein: hand hangs off table, thumb UP; clinician presses the thumb DOWN into ulnar deviation. NOT fist-over-thumb (Eichhoff). 8s, no text.
+Finkelstein: make a fist with thumb INSIDE the fingers, then bend the wrist down toward the pinky. Keep fist closed. Close-up hand/wrist, 8s, no text.
 ```
 
 ## 41. snuffbox-palpation

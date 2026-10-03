@@ -880,7 +880,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "finkelstein",
     title: "Finkelstein (De Quervain)",
-    src: `${CLINICAL_TEST_CDN}/finkelstein.webp?v=20260921finkel`,
+    src: `${CLINICAL_TEST_CDN}/finkelstein.webp?v=20261003finkel`,
     aliases: [
       "finkelstein",
       "test de finkelstein",

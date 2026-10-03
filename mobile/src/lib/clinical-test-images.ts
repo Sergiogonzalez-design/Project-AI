@@ -880,7 +880,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "finkelstein",
     title: "Finkelstein (De Quervain)",
-    src: `${CLINICAL_TEST_CDN}/finkelstein.webp?v=20260921finkel`,
+    src: `${CLINICAL_TEST_CDN}/finkelstein.webp?v=20261003finkel`,
     aliases: [
       "finkelstein",
       "test de finkelstein",
@@ -1315,6 +1315,8 @@ export function illustratedClinicalTestsPromptBlock(): string {
 Cuando listes pruebas/maniobras/tests numeradas PARA EL FISIO (1. 2. 3.…), SOLO puedes usar tests de esta lista. Cada uno tiene VÍDEO e imagen en AIKinora; si inventas otro nombre (p. ej. «Agarre», «flexión resistida», «elevación activa»), el vídeo NO aparece.
 
 VÍDEOS (CRÍTICO — fuerza del producto):
+- EXPLICACIÓN + VÍDEO: cada prueba DEBE llevar explicación clínica (cómo se hace, hallazgo +, qué hipótesis sube/baja) Y el nombre canónico numerado para que la app ponga el VÍDEO debajo. NUNCA solo el nombre. Formato: \`1. **Nombre canónico**: 2–5 frases.\`
+- Si el fisioterapeuta nombra UNA maniobra concreta, responde SOLO esa: línea numerada + explicación. PROHIBIDO volcar el catálogo.
 - Si el fisioterapeuta pide pruebas, tests, maniobras o «pruebas funcionales» de una zona, responde SIEMPRE con lista numerada usando EXACTAMENTE los nombres canónicos del grupo de ESA zona.
 - PROHIBIDO inventar nombres cotidianos o genéricos en líneas numeradas (Sentadilla, Marcha, Agarre, etc.).
 - Si pide N pruebas, elige las N más relevantes del catálogo de esa zona (si hay menos, lista todas las del grupo).
