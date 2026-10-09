@@ -155,24 +155,28 @@ Using this illustration as reference, animate the Thompson / Simmonds test: pati
 
 ## 15. matles
 IMAGE FIRST: public/clinical-tests/matles-start.png (prone, BOTH knees STRAIGHT)
-IMAGE LAST / catalog: public/clinical-tests/matles-end.png (= matles.png)
+IMAGE LAST / catalog: public/clinical-tests/matles-end.png (= matles.png) — ONE foot lower
 FILE OUT: matles.mp4
+
+**Clinical lock:** positive Matles = **only ONE foot drops**. Freeze/end as soon as that asymmetry is clear — **before the second foot drops**.
+
 PROMPT:
+```
 Using the FIRST illustration as the starting frame (and the END still as the last frame if available), animate the Matles test for Achilles. Photorealistic. NO anatomical drawings, NO skeleton overlays, NO arrows, NO captions.
 
 CAMERA: keep the SAME side / three-quarter view from the foot end so BOTH legs and BOTH feet stay visible. Do NOT switch to overhead.
 
-SEQUENCE (8s) — CRITICAL ORDER:
-1) START (0–1.5s): patient PRONE (face down). BOTH knees FULLY STRAIGHT / EXTENDED flat on the table (piernas estiradas, 0°). Feet relaxed. Clinician at the foot of the table.
-2) TRANSITION (1.5–4s): clinician gently flexes BOTH knees together up to ~90° (shins become vertical, heels toward buttocks). Smooth controlled motion — both legs move together.
-3) END HOLD (4–8s): BOTH knees stay at 90°. Compare resting ankle positions:
-   - ONE foot in clear PLANTAR FLEXIÓN (toes pointed / ankle plantarflexed).
-   - THE OTHER foot in FLEXIÓN NEUTRA (ankle ~90° to the shin — NOT pointed, neutral).
-   Asymmetry must be obvious. Brief calm hold while clinician observes. Do NOT push the ankles actively into position — show resting posture.
+SEQUENCE (8s) — end on ONE dropped foot:
+1) START (0–1.5s): patient PRONE. BOTH knees FULLY STRAIGHT on the table. Clinician at the foot of the table holds both lower legs/feet.
+2) FLEX (1.5–4s): clinician passively flexes BOTH knees together up to ~90° (thighs stay on the table, shins rise until almost vertical). He is still holding the legs.
+3) LET GO (4–4.8s): as soon as 90° is reached, the clinician RELEASES / SOLTÁ both legs — hands come OFF and drop to his sides. He does not keep holding the feet.
+4) POSITIVE DROP (4.8–6.5s): gravity only. BOTH knees stay at 90°. ONLY ONE foot falls / hangs LOWER (more plantarflexed, toes drop down) = positive Matles on that Achilles. The OTHER foot stays clearly MORE UPRIGHT / higher at the ankle (healthy). The one-foot difference must be obvious.
+5) FREEZE (6.5–8s): HOLD that asymmetric pose. Do NOT let the second foot drop. Do NOT equalize both feet. End frozen with exactly ONE foot lower.
 
-FORBIDDEN: starting already at 90°; only one knee flexed; both feet the same angle; SLR; Thompson calf squeeze as the main action; shirtless patient.
+FORBIDDEN: both feet dropping; both feet ending at the same angle; second foot catching up; staying hands-on at the end; starting already at 90°; only one knee flexed; Thompson calf squeeze; morph / ghost limbs.
 
 CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Same light-blue studio, blue treatment table. FORBIDDEN: different faces, female clinician or patient, polo, khaki, tank top, shirtless, white coat, extra people. Educational physiotherapy demonstration video, soft neutral lighting, anatomically accurate positioning, no blood, no gore, no logos, no captions, no watermarks, camera steady, 8 seconds.
+```
 
 ## 16. anterior-drawer-ankle
 IMAGE: public/clinical-tests/anterior-drawer-ankle.webp
@@ -310,24 +314,41 @@ Using this illustration as reference, animate the cross-body adduction test (Phy
 
 ## 33. valgus-stress-mcl
 IMAGE: public/clinical-tests/valgus-stress-mcl.webp
-DaVinci upload FIRST: public/clinical-tests/valgus-stress-mcl-start.png
+DaVinci upload ONLY (one still — no last frame): public/clinical-tests/valgus-stress-mcl-start.png
 FILE OUT: valgus-stress-mcl.mp4
+
+**DaVinci mode:** image-to-video from **ONE** still. Do **not** upload an end frame (causes morph / leg-switch bugs).
+
 PROMPT:
 ```
-Using this illustration as the FIRST frame, animate the VALGUS stress test for the MCL exactly like a Physiotutors clinic demo. Photorealistic. NO anatomical drawings, NO skeleton overlays, NO arrows, NO captions.
+Using this illustration as the FIRST and ONLY reference frame, animate ONE continuous VALGUS stress test for the MCL. Photorealistic. REAL SKIN AND HANDS ONLY.
 
-CAMERA: keep the SAME side medium close-up of the RIGHT leg (mid-thigh to foot). Do NOT switch to overhead / bird's-eye.
+LOCK TO THIS IMAGE — do not reinvent the scene:
+- Same camera, same framing, same blue table, same light studio background.
+- Clinician stays on the LEFT / foot-end of the table (patient head toward the RIGHT of the frame).
+- Same tested LEG the whole time — do NOT switch left/right leg, do NOT teleport limbs.
+- Knee angle stays as in the still (~20–30° slight flexion). Do NOT bend to 90°. Do NOT fully straighten mid-clip then re-pose.
 
-KNEE LOCK: RIGHT leg stays FULLY STRAIGHT / completely extended on the table (0°). FORBIDDEN: any knee bend, 20°, 45°, 90°, McMurray pose.
+HANDS (valgus — keep contact the whole clip):
+- One hand on the OUTER / LATERAL side of the KNEE — gently pushes the knee INWARD (medially).
+- Other hand grips the ANKLE / distal lower leg — gently moves the ankle OUTWARD (laterally).
+Clear small valgus: knee in + ankle out. Hands never leave the leg.
 
-HANDS (Physiotutors valgus):
-- One hand on the OUTER / LATERAL side of the KNEE — pushes the knee INWARD (medially).
-- Other hand grips the ANKLE / distal lower leg — moves the ankle OUTWARD (laterally).
-Clear valgus: knee in + ankle out.
+MOTION (8s) — ONE action only, smooth and continuous:
+0–1s: hold the still pose (hands already on knee + ankle).
+1–7s: apply gentle valgus stress → brief hold → slight release → one more calm rep. Small motion only — the leg does not jump, stretch, or change shape.
+7–8s: settle back near the start pose.
 
-MOTION (8s): gentle valgus stress → brief hold → slight release → 1–2 calm reps. Leg stays straight the whole time.
+HARD FAIL / FORBIDDEN (reject if any appear):
+- Morph / dissolve / ghost limbs / double legs
+- Physio jumping to the other side of the table
+- Switching which knee is tested
+- Cutting to a new pose, second scene, or different camera
+- Overhead / bird's-eye camera
+- 90° knee / McMurray pose
+- Skeleton, bones, arrows, captions, logos, watermarks
 
-CAST LOCK — Cozen pair: PATIENT heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN solid medium-blue V-neck scrubs, bare hands. Clinic table, soft neutral lighting. FORBIDDEN: bent knee; overhead camera; white coat; logos; watermarks. Camera steady, 8 seconds.
+CAST LOCK — same two people as Cozen / first Kinora catalog. PATIENT: adult man, short brown hair, clean-shaven, fair skin, heather-grey crew-neck t-shirt, dark charcoal shorts. CLINICIAN: adult man, short dark hair, clean-shaven, fair skin, solid medium-blue V-neck medical scrubs (top and trousers), bare hands. Soft neutral lighting. Camera locked, 8 seconds.
 ```
 
 ## 34. varus-stress-lcl

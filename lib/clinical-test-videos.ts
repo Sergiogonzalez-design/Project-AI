@@ -6,7 +6,7 @@
 
 import { CLINICAL_TEST_CDN } from "./clinical-test-cdn";
 
-const VIDEO_CACHE = "v=20261003finkel";
+const VIDEO_CACHE = "v=20261009matles";
 
 /** Test ids that currently have a shipped demo video. */
 export const CLINICAL_TEST_VIDEOS = {

@@ -164,7 +164,7 @@ export const CLINICAL_TEST_IMAGES: readonly ClinicalTestImage[] = [
   {
     id: "matles",
     title: "Test de Matles",
-    src: `${CLINICAL_TEST_CDN}/matles.webp?v=20260924matles`,
+    src: `${CLINICAL_TEST_CDN}/matles.webp?v=20261009matles`,
     aliases: ["matles", "test de matles"],
   },
   {
